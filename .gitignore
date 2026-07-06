@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.moved-aside
+
+# Secrets — never commit signing keys
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+
+# Not needed to build (kept local)
+FARMSY-CONTEXT.md
+pictures/
+screenshots-for-luuk/
