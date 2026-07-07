@@ -6,7 +6,7 @@ The iOS app now links to these URLs — **they must exist before App Store submi
 |---|---|---|
 | `https://farmsy.app/privacy` | Settings → Privacy Policy | ⬜ publish page |
 | `https://farmsy.app/terms` | Settings → Terms of Service | ⬜ publish page |
-| `https://farmsy.app/account` | Settings → Delete account | ⬜ must offer account deletion |
+| `https://www.farmsy.app/profile` | Settings → Delete account | ⬜ page live ✅ — must offer full account deletion |
 
 ## 1. Privacy Policy (GDPR — required, NL/BE users)
 Must state, in plain language:

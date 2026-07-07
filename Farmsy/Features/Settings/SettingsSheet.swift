@@ -149,7 +149,7 @@ struct SettingsSheet: View {
             // Apple requires deletion to be reachable from inside the app —
             // hand off to the web account page where it's handled.
             Button("Open my account page") {
-                if let url = URL(string: "https://farmsy.app/account") {
+                if let url = URL(string: "https://www.farmsy.app/profile") {
                     UIApplication.shared.open(url)
                 }
             }
