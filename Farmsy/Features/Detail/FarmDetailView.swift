@@ -164,17 +164,17 @@ struct FarmDetailView: View {
         HStack(spacing: 10) {
             if let phone = detail?.phone ?? pin.phone,
                let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
-                ActionButton(icon: "phone.fill", label: "Call", fill: Color(hex: 0x2563EB)) {
+                ActionButton(icon: "phone.fill", label: String(localized: "Call"), fill: Color(hex: 0x2563EB)) {
                     UIApplication.shared.open(url)
                 }
             }
             if let site = detail?.website ?? pin.website,
                let url = URL(string: site.hasPrefix("http") ? site : "https://\(site)") {
-                ActionButton(icon: "globe", label: "Web", fill: Color(hex: 0xF97316)) {
+                ActionButton(icon: "globe", label: String(localized: "Web"), fill: Color(hex: 0xF97316)) {
                     UIApplication.shared.open(url)
                 }
             }
-            ActionButton(icon: "arrow.triangle.turn.up.right.diamond.fill", label: "Directions", fill: .farmGreen) {
+            ActionButton(icon: "arrow.triangle.turn.up.right.diamond.fill", label: String(localized: "Directions"), fill: .farmGreen) {
                 let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
                 item.name = pin.name
                 item.openInMaps()
@@ -194,24 +194,24 @@ struct FarmDetailView: View {
 
             VStack(spacing: 0) {
                 if let hours = detail?.openingHours ?? pin.openingHours {
-                    InfoRow(icon: "clock", label: "Opening hours", value: hours)
+                    InfoRow(icon: "clock", label: String(localized: "Opening hours"), value: hours)
                 }
                 if let address = detail?.address ?? pin.address {
-                    InfoRow(icon: "mappin.and.ellipse", label: "Address",
+                    InfoRow(icon: "mappin.and.ellipse", label: String(localized: "Address"),
                             value: [address, detail?.postalCode ?? pin.postalCode, pin.city]
                                 .compactMap(\.self).joined(separator: ", "))
                 }
                 if let email = detail?.email {
-                    InfoRow(icon: "envelope", label: "Email", value: email)
+                    InfoRow(icon: "envelope", label: String(localized: "Email"), value: email)
                 }
                 if let op = detail?.operatorName {
-                    InfoRow(icon: "person", label: "Run by", value: op)
+                    InfoRow(icon: "person", label: String(localized: "Run by"), value: op)
                 }
                 if detail?.organic == true {
-                    InfoRow(icon: "leaf", label: "Organic", value: "Yes 🌱")
+                    InfoRow(icon: "leaf", label: String(localized: "Organic"), value: String(localized: "Yes 🌱"))
                 }
                 if let produce = detail?.produce, !produce.isEmpty {
-                    InfoRow(icon: "basket", label: "Produce", value: produce)
+                    InfoRow(icon: "basket", label: String(localized: "Produce"), value: produce)
                 }
             }
             .card(padding: 6)
@@ -341,18 +341,20 @@ struct LockedAccessView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
                 VStack(spacing: 10) {
-                    Kicker(text: "Members only")
-                    DisplayTitle(leading: "Unlock every farm's ", emphasis: "full story", trailing: "", size: 32)
+                    Kicker(text: String(localized: "Members only"))
+                    DisplayTitle(leading: String(localized: "Unlock every farm's "),
+                                 emphasis: String(localized: "full story"),
+                                 trailing: "", size: 32)
                 }
                 .padding(.top, 30)
 
                 HStack(spacing: 0) {
-                    StatTile(value: farms.pins.isEmpty ? "1000s" : "\(farms.pins.count.formatted())+",
-                             caption: "farm shops")
+                    StatTile(value: farms.pins.isEmpty ? String(localized: "1000s") : "\(farms.pins.count.formatted())+",
+                             caption: String(localized: "farm shops"))
                     Divider().frame(height: 40)
-                    StatTile(value: "10", caption: "categories")
+                    StatTile(value: "10", caption: String(localized: "categories"))
                     Divider().frame(height: 40)
-                    StatTile(value: "NL + BE", caption: "coverage")
+                    StatTile(value: "NL + BE", caption: String(localized: "coverage"))
                 }
                 .card(padding: 14)
 

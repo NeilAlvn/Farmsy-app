@@ -7,8 +7,8 @@ enum SubmissionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notSignedIn: "Your session expired — please sign in again."
-        case .membersOnly: "A Farmsy membership is required to add a farm shop."
+        case .notSignedIn: String(localized: "Your session expired — please sign in again.")
+        case .membersOnly: String(localized: "A Farmsy membership is required to add a farm shop.")
         case .server(let msg): msg
         }
     }

@@ -11,6 +11,7 @@ struct DiscoverFeedView: View {
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
     @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
 
     @State private var feed: [FarmPin] = []
     @State private var teasers: [String: String] = [:]
@@ -74,8 +75,10 @@ struct DiscoverFeedView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Kicker(text: "Discover")
-            DisplayTitle(leading: "Farms worth a ", emphasis: "detour", trailing: "", size: 30)
+            Kicker(text: String(localized: "Discover"))
+            DisplayTitle(leading: String(localized: "Farms worth a "),
+                         emphasis: String(localized: "detour"),
+                         trailing: "", size: 30)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 6)
@@ -84,7 +87,12 @@ struct DiscoverFeedView: View {
     private var addFarmBanner: some View {
         Button {
             Haptics.tap()
-            showAddFarm = true
+            // Submissions carry contact details — needs an account.
+            if session.isAuthenticated {
+                showAddFarm = true
+            } else {
+                requestAuth()
+            }
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")
@@ -131,6 +139,7 @@ struct DiscoverFeedCard: View {
     @Environment(LocationManager.self) private var locationManager
     @Environment(FavoritesStore.self) private var favorites
     @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
 
     private var distanceText: String? {
         guard let meters = pin.distance(from: locationManager.location) else { return nil }
@@ -286,7 +295,10 @@ struct DiscoverFeedCard: View {
     }
 
     private func toggleFavorite() {
-        guard let userId = session.session?.user.id else { return }
+        guard let userId = session.session?.user.id else {
+            requestAuth()
+            return
+        }
         Haptics.tap()
         Task { await favorites.toggle(pin.osmId, userId: userId) }
     }

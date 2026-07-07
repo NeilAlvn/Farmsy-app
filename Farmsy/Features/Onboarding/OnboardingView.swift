@@ -55,9 +55,9 @@ struct OnboardingView: View {
         case .finding:
             FindingStep(place: chosenPlace, isActive: step == .finding) { advance() }
         case .counts:
-            CountsStep(place: chosenPlace) { advance() }
+            CountsStep(place: chosenPlace, isActive: step == .counts) { advance() }
         case .value:
-            ValueStep { advance() }
+            ValueStep(isActive: step == .value) { advance() }
         case .notify:
             NotifyStep { advance() }
         case .referral:
@@ -157,14 +157,16 @@ private struct CategoryStep: View {
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 10) {
-                Kicker(text: "Personalization")
-                DisplayTitle(leading: "What are you ", emphasis: "looking", trailing: " for?", size: 32)
+                Kicker(text: String(localized: "Personalization"))
+                DisplayTitle(leading: String(localized: "What are you "),
+                             emphasis: String(localized: "looking"),
+                             trailing: String(localized: " for?"), size: 32)
             }
             .padding(.bottom, 26)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    RadioRow(emoji: "🍽️", label: "Everything local", isSelected: selected == nil) {
+                    RadioRow(emoji: "🍽️", label: String(localized: "Everything local"), isSelected: selected == nil) {
                         selected = nil
                     }
                     ForEach([FarmCategory.produce, .dairy, .cheese, .eggs, .honey, .meat]) { cat in
@@ -241,9 +243,11 @@ private struct LocationStep: View {
             Spacer()
             VStack(spacing: 10) {
                 Kicker(text: farms.pins.isEmpty
-                       ? "Farm shops across NL & BE"
-                       : "\(farms.pins.count.formatted())+ farm shops (NL & BE)")
-                DisplayTitle(leading: "Let's find your ", emphasis: "local", trailing: " farms", size: 32)
+                       ? String(localized: "Farm shops across NL & BE")
+                       : String(localized: "\(farms.pins.count.formatted())+ farm shops (NL & BE)"))
+                DisplayTitle(leading: String(localized: "Let's find your "),
+                             emphasis: String(localized: "local"),
+                             trailing: String(localized: " farms"), size: 32)
             }
             .padding(.bottom, 26)
 
@@ -303,7 +307,7 @@ private struct LocationStep: View {
             if let loc {
                 query = ""
                 chosen = OnboardingPlace(
-                    name: "your location",
+                    name: String(localized: "your location"),
                     latitude: loc.coordinate.latitude,
                     longitude: loc.coordinate.longitude
                 )
@@ -365,8 +369,10 @@ private struct FindingStep: View {
     var body: some View {
         VStack(spacing: 12) {
             Spacer()
-            Kicker(text: "Farms within 50 km of you")
-            DisplayTitle(leading: "Farms ", emphasis: "near", trailing: " you", size: 34)
+            Kicker(text: String(localized: "Farms within 50 km of you"))
+            DisplayTitle(leading: String(localized: "Farms "),
+                         emphasis: String(localized: "near"),
+                         trailing: String(localized: " you"), size: 34)
             Spacer().frame(height: 60)
             ProgressView()
                 .controlSize(.large)
@@ -399,13 +405,32 @@ private struct FindingStep: View {
     }
 }
 
+/// Number that rolls up from zero when its value animates.
+struct CountUpText: View, Animatable {
+    var value: Double
+    var suffix = ""
+
+    var animatableData: Double {
+        get { value }
+        set { value = newValue }
+    }
+
+    var body: some View {
+        Text("\(Int(value.rounded()).formatted())\(suffix)")
+            .monospacedDigit()
+    }
+}
+
 // MARK: - Step 4: real category counts
 
 private struct CountsStep: View {
     let place: OnboardingPlace?
+    var isActive: Bool
     var onContinue: () -> Void
 
     @Environment(FarmsStore.self) private var farms
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealed = false
 
     private var counts: [(FarmCategory, Int)] {
         if let place {
@@ -425,18 +450,23 @@ private struct CountsStep: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
-                Kicker(text: place.map { "Farms within 50 km of \($0.name)" } ?? "Farms across NL & BE")
-                DisplayTitle(leading: "Farms ", emphasis: "near", trailing: " you", size: 34)
+                Kicker(text: place.map { String(localized: "Farms within 50 km of \($0.name)") }
+                       ?? String(localized: "Farms across NL & BE"))
+                DisplayTitle(leading: String(localized: "Farms "),
+                             emphasis: String(localized: "near"),
+                             trailing: String(localized: " you"), size: 34)
             }
             .padding(.top, 34)
             .padding(.bottom, 22)
 
             ScrollView(showsIndicators: false) {
                 LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(counts.prefix(9), id: \.0) { cat, count in
+                    ForEach(Array(counts.prefix(9).enumerated()), id: \.element.0) { i, entry in
+                        let (cat, count) = entry
                         VStack(spacing: 6) {
                             Text(cat.emoji).font(.geist(34))
-                            Text("\(count)")
+                            // Numbers roll up from 0 as the tiles pop in.
+                            CountUpText(value: revealed ? Double(count) : 0)
                                 .font(.geist(26, .bold))
                                 .foregroundStyle(Color.farmGreen)
                             Text(cat.label)
@@ -448,6 +478,13 @@ private struct CountsStep: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
                         .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .opacity(revealed ? 1 : 0)
+                        .scaleEffect(revealed ? 1 : 0.9)
+                        .animation(
+                            reduceMotion ? nil
+                                : .spring(duration: 0.8, bounce: 0.2).delay(Double(i) * 0.07),
+                            value: revealed
+                        )
                     }
                 }
                 .padding(.horizontal, 20)
@@ -459,15 +496,21 @@ private struct CountsStep: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
         }
+        .onChange(of: isActive, initial: true) { _, active in
+            if active { revealed = true }
+        }
     }
 }
 
 // MARK: - Step 5: value prop
 
 private struct ValueStep: View {
+    var isActive: Bool
     var onContinue: () -> Void
 
     @Environment(FarmsStore.self) private var farms
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealed = false
 
     private let emojiGrid = ["🥬", "🥛", "🧀", "🥚", "🥩", "🐟",
                              "🍯", "🍷", "🧺", "🌱", "🍎", "🥔",
@@ -478,24 +521,48 @@ private struct ValueStep: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     VStack(spacing: 10) {
-                        Kicker(text: "Why Farmsy")
-                        DisplayTitle(leading: "Real food, straight from the ", emphasis: "farm", trailing: "", size: 32)
+                        Kicker(text: String(localized: "Why Farmsy"))
+                        DisplayTitle(leading: String(localized: "Real food, straight from the "),
+                                     emphasis: String(localized: "farm"),
+                                     trailing: "", size: 32)
                     }
                     .padding(.top, 30)
 
                     HStack(spacing: 0) {
-                        StatTile(value: farms.pins.isEmpty ? "1000s" : "\(farms.pins.count.formatted())+",
-                                 caption: "farm shops")
+                        // The farm-shop total rolls up from zero on arrival.
+                        if farms.pins.isEmpty {
+                            StatTile(value: String(localized: "1000s"), caption: String(localized: "farm shops"))
+                        } else {
+                            VStack(spacing: 3) {
+                                CountUpText(value: revealed ? Double(farms.pins.count) : 0, suffix: "+")
+                                    .font(.geist(22, .bold))
+                                    .foregroundStyle(Color.farmGreen)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
+                                    .animation(reduceMotion ? nil : .easeOut(duration: 1.1), value: revealed)
+                                Text("farm shops")
+                                    .font(.geist(13))
+                                    .foregroundStyle(Color.inkMuted)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
                         Divider().frame(height: 40)
-                        StatTile(value: "10", caption: "categories")
+                        StatTile(value: "10", caption: String(localized: "categories"))
                         Divider().frame(height: 40)
-                        StatTile(value: "NL + BE", caption: "and growing")
+                        StatTile(value: "NL + BE", caption: String(localized: "and growing"))
                     }
                     .card(padding: 14)
 
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 16) {
-                        ForEach(emojiGrid, id: \.self) { e in
+                        ForEach(Array(emojiGrid.enumerated()), id: \.element) { i, e in
                             Text(e).font(.geist(30))
+                                .opacity(revealed ? 1 : 0)
+                                .scaleEffect(revealed ? 1 : 0.4)
+                                .animation(
+                                    reduceMotion ? nil
+                                        : .spring(duration: 0.5, bounce: 0.45).delay(0.15 + Double(i) * 0.03),
+                                    value: revealed
+                                )
                         }
                     }
                     .padding(.horizontal, 8)
@@ -527,6 +594,9 @@ private struct ValueStep: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
         }
+        .onChange(of: isActive, initial: true) { _, active in
+            if active { revealed = true }
+        }
     }
 }
 
@@ -557,8 +627,10 @@ private struct NotifyStep: View {
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 10) {
-                Kicker(text: "Stay in the loop")
-                DisplayTitle(leading: "Know when new farms appear ", emphasis: "near you", trailing: "", size: 30)
+                Kicker(text: String(localized: "Stay in the loop"))
+                DisplayTitle(leading: String(localized: "Know when new farms appear "),
+                             emphasis: String(localized: "near you"),
+                             trailing: "", size: 30)
             }
             Spacer().frame(height: 70)
             RingingBell(size: 76)
@@ -597,8 +669,10 @@ private struct ReferralStep: View {
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 10) {
-                Kicker(text: "One last thing")
-                DisplayTitle(leading: "Have a ", emphasis: "referral", trailing: " code?", size: 32)
+                Kicker(text: String(localized: "One last thing"))
+                DisplayTitle(leading: String(localized: "Have a "),
+                             emphasis: String(localized: "referral"),
+                             trailing: String(localized: " code?"), size: 32)
             }
             Spacer().frame(height: 40)
             Image(systemName: "ticket.fill")

@@ -5,6 +5,7 @@ import SwiftUI
 /// verification email).
 struct AuthView: View {
     @Environment(SessionStore.self) private var session
+    @Environment(\.dismiss) private var dismiss
 
     @AppStorage("pendingRefCode") private var pendingRefCode = ""
 
@@ -28,7 +29,10 @@ struct AuthView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    FarmsyMark(size: 54)
+                    Image("FarmsyLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 54)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("Farmsy")
                             .font(.display(30))
@@ -53,18 +57,18 @@ struct AuthView: View {
                     .padding(.bottom, 24)
 
                 VStack(spacing: 14) {
-                    AuthField(label: "Email", placeholder: "you@email.com", text: $email)
+                    AuthField(label: String(localized: "Email"), placeholder: String(localized: "you@email.com"), text: $email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
 
-                    AuthField(label: "Password", placeholder: "At least 8 characters",
+                    AuthField(label: String(localized: "Password"), placeholder: String(localized: "At least 8 characters"),
                               text: $password, isSecure: true)
                         .textContentType(mode == .signUp ? .newPassword : .password)
 
                     if mode == .signUp {
-                        AuthField(label: "Confirm password", placeholder: "Repeat password",
+                        AuthField(label: String(localized: "Confirm password"), placeholder: String(localized: "Repeat password"),
                                   text: $confirm, isSecure: true)
                             .textContentType(.newPassword)
                     }
@@ -121,6 +125,27 @@ struct AuthView: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(Color.cream.ignoresSafeArea())
+        // Presented as a sheet over guest browsing — offer a way out and
+        // step aside on its own once the user is signed in.
+        .overlay(alignment: .topTrailing) {
+            Button {
+                Haptics.tap()
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Color.inkMuted)
+                    .frame(width: 32, height: 32)
+                    .background(.white.opacity(0.9), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 14)
+            .padding(.trailing, 16)
+            .accessibilityLabel("Close")
+        }
+        .onChange(of: session.isAuthenticated) { _, authed in
+            if authed { dismiss() }
+        }
     }
 
     private func submit() {
@@ -149,7 +174,7 @@ struct AuthView: View {
             } catch {
                 Haptics.warning()
                 errorMessage = (error as? AuthError)?.errorDescription
-                    ?? "Something went wrong. Please try again."
+                    ?? String(localized: "Something went wrong. Please try again.")
             }
         }
     }

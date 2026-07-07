@@ -37,7 +37,7 @@ final class FarmsStore {
             }
             pins = all
         } catch {
-            loadError = "Couldn't load farms. Check your connection and try again."
+            loadError = String(localized: "Couldn't load farms. Check your connection and try again.")
         }
     }
 

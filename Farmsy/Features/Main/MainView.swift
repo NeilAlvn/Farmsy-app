@@ -17,49 +17,94 @@ struct MainView: View {
             case .settings: "gearshape.fill"
             }
         }
+
+        /// User-facing name — rawValue stays English for identifiers.
+        var label: String {
+            switch self {
+            case .map: String(localized: "Map")
+            case .discover: String(localized: "Discover")
+            case .saved: String(localized: "Saved")
+            case .settings: String(localized: "Settings")
+            }
+        }
     }
+
+    @Environment(SessionStore.self) private var session
 
     @State private var tab: Tab = .map
     @State private var path: [FarmPin] = []
+    @State private var showAuth = false
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(spacing: 0) {
-                header
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
+            Group {
+                if tab == .map {
+                    // Map is the hero: full-bleed edge to edge, with the
+                    // tab bar floating on top of it.
+                    ZStack(alignment: .bottom) {
+                        MapScreen { pin in openFarm(pin) }
+                        tabBar
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 4)
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        header
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
 
-                Group {
-                    switch tab {
-                    case .map:
-                        MapScreen { pin in path.append(pin) }
-                    case .discover:
-                        DiscoverFeedView { pin in path.append(pin) }
-                    case .saved:
-                        SavedScreen { pin in path.append(pin) }
-                    case .settings:
-                        SettingsSheet()
+                        Group {
+                            switch tab {
+                            case .map:
+                                EmptyView()
+                            case .discover:
+                                DiscoverFeedView { pin in openFarm(pin) }
+                            case .saved:
+                                SavedScreen { pin in openFarm(pin) }
+                            case .settings:
+                                SettingsSheet()
+                            }
+                        }
+                        .frame(maxHeight: .infinity)
+
+                        tabBar
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            .padding(.bottom, 4)
                     }
                 }
-                .frame(maxHeight: .infinity)
-
-                tabBar
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
             }
             .background(Color.cream.ignoresSafeArea())
+            // No chrome on the root — the empty translucent nav bar would
+            // otherwise blur a band across the top of the full-bleed map.
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: FarmPin.self) { pin in
                 FarmDetailView(pin: pin)
             }
         }
         .tint(.farmGreen)
+        .environment(\.requestAuth, { showAuth = true })
+        .sheet(isPresented: $showAuth) { AuthView() }
+    }
+
+    /// Guests can browse the map and feed freely; opening a farm's details
+    /// asks for an account first. Once signed in, the detail view's own
+    /// subscription gate takes over.
+    private func openFarm(_ pin: FarmPin) {
+        if session.isAuthenticated {
+            path.append(pin)
+        } else {
+            showAuth = true
+        }
     }
 
     private var header: some View {
         HStack {
             HStack(spacing: 8) {
-                FarmsyMark(size: 34)
+                Image("FarmsyLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 34)
                 Text("Farmsy")
                     .font(.display(22, weight: .semibold))
                     .foregroundStyle(Color.ink)
@@ -78,7 +123,7 @@ struct MainView: View {
                     VStack(spacing: 3) {
                         Image(systemName: t.icon)
                             .font(.system(size: 17, weight: .semibold))
-                        Text(t.rawValue)
+                        Text(t.label)
                             .font(.geist(11, .semibold))
                     }
                     .foregroundStyle(tab == t ? .white : Color.inkMuted)

@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Splash → onboarding (first run) → auth → main app.
+/// Splash → onboarding (first run) → main app.
+/// Browsing is open to everyone; logging in is asked for lazily (via the
+/// `requestAuth` environment hook) when a gated action is tapped.
 struct RootView: View {
     @Environment(SessionStore.self) private var session
     @Environment(FarmsStore.self) private var farms
@@ -16,14 +18,11 @@ struct RootView: View {
             if !splashDone || !session.isBootstrapped {
                 SplashView { splashDone = true }
                     .transition(.opacity)
-            } else if session.isAuthenticated {
+            } else if session.isAuthenticated || didFinishOnboarding {
                 MainView()
                     .transition(.opacity)
-            } else if !didFinishOnboarding {
-                OnboardingView { didFinishOnboarding = true }
-                    .transition(.opacity)
             } else {
-                AuthView()
+                OnboardingView { didFinishOnboarding = true }
                     .transition(.opacity)
             }
         }

@@ -3,16 +3,17 @@ import SwiftUI
 struct SettingsSheet: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requestAuth) private var requestAuth
 
     @State private var showSignOutConfirm = false
     @State private var showDeleteInfo = false
 
     private var subscriptionBadge: (String, Color) {
         switch session.profile?.subscriptionStatus {
-        case "active":   ("Member", .farmGreen)
-        case "trialing": ("Trial", .farmGreen)
-        case "canceled": ("Canceled", .inkMuted)
-        default:         ("Free", .inkMuted)
+        case "active":   (String(localized: "Member"), .farmGreen)
+        case "trialing": (String(localized: "Trial"), .farmGreen)
+        case "canceled": (String(localized: "Canceled"), .inkMuted)
+        default:         (String(localized: "Free"), .inkMuted)
         }
     }
 
@@ -27,26 +28,59 @@ struct SettingsSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
                     // Account
-                    HStack(spacing: 12) {
-                        FarmsyMark(size: 42)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(session.email.isEmpty ? "Signed in" : session.email)
-                                .font(.geist(15, .semibold))
-                                .foregroundStyle(Color.ink)
-                                .lineLimit(1)
-                            Text(session.profile?.subscriptionPlan.map { $0.capitalized + " plan" } ?? "Farmsy account")
-                                .font(.geist(13))
-                                .foregroundStyle(Color.inkMuted)
+                    if session.isAuthenticated {
+                        HStack(spacing: 12) {
+                            Image("FarmsyLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 42)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(session.email.isEmpty ? String(localized: "Signed in") : session.email)
+                                    .font(.geist(15, .semibold))
+                                    .foregroundStyle(Color.ink)
+                                    .lineLimit(1)
+                                Text(session.profile?.subscriptionPlan.map { String(localized: "\($0.capitalized) plan") } ?? String(localized: "Farmsy account"))
+                                    .font(.geist(13))
+                                    .foregroundStyle(Color.inkMuted)
+                            }
+                            Spacer()
+                            Text(subscriptionBadge.0)
+                                .font(.geist(12, .bold))
+                                .foregroundStyle(.white)
+                                .padding(.vertical, 5)
+                                .padding(.horizontal, 10)
+                                .background(subscriptionBadge.1, in: Capsule())
                         }
-                        Spacer()
-                        Text(subscriptionBadge.0)
-                            .font(.geist(12, .bold))
+                        .card()
+                    } else {
+                        // Guest: invite to sign in instead of account info.
+                        HStack(spacing: 12) {
+                            Image("FarmsyLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 42)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("You're browsing as a guest")
+                                    .font(.geist(15, .semibold))
+                                    .foregroundStyle(Color.ink)
+                                Text("Sign in to save farms and see details")
+                                    .font(.geist(13))
+                                    .foregroundStyle(Color.inkMuted)
+                            }
+                            Spacer()
+                            Button("Sign in") {
+                                Haptics.tap()
+                                requestAuth()
+                            }
+                            .font(.geist(13, .bold))
                             .foregroundStyle(.white)
-                            .padding(.vertical, 5)
-                            .padding(.horizontal, 10)
-                            .background(subscriptionBadge.1, in: Capsule())
+                            .padding(.vertical, 7)
+                            .padding(.horizontal, 12)
+                            .background(Color.farmGreen, in: Capsule())
+                            .buttonStyle(.plain)
+                        }
+                        .card()
                     }
-                    .card()
 
                     VStack(spacing: 0) {
                         SettingsRow(icon: "bell.fill", tintBg: 0xF5B301, label: "Notifications") {
@@ -63,18 +97,36 @@ struct SettingsSheet: View {
                     }
                     .card(padding: 4)
 
+                    // Legal
                     VStack(spacing: 0) {
-                        SettingsRow(icon: "rectangle.portrait.and.arrow.right", tintBg: 0x3F5E3A, label: "Sign out") {
-                            showSignOutConfirm = true
+                        SettingsRow(icon: "hand.raised.fill", tintBg: 0x8B5CF6, label: "Privacy Policy") {
+                            if let url = URL(string: "https://farmsy.app/privacy") {
+                                UIApplication.shared.open(url)
+                            }
                         }
                         Divider().padding(.leading, 62)
-                        SettingsRow(icon: "trash.fill", tintBg: 0xDC2626, label: "Delete account", tint: .warnRed) {
-                            showDeleteInfo = true
+                        SettingsRow(icon: "doc.text.fill", tintBg: 0x64748B, label: "Terms of Service") {
+                            if let url = URL(string: "https://farmsy.app/terms") {
+                                UIApplication.shared.open(url)
+                            }
                         }
                     }
                     .card(padding: 4)
 
-                    Text("Farmsy for iOS — prototype")
+                    if session.isAuthenticated {
+                        VStack(spacing: 0) {
+                            SettingsRow(icon: "rectangle.portrait.and.arrow.right", tintBg: 0x3F5E3A, label: "Sign out") {
+                                showSignOutConfirm = true
+                            }
+                            Divider().padding(.leading, 62)
+                            SettingsRow(icon: "trash.fill", tintBg: 0xDC2626, label: "Delete account", tint: .warnRed) {
+                                showDeleteInfo = true
+                            }
+                        }
+                        .card(padding: 4)
+                    }
+
+                    Text("Farmsy for iOS \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")")
                         .font(.geist(12))
                         .foregroundStyle(Color.inkMuted.opacity(0.7))
                         .padding(.top, 8)
@@ -94,9 +146,16 @@ struct SettingsSheet: View {
             }
         }
         .alert("Delete account", isPresented: $showDeleteInfo) {
-            Button("OK", role: .cancel) {}
+            // Apple requires deletion to be reachable from inside the app —
+            // hand off to the web account page where it's handled.
+            Button("Open my account page") {
+                if let url = URL(string: "https://farmsy.app/account") {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Account deletion is handled from your Farmsy account on the web, or by writing to hello@farmsy.app.")
+            Text("Deleting your account removes your profile, favourites and subscription data. Continue on your Farmsy account page, or write to hello@farmsy.app.")
         }
     }
 }
@@ -104,7 +163,7 @@ struct SettingsSheet: View {
 struct SettingsRow: View {
     let icon: String
     let tintBg: UInt32
-    let label: String
+    let label: LocalizedStringKey
     var tint: Color = .ink
     var action: () -> Void
 

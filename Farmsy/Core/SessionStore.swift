@@ -10,9 +10,9 @@ enum AuthError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidCredentials: "Invalid email or password."
-        case .emailTaken: "An account with this email already exists."
-        case .throttled: "Too many attempts. Please wait a few minutes and try again."
+        case .invalidCredentials: String(localized: "Invalid email or password.")
+        case .emailTaken: String(localized: "An account with this email already exists.")
+        case .throttled: String(localized: "Too many attempts. Please wait a few minutes and try again.")
         case .server(let msg): msg
         }
     }

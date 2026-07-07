@@ -26,16 +26,16 @@ enum FarmCategory: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .produce: "Farm Produce"
-        case .dairy:   "Dairy"
-        case .cheese:  "Cheese"
-        case .eggs:    "Eggs"
-        case .meat:    "Meat"
-        case .fish:    "Fish"
-        case .honey:   "Honey"
-        case .wine:    "Wine"
-        case .markets: "Markets"
-        case .organic: "Organic"
+        case .produce: String(localized: "Farm Produce")
+        case .dairy:   String(localized: "Dairy")
+        case .cheese:  String(localized: "Cheese")
+        case .eggs:    String(localized: "Eggs")
+        case .meat:    String(localized: "Meat")
+        case .fish:    String(localized: "Fish")
+        case .honey:   String(localized: "Honey")
+        case .wine:    String(localized: "Wine")
+        case .markets: String(localized: "Markets")
+        case .organic: String(localized: "Organic")
         }
     }
 

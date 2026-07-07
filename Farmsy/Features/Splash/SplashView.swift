@@ -82,6 +82,7 @@ struct SplashView: View {
 
     private static let letters = Array("Farmsy")
 
+    @State private var markIn = false
     @State private var lettersIn = false
     @State private var underlineIn = false
     @State private var settle = false
@@ -91,6 +92,15 @@ struct SplashView: View {
             Color.cream.ignoresSafeArea()
 
             VStack(spacing: 16) {
+                // New brand mark: barn + fields, pops in above the wordmark.
+                Image("FarmsyLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 116)
+                    .scaleEffect(markIn ? 1 : 0.55)
+                    .opacity(markIn ? 1 : 0)
+                    .blur(radius: markIn ? 0 : 5)
+
                 HStack(spacing: 0) {
                     ForEach(Self.letters.indices, id: \.self) { i in
                         Text(String(Self.letters[i]))
@@ -115,11 +125,20 @@ struct SplashView: View {
                     .opacity(underlineIn ? 1 : 0)
             }
             .scaleEffect(settle ? 1 : 1.06)
+            // Optical centering: pull the group up slightly so it reads as
+            // dead-center (the underline weights the group downward).
+            .offset(y: -14)
         }
+        // Center against the full screen, not the safe area — the status bar
+        // inset otherwise pushes the wordmark visibly below center.
+        .ignoresSafeArea()
         .onAppear { runSequence() }
     }
 
     private func runSequence() {
+        withAnimation(.spring(duration: 0.65, bounce: 0.3)) {
+            markIn = true
+        }
         lettersIn = true
         withAnimation(.spring(duration: 0.55, bounce: 0.25).delay(0.85)) {
             underlineIn = true

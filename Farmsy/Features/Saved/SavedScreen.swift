@@ -7,6 +7,8 @@ struct SavedScreen: View {
     @Environment(FarmsStore.self) private var farms
     @Environment(FavoritesStore.self) private var favorites
     @Environment(LocationManager.self) private var locationManager
+    @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
 
     private var savedPins: [FarmPin] {
         let saved = farms.pins.filter { favorites.isSaved($0.osmId) }
@@ -15,7 +17,30 @@ struct SavedScreen: View {
 
     var body: some View {
         Group {
-            if savedPins.isEmpty {
+            if !session.isAuthenticated {
+                VStack(spacing: 12) {
+                    Spacer()
+                    Text("🤍").font(.geist(54))
+                    Text("Keep your favourites")
+                        .font(.display(24))
+                        .foregroundStyle(Color.ink)
+                    Text("Sign in to save farms and find them here on every device.")
+                        .font(.geist(15))
+                        .foregroundStyle(Color.inkMuted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    Button("Sign in") {
+                        Haptics.tap()
+                        requestAuth()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .padding(.horizontal, 60)
+                    .padding(.top, 6)
+                    Spacer()
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else if savedPins.isEmpty {
                 VStack(spacing: 12) {
                     Spacer()
                     Text("🤍").font(.geist(54))

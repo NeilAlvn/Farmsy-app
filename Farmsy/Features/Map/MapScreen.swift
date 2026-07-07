@@ -37,28 +37,36 @@ struct MapScreen: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            searchRow
-
-            ZStack {
-                if showList {
-                    FarmListView(
-                        pins: farms.sortedByDistance(farms.filtered, from: locationManager.location),
-                        onOpenFarm: onOpenFarm,
-                        bottomInset: 86
-                    )
-                } else {
-                    mapCard
-                }
-            }
-            .frame(maxHeight: .infinity)
-            // Controls live at the bottom now — thumb-friendly.
-            .overlay(alignment: .bottom) {
-                bottomBar
+        ZStack {
+            if showList {
+                FarmListView(
+                    pins: farms.sortedByDistance(farms.filtered, from: locationManager.location),
+                    onOpenFarm: onOpenFarm,
+                    bottomInset: 150
+                )
+                .padding(.horizontal, 14)
+                // Room for the floating search row above the list.
+                .padding(.top, 64)
+            } else {
+                mapCard
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 10)
+        .frame(maxHeight: .infinity)
+        // Search floats over the map; controls live at the bottom, lifted
+        // above the floating tab bar.
+        .overlay(alignment: .top) {
+            VStack(alignment: .trailing, spacing: 10) {
+                searchRow
+                if !showList {
+                    farmsCountBadge
+                }
+            }
+            .padding(.horizontal, 14)
+        }
+        .overlay(alignment: .bottom) {
+            bottomBar
+                .padding(.bottom, 66)
+        }
     }
 
     // MARK: - Search row (top)
@@ -75,6 +83,7 @@ struct MapScreen: View {
             .padding(.vertical, 13)
             .padding(.horizontal, 14)
             .background(.white, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
 
             Button {
                 Haptics.tap()
@@ -97,8 +106,29 @@ struct MapScreen: View {
                             .fill(.white)
                             .stroke(Color.farmGreen, lineWidth: 1.5)
                     )
+                    .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
             }
         }
+    }
+
+    /// Live pin count, floating just under the search row.
+    private var farmsCountBadge: some View {
+        Group {
+            if farms.isLoading {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Loading farms…").font(.geist(13, .medium))
+                }
+            } else {
+                Text("\(farms.filtered.count.formatted()) farms")
+                    .font(.geist(13, .semibold))
+                    .foregroundStyle(Color.inkMuted)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(.white.opacity(0.95), in: Capsule())
+        .shadow(color: .black.opacity(0.1), radius: 6, y: 2)
     }
 
     // MARK: - Bottom control bar
@@ -145,7 +175,7 @@ struct MapScreen: View {
             }
         } label: {
             HStack(spacing: 6) {
-                Text(farms.selectedCategory.map { "\($0.emoji) \($0.label)" } ?? "🍽️ All Categories")
+                Text(farms.selectedCategory.map { "\($0.emoji) \($0.label)" } ?? String(localized: "🍽️ All Categories"))
                     .font(.geist(15, .semibold))
                     .foregroundStyle(Color.farmGreen)
                     .lineLimit(1)
@@ -185,25 +215,9 @@ struct MapScreen: View {
         .onMapCameraChange(frequency: .onEnd) { context in
             visibleRegion = context.region
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(alignment: .topTrailing) {
-            Group {
-                if farms.isLoading {
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small)
-                        Text("Loading farms…").font(.geist(13, .medium))
-                    }
-                } else {
-                    Text("\(farms.filtered.count.formatted()) farms")
-                        .font(.geist(13, .semibold))
-                        .foregroundStyle(Color.inkMuted)
-                }
-            }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
-            .background(.white.opacity(0.95), in: Capsule())
-            .padding(12)
-        }
+        // Edge to edge: the map runs under the status bar and home indicator;
+        // the search row and control bars float on top of it.
+        .ignoresSafeArea()
         .overlay(alignment: .center) {
             if let error = farms.loadError {
                 VStack(spacing: 10) {
@@ -287,6 +301,7 @@ struct FarmCard: View {
     @Environment(LocationManager.self) private var locationManager
     @Environment(FavoritesStore.self) private var favorites
     @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
 
     private var distanceText: String? {
         guard let meters = pin.distance(from: locationManager.location) else { return nil }
@@ -356,7 +371,10 @@ struct FarmCard: View {
     }
 
     private func toggleFavorite() {
-        guard let userId = session.session?.user.id else { return }
+        guard let userId = session.session?.user.id else {
+            requestAuth()
+            return
+        }
         Haptics.tap()
         Task { await favorites.toggle(pin.osmId, userId: userId) }
     }

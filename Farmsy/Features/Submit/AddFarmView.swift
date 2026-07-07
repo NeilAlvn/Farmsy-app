@@ -57,7 +57,9 @@ struct AddFarmView: View {
     private var formBody: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
-                DisplayTitle(leading: "Put a farm ", emphasis: "on the map", trailing: "", size: 28)
+                DisplayTitle(leading: String(localized: "Put a farm "),
+                             emphasis: String(localized: "on the map"),
+                             trailing: "", size: 28)
                     .padding(.top, 8)
 
                 Text("Know a farm shop that isn't on Farmsy yet? Fill in what you know — our team checks every submission before it goes live.")
@@ -152,7 +154,7 @@ struct AddFarmView: View {
 
     // MARK: - Pieces
 
-    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+    private func section(_ title: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.display(19, weight: .semibold))
@@ -165,9 +167,9 @@ struct AddFarmView: View {
     }
 
     private func labeledField(
-        _ label: String,
+        _ label: LocalizedStringKey,
         text: Binding<String>,
-        prompt: String,
+        prompt: LocalizedStringKey,
         keyboard: UIKeyboardType = .default
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -295,7 +297,9 @@ struct AddFarmView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56))
                 .foregroundStyle(Color.farmGreen)
-            DisplayTitle(leading: "Thanks — it's ", emphasis: "in review", trailing: "", size: 28)
+            DisplayTitle(leading: String(localized: "Thanks — it's "),
+                         emphasis: String(localized: "in review"),
+                         trailing: "", size: 28)
             Text("Our team looks at every submission. Once approved, the farm appears on the map for everyone.")
                 .font(.geist(15))
                 .foregroundStyle(Color.inkMuted)

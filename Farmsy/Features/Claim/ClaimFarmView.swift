@@ -14,8 +14,8 @@ struct ClaimFarmView: View {
 
         var label: String {
             switch self {
-            case .email: "Business email"
-            case .kvk: "KVK number"
+            case .email: String(localized: "Business email")
+            case .kvk: String(localized: "KVK number")
             }
         }
     }
@@ -66,8 +66,10 @@ struct ClaimFarmView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Kicker(text: "For farm owners")
-                    DisplayTitle(leading: "Is ", emphasis: pin.name, trailing: " yours?", size: 26)
+                    Kicker(text: String(localized: "For farm owners"))
+                    DisplayTitle(leading: String(localized: "Is "),
+                                 emphasis: pin.name,
+                                 trailing: String(localized: " yours?"), size: 26)
                     Text("Claim it to keep your details up to date. Our team verifies every claim before handing over the keys.")
                         .font(.geist(14))
                         .foregroundStyle(Color.inkMuted)
@@ -147,9 +149,9 @@ struct ClaimFarmView: View {
     }
 
     private func field(
-        _ label: String,
+        _ label: LocalizedStringKey,
         text: Binding<String>,
-        prompt: String,
+        prompt: LocalizedStringKey,
         keyboard: UIKeyboardType = .default
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -173,7 +175,9 @@ struct ClaimFarmView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56))
                 .foregroundStyle(Color.farmGreen)
-            DisplayTitle(leading: "Claim ", emphasis: "sent", trailing: "", size: 30)
+            DisplayTitle(leading: String(localized: "Claim "),
+                         emphasis: String(localized: "sent"),
+                         trailing: "", size: 30)
             Text("We'll be in touch at \(email) once the team has verified your claim.")
                 .font(.geist(15))
                 .foregroundStyle(Color.inkMuted)
