@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,12 +96,18 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
     // SwiftUI/Compose maps slow down past a few hundred markers — cap what we
     // draw to the pins near the current viewport (same annotationCap as iOS).
     val filtered = remember(pins, searchText, selectedCategory) { farms.filtered() }
-    // Re-sorting thousands of pins on every camera frame would jank the map;
-    // key off a coarse (rounded) center so it only recomputes on real moves.
-    val center = cameraPositionState.position.target
-    val centerKey = "${(center.latitude * 20).toInt()}:${(center.longitude * 20).toInt()}"
-    val visiblePins = remember(filtered, centerKey) {
-        filtered.sortedBy { it.distanceMeters(center.latitude, center.longitude) }.take(130)
+
+    // Only recompute the drawn markers once the camera has settled, and read
+    // the position *outside* composition — reading it during composition makes
+    // every recomposition observe the camera and drift the map on its own.
+    var mapCenter by remember { mutableStateOf(LatLng(51.8, 4.7)) }
+    LaunchedEffect(cameraPositionState.isMoving) {
+        if (!cameraPositionState.isMoving) {
+            mapCenter = cameraPositionState.position.target
+        }
+    }
+    val visiblePins = remember(filtered, mapCenter) {
+        filtered.sortedBy { it.distanceMeters(mapCenter.latitude, mapCenter.longitude) }.take(130)
     }
 
     Box(Modifier.fillMaxSize()) {
