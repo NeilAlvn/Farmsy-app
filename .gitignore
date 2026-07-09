@@ -29,3 +29,4 @@ android/build/
 android/app/build/
 android/keystore/
 .gradle/
+android/keystore.properties
