@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ob_looking">suchst</string>
+    <string name="ob_for_q">du?</string>
+    <string name="ob_what_are_you">Was</string>
+    <string name="ob_lets_find_your">Finde deine</string>
+    <string name="ob_local">lokalen</string>
+    <string name="ob_farms">Höfe</string>
+    <string name="ob_near">in deiner</string>
+    <string name="ob_you">Nähe</string>
+    <string name="ob_real_food">Echte Lebensmittel, direkt vom</string>
+    <string name="ob_farm">Hof</string>
+    <string name="ob_have_a">Hast du einen</string>
+    <string name="ob_referral">Empfehlungs</string>
+    <string name="ob_code_q">code?</string>
+    <string name="ob_categories">Kategorien</string>
+    <string name="ob_and_growing">und wächst</string>
+    <string name="ob_coverage">Abdeckung</string>
+    <string name="ob_thousands">1000e</string>
+    <string name="ob_detour">Umweg</string>
+    <string name="ob_farms_worth_a">Höfe, die einen</string>
+    <string name="ob_on_the_map">auf die Karte</string>
+    <string name="ob_put_a_farm">Setze einen Hof</string>
+    <string name="location_permission_rationale">Farmsy nutzt deinen Standort, um Hofläden in deiner Nähe zu zeigen.</string>
+    <string name="back">Zurück</string>
+    <string name="arg_plan">%1$s-Abo</string>
+</resources>

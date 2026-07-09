@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Title fragments + Android-only strings that the iOS string catalog never
+     captured (iOS shows these in English). Proper translations live in the
+     values-nl/fr/de variants. -->
+<resources>
+    <string name="ob_looking">looking</string>
+    <string name="ob_for_q">for?</string>
+    <string name="ob_what_are_you">What are you</string>
+    <string name="ob_lets_find_your">Let\'s find your</string>
+    <string name="ob_local">local</string>
+    <string name="ob_farms">Farms</string>
+    <string name="ob_near">near</string>
+    <string name="ob_you">you</string>
+    <string name="ob_real_food">Real food, straight from the</string>
+    <string name="ob_farm">farm</string>
+    <string name="ob_have_a">Have a</string>
+    <string name="ob_referral">referral</string>
+    <string name="ob_code_q">code?</string>
+    <string name="ob_categories">categories</string>
+    <string name="ob_and_growing">and growing</string>
+    <string name="ob_coverage">coverage</string>
+    <string name="ob_thousands">1000s</string>
+    <string name="ob_detour">detour</string>
+    <string name="ob_farms_worth_a">Farms worth a</string>
+    <string name="ob_on_the_map">on the map</string>
+    <string name="ob_put_a_farm">Put a farm</string>
+    <string name="location_permission_rationale">Farmsy uses your location to show farm shops near you.</string>
+    <string name="back">Back</string>
+    <string name="arg_plan">%1$s plan</string>
+</resources>

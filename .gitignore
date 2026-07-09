@@ -20,3 +20,12 @@ FARMSY-CONTEXT.md
 pictures/
 screenshots-for-luuk/
 for-luuk/
+
+# Android
+android/local.properties
+android/secrets.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/keystore/
+.gradle/

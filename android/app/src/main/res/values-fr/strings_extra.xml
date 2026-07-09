@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ob_looking">cherchez</string>
+    <string name="ob_for_q">?</string>
+    <string name="ob_what_are_you">Que</string>
+    <string name="ob_lets_find_your">Trouvez vos fermes</string>
+    <string name="ob_local">locales</string>
+    <string name="ob_farms">Fermes</string>
+    <string name="ob_near">près de</string>
+    <string name="ob_you">vous</string>
+    <string name="ob_real_food">De vrais aliments, directement de la</string>
+    <string name="ob_farm">ferme</string>
+    <string name="ob_have_a">Avez-vous un</string>
+    <string name="ob_referral">code de</string>
+    <string name="ob_code_q">parrainage ?</string>
+    <string name="ob_categories">catégories</string>
+    <string name="ob_and_growing">et plus</string>
+    <string name="ob_coverage">couverture</string>
+    <string name="ob_thousands">1000s</string>
+    <string name="ob_detour">détour</string>
+    <string name="ob_farms_worth_a">Des fermes qui valent le</string>
+    <string name="ob_on_the_map">sur la carte</string>
+    <string name="ob_put_a_farm">Ajoutez une ferme</string>
+    <string name="location_permission_rationale">Farmsy utilise votre position pour afficher les fermes près de vous.</string>
+    <string name="back">Retour</string>
+    <string name="arg_plan">Abonnement %1$s</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ob_looking">zoek</string>
+    <string name="ob_for_q">je?</string>
+    <string name="ob_what_are_you">Wat</string>
+    <string name="ob_lets_find_your">Vind jouw</string>
+    <string name="ob_local">lokale</string>
+    <string name="ob_farms">Boerderijen</string>
+    <string name="ob_near">bij</string>
+    <string name="ob_you">jou</string>
+    <string name="ob_real_food">Echt eten, direct van de</string>
+    <string name="ob_farm">boerderij</string>
+    <string name="ob_have_a">Heb je een</string>
+    <string name="ob_referral">verwijzings</string>
+    <string name="ob_code_q">code?</string>
+    <string name="ob_categories">categorieën</string>
+    <string name="ob_and_growing">en groeit</string>
+    <string name="ob_coverage">dekking</string>
+    <string name="ob_thousands">1000en</string>
+    <string name="ob_detour">omweg</string>
+    <string name="ob_farms_worth_a">Boerderijen een</string>
+    <string name="ob_on_the_map">op de kaart</string>
+    <string name="ob_put_a_farm">Zet een boerderij</string>
+    <string name="location_permission_rationale">Farmsy gebruikt je locatie om boerderijwinkels bij jou in de buurt te tonen.</string>
+    <string name="back">Terug</string>
+    <string name="arg_plan">%1$s-abonnement</string>
+</resources>
