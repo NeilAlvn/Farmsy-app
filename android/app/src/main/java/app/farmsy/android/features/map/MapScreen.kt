@@ -55,6 +55,7 @@ import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -135,6 +136,9 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
                         state = MarkerState(LatLng(pin.lat, pin.lng)),
                         title = pin.name,
                         snippet = pin.city,
+                        // Category-tinted pins, mirroring the iOS teardrops.
+                        icon = BitmapDescriptorFactory.defaultMarker(pin.primaryCategory.markerHue),
+                        onClick = { onOpenFarm(pin); true },
                         onInfoWindowClick = { onOpenFarm(pin) },
                     )
                 }

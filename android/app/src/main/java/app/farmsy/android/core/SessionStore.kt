@@ -12,6 +12,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +49,12 @@ class SessionStore(private val scope: CoroutineScope) {
     val email: String get() = _session.value?.user?.email ?: ""
 
     fun bootstrap() {
+        // Never let a slow or missing network hold the splash hostage: if auth
+        // hasn't reported within a couple of seconds, carry on as a guest.
+        scope.launch {
+            delay(2500)
+            _isBootstrapped.value = true
+        }
         scope.launch {
             // Mirror iOS: observe auth state; the Auth plugin loads the stored
             // session itself and emits through sessionStatus.
@@ -63,7 +70,10 @@ class SessionStore(private val scope: CoroutineScope) {
                         _profile.value = null
                         _isBootstrapped.value = true
                     }
-                    else -> Unit // Initializing / network refresh in flight
+                    // RefreshFailure (offline, expired refresh token) and any
+                    // other terminal state: stop blocking the UI.
+                    is SessionStatus.RefreshFailure -> _isBootstrapped.value = true
+                    else -> Unit // Initializing / load from storage in flight
                 }
             }
         }

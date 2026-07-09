@@ -2,6 +2,7 @@ package app.farmsy.android.core
 
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import app.farmsy.android.R
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -36,6 +37,15 @@ enum class FarmCategory(@StringRes val labelRes: Int, val emoji: String, val col
     ORGANIC(R.string.organic, "🌱", Color(0xFF059669));
 
     val raw: String get() = name.lowercase()
+
+    /// Hue (0-360) for the Google Maps marker, derived from the category color
+    /// so map pins carry the same coding as the rest of the app.
+    val markerHue: Float
+        get() {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+            return hsv[0]
+        }
 
     companion object {
         fun fromRaw(value: String): FarmCategory? =
