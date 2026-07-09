@@ -12,6 +12,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,8 +72,8 @@ class SessionStore(private val scope: CoroutineScope) {
     /// Subscription status comes from the farmsy.app API (service-role read on
     /// the server) rather than a direct `profiles` select — the table's RLS
     /// policies aren't a dependency of the app this way.
-    suspend fun refreshProfile() {
-        val token = freshAccessToken() ?: return
+    suspend fun refreshProfile() = withContext(Dispatchers.IO) {
+        val token = freshAccessToken() ?: return@withContext
         runCatching {
             val resp = httpClient.get("${Backend.WEB_API}/profile/status") {
                 header(HttpHeaders.Authorization, "Bearer $token")
@@ -80,6 +82,7 @@ class SessionStore(private val scope: CoroutineScope) {
                 _profile.value = lenientJson.decodeFromString<Profile>(resp.bodyAsText())
             }
         } // Keep the last known profile on transient failures.
+        Unit
     }
 
     /// Ask for a *current* token so an expired one is refreshed first — a
@@ -106,7 +109,7 @@ class SessionStore(private val scope: CoroutineScope) {
     @Serializable
     private data class ErrorBody(val error: String? = null)
 
-    suspend fun logIn(email: String, password: String) {
+    suspend fun logIn(email: String, password: String) = withContext(Dispatchers.IO) {
         val (body, status) = postJson("auth/login", mapOf("email" to email, "password" to password))
         when (status) {
             200 -> {
@@ -128,7 +131,7 @@ class SessionStore(private val scope: CoroutineScope) {
         }
     }
 
-    suspend fun signUp(email: String, password: String, refCode: String?) {
+    suspend fun signUp(email: String, password: String, refCode: String?) = withContext(Dispatchers.IO) {
         val payload = buildMap {
             put("email", email); put("password", password)
             if (!refCode.isNullOrEmpty()) put("refCode", refCode)

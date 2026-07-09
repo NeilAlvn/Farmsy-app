@@ -35,4 +35,5 @@
     <string name="ph_farm_email">you@yourfarm.nl</string>
     <string name="ph_phone">+31 …</string>
     <string name="ph_kvk">12345678</string>
+    <string name="arg_farms">%1$s farms</string>
 </resources>

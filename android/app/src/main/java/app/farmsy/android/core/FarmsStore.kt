@@ -3,10 +3,12 @@ package app.farmsy.android.core
 import android.location.Location
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /// All public farm pins, loaded once via the get_farms_pins RPC (paginated
 /// the same way the web map does) and filtered in memory. Mirrors
@@ -33,15 +35,20 @@ class FarmsStore(private val scope: CoroutineScope) {
             _isLoading.value = true
             _loadError.value = null
             try {
-                val all = mutableListOf<FarmPin>()
-                var from = 0
-                while (true) {
-                    val page = supabase.postgrest.rpc("get_farms_pins") {
-                        range(from.toLong(), (from + pageSize - 1).toLong())
-                    }.decodeList<FarmPin>()
-                    all += page
-                    if (page.size < pageSize) break
-                    from += pageSize
+                // Network + JSON decode of thousands of pins must stay off the
+                // main thread, or the UI freezes (ANR) during startup.
+                val all = withContext(Dispatchers.IO) {
+                    val acc = mutableListOf<FarmPin>()
+                    var from = 0
+                    while (true) {
+                        val page = supabase.postgrest.rpc("get_farms_pins") {
+                            range(from.toLong(), (from + pageSize - 1).toLong())
+                        }.decodeList<FarmPin>()
+                        acc += page
+                        if (page.size < pageSize) break
+                        from += pageSize
+                    }
+                    acc
                 }
                 _pins.value = all
             } catch (e: Exception) {

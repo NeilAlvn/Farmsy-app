@@ -2,4 +2,6 @@
 <resources>
     <color name="cream">#F8F6F0</color>
     <color name="farm_green">#3F5E3A</color>
+    <!-- Icon sits on white, like the App Store icon. -->
+    <color name="icon_background">#FFFFFF</color>
 </resources>

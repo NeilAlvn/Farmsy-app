@@ -13,7 +13,9 @@ import kotlinx.coroutines.SupervisorJob
 /// iOS app injects via .environment().
 class FarmsyApp : Application() {
 
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    // Default (not Main): stores do network + JSON work; StateFlow updates are
+    // thread-safe and Compose collects them on the UI thread anyway.
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     lateinit var session: SessionStore
         private set
