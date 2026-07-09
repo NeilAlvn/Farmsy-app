@@ -24,4 +24,12 @@
     <string name="location_permission_rationale">Farmsy nutzt deinen Standort, um Hofläden in deiner Nähe zu zeigen.</string>
     <string name="back">Zurück</string>
     <string name="arg_plan">%1$s-Abo</string>
+    <string name="ob_claim">Beanspruchen</string>
+    <string name="ob_sent">gesendet</string>
+    <string name="ob_is">Ist</string>
+    <string name="ob_yours_q">deiner?</string>
+    <string name="ph_first_last">Vor- und Nachname</string>
+    <string name="ph_farm_email">du@deinhof.de</string>
+    <string name="ph_phone">+31 …</string>
+    <string name="ph_kvk">12345678</string>
 </resources>

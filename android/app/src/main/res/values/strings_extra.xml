@@ -27,4 +27,12 @@
     <string name="location_permission_rationale">Farmsy uses your location to show farm shops near you.</string>
     <string name="back">Back</string>
     <string name="arg_plan">%1$s plan</string>
+    <string name="ob_claim">Claim</string>
+    <string name="ob_sent">sent</string>
+    <string name="ob_is">Is</string>
+    <string name="ob_yours_q">yours?</string>
+    <string name="ph_first_last">First and last name</string>
+    <string name="ph_farm_email">you@yourfarm.nl</string>
+    <string name="ph_phone">+31 …</string>
+    <string name="ph_kvk">12345678</string>
 </resources>

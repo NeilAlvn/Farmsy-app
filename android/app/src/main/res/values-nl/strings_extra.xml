@@ -24,4 +24,12 @@
     <string name="location_permission_rationale">Farmsy gebruikt je locatie om boerderijwinkels bij jou in de buurt te tonen.</string>
     <string name="back">Terug</string>
     <string name="arg_plan">%1$s-abonnement</string>
+    <string name="ob_claim">Claim</string>
+    <string name="ob_sent">verzonden</string>
+    <string name="ob_is">Is</string>
+    <string name="ob_yours_q">van jou?</string>
+    <string name="ph_first_last">Voor- en achternaam</string>
+    <string name="ph_farm_email">jij@jouwboerderij.nl</string>
+    <string name="ph_phone">+31 …</string>
+    <string name="ph_kvk">12345678</string>
 </resources>

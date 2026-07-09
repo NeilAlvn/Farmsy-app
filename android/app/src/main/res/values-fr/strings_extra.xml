@@ -24,4 +24,12 @@
     <string name="location_permission_rationale">Farmsy utilise votre position pour afficher les fermes près de vous.</string>
     <string name="back">Retour</string>
     <string name="arg_plan">Abonnement %1$s</string>
+    <string name="ob_claim">Réclamer</string>
+    <string name="ob_sent">envoyée</string>
+    <string name="ob_is">Est-ce</string>
+    <string name="ob_yours_q">à vous ?</string>
+    <string name="ph_first_last">Prénom et nom</string>
+    <string name="ph_farm_email">vous@votreferme.fr</string>
+    <string name="ph_phone">+31 …</string>
+    <string name="ph_kvk">12345678</string>
 </resources>
