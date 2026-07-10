@@ -1,6 +1,12 @@
 package app.farmsy.android.features.map
 
 import android.Manifest
+import com.google.android.gms.maps.model.LatLngBounds
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.createBitmap
+import android.graphics.Path
+import android.graphics.Paint
+import android.graphics.Canvas
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -56,6 +62,7 @@ import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -66,6 +73,54 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+
+/// Compose maps slow down past a few hundred markers (same cap as iOS).
+private const val ANNOTATION_CAP = 130
+
+/// Marker bitmaps are expensive to rasterise — build one per category, once.
+private val pinIcons = HashMap<FarmCategory, BitmapDescriptor>()
+
+/// Teardrop pin in the category's colour with its emoji, matching the iOS
+/// FarmPinView and the web map's markers.
+private fun farmPinBitmap(cat: FarmCategory): BitmapDescriptor {
+    val w = 84; val h = 108
+    val bmp = createBitmap(w, h)
+    val canvas = Canvas(bmp)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    val cx = w / 2f
+    val headR = 34f
+    val headCy = 38f
+
+    // Drop shadow
+    paint.color = 0x33000000
+    canvas.drawCircle(cx, headCy + 3f, headR, paint)
+
+    // Teardrop: circle head + triangular tail
+    paint.color = cat.color.toArgb()
+    canvas.drawCircle(cx, headCy, headR, paint)
+    val tail = Path().apply {
+        moveTo(cx - 22f, headCy + 24f)
+        lineTo(cx, h - 6f)
+        lineTo(cx + 22f, headCy + 24f)
+        close()
+    }
+    canvas.drawPath(tail, paint)
+
+    // White inner circle
+    paint.color = android.graphics.Color.WHITE
+    canvas.drawCircle(cx, headCy, 22f, paint)
+
+    // Category emoji
+    val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 28f
+        textAlign = Paint.Align.CENTER
+    }
+    val fm = text.fontMetrics
+    canvas.drawText(cat.emoji, cx, headCy - (fm.ascent + fm.descent) / 2f, text)
+
+    return BitmapDescriptorFactory.fromBitmap(bmp)
+}
 
 /// Map-first discovery — mirrors iOS MapScreen: full-bleed map with a floating
 /// search row, farms-count badge, and bottom controls (list toggle + category
@@ -93,21 +148,31 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
         position = CameraPosition.fromLatLngZoom(LatLng(51.8, 4.7), 6.5f)
     }
 
-    // SwiftUI/Compose maps slow down past a few hundred markers — cap what we
-    // draw to the pins near the current viewport (same annotationCap as iOS).
+    // Maps slow down past a few hundred markers, so draw only the pins inside
+    // the current viewport, capped — same rule as iOS MapScreen.visiblePins.
+    // Zooming in therefore reveals the farms in that area.
     val filtered = remember(pins, searchText, selectedCategory) { farms.filtered() }
 
-    // Only recompute the drawn markers once the camera has settled, and read
-    // the position *outside* composition — reading it during composition makes
-    // every recomposition observe the camera and drift the map on its own.
-    var mapCenter by remember { mutableStateOf(LatLng(51.8, 4.7)) }
+    // Snapshot the viewport only once the camera settles. Reading the camera
+    // during composition makes every recomposition observe it, which nudges
+    // the camera and walks the map away on its own.
+    var viewport by remember { mutableStateOf<LatLngBounds?>(null) }
     LaunchedEffect(cameraPositionState.isMoving) {
         if (!cameraPositionState.isMoving) {
-            mapCenter = cameraPositionState.position.target
+            viewport = cameraPositionState.projection?.visibleRegion?.latLngBounds
         }
     }
-    val visiblePins = remember(filtered, mapCenter) {
-        filtered.sortedBy { it.distanceMeters(mapCenter.latitude, mapCenter.longitude) }.take(130)
+    val visiblePins = remember(filtered, viewport) {
+        val bounds = viewport ?: return@remember filtered.take(ANNOTATION_CAP)
+        // Pad the box slightly so pins don't pop in right at the edge.
+        val latPad = (bounds.northeast.latitude - bounds.southwest.latitude) * 0.075
+        val lngPad = (bounds.northeast.longitude - bounds.southwest.longitude) * 0.075
+        filtered.filter {
+            it.lat > bounds.southwest.latitude - latPad &&
+                it.lat < bounds.northeast.latitude + latPad &&
+                it.lng > bounds.southwest.longitude - lngPad &&
+                it.lng < bounds.northeast.longitude + lngPad
+        }.take(ANNOTATION_CAP)
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -139,12 +204,14 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
                 ),
             ) {
                 visiblePins.forEach { pin ->
+                    val cat = pin.primaryCategory
+                    val icon = remember(cat) { pinIcons[cat] ?: farmPinBitmap(cat).also { pinIcons[cat] = it } }
                     Marker(
                         state = MarkerState(LatLng(pin.lat, pin.lng)),
                         title = pin.name,
                         snippet = pin.city,
-                        // Category-tinted pins, mirroring the iOS teardrops.
-                        icon = BitmapDescriptorFactory.defaultMarker(pin.primaryCategory.markerHue),
+                        icon = icon,
+                        anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
                         onClick = { onOpenFarm(pin); true },
                         onInfoWindowClick = { onOpenFarm(pin) },
                     )
@@ -226,10 +293,10 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
             }
         }
 
-        // Bottom controls, lifted above the floating tab bar
+        // Bottom controls, lifted clear of the floating tab bar
         Row(
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                .padding(bottom = 66.dp, start = 12.dp, end = 12.dp),
+                .padding(bottom = 96.dp, start = 12.dp, end = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
