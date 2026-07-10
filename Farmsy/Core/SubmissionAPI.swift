@@ -99,20 +99,35 @@ enum SubmissionAPI {
         try await send(request)
     }
 
+    private struct ErrorBody: Decodable {
+        let error: String?
+        /// Stable machine-readable reason from the server. Prefer this over the
+        /// status code, and never over the message copy — that changes.
+        let code: String?
+    }
+
     private static func send(_ request: URLRequest) async throws {
         let (data, response) = try await URLSession.shared.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        switch status {
-        case 200, 201:
-            return
-        case 401:
-            throw SubmissionError.notSignedIn
-        case 403:
-            throw SubmissionError.membersOnly
+        guard status != 200, status != 201 else { return }
+
+        let body = try? JSONDecoder().decode(ErrorBody.self, from: data)
+        switch body?.code {
+        case "unauthenticated": throw SubmissionError.notSignedIn
+        case "no_subscription": throw SubmissionError.membersOnly
+        case "invalid", "failed":
+            throw SubmissionError.server(body?.error ?? Self.genericMessage)
         default:
-            struct ErrorBody: Decodable { let error: String? }
-            let msg = (try? JSONDecoder().decode(ErrorBody.self, from: data))?.error
-            throw SubmissionError.server(msg ?? "Something went wrong. Please try again.")
+            // Older deploys don't send `code` — fall back to the status.
+            switch status {
+            case 401: throw SubmissionError.notSignedIn
+            case 403: throw SubmissionError.membersOnly
+            default: throw SubmissionError.server(body?.error ?? Self.genericMessage)
+            }
         }
+    }
+
+    private static var genericMessage: String {
+        String(localized: "Something went wrong. Please try again.")
     }
 }

@@ -103,16 +103,26 @@ object SubmissionApi {
     }
 
     @Serializable
-    private data class ErrorBody(val error: String? = null)
+    private data class ErrorBody(
+        val error: String? = null,
+        /// Stable machine-readable reason from the server. Prefer this over the
+        /// status code, and never over the message copy — that changes.
+        val code: String? = null,
+    )
 
     private fun check(status: Int, body: String) {
-        when (status) {
-            200, 201 -> return
-            401 -> throw SubmissionException.NotSignedIn()
-            403 -> throw SubmissionException.MembersOnly()
-            else -> {
-                val msg = runCatching { lenientJson.decodeFromString<ErrorBody>(body).error }.getOrNull()
-                throw SubmissionException.Server(msg)
+        if (status == 200 || status == 201) return
+
+        val parsed = runCatching { lenientJson.decodeFromString<ErrorBody>(body) }.getOrNull()
+        when (parsed?.code) {
+            "unauthenticated" -> throw SubmissionException.NotSignedIn()
+            "no_subscription" -> throw SubmissionException.MembersOnly()
+            "invalid", "failed" -> throw SubmissionException.Server(parsed.error)
+            else -> when (status) {
+                // Older deploys don't send `code` — fall back to the status.
+                401 -> throw SubmissionException.NotSignedIn()
+                403 -> throw SubmissionException.MembersOnly()
+                else -> throw SubmissionException.Server(parsed?.error)
             }
         }
     }
