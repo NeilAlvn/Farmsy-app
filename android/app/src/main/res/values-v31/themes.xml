@@ -7,6 +7,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowSplashScreenBackground">@color/cream</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- The *foreground* layer only. Pointing this at @mipmap/ic_launcher hands
+             the system the full adaptive icon — background layer included — which it
+             masks into a coloured disc. That disc flashed on screen before our own
+             cream splash faded the barn in, reading as "a square, then the real logo".
+             Drawing the bare mark on the same cream makes the hand-off invisible. -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
 </resources>

@@ -40,4 +40,7 @@
     <string name="yearly_arg">Jaarlijks — %1$s/jaar</string>
     <string name="lifetime_arg">Levenslang — %1$s</string>
     <string name="one_payment_yours_forever">Eén betaling, voor altijd van jou</string>
+    <string name="plan_yearly">Jaarlijks</string>
+    <string name="plan_lifetime">Levenslang</string>
+    <string name="price_per_year_arg">%1$s / jaar</string>
 </resources>

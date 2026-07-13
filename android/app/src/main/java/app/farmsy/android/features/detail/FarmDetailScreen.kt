@@ -63,6 +63,8 @@ import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.style.TextOverflow
 
 /// Farm detail — mirrors iOS FarmDetailView. The full payload only exists
 /// behind the farmsy.app API's subscription check; without access we show the
@@ -219,6 +221,54 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     if (showClaim) ClaimSheet(pin = pin, onDismiss = { showClaim = false })
 }
 
+/// One purchasable plan on the paywall.
+///
+/// Deliberately two lines — label above, price below — so the text stays short
+/// enough to survive a large system font scale. `detail` is null until the store
+/// hands back a localized price, in which case we fall back to the generic CTA.
+@Composable
+private fun PlanCard(
+    label: String,
+    detail: String?,
+    footnote: String? = null,
+    filled: Boolean,
+    onClick: () -> Unit,
+) {
+    val fg = if (filled) Color.White else FarmsyColors.farmGreen
+    val shape = RoundedCornerShape(22.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if (filled) Modifier.background(FarmsyColors.farmGreen, shape)
+                else Modifier
+                    .background(Color.White, shape)
+                    .border(1.5.dp, FarmsyColors.farmGreen.copy(alpha = 0.45f), shape)
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp, horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            if (detail == null) stringResource(R.string.become_a_member) else label,
+            style = geist(17.sp, FontWeight.SemiBold), color = fg,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+        detail?.let {
+            Text(
+                it, style = geist(14.sp), color = if (filled) Color.White.copy(alpha = 0.9f) else FarmsyColors.ink,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        footnote?.let {
+            Text(
+                it, style = geist(12.sp), color = FarmsyColors.inkMuted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
 @Composable
 private fun ActionButton(label: String, fill: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
@@ -304,34 +354,29 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
         if (isPurchasing) {
             CircularProgressIndicator(color = FarmsyColors.farmGreen)
         } else {
-            app.farmsy.android.ui.theme.PrimaryButton(
-                purchases.yearlyPrice?.let { stringResource(R.string.yearly_arg, it) }
-                    ?: stringResource(R.string.become_a_member)
+            // Both plans render as two-line cards: a short label on top, the price
+            // beneath. Putting the price *inside* the label ("Yearly — €29,99/year")
+            // made the line long enough to wrap — and therefore the button to grow —
+            // once the system font scale went above 1.0.
+            PlanCard(
+                label = stringResource(R.string.plan_yearly),
+                detail = purchases.yearlyPrice?.let { stringResource(R.string.price_per_year_arg, it) },
+                filled = true,
             ) {
-                val activity = context as? android.app.Activity ?: return@PrimaryButton
+                val activity = context as? android.app.Activity ?: return@PlanCard
                 scope.launch { if (purchases.purchase(activity, yearlyPkg)) onRecheck() }
             }
             // Lifetime: one payment, never expires.
             purchases.lifetimePrice?.let { price ->
                 Spacer(Modifier.height(10.dp))
-                Column(
-                    Modifier.fillMaxWidth()
-                        .background(Color.White, androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
-                        .clickable {
-                            val activity = context as? android.app.Activity ?: return@clickable
-                            scope.launch { if (purchases.purchase(activity, lifetimePkg)) onRecheck() }
-                        }
-                        .padding(vertical = 14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                PlanCard(
+                    label = stringResource(R.string.plan_lifetime),
+                    detail = price,
+                    footnote = stringResource(R.string.one_payment_yours_forever),
+                    filled = false,
                 ) {
-                    Text(
-                        stringResource(R.string.lifetime_arg, price),
-                        style = geist(17.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen
-                    )
-                    Text(
-                        stringResource(R.string.one_payment_yours_forever),
-                        style = geist(13.sp), color = FarmsyColors.inkMuted
-                    )
+                    val activity = context as? android.app.Activity ?: return@PlanCard
+                    scope.launch { if (purchases.purchase(activity, lifetimePkg)) onRecheck() }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {

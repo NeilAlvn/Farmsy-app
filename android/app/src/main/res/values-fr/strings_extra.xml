@@ -40,4 +40,7 @@
     <string name="yearly_arg">Annuel — %1$s/an</string>
     <string name="lifetime_arg">À vie — %1$s</string>
     <string name="one_payment_yours_forever">Un seul paiement, à vie</string>
+    <string name="plan_yearly">Annuel</string>
+    <string name="plan_lifetime">À vie</string>
+    <string name="price_per_year_arg">%1$s / an</string>
 </resources>

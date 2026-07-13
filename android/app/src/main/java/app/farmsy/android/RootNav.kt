@@ -27,6 +27,10 @@ import app.farmsy.android.features.main.MainScreen
 import app.farmsy.android.features.onboarding.OnboardingScreen
 import app.farmsy.android.features.splash.SplashScreen
 import app.farmsy.android.ui.theme.FarmsyColors
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 
 /// Splash → onboarding (first run) → main app. Browsing is open to everyone;
 /// logging in is asked for lazily via LocalRequestAuth when a gated action is
@@ -63,7 +67,9 @@ fun RootNav() {
                 isAuthenticated || didFinishOnboarding -> Screen.Main
                 else -> Screen.Onboarding
             },
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = {
+                fadeIn(tween(320)) togetherWith fadeOut(tween(220))
+            },
             modifier = Modifier.fillMaxSize().background(FarmsyColors.cream),
             label = "root"
         ) { screen ->
@@ -85,8 +91,21 @@ fun RootNav() {
         }
 
         // Farm detail as an overlay "push" (simple + state-preserving).
-        openPin?.let { pin ->
-            FarmDetailScreen(pin = pin, onBack = { openPin = null })
+        //
+        // It used to be a bare `openPin?.let { … }`, which snapped the whole screen
+        // in and out with no animation at all — the detail just *appeared*. Slide it
+        // in from the trailing edge like the iOS navigation push. `lastPin` outlives
+        // `openPin` so the screen still has something to draw on the way out.
+        var lastPin by remember { mutableStateOf<FarmPin?>(null) }
+        LaunchedEffect(openPin) { openPin?.let { lastPin = it } }
+        AnimatedVisibility(
+            visible = openPin != null,
+            enter = slideInHorizontally(tween(300)) { it } + fadeIn(tween(200)),
+            exit = slideOutHorizontally(tween(260)) { it } + fadeOut(tween(200)),
+        ) {
+            lastPin?.let { pin ->
+                FarmDetailScreen(pin = pin, onBack = { openPin = null })
+            }
         }
 
         if (showAuth) {

@@ -73,6 +73,8 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextOverflow
 
 /// Compose maps slow down past a few hundred markers (same cap as iOS).
 private const val ANNOTATION_CAP = 130
@@ -135,7 +137,7 @@ private fun farmPinBitmap(cat: FarmCategory): BitmapDescriptor {
 /// search row, farms-count badge, and bottom controls (list toggle + category
 /// menu). Tapping a pin opens the farm (auth-gated one level up).
 @Composable
-fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
+fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     val farms = LocalFarms.current
     val locationHelper = LocalLocationHelper.current
 
@@ -243,7 +245,17 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
                     TextField(
                         value = searchText,
                         onValueChange = { farms.searchText.value = it },
-                        placeholder = { Text(stringResource(R.string.search_by_farm_city_or_postcode), style = geist(15.sp)) },
+                        // The field is single-line, but the *placeholder* is its own Text
+                        // and will happily wrap — which pushes the whole search pill to
+                        // two rows at a large system font scale. Pin it to one line.
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.search_by_farm_city_or_postcode),
+                                style = geist(15.sp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
                         leadingIcon = { Icon(Icons.Filled.Search, null, tint = FarmsyColors.inkMuted) },
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
@@ -304,10 +316,12 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
             }
         }
 
-        // Bottom controls, lifted clear of the floating tab bar
+        // Bottom controls, lifted clear of the floating tab bar. The inset is
+        // measured from the real tab bar (see MainScreen) so this stays put when
+        // the bar grows at a larger font scale.
         Row(
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                .padding(bottom = 96.dp, start = 12.dp, end = 12.dp),
+                .padding(bottom = bottomInset, start = 12.dp, end = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

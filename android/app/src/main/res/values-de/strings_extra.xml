@@ -40,4 +40,7 @@
     <string name="yearly_arg">Jährlich — %1$s/Jahr</string>
     <string name="lifetime_arg">Lebenslang — %1$s</string>
     <string name="one_payment_yours_forever">Einmal zahlen, für immer</string>
+    <string name="plan_yearly">Jährlich</string>
+    <string name="plan_lifetime">Lebenslang</string>
+    <string name="price_per_year_arg">%1$s / Jahr</string>
 </resources>

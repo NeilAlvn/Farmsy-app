@@ -48,6 +48,8 @@ import app.farmsy.android.features.settings.SettingsScreen
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onGloballyPositioned
 
 /// Main shell — mirrors iOS MainView: brand header up top (hidden on the
 /// full-bleed Map tab), content in the middle, floating pill tab bar.
@@ -64,8 +66,17 @@ fun MainScreen(onOpenFarm: (FarmPin) -> Unit) {
 
     if (tab == Tab.MAP) {
         // Map is the hero: full-bleed edge to edge, tab bar floating on top.
+        //
+        // The map's own controls have to sit directly above the tab bar, so we
+        // measure it rather than hardcoding a gap — the bar grows with the system
+        // font scale, and a fixed offset drifts away from it (or under it).
+        val density = LocalDensity.current
+        var tabBarHeight by remember { mutableStateOf(0.dp) }
         Box(Modifier.fillMaxSize()) {
-            MapScreen(onOpenFarm = onOpenFarm)
+            MapScreen(
+                onOpenFarm = onOpenFarm,
+                bottomInset = if (tabBarHeight > 0.dp) tabBarHeight + 12.dp else 96.dp,
+            )
             TabBar(
                 selected = tab,
                 onSelect = { tab = it },
@@ -73,6 +84,9 @@ fun MainScreen(onOpenFarm: (FarmPin) -> Unit) {
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 4.dp)
+                    .onGloballyPositioned {
+                        tabBarHeight = with(density) { it.size.height.toDp() }
+                    }
             )
         }
     } else {

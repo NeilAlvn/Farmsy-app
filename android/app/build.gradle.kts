@@ -29,7 +29,7 @@ android {
         applicationId = "app.farmsy.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
+        versionCode = 5
         versionName = "1.0"
 
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
@@ -111,8 +111,11 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
-    // In-app purchases (Google Play Billing via RevenueCat)
-    implementation("com.revenuecat.purchases:purchases:8.10.0")
+    // In-app purchases (Google Play Billing via RevenueCat).
+    // Must stay on a version that bundles Play Billing 8+: Play's "one-time product
+    // with purchase options" model (which our lifetime uses) is invisible to Billing 7,
+    // so an older SDK silently drops the lifetime package from the offering.
+    implementation("com.revenuecat.purchases:purchases:10.13.0")
 
     // Crash reporting + product analytics
     implementation("io.sentry:sentry-android:7.20.0")
