@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Referral links. Without this entitlement iOS ignores the universal link
+	     entirely and farmsy.app/join?ref=CODE just opens Safari, so an invited
+	     user who installs the app arrives with no code and the referrer is never
+	     credited. Apple checks these against the site's
+	     /.well-known/apple-app-site-association. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:farmsy.app</string>
+		<string>applinks:www.farmsy.app</string>
+	</array>
+</dict>
+</plist>

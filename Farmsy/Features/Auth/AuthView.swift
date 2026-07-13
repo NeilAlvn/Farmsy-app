@@ -10,22 +10,74 @@ struct AuthView: View {
     @AppStorage("pendingRefCode") private var pendingRefCode = ""
 
     @State private var mode: Mode = .signUp
+    /// Signup is two steps, like the web: credentials, then personal details +
+    /// address. Every one of those fields is required by POST /api/auth/signup.
+    @State private var step = 1
     @State private var email = ""
     @State private var password = ""
     @State private var confirm = ""
+    @State private var firstName = ""
+    @State private var lastName = ""
+    @State private var dob: Date?
+    @State private var street = ""
+    @State private var city = ""
+    @State private var postalCode = ""
+    @State private var country = ""
+    @State private var refCode = ""
     @State private var isWorking = false
     @State private var errorMessage: String?
-    @State private var showVerifyNote = false
+    /// Set once the account exists. Signup no longer logs in — the account can't
+    /// authenticate until the emailed link is clicked — so we park here.
+    @State private var verifySentTo: String?
 
     enum Mode { case signUp, logIn }
 
-    private var canSubmit: Bool {
-        guard email.contains("@"), password.count >= 8 else { return false }
-        if mode == .signUp && confirm != password { return false }
-        return !isWorking
+    /// The API rejects under-16s, so the picker simply cannot offer a younger date.
+    private var latestAllowedDOB: Date {
+        Calendar.current.date(byAdding: .year, value: -16, to: .now) ?? .now
     }
 
+    private var credentialsOK: Bool {
+        guard email.contains("@"), password.count >= 8 else { return false }
+        if mode == .signUp && confirm != password { return false }
+        return true
+    }
+
+    private var detailsOK: Bool {
+        dob != nil &&
+        ![firstName, lastName, street, city, postalCode, country]
+            .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+
+    private var canSubmit: Bool {
+        if isWorking { return false }
+        if mode == .logIn { return credentialsOK }
+        return step == 1 ? credentialsOK : detailsOK
+    }
+
+    private static let isoDay: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")   // never localise an API date
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     var body: some View {
+        // Account created: no session exists yet, so show the "check your inbox"
+        // state rather than a form that looks like it failed.
+        if let verifySentTo {
+            VerifyEmailView(email: verifySentTo) {
+                self.verifySentTo = nil
+                mode = .logIn
+                step = 1
+            }
+        } else {
+            form
+        }
+    }
+
+    private var form: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
@@ -57,20 +109,51 @@ struct AuthView: View {
                     .padding(.bottom, 24)
 
                 VStack(spacing: 14) {
-                    AuthField(label: String(localized: "Email"), placeholder: String(localized: "you@email.com"), text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                    // Step 1 (and log in): credentials only. Staging the commitment
+                    // is what keeps the drop-off down — nobody abandons at "email
+                    // and password".
+                    if mode == .logIn || step == 1 {
+                        AuthField(label: String(localized: "Email"), placeholder: String(localized: "you@email.com"), text: $email)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
 
-                    AuthField(label: String(localized: "Password"), placeholder: String(localized: "At least 8 characters"),
-                              text: $password, isSecure: true)
-                        .textContentType(mode == .signUp ? .newPassword : .password)
+                        AuthField(label: String(localized: "Password"), placeholder: String(localized: "At least 8 characters"),
+                                  text: $password, isSecure: true)
+                            .textContentType(mode == .signUp ? .newPassword : .password)
 
-                    if mode == .signUp {
-                        AuthField(label: String(localized: "Confirm password"), placeholder: String(localized: "Repeat password"),
-                                  text: $confirm, isSecure: true)
-                            .textContentType(.newPassword)
+                        if mode == .signUp {
+                            AuthField(label: String(localized: "Confirm password"), placeholder: String(localized: "Repeat password"),
+                                      text: $confirm, isSecure: true)
+                                .textContentType(.newPassword)
+                        }
+                    } else {
+                        // Step 2: the profile fields the API now requires.
+                        HStack(spacing: 10) {
+                            AuthField(label: String(localized: "First name"), placeholder: "", text: $firstName)
+                                .textContentType(.givenName)
+                            AuthField(label: String(localized: "Last name"), placeholder: "", text: $lastName)
+                                .textContentType(.familyName)
+                        }
+
+                        // A wheel, not a text field: the server wants a real ISO date
+                        // and 16+, so typed input would only bounce as invalid_dob.
+                        DOBField(date: $dob, latestAllowed: latestAllowedDOB)
+
+                        AuthField(label: String(localized: "Street address"), placeholder: "", text: $street)
+                            .textContentType(.fullStreetAddress)
+                        HStack(spacing: 10) {
+                            AuthField(label: String(localized: "City"), placeholder: "", text: $city)
+                                .textContentType(.addressCity)
+                            AuthField(label: String(localized: "Postal code"), placeholder: "", text: $postalCode)
+                                .textContentType(.postalCode)
+                        }
+                        AuthField(label: String(localized: "Country"), placeholder: "", text: $country)
+                            .textContentType(.countryName)
+                        AuthField(label: String(localized: "Referral code (optional)"), placeholder: "", text: $refCode)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
                     }
                 }
 
@@ -82,27 +165,30 @@ struct AuthView: View {
                         .padding(.top, 12)
                 }
 
-                if showVerifyNote {
-                    Text("📬 We've sent a verification link to your email — you can keep exploring in the meantime.")
-                        .font(.geist(14))
-                        .foregroundStyle(Color.farmGreen)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 12)
-                }
-
                 Button {
                     submit()
                 } label: {
                     if isWorking {
                         ProgressView().tint(.white)
                     } else {
-                        Text(mode == .signUp ? "Create account" : "Log in")
+                        Text(mode == .logIn ? "Log in"
+                             : (step == 1 ? "Continue" : "Create account"))
                     }
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!canSubmit)
                 .opacity(canSubmit ? 1 : 0.55)
                 .padding(.top, 22)
+
+                if mode == .signUp && step == 2 {
+                    Button("Back") {
+                        Haptics.tap()
+                        withAnimation(.spring(duration: 0.3)) { step = 1; errorMessage = nil }
+                    }
+                    .font(.geist(15))
+                    .foregroundStyle(Color.inkMuted)
+                    .padding(.top, 10)
+                }
 
                 HStack(spacing: 5) {
                     Text(mode == .signUp ? "Already have an account?" : "New to Farmsy?")
@@ -150,19 +236,40 @@ struct AuthView: View {
 
     private func submit() {
         guard canSubmit else { return }
+        // Step 1 of signup only advances the form — nothing is sent yet.
+        if mode == .signUp && step == 1 {
+            Haptics.tap()
+            withAnimation(.spring(duration: 0.3)) { step = 2; errorMessage = nil }
+            return
+        }
+
         isWorking = true
         errorMessage = nil
         Task {
             defer { isWorking = false }
             do {
                 if mode == .signUp {
+                    let trimmed = email.trimmingCharacters(in: .whitespaces)
+                    let typed = refCode.trimmingCharacters(in: .whitespaces)
                     try await session.signUp(
-                        email: email.trimmingCharacters(in: .whitespaces),
-                        password: password,
-                        refCode: pendingRefCode.isEmpty ? nil : pendingRefCode
+                        SignUpDetails(
+                            email: trimmed,
+                            password: password,
+                            firstName: firstName.trimmingCharacters(in: .whitespaces),
+                            lastName: lastName.trimmingCharacters(in: .whitespaces),
+                            dob: dob.map { Self.isoDay.string(from: $0) } ?? "",
+                            streetAddress: street.trimmingCharacters(in: .whitespaces),
+                            city: city.trimmingCharacters(in: .whitespaces),
+                            postalCode: postalCode.trimmingCharacters(in: .whitespaces),
+                            country: country.trimmingCharacters(in: .whitespaces),
+                            // Whatever they typed wins over a stale captured code.
+                            refCode: typed.isEmpty ? (pendingRefCode.isEmpty ? nil : pendingRefCode) : typed
+                        )
                     )
+                    // Burn the code only once the server has accepted it, so a
+                    // failed signup doesn't cost the referrer their credit.
                     pendingRefCode = ""
-                    showVerifyNote = true
+                    verifySentTo = trimmed
                     Haptics.success()
                 } else {
                     try await session.logIn(
@@ -175,8 +282,74 @@ struct AuthView: View {
                 Haptics.warning()
                 errorMessage = (error as? AuthError)?.errorDescription
                     ?? String(localized: "Something went wrong. Please try again.")
+                // A field-level rejection belongs back on the field-level step.
+                if case .some(.missingFields) = error as? AuthError { step = 2 }
+                if case .some(.invalidDOB) = error as? AuthError { step = 2 }
             }
         }
+    }
+}
+
+/// Date of birth, via the wheel picker.
+///
+/// The API wants a real ISO `yyyy-MM-dd` and rejects under-16s, so free text would
+/// only bounce back as `invalid_dob` after a round trip. Capping the range at
+/// today-minus-16 enforces the age rule before the user can even submit.
+struct DOBField: View {
+    @Binding var date: Date?
+    let latestAllowed: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Date of birth")
+                .font(.geist(14, .semibold))
+                .foregroundStyle(Color.farmGreen)
+            DatePicker(
+                "",
+                selection: Binding(
+                    get: { date ?? latestAllowed },
+                    set: { date = $0 }
+                ),
+                in: ...latestAllowed,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.white, in: RoundedRectangle(cornerRadius: 14))
+        }
+    }
+}
+
+/// Shown after a successful signup. There is no session yet — the account can't
+/// authenticate until the emailed link is clicked — so parking the user here is
+/// the honest state. Dropping them back onto the form would read as a failure.
+struct VerifyEmailView: View {
+    let email: String
+    let onDone: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("📬").font(.system(size: 46))
+            Text("Check your inbox")
+                .font(.display(26))
+                .foregroundStyle(Color.ink)
+                .padding(.top, 14)
+            Text("We've sent a verification link to \(email). Click it to activate your account, then log in.")
+                .font(.geist(15))
+                .foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+                .padding(.top, 8)
+            Button("Log in", action: onDone)
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.top, 24)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 40)
+        .frame(maxWidth: .infinity)
+        .background(Color.cream.ignoresSafeArea())
     }
 }
 

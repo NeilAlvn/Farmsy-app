@@ -6,6 +6,12 @@ enum AuthError: LocalizedError {
     case invalidCredentials
     case emailTaken
     case throttled
+    /// The account exists and the password is correct — the emailed link just
+    /// hasn't been clicked yet. Never surface this as a credentials failure, or
+    /// we send people off to reset a password that works perfectly well.
+    case emailNotVerified
+    case missingFields([String])
+    case invalidDOB
     case server(String)
 
     var errorDescription: String? {
@@ -13,9 +19,29 @@ enum AuthError: LocalizedError {
         case .invalidCredentials: String(localized: "Invalid email or password.")
         case .emailTaken: String(localized: "An account with this email already exists.")
         case .throttled: String(localized: "Too many attempts. Please wait a few minutes and try again.")
+        case .emailNotVerified:
+            String(localized: "Please verify your email first — check your inbox for the link.")
+        case .missingFields: String(localized: "Please fill in all fields.")
+        case .invalidDOB:
+            String(localized: "Enter a valid date of birth. You must be at least 16.")
         case .server(let msg): msg
         }
     }
+}
+
+/// Everything `POST /api/auth/signup` requires. Mirrors the web's two-step form:
+/// credentials, then personal details + address. `refCode` is the only optional.
+struct SignUpDetails {
+    var email: String
+    var password: String
+    var firstName: String
+    var lastName: String
+    var dob: String            // ISO yyyy-MM-dd, a real date, 16+
+    var streetAddress: String
+    var city: String
+    var postalCode: String
+    var country: String
+    var refCode: String?
 }
 
 /// Auth + subscription state. Sign-in and sign-up go through the farmsy.app
@@ -140,24 +166,65 @@ final class SessionStore {
                 refreshToken: tokens.refreshToken
             )
             await refreshProfile()
+        // The email-verified gate lives in the API now. This is *not* a bad
+        // password, and must not be reported as one.
+        case 403:
+            if errorCode(from: data) == "email_not_verified" {
+                throw AuthError.emailNotVerified
+            }
+            throw AuthError.server(serverMessage(from: data))
         case 401: throw AuthError.invalidCredentials
         case 429: throw AuthError.throttled
         default: throw AuthError.server(serverMessage(from: data))
         }
     }
 
-    func signUp(email: String, password: String, refCode: String?) async throws {
-        var body = ["email": email, "password": password]
-        if let refCode, !refCode.isEmpty { body["refCode"] = refCode }
+    /// Creates the account. Deliberately does **not** log in afterwards: signup
+    /// returns 200 but the account cannot authenticate until the emailed link is
+    /// clicked, so an auto-login would immediately 403 and read as "signup failed".
+    /// The caller shows a "check your inbox" screen instead — same as the web.
+    func signUp(_ details: SignUpDetails) async throws {
+        var body = [
+            "email": details.email,
+            "password": details.password,
+            "firstName": details.firstName,
+            "lastName": details.lastName,
+            "dob": details.dob,
+            "streetAddress": details.streetAddress,
+            "city": details.city,
+            "postalCode": details.postalCode,
+            "country": details.country,
+        ]
+        // Uppercased, matching the web's cookie contract.
+        if let refCode = details.refCode?.trimmingCharacters(in: .whitespaces), !refCode.isEmpty {
+            body["refCode"] = refCode.uppercased()
+        }
 
         let (data, status) = try await postJSON(path: "auth/signup", body: body)
         switch status {
-        case 200, 201:
-            try await logIn(email: email, password: password)
+        case 200, 201: return       // no session yet; caller shows "verify your email"
         case 409: throw AuthError.emailTaken
         case 429: throw AuthError.throttled
+        case 400:
+            switch errorCode(from: data) {
+            case "missing_fields": throw AuthError.missingFields(missingFields(from: data))
+            case "invalid_dob": throw AuthError.invalidDOB
+            case "missing_credentials": throw AuthError.invalidCredentials
+            default: throw AuthError.server(serverMessage(from: data))
+            }
         default: throw AuthError.server(serverMessage(from: data))
         }
+    }
+
+    /// Branch on `code`, never the human-readable message.
+    private func errorCode(from data: Data) -> String? {
+        struct Body: Decodable { let code: String? }
+        return try? JSONDecoder().decode(Body.self, from: data).code
+    }
+
+    private func missingFields(from data: Data) -> [String] {
+        struct Body: Decodable { let fields: [String]? }
+        return (try? JSONDecoder().decode(Body.self, from: data).fields) as? [String] ?? []
     }
 
     func signOut() async {

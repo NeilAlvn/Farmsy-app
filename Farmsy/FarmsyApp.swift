@@ -41,6 +41,28 @@ struct FarmsyApp: App {
                 .environment(purchases)
                 .tint(.farmGreen)
                 .preferredColorScheme(.light)
+                .onOpenURL { captureReferral($0) }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    activity.webpageURL.map(captureReferral)
+                }
         }
+    }
+
+    /// Pull `?ref=CODE` out of a farmsy.app/join universal link and hold it until
+    /// signup, mirroring the web's 7-day `farmsy_ref` cookie. Without this a user
+    /// who taps a referral link and installs the app arrives with no code at all,
+    /// and the referrer is never credited — it fails silently, which is the worst
+    /// way for it to fail.
+    private func captureReferral(_ url: URL) {
+        guard url.path.hasPrefix("/join"),
+              let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                  .queryItems?.first(where: { $0.name == "ref" })?.value?
+                  .trimmingCharacters(in: .whitespaces).uppercased(),
+              // Same shape the web validates before setting its cookie.
+              code.range(of: "^[A-Z0-9]{6,12}$", options: .regularExpression) != nil
+        else { return }
+
+        UserDefaults.standard.set(code, forKey: "pendingRefCode")
+        UserDefaults.standard.set(Date.now, forKey: "pendingRefCodeAt")
     }
 }
