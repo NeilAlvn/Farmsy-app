@@ -77,6 +77,15 @@ import com.google.maps.android.compose.rememberCameraPositionState
 /// Compose maps slow down past a few hundred markers (same cap as iOS).
 private const val ANNOTATION_CAP = 130
 
+/// Cap the drawn markers without skewing the visible category mix. Naively
+/// taking the first N draws them in database order, which clusters one or two
+/// colours; instead spread the budget evenly across the pins in view.
+private fun capRepresentative(pins: List<FarmPin>, cap: Int): List<FarmPin> {
+    if (pins.size <= cap) return pins
+    val stride = pins.size.toDouble() / cap
+    return (0 until cap).map { pins[(it * stride).toInt()] }
+}
+
 /// Marker bitmaps are expensive to rasterise — build one per category, once.
 private val pinIcons = HashMap<FarmCategory, BitmapDescriptor>()
 
@@ -163,16 +172,18 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit) {
         }
     }
     val visiblePins = remember(filtered, viewport) {
-        val bounds = viewport ?: return@remember filtered.take(ANNOTATION_CAP)
-        // Pad the box slightly so pins don't pop in right at the edge.
-        val latPad = (bounds.northeast.latitude - bounds.southwest.latitude) * 0.075
-        val lngPad = (bounds.northeast.longitude - bounds.southwest.longitude) * 0.075
-        filtered.filter {
-            it.lat > bounds.southwest.latitude - latPad &&
-                it.lat < bounds.northeast.latitude + latPad &&
-                it.lng > bounds.southwest.longitude - lngPad &&
-                it.lng < bounds.northeast.longitude + lngPad
-        }.take(ANNOTATION_CAP)
+        val inView = viewport?.let { bounds ->
+            // Pad the box slightly so pins don't pop in right at the edge.
+            val latPad = (bounds.northeast.latitude - bounds.southwest.latitude) * 0.075
+            val lngPad = (bounds.northeast.longitude - bounds.southwest.longitude) * 0.075
+            filtered.filter {
+                it.lat > bounds.southwest.latitude - latPad &&
+                    it.lat < bounds.northeast.latitude + latPad &&
+                    it.lng > bounds.southwest.longitude - lngPad &&
+                    it.lng < bounds.northeast.longitude + lngPad
+            }
+        } ?: filtered
+        capRepresentative(inView, ANNOTATION_CAP)
     }
 
     Box(Modifier.fillMaxSize()) {

@@ -26,14 +26,23 @@ struct MapScreen: View {
 
     private var visiblePins: [FarmPin] {
         let all = farms.filtered
-        guard let region = visibleRegion else { return Array(all.prefix(annotationCap)) }
+        guard let region = visibleRegion else { return Self.capRepresentative(all, annotationCap) }
         let latHalf = region.span.latitudeDelta / 2 * 1.15
         let lngHalf = region.span.longitudeDelta / 2 * 1.15
         let inView = all.filter {
             abs($0.lat - region.center.latitude) < latHalf &&
             abs($0.lng - region.center.longitude) < lngHalf
         }
-        return Array(inView.prefix(annotationCap))
+        return Self.capRepresentative(inView, annotationCap)
+    }
+
+    /// Cap the drawn annotations without skewing the visible category mix.
+    /// Taking the first N draws them in database order, which clusters one or
+    /// two pin colors; spread the budget evenly across the pins in view instead.
+    private static func capRepresentative(_ pins: [FarmPin], _ cap: Int) -> [FarmPin] {
+        guard pins.count > cap else { return pins }
+        let stride = Double(pins.count) / Double(cap)
+        return (0..<cap).map { pins[Int(Double($0) * stride)] }
     }
 
     var body: some View {
