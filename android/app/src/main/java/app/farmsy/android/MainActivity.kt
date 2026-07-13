@@ -18,6 +18,7 @@ class MainActivity : ComponentActivity() {
                 LocalFarms provides app.farms,
                 LocalFavorites provides app.favorites,
                 LocalLocationHelper provides app.locationHelper,
+                LocalPurchases provides app.purchases,
             ) {
                 FarmsyTheme {
                     RootNav()

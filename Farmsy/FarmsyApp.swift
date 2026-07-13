@@ -13,6 +13,7 @@ struct FarmsyApp: App {
     @State private var farms = FarmsStore()
     @State private var favorites = FavoritesStore()
     @State private var locationManager = LocationManager()
+    @State private var purchases = PurchaseStore()
 
     init() {
         #if DEBUG
@@ -21,6 +22,7 @@ struct FarmsyApp: App {
             UserDefaults.standard.removeObject(forKey: "pendingRefCode")
         }
         #endif
+        PurchaseStore.configure()
         let store = SessionStore()
         #if DEBUG
         store.isDemoSession = CommandLine.arguments.contains("--demo-session")
@@ -35,6 +37,7 @@ struct FarmsyApp: App {
                 .environment(farms)
                 .environment(favorites)
                 .environment(locationManager)
+                .environment(purchases)
                 .tint(.farmGreen)
                 .preferredColorScheme(.light)
         }

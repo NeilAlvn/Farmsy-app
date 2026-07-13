@@ -4,6 +4,7 @@ import android.app.Application
 import app.farmsy.android.core.FarmsStore
 import app.farmsy.android.core.FavoritesStore
 import app.farmsy.android.core.LocationHelper
+import app.farmsy.android.core.PurchaseStore
 import app.farmsy.android.core.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,13 +26,17 @@ class FarmsyApp : Application() {
         private set
     lateinit var locationHelper: LocationHelper
         private set
+    lateinit var purchases: PurchaseStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
+        PurchaseStore.configure(this)
         session = SessionStore(appScope)
         farms = FarmsStore(appScope)
         favorites = FavoritesStore()
         locationHelper = LocationHelper(this)
+        purchases = PurchaseStore()
         session.bootstrap()
         farms.loadIfNeeded()
     }

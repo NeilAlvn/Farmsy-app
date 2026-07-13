@@ -255,10 +255,15 @@ private fun CircleIconButton(
 /// external links; owners can still claim.
 @Composable
 private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspend () -> Unit) {
-    val farms = app.farmsy.android.LocalFarms.current
-    val pins by farms.pins.collectAsState()
+    val context = LocalContext.current
+    val purchases = app.farmsy.android.LocalPurchases.current
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
+
+    val isPurchasing by purchases.isPurchasing.collectAsState()
+    val purchaseError by purchases.purchaseError.collectAsState()
+    val offering by purchases.offering.collectAsState()
+    LaunchedEffect(Unit) { purchases.loadOffering() }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -288,17 +293,46 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
-        if (checking) {
+        purchaseError?.let {
+            Text(it, style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.warnRed)
+        }
+
+        // Buy. The server grants access (RevenueCat webhook writes
+        // subscription_status), so after a purchase we re-ask the API rather
+        // than trusting the client.
+        if (isPurchasing) {
             CircularProgressIndicator(color = FarmsyColors.farmGreen)
         } else {
-            Text(
-                stringResource(R.string.i_ve_upgraded_check_again),
-                style = geist(16.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
-                modifier = Modifier.clickable {
-                    checking = true
-                    scope.launch { onRecheck(); checking = false }
+            app.farmsy.android.ui.theme.PrimaryButton(
+                purchases.displayPrice?.let { stringResource(R.string.become_a_member_arg, it) }
+                    ?: stringResource(R.string.become_a_member)
+            ) {
+                val activity = context as? android.app.Activity ?: return@PrimaryButton
+                scope.launch {
+                    if (purchases.purchase(activity)) onRecheck()
                 }
-            )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                Text(
+                    stringResource(R.string.restore_purchases),
+                    style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
+                    modifier = Modifier.clickable {
+                        scope.launch { if (purchases.restore()) onRecheck() }
+                    }
+                )
+                Text(
+                    stringResource(R.string.i_subscribed_on_the_web),
+                    style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
+                    modifier = Modifier.clickable {
+                        checking = true
+                        scope.launch { onRecheck(); checking = false }
+                    }
+                )
+            }
+        }
+
+        if (checking) {
+            CircularProgressIndicator(color = FarmsyColors.farmGreen)
         }
         Text(
             stringResource(R.string.is_arg_yours_claim_it, pin.name),

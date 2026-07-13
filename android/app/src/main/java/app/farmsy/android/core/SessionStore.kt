@@ -63,12 +63,16 @@ class SessionStore(private val scope: CoroutineScope) {
                     is SessionStatus.Authenticated -> {
                         _session.value = status.session
                         _isBootstrapped.value = true
+                        // RevenueCat must know the Supabase user id before any
+                        // purchase, or its webhook can't find the profile to grant.
+                        status.session.user?.id?.let { PurchaseStore.identify(it) }
                         refreshProfile()
                     }
                     is SessionStatus.NotAuthenticated -> {
                         _session.value = null
                         _profile.value = null
                         _isBootstrapped.value = true
+                        PurchaseStore.signOut()
                     }
                     // RefreshFailure (offline, expired refresh token) and any
                     // other terminal state: stop blocking the UI.

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8FED61A00000000000000003 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED61A00000000000000002 /* Supabase */; };
+		8FED61A00000000000000013 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED61A00000000000000012 /* RevenueCat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8FED61A00000000000000003 /* Supabase in Frameworks */,
+				8FED61A00000000000000013 /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +120,7 @@
 			name = Farmsy;
 			packageProductDependencies = (
 				8FED61A00000000000000002 /* Supabase */,
+				8FED61A00000000000000012 /* RevenueCat */,
 			);
 			productName = Farmsy;
 			productReference = 8FED61372FD82AE8006A930D /* Farmsy.app */;
@@ -206,6 +209,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8FED61A00000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				8FED61A00000000000000011 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FED61382FD82AE8006A930D /* Products */;
@@ -584,6 +588,14 @@
 				minimumVersion = 2.49.0;
 			};
 		};
+		8FED61A00000000000000011 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -591,6 +603,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8FED61A00000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		8FED61A00000000000000012 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FED61A00000000000000011 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

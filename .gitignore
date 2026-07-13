@@ -30,3 +30,6 @@ android/app/build/
 android/keystore/
 .gradle/
 android/keystore.properties
+
+# Local secrets (public SDK keys, still not committed)
+Farmsy/Secrets.plist

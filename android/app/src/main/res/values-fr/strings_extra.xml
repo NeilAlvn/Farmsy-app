@@ -33,4 +33,8 @@
     <string name="ph_phone">+31 …</string>
     <string name="ph_kvk">12345678</string>
     <string name="arg_farms">%1$s fermes</string>
+    <string name="become_a_member">Devenir membre</string>
+    <string name="become_a_member_arg">Devenir membre — %1$s/an</string>
+    <string name="restore_purchases">Restaurer les achats</string>
+    <string name="i_subscribed_on_the_web">Je me suis abonné sur le web</string>
 </resources>

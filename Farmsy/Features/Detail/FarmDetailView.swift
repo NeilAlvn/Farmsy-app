@@ -332,6 +332,7 @@ struct LockedAccessView: View {
     var onRecheck: () async -> Void
 
     @Environment(FarmsStore.self) private var farms
+    @Environment(PurchaseStore.self) private var purchases
     @State private var isChecking = false
 
     private let emojiGrid = ["🥬", "🥛", "🧀", "🥚", "🥩", "🐟",
@@ -369,11 +370,11 @@ struct LockedAccessView: View {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 34))
                         .foregroundStyle(Color.farmGreen)
-                    Text("Your account doesn't have full access yet")
+                    Text("Unlock every farm")
                         .font(.geist(19, .bold))
                         .foregroundStyle(Color.ink)
                         .multilineTextAlignment(.center)
-                    Text("Full access — opening hours, contact details, photos and more for \(pin.name) and every other farm — is managed from your Farmsy account on the web.")
+                    Text("Opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map.")
                         .font(.geist(15))
                         .foregroundStyle(Color.inkMuted)
                         .multilineTextAlignment(.center)
@@ -381,22 +382,58 @@ struct LockedAccessView: View {
                 }
                 .card(padding: 22)
 
+                if let error = purchases.purchaseError {
+                    Text(error)
+                        .font(.geist(14, .medium))
+                        .foregroundStyle(Color.warnRed)
+                        .multilineTextAlignment(.center)
+                }
+
+                // Buy. The server grants access (RevenueCat webhook writes
+                // subscription_status), so after a purchase we re-ask the API
+                // rather than trusting the client.
                 Button {
                     Haptics.tap()
-                    isChecking = true
                     Task {
-                        await onRecheck()
-                        isChecking = false
+                        if await purchases.purchase() {
+                            Haptics.success()
+                            await onRecheck()
+                        }
                     }
                 } label: {
-                    if isChecking {
-                        ProgressView().tint(Color.farmGreen)
+                    if purchases.isPurchasing {
+                        ProgressView().tint(.white)
+                    } else if let price = purchases.displayPrice {
+                        Text("Become a member — \(price)/year")
                     } else {
-                        Text("I've upgraded — check again")
-                            .font(.geist(16, .semibold))
-                            .foregroundStyle(Color.farmGreen)
+                        Text("Become a member")
                     }
                 }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(purchases.isPurchasing)
+
+                HStack(spacing: 18) {
+                    // Apple requires a visible restore path.
+                    Button("Restore purchases") {
+                        Haptics.tap()
+                        Task {
+                            if await purchases.restore() { await onRecheck() }
+                        }
+                    }
+                    Button("I subscribed on the web") {
+                        Haptics.tap()
+                        isChecking = true
+                        Task {
+                            await onRecheck()
+                            isChecking = false
+                        }
+                    }
+                }
+                .font(.geist(14, .medium))
+                .foregroundStyle(Color.inkMuted)
+                .disabled(purchases.isPurchasing)
+
+                if isChecking { ProgressView().tint(Color.farmGreen) }
 
                 // Owners can claim without a membership.
                 Button {
@@ -415,5 +452,6 @@ struct LockedAccessView: View {
             }
             .padding(.horizontal, 20)
         }
+        .task { await purchases.loadOffering() }
     }
 }

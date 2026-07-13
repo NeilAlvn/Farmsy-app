@@ -33,4 +33,8 @@
     <string name="ph_phone">+31 …</string>
     <string name="ph_kvk">12345678</string>
     <string name="arg_farms">%1$s boerderijen</string>
+    <string name="become_a_member">Word lid</string>
+    <string name="become_a_member_arg">Word lid — %1$s/jaar</string>
+    <string name="restore_purchases">Aankopen herstellen</string>
+    <string name="i_subscribed_on_the_web">Ik heb online een abonnement</string>
 </resources>

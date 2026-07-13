@@ -55,10 +55,16 @@ final class SessionStore {
             for await state in supabase.auth.authStateChanges {
                 guard let self else { return }
                 self.session = state.session
-                if state.session == nil {
+                if let session = state.session {
+                    // RevenueCat must know the Supabase user id before any
+                    // purchase, or its webhook can't find the profile to grant.
+                    await PurchaseStore.identify(userId: session.user.id)
+                    if [.signedIn, .tokenRefreshed, .initialSession].contains(state.event) {
+                        await self.refreshProfile()
+                    }
+                } else {
                     self.profile = nil
-                } else if [.signedIn, .tokenRefreshed, .initialSession].contains(state.event) {
-                    await self.refreshProfile()
+                    await PurchaseStore.signOut()
                 }
             }
         }

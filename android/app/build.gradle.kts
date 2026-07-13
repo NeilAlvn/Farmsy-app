@@ -33,6 +33,10 @@ android {
         versionName = "1.0"
 
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
+        buildConfigField(
+            "String", "REVENUECAT_KEY",
+            "\"${secrets.getProperty("REVENUECAT_KEY", "")}\""
+        )
     }
 
     signingConfigs {
@@ -106,4 +110,7 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:6.2.1")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // In-app purchases (Google Play Billing via RevenueCat)
+    implementation("com.revenuecat.purchases:purchases:8.10.0")
 }
