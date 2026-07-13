@@ -42,6 +42,18 @@ struct FarmDetailView: View {
             }
         }
         .task { await reload() }
+        // Open the farm the moment access is granted, however long that takes.
+        //
+        // The grant arrives from the server via RevenueCat's webhook some seconds
+        // after the purchase call returns, and polling for a fixed budget is a losing
+        // game: if the webhook is slower than the budget, the buyer is left sitting on
+        // the very paywall they just paid to leave. Watching the profile instead means
+        // the screen unlocks itself whenever the grant lands — on time or late.
+        .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
+            if granted && isLocked {
+                Task { await reload() }
+            }
+        }
     }
 
     private func reload() async {
@@ -343,9 +355,13 @@ struct LockedAccessView: View {
     /// when the grant lands.
     private func awaitGrant() async {
         isChecking = true
-        for _ in 0..<6 {
-            await onRecheck()
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+        // Only nudge the profile — FarmDetailView watches it and opens the farm the
+        // moment access appears, so this loop doesn't have to win a race against the
+        // webhook to be correct. It just saves waiting on the next natural refresh.
+        for _ in 0..<12 {
+            await session.refreshProfile()
+            if session.hasFullAccess { break }
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
         }
         isChecking = false
     }

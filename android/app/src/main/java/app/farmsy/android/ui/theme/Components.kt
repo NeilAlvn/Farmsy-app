@@ -28,6 +28,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
 
 /// Serif headline with the one-italic-word treatment (iOS DisplayTitle).
 @Composable
@@ -173,5 +176,51 @@ fun FitText(
             overflow = TextOverflow.Ellipsis,
             textAlign = textAlign,
         )
+    }
+}
+
+/// One purchasable plan — a filled primary or an outlined secondary.
+///
+/// Deliberately two lines, label above and price below, and both auto-shrink: a
+/// single line like "Upgrade to Lifetime · ₱3,950.00" is too long for a full-width
+/// button and ends up cramped or clipped, especially at a large font scale.
+/// `detail` is null until the store hands back a localized price, in which case we
+/// fall back to the generic CTA.
+@Composable
+fun PlanCard(
+    label: String,
+    detail: String?,
+    filled: Boolean,
+    fallbackLabel: String,
+    onClick: () -> Unit,
+) {
+    val fg = if (filled) Color.White else FarmsyColors.farmGreen
+    val shape = RoundedCornerShape(22.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if (filled) Modifier.background(FarmsyColors.farmGreen, shape)
+                else Modifier
+                    .background(Color.White, shape)
+                    .border(1.5.dp, FarmsyColors.farmGreen.copy(alpha = 0.45f), shape)
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp, horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        FitText(
+            if (detail == null) fallbackLabel else label,
+            style = geist(17.sp, FontWeight.SemiBold), color = fg,
+            textAlign = TextAlign.Center,
+        )
+        detail?.let {
+            FitText(
+                it, style = geist(14.sp),
+                color = if (filled) Color.White.copy(alpha = 0.9f) else FarmsyColors.ink,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }

@@ -63,6 +63,7 @@ import java.util.Locale
 import app.farmsy.android.ui.theme.FitText
 import androidx.compose.material3.CircularProgressIndicator
 import app.farmsy.android.ui.theme.PrimaryButton
+import app.farmsy.android.ui.theme.PlanCard
 
 /// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
 /// sign out + delete account, version footer).
@@ -361,15 +362,23 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         if (isPurchasing) {
                             CircularProgressIndicator(color = FarmsyColors.farmGreen)
                         } else {
-                            PrimaryButton("${stringResource(R.string.upgrade_to_lifetime)} · $lifetimePrice") {
-                                val activity = context as? android.app.Activity ?: return@PrimaryButton
+                            // Label and price on their own lines: "Upgrade to
+                            // Lifetime · ₱3,950.00" is too long for one line in a
+                            // full-width button and ends up cramped.
+                            PlanCard(
+                                label = stringResource(R.string.upgrade_to_lifetime),
+                                detail = lifetimePrice,
+                                filled = true,
+                                fallbackLabel = stringResource(R.string.upgrade_to_lifetime),
+                            ) {
+                                val activity = context as? android.app.Activity ?: return@PlanCard
                                 scope.launch {
                                     if (purchases.purchase(activity, lifetimePkg, userId)) {
                                         // Poll: the grant lands via the webhook a
                                         // moment after the purchase returns.
-                                        repeat(10) {
+                                        for (attempt in 0 until 10) {
                                             session.refreshProfile()
-                                            if (session.hasFullAccess) return@repeat
+                                            if (session.hasFullAccess) break
                                             kotlinx.coroutines.delay(1500)
                                         }
                                     }

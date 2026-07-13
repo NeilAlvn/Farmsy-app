@@ -66,6 +66,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.border
 import androidx.compose.ui.text.style.TextOverflow
 import app.farmsy.android.ui.theme.FitText
+import app.farmsy.android.ui.theme.PlanCard
 
 /// Farm detail — mirrors iOS FarmDetailView. The full payload only exists
 /// behind the farmsy.app API's subscription check; without access we show the
@@ -98,6 +99,19 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     }
 
     LaunchedEffect(pin.osmId) { session.refreshProfile(); reload() }
+
+    // Open the farm the moment access is granted, however long that takes.
+    //
+    // The grant arrives from the server via RevenueCat's webhook some seconds after
+    // the purchase call returns, and polling for a fixed budget is a losing game: if
+    // the webhook is slower than the budget, the buyer is left sitting on the very
+    // paywall they just paid to leave, with no way forward but to back out and tap
+    // the farm again. Watching the profile instead means the screen unlocks itself
+    // whenever the grant lands — on time, late, or while they're still looking at it.
+    val profile by session.profile.collectAsState()
+    LaunchedEffect(profile?.hasFullAccess) {
+        if (profile?.hasFullAccess == true && isLocked) reload()
+    }
 
     Box(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
         if (isLocked) {
@@ -222,49 +236,6 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     if (showClaim) ClaimSheet(pin = pin, onDismiss = { showClaim = false })
 }
 
-/// One purchasable plan on the paywall.
-///
-/// Deliberately two lines — label above, price below — so the text stays short
-/// enough to survive a large system font scale. `detail` is null until the store
-/// hands back a localized price, in which case we fall back to the generic CTA.
-@Composable
-private fun PlanCard(
-    label: String,
-    detail: String?,
-    filled: Boolean,
-    onClick: () -> Unit,
-) {
-    val fg = if (filled) Color.White else FarmsyColors.farmGreen
-    val shape = RoundedCornerShape(22.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .then(
-                if (filled) Modifier.background(FarmsyColors.farmGreen, shape)
-                else Modifier
-                    .background(Color.White, shape)
-                    .border(1.5.dp, FarmsyColors.farmGreen.copy(alpha = 0.45f), shape)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp, horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        FitText(
-            if (detail == null) stringResource(R.string.become_a_member) else label,
-            style = geist(17.sp, FontWeight.SemiBold), color = fg,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        detail?.let {
-            FitText(
-                it, style = geist(14.sp),
-                color = if (filled) Color.White.copy(alpha = 0.9f) else FarmsyColors.ink,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-        }
-    }
-}
-
 @Composable
 private fun ActionButton(label: String, fill: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
@@ -326,11 +297,12 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
     // through to the farm they were trying to open.
     suspend fun awaitGrant() {
         checking = true
-        for (attempt in 0 until 10) {
-            // Re-fetch the profile, not just the farm: hasFullAccess reads from the
-            // profile, so without this the loop would keep asking a stale copy.
+        // Only nudge the profile — the screen watches it and opens the farm itself
+        // the moment access appears (see the LaunchedEffect in FarmDetailScreen), so
+        // this loop doesn't have to win a race against the webhook to be correct. It
+        // just stops us waiting on the next natural refresh.
+        for (attempt in 0 until 12) {
             session.refreshProfile()
-            onRecheck()
             if (session.hasFullAccess) break
             kotlinx.coroutines.delay(1500)
         }
@@ -412,6 +384,7 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
                             else stringResource(R.string.price_per_year_arg, it)
                         },
                         filled = true,
+                        fallbackLabel = stringResource(R.string.become_a_member),
                     ) {
                         val activity = context as? android.app.Activity ?: return@PlanCard
                         scope.launch { if (purchases.purchase(activity, yearlyPkg, userId)) awaitGrant() }
@@ -421,6 +394,7 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
                             label = stringResource(R.string.plan_lifetime),
                             detail = "$price · ${stringResource(R.string.one_payment_yours_forever)}",
                             filled = false,
+                            fallbackLabel = stringResource(R.string.become_a_member),
                         ) {
                             val activity = context as? android.app.Activity ?: return@PlanCard
                             scope.launch { if (purchases.purchase(activity, lifetimePkg, userId)) awaitGrant() }
