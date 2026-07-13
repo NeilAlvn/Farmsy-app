@@ -43,4 +43,18 @@
     <string name="plan_yearly">Jaarlijks</string>
     <string name="plan_lifetime">Levenslang</string>
     <string name="price_per_year_arg">%1$s / jaar</string>
+    <string name="first_name">Voornaam</string>
+    <string name="last_name">Achternaam</string>
+    <string name="date_of_birth">Geboortedatum</string>
+    <string name="dob_hint">JJJJ-MM-DD</string>
+    <string name="city_label">Plaats</string>
+    <string name="referral_code_optional">Verwijzingscode (optioneel)</string>
+    <string name="your_details">Jouw gegevens</string>
+    <string name="we_need_these_to_set_up_your_account">We hebben deze nodig om je account aan te maken.</string>
+    <string name="continue_label">Doorgaan</string>
+    <string name="check_your_inbox">Check je inbox</string>
+    <string name="verification_link_sent">We hebben een verificatielink naar %1$s gestuurd. Klik erop om je account te activeren en log daarna in.</string>
+    <string name="email_not_verified_msg">Verifieer eerst je e-mailadres — check je inbox voor de link.</string>
+    <string name="invalid_dob_msg">Voer een geldige geboortedatum in. Je moet minstens 16 zijn.</string>
+    <string name="please_fill_all_fields">Vul alle velden in.</string>
 </resources>

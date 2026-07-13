@@ -43,6 +43,14 @@ import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import app.farmsy.android.core.SignUpDetails
+import app.farmsy.android.pendingRefCode
 
 /// Free sign-up / log-in — mirrors iOS AuthView (presented as a bottom sheet
 /// over guest browsing; steps aside on its own once signed in).
@@ -54,30 +62,67 @@ fun AuthSheet(onDone: () -> Unit) {
     val prefs = remember { context.getSharedPreferences("farmsy", android.content.Context.MODE_PRIVATE) }
 
     var isSignUp by remember { mutableStateOf(true) }
+    // Signup is two steps, like the web: credentials, then personal details +
+    // address. All of it is required by POST /api/auth/signup.
+    var step by remember { mutableStateOf(1) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
+    var street by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
+    var postal by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf("") }
+    // Pre-filled from a referral deep link if we have one (and it hasn't aged out
+    // of the 7-day window); still editable and still shown, so someone handed a
+    // code verbally can type it in.
+    var refCode by remember { mutableStateOf(context.pendingRefCode().orEmpty()) }
     var isWorking by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var showVerifyNote by remember { mutableStateOf(false) }
+    /// Set once the account is created. Signup no longer logs in — the account
+    /// can't authenticate until the emailed link is clicked — so we park here.
+    var verifySentTo by remember { mutableStateOf<String?>(null) }
 
     val currentSession by session.session.collectAsState()
     LaunchedEffect(currentSession) { if (currentSession != null) onDone() }
 
-    val canSubmit = email.contains("@") && password.length >= 8 &&
-        (!isSignUp || confirm == password) && !isWorking
+    val credentialsOk = email.contains("@") && password.length >= 8 &&
+        (!isSignUp || confirm == password)
+    val detailsOk = listOf(firstName, lastName, dob, street, city, postal, country)
+        .all { it.isNotBlank() }
+    val canSubmit = when {
+        isWorking -> false
+        !isSignUp -> credentialsOk
+        step == 1 -> credentialsOk
+        else -> detailsOk
+    }
 
     fun submit() {
         if (!canSubmit) return
+        // Step 1 of signup just advances the form — nothing is sent yet.
+        if (isSignUp && step == 1) { step = 2; errorMessage = null; return }
+
         isWorking = true
         errorMessage = null
         scope.launch {
             try {
                 if (isSignUp) {
-                    val refCode = prefs.getString("pendingRefCode", "") ?: ""
-                    session.signUp(email.trim(), password, refCode.ifEmpty { null })
+                    session.signUp(
+                        SignUpDetails(
+                            email = email.trim(), password = password,
+                            firstName = firstName.trim(), lastName = lastName.trim(),
+                            dob = dob.trim(), streetAddress = street.trim(),
+                            city = city.trim(), postalCode = postal.trim(),
+                            country = country.trim(),
+                            refCode = refCode.trim().ifEmpty { null },
+                        )
+                    )
+                    // Consume the referral code only once it has actually been
+                    // accepted, so a failed signup doesn't burn it.
                     prefs.edit().putString("pendingRefCode", "").apply()
-                    showVerifyNote = true
+                    verifySentTo = email.trim()
                 } else {
                     session.logIn(email.trim(), password)
                 }
@@ -86,14 +131,28 @@ fun AuthSheet(onDone: () -> Unit) {
                     is AuthException.InvalidCredentials -> context.getString(R.string.invalid_email_or_password)
                     is AuthException.EmailTaken -> context.getString(R.string.an_account_with_this_email_already_exists)
                     is AuthException.Throttled -> context.getString(R.string.too_many_attempts_please_wait_a_few_minutes_and_try_again)
+                    // Right password, unverified inbox. Sending them to reset a
+                    // working password would be the worst possible advice.
+                    is AuthException.EmailNotVerified -> context.getString(R.string.email_not_verified_msg)
+                    is AuthException.InvalidDob -> context.getString(R.string.invalid_dob_msg)
+                    is AuthException.MissingFields -> context.getString(R.string.please_fill_all_fields)
                     is AuthException.Server -> e.serverMessage
                 }
+                // A field-level rejection belongs on the field-level step.
+                if (e is AuthException.MissingFields || e is AuthException.InvalidDob) step = 2
             } catch (e: Exception) {
                 errorMessage = context.getString(R.string.something_went_wrong_please_try_again)
             } finally {
                 isWorking = false
             }
         }
+    }
+
+    // Account created: no session yet, so show the "check your inbox" state
+    // instead of dropping the user back into a form that looks like it failed.
+    verifySentTo?.let { sentTo ->
+        VerifyEmailNotice(email = sentTo, onDone = onDone)
+        return
     }
 
     Column(
@@ -129,30 +188,56 @@ fun AuthSheet(onDone: () -> Unit) {
         )
         Spacer(Modifier.height(20.dp))
 
-        AuthField(stringResource(R.string.email), email, { email = it }, KeyboardType.Email)
-        Spacer(Modifier.height(14.dp))
-        AuthField(
-            stringResource(R.string.password), password, { password = it },
-            KeyboardType.Password, isSecure = true
-        )
-        if (isSignUp) {
+        // Step 1 (and log in): credentials only. Staging the commitment this way is
+        // what keeps the drop-off down — nobody abandons at "email and password".
+        if (!isSignUp || step == 1) {
+            AuthField(stringResource(R.string.email), email, { email = it }, KeyboardType.Email)
             Spacer(Modifier.height(14.dp))
             AuthField(
-                stringResource(R.string.confirm_password), confirm, { confirm = it },
+                stringResource(R.string.password), password, { password = it },
                 KeyboardType.Password, isSecure = true
             )
+            if (isSignUp) {
+                Spacer(Modifier.height(14.dp))
+                AuthField(
+                    stringResource(R.string.confirm_password), confirm, { confirm = it },
+                    KeyboardType.Password, isSecure = true
+                )
+            }
+        } else {
+            // Step 2: the profile fields the API now requires.
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1f)) {
+                    AuthField(stringResource(R.string.first_name), firstName, { firstName = it })
+                }
+                Box(Modifier.weight(1f)) {
+                    AuthField(stringResource(R.string.last_name), lastName, { lastName = it })
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            // Date picker, not free text: the server wants a real ISO date and 16+,
+            // and a typed "12/04/98" would just bounce back as invalid_dob.
+            DobField(value = dob, onPick = { dob = it })
+            Spacer(Modifier.height(14.dp))
+            AuthField(stringResource(R.string.street_address), street, { street = it })
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1.4f)) {
+                    AuthField(stringResource(R.string.city_label), city, { city = it })
+                }
+                Box(Modifier.weight(1f)) {
+                    AuthField(stringResource(R.string.postal_code), postal, { postal = it })
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            AuthField(stringResource(R.string.country), country, { country = it })
+            Spacer(Modifier.height(14.dp))
+            AuthField(stringResource(R.string.referral_code_optional), refCode, { refCode = it })
         }
 
         errorMessage?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.warnRed)
-        }
-        if (showVerifyNote) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                stringResource(R.string.we_ve_sent_a_verification_link_to_your_email_you_can_keep_ex),
-                style = geist(14.sp), color = FarmsyColors.farmGreen
-            )
         }
 
         Spacer(Modifier.height(22.dp))
@@ -163,9 +248,23 @@ fun AuthSheet(onDone: () -> Unit) {
             )
         } else {
             PrimaryButton(
-                stringResource(if (isSignUp) R.string.create_account else R.string.log_in),
+                stringResource(
+                    when {
+                        !isSignUp -> R.string.log_in
+                        step == 1 -> R.string.continue_label
+                        else -> R.string.create_account
+                    }
+                ),
                 enabled = canSubmit
             ) { submit() }
+            if (isSignUp && step == 2) {
+                TextButton(
+                    onClick = { step = 1; errorMessage = null },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(stringResource(R.string.back), style = geist(15.sp), color = FarmsyColors.inkMuted)
+                }
+            }
         }
 
         Row(
@@ -191,7 +290,7 @@ private fun AuthField(
     label: String,
     value: String,
     onChange: (String) -> Unit,
-    keyboardType: KeyboardType,
+    keyboardType: KeyboardType = KeyboardType.Text,
     isSecure: Boolean = false,
 ) {
     Column {
@@ -211,5 +310,83 @@ private fun AuthField(
                 unfocusedBorderColor = FarmsyColors.inkMuted.copy(alpha = 0.25f),
             )
         )
+    }
+}
+
+/// Date of birth, via the platform picker.
+///
+/// The API wants a real ISO `yyyy-MM-dd` and rejects under-16s, so free text would
+/// just bounce (`invalid_dob`) after a round trip. The picker can't produce a
+/// malformed date, and we cap it at today-minus-16 so the age rule is enforced
+/// before the user ever submits.
+@Composable
+private fun DobField(value: String, onPick: (String) -> Unit) {
+    val context = LocalContext.current
+    val today = remember { java.util.Calendar.getInstance() }
+    val maxDate = remember {
+        (today.clone() as java.util.Calendar).apply { add(java.util.Calendar.YEAR, -16) }
+    }
+
+    Column {
+        Text(
+            stringResource(R.string.date_of_birth),
+            style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen
+        )
+        Spacer(Modifier.height(6.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val start = maxDate
+                    android.app.DatePickerDialog(
+                        context,
+                        { _, y, m, d ->
+                            onPick("%04d-%02d-%02d".format(y, m + 1, d))
+                        },
+                        start.get(java.util.Calendar.YEAR),
+                        start.get(java.util.Calendar.MONTH),
+                        start.get(java.util.Calendar.DAY_OF_MONTH),
+                    ).apply {
+                        datePicker.maxDate = maxDate.timeInMillis
+                    }.show()
+                }
+                .background(Color.White, RoundedCornerShape(14.dp))
+                .padding(horizontal = 16.dp, vertical = 18.dp)
+        ) {
+            Text(
+                value.ifEmpty { stringResource(R.string.dob_hint) },
+                style = geist(15.sp),
+                color = if (value.isEmpty()) FarmsyColors.inkMuted else FarmsyColors.ink,
+            )
+        }
+    }
+}
+
+/// Shown after a successful signup. There is no session yet — the account can't
+/// authenticate until the emailed link is clicked — so parking the user here is
+/// the honest state. Dropping them back on the form would read as a failure.
+@Composable
+private fun VerifyEmailNotice(email: String, onDone: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(top = 30.dp, bottom = 36.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("📬", style = geist(46.sp))
+        Spacer(Modifier.height(14.dp))
+        Text(
+            stringResource(R.string.check_your_inbox),
+            style = display(26.sp), color = FarmsyColors.ink
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            stringResource(R.string.verification_link_sent, email),
+            style = geist(15.sp), color = FarmsyColors.inkMuted,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(24.dp))
+        PrimaryButton(stringResource(R.string.log_in), onClick = onDone)
     }
 }

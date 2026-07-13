@@ -46,4 +46,18 @@
     <string name="plan_yearly">Yearly</string>
     <string name="plan_lifetime">Lifetime</string>
     <string name="price_per_year_arg">%1$s / year</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="date_of_birth">Date of birth</string>
+    <string name="dob_hint">YYYY-MM-DD</string>
+    <string name="city_label">City</string>
+    <string name="referral_code_optional">Referral code (optional)</string>
+    <string name="your_details">Your details</string>
+    <string name="we_need_these_to_set_up_your_account">We need these to set up your account.</string>
+    <string name="continue_label">Continue</string>
+    <string name="check_your_inbox">Check your inbox</string>
+    <string name="verification_link_sent">We\'ve sent a verification link to %1$s. Click it to activate your account, then log in.</string>
+    <string name="email_not_verified_msg">Please verify your email first — check your inbox for the link.</string>
+    <string name="invalid_dob_msg">Enter a valid date of birth. You must be at least 16.</string>
+    <string name="please_fill_all_fields">Please fill in all fields.</string>
 </resources>

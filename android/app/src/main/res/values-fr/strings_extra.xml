@@ -43,4 +43,18 @@
     <string name="plan_yearly">Annuel</string>
     <string name="plan_lifetime">À vie</string>
     <string name="price_per_year_arg">%1$s / an</string>
+    <string name="first_name">Prénom</string>
+    <string name="last_name">Nom</string>
+    <string name="date_of_birth">Date de naissance</string>
+    <string name="dob_hint">AAAA-MM-JJ</string>
+    <string name="city_label">Ville</string>
+    <string name="referral_code_optional">Code de parrainage (facultatif)</string>
+    <string name="your_details">Vos informations</string>
+    <string name="we_need_these_to_set_up_your_account">Nous en avons besoin pour créer votre compte.</string>
+    <string name="continue_label">Continuer</string>
+    <string name="check_your_inbox">Vérifiez votre boîte mail</string>
+    <string name="verification_link_sent">Nous avons envoyé un lien de vérification à %1$s. Cliquez dessus pour activer votre compte, puis connectez-vous.</string>
+    <string name="email_not_verified_msg">Vérifiez d\'abord votre e-mail — le lien est dans votre boîte mail.</string>
+    <string name="invalid_dob_msg">Saisissez une date de naissance valide. Vous devez avoir au moins 16 ans.</string>
+    <string name="please_fill_all_fields">Veuillez remplir tous les champs.</string>
 </resources>

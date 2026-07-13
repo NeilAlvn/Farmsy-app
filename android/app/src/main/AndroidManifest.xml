@@ -38,6 +38,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Referral links: farmsy.app/join?ref=CODE opens the app and the code
+                 is held until signup. Without this the link only ever opened the
+                 website, so an invited user who installed the app arrived with no
+                 code at all and the referrer was never credited. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="farmsy.app" android:pathPrefix="/join" />
+                <data android:scheme="https" android:host="www.farmsy.app" android:pathPrefix="/join" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

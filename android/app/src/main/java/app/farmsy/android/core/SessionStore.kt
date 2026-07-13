@@ -26,8 +26,28 @@ sealed class AuthException(message: String) : Exception(message) {
     class InvalidCredentials : AuthException("invalid_credentials")
     class EmailTaken : AuthException("email_taken")
     class Throttled : AuthException("throttled")
+    /// The account exists and the password is right — they just haven't clicked
+    /// the link in their email yet. Must not be shown as a credentials failure.
+    class EmailNotVerified : AuthException("email_not_verified")
+    class MissingFields(val fields: List<String>) : AuthException("missing_fields")
+    class InvalidDob : AuthException("invalid_dob")
     class Server(val serverMessage: String) : AuthException(serverMessage)
 }
+
+/// Everything POST /api/auth/signup requires. Mirrors the web's two-step form:
+/// credentials, then personal details + address. `refCode` is the only optional.
+data class SignUpDetails(
+    val email: String,
+    val password: String,
+    val firstName: String,
+    val lastName: String,
+    val dob: String,            // ISO yyyy-MM-dd, must be a real date, 16+
+    val streetAddress: String,
+    val city: String,
+    val postalCode: String,
+    val country: String,
+    val refCode: String? = null,
+)
 
 /// Auth + subscription state — mirrors iOS SessionStore.swift.
 /// Sign-in/up go through the farmsy.app API (same throttling and branded
@@ -125,7 +145,11 @@ class SessionStore(private val scope: CoroutineScope) {
     private data class LoginResponse(val session: LoginTokens)
 
     @Serializable
-    private data class ErrorBody(val error: String? = null)
+    private data class ErrorBody(
+        val error: String? = null,
+        val code: String? = null,
+        val fields: List<String>? = null,
+    )
 
     suspend fun logIn(email: String, password: String) = withContext(Dispatchers.IO) {
         val (body, status) = postJson("auth/login", mapOf("email" to email, "password" to password))
@@ -141,27 +165,64 @@ class SessionStore(private val scope: CoroutineScope) {
                         user = null
                     )
                 )
+                // No /api/session/create call on purpose: active_sessions only backs
+                // admin auth and the web's single-session guard, neither of which the
+                // app uses. Creating one would mean owning a token lifecycle for no
+                // user-facing benefit. (Confirmed with Aviah, 2026-07-14.)
                 refreshProfile()
             }
+            // The email-verified gate lives in the API now. This is NOT a wrong
+            // password — telling the user so would send them to reset a password
+            // that works fine.
+            403 -> if (errorCode(body) == "email_not_verified") {
+                throw AuthException.EmailNotVerified()
+            } else throw AuthException.Server(serverMessage(body))
             401 -> throw AuthException.InvalidCredentials()
             429 -> throw AuthException.Throttled()
             else -> throw AuthException.Server(serverMessage(body))
         }
     }
 
-    suspend fun signUp(email: String, password: String, refCode: String?) = withContext(Dispatchers.IO) {
+    /// Creates the account. Deliberately does NOT log in afterwards: signup returns
+    /// 200 but the account can't authenticate until the emailed link is clicked, so
+    /// an auto-login would immediately 403 and read as "signup failed". The caller
+    /// shows a "check your inbox" screen instead — same as the web.
+    ///
+    /// Every field except `refCode` is required server-side; the form gathers them
+    /// all, but we still surface `missing_fields` so a drift between client and API
+    /// shows up as a precise error rather than a generic one.
+    suspend fun signUp(details: SignUpDetails) = withContext(Dispatchers.IO) {
         val payload = buildMap {
-            put("email", email); put("password", password)
-            if (!refCode.isNullOrEmpty()) put("refCode", refCode)
+            put("email", details.email); put("password", details.password)
+            put("firstName", details.firstName); put("lastName", details.lastName)
+            put("dob", details.dob)
+            put("streetAddress", details.streetAddress); put("city", details.city)
+            put("postalCode", details.postalCode); put("country", details.country)
+            // Uppercased to match the web's cookie contract.
+            details.refCode?.takeIf { it.isNotBlank() }?.let { put("refCode", it.uppercase()) }
         }
         val (body, status) = postJson("auth/signup", payload)
         when (status) {
-            200, 201 -> logIn(email, password)
+            200, 201 -> Unit // verify-email screen next; no session yet
             409 -> throw AuthException.EmailTaken()
             429 -> throw AuthException.Throttled()
+            400 -> when (errorCode(body)) {
+                "missing_fields" -> throw AuthException.MissingFields(missingFields(body))
+                "invalid_dob" -> throw AuthException.InvalidDob()
+                "missing_credentials" -> throw AuthException.InvalidCredentials()
+                else -> throw AuthException.Server(serverMessage(body))
+            }
             else -> throw AuthException.Server(serverMessage(body))
         }
     }
+
+    /// Branch on `code`, never the human-readable message (Aviah's contract).
+    private fun errorCode(body: String): String? =
+        runCatching { lenientJson.decodeFromString<ErrorBody>(body).code }.getOrNull()
+
+    private fun missingFields(body: String): List<String> =
+        runCatching { lenientJson.decodeFromString<ErrorBody>(body).fields ?: emptyList() }
+            .getOrDefault(emptyList())
 
     suspend fun signOut() {
         runCatching { supabase.auth.signOut() }
