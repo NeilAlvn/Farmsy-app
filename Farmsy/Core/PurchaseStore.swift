@@ -74,10 +74,20 @@ final class PurchaseStore {
     /// Buys the membership. Returns true once the purchase completes — the caller
     /// then refreshes the profile, because access is granted by the server (via
     /// RevenueCat's webhook), not by this return value.
-    func purchase(_ package: Package?) async -> Bool {
+    ///
+    /// `userId` is the Supabase user id. We re-assert `logIn` here, right before
+    /// buying, because the identify() fired at auth time can lose the race with the
+    /// user reaching this button — on a fresh install the SDK starts with an
+    /// anonymous id. A purchase attached to that anonymous id has no Supabase user
+    /// for the webhook to grant, and the payment is stranded. Re-asserting the id
+    /// at purchase time closes that race.
+    func purchase(_ package: Package?, userId: UUID?) async -> Bool {
         guard let package else {
             purchaseError = String(localized: "Membership isn't available right now. Please try again later.")
             return false
+        }
+        if let userId, Purchases.shared.appUserID != userId.uuidString {
+            _ = try? await Purchases.shared.logIn(userId.uuidString)
         }
         isPurchasing = true
         purchaseError = nil

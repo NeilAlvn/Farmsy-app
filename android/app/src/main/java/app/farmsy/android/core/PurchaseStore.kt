@@ -96,10 +96,20 @@ class PurchaseStore {
     /// Buys the membership. Returns true once the purchase completes — the caller
     /// then refreshes the profile, because access is granted by the server (via
     /// RevenueCat's webhook), not by this return value.
-    suspend fun purchase(activity: Activity, pkg: Package?): Boolean {
+    ///
+    /// `userId` is the Supabase user id. We re-assert `logIn` here, immediately
+    /// before buying, because the identify() fired at auth time can lose the race
+    /// with the user reaching this button — especially on a fresh Play install,
+    /// where the SDK starts with an anonymous id. If the purchase attaches to that
+    /// anonymous id, the webhook has no Supabase user to grant and the payment is
+    /// stranded. Gating the buy on the real id closes that race for good.
+    suspend fun purchase(activity: Activity, pkg: Package?, userId: String?): Boolean {
         if (pkg == null) {
             _purchaseError.value = "unavailable"
             return false
+        }
+        if (enabled && userId != null && Purchases.sharedInstance.appUserID != userId) {
+            runCatching { Purchases.sharedInstance.awaitLogIn(userId) }
         }
         _isPurchasing.value = true
         _purchaseError.value = null

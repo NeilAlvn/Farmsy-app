@@ -333,7 +333,22 @@ struct LockedAccessView: View {
 
     @Environment(FarmsStore.self) private var farms
     @Environment(PurchaseStore.self) private var purchases
+    @Environment(SessionStore.self) private var session
     @State private var isChecking = false
+
+    /// Access is granted by the server after RevenueCat's webhook writes
+    /// subscription_status — which lands a few seconds *after* the purchase call
+    /// returns. Re-checking once, immediately, races the webhook and finds the
+    /// profile still 'free'. Poll a few times so the screen unlocks on its own
+    /// when the grant lands.
+    private func awaitGrant() async {
+        isChecking = true
+        for _ in 0..<6 {
+            await onRecheck()
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+        }
+        isChecking = false
+    }
 
     private let emojiGrid = ["🥬", "🥛", "🧀", "🥚", "🥩", "🐟",
                              "🍯", "🍷", "🧺", "🌱", "🍎", "🥔"]
@@ -392,79 +407,47 @@ struct LockedAccessView: View {
                 // Buy. The server grants access (RevenueCat webhook writes
                 // subscription_status), so after a purchase we re-ask the API
                 // rather than trusting the client.
-                if purchases.isPurchasing {
+                if purchases.isPurchasing || isChecking {
+                    ProgressView().tint(Color.farmGreen)
+                } else if purchases.yearlyPrice == nil {
+                    // Offering still loading — a spinner, not a half-drawn paywall.
                     ProgressView().tint(Color.farmGreen)
                 } else {
-                    Button {
-                        Haptics.tap()
+                    let uid = session.session?.user.id
+                    // Two matched cards, tight together: short label on top, price
+                    // below. Same shape and height — one filled, one outlined.
+                    PlanButton(label: String(localized: "Yearly"),
+                               detail: purchases.yearlyPrice.map { "\($0) / year" },
+                               filled: true) {
                         Task {
-                            if await purchases.purchase(purchases.yearlyPackage) {
-                                Haptics.success()
-                                await onRecheck()
+                            if await purchases.purchase(purchases.yearlyPackage, userId: uid) {
+                                Haptics.success(); await awaitGrant()
                             }
                         }
-                    } label: {
-                        if let price = purchases.yearlyPrice {
-                            Text("Yearly — \(price)/year")
-                        } else {
-                            Text("Become a member")
-                        }
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-
-                    // Lifetime: one payment, never expires.
                     if let price = purchases.lifetimePrice {
-                        Button {
-                            Haptics.tap()
+                        PlanButton(label: String(localized: "Lifetime"),
+                                   detail: "\(price) · " + String(localized: "One payment, yours forever"),
+                                   filled: false) {
                             Task {
-                                if await purchases.purchase(purchases.lifetimePackage) {
-                                    Haptics.success()
-                                    await onRecheck()
+                                if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
+                                    Haptics.success(); await awaitGrant()
                                 }
                             }
-                        } label: {
-                            VStack(spacing: 2) {
-                                Text("Lifetime — \(price)")
-                                    .font(.geist(17, .semibold))
-                                Text("One payment, yours forever")
-                                    .font(.geist(13))
-                                    .foregroundStyle(Color.inkMuted)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .fill(.white)
-                                    .stroke(Color.farmGreen, lineWidth: 1.5)
-                            )
-                            .foregroundStyle(Color.farmGreen)
                         }
-                        .buttonStyle(.plain)
                     }
-                }
 
-                HStack(spacing: 18) {
-                    // Apple requires a visible restore path.
+                    // Restore only. "I subscribed on the web" removed — the app
+                    // already re-checks the server on open, so web subscribers get
+                    // access without it, and a manual "I paid elsewhere" control
+                    // reads as sketchy next to Apple's own purchase flow.
                     Button("Restore purchases") {
                         Haptics.tap()
-                        Task {
-                            if await purchases.restore() { await onRecheck() }
-                        }
+                        Task { if await purchases.restore() { await awaitGrant() } }
                     }
-                    Button("I subscribed on the web") {
-                        Haptics.tap()
-                        isChecking = true
-                        Task {
-                            await onRecheck()
-                            isChecking = false
-                        }
-                    }
+                    .font(.geist(14, .medium))
+                    .foregroundStyle(Color.inkMuted)
                 }
-                .font(.geist(14, .medium))
-                .foregroundStyle(Color.inkMuted)
-                .disabled(purchases.isPurchasing)
-
-                if isChecking { ProgressView().tint(Color.farmGreen) }
 
                 // Owners can claim without a membership.
                 Button {
@@ -484,5 +467,45 @@ struct LockedAccessView: View {
             .padding(.horizontal, 20)
         }
         .task { await purchases.loadOffering() }
+    }
+}
+
+/// One purchasable plan on the paywall. Two lines — label above, price below —
+/// kept short so a large Dynamic Type size shrinks rather than reflows. Filled is
+/// the primary (yearly); outlined is the secondary (lifetime).
+struct PlanButton: View {
+    let label: String
+    let detail: String?
+    let filled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            VStack(spacing: 2) {
+                Text(detail == nil ? String(localized: "Become a member") : label)
+                    .font(.geist(17, .semibold))
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                if let detail {
+                    Text(detail)
+                        .font(.geist(14))
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                        .foregroundStyle(filled ? Color.white.opacity(0.9) : Color.ink)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(filled ? Color.farmGreen : Color.white)
+                    .stroke(filled ? Color.clear : Color.farmGreen.opacity(0.45), lineWidth: 1.5)
+            )
+            .foregroundStyle(filled ? Color.white : Color.farmGreen)
+        }
+        .buttonStyle(.plain)
     }
 }

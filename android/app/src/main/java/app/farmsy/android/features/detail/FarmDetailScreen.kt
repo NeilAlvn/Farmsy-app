@@ -65,6 +65,7 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.border
 import androidx.compose.ui.text.style.TextOverflow
+import app.farmsy.android.ui.theme.FitText
 
 /// Farm detail — mirrors iOS FarmDetailView. The full payload only exists
 /// behind the farmsy.app API's subscription check; without access we show the
@@ -230,7 +231,6 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
 private fun PlanCard(
     label: String,
     detail: String?,
-    footnote: String? = null,
     filled: Boolean,
     onClick: () -> Unit,
 ) {
@@ -246,24 +246,20 @@ private fun PlanCard(
                     .border(1.5.dp, FarmsyColors.farmGreen.copy(alpha = 0.45f), shape)
             )
             .clickable(onClick = onClick)
-            .padding(vertical = 14.dp, horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 16.dp, horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text(
+        FitText(
             if (detail == null) stringResource(R.string.become_a_member) else label,
             style = geist(17.sp, FontWeight.SemiBold), color = fg,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
         detail?.let {
-            Text(
-                it, style = geist(14.sp), color = if (filled) Color.White.copy(alpha = 0.9f) else FarmsyColors.ink,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
-        }
-        footnote?.let {
-            Text(
-                it, style = geist(12.sp), color = FarmsyColors.inkMuted,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            FitText(
+                it, style = geist(14.sp),
+                color = if (filled) Color.White.copy(alpha = 0.9f) else FarmsyColors.ink,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
     }
@@ -306,6 +302,7 @@ private fun CircleIconButton(
 @Composable
 private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspend () -> Unit) {
     val context = LocalContext.current
+    val session = app.farmsy.android.LocalSession.current
     val purchases = app.farmsy.android.LocalPurchases.current
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
@@ -314,7 +311,23 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
     val purchaseError by purchases.purchaseError.collectAsState()
     val yearlyPkg by purchases.yearly.collectAsState()
     val lifetimePkg by purchases.lifetime.collectAsState()
+    val currentSession by session.session.collectAsState()
+    val userId = currentSession?.user?.id
     LaunchedEffect(Unit) { purchases.loadOffering() }
+
+    // Access is granted by the server after RevenueCat's webhook writes
+    // subscription_status — which lands a few seconds *after* the purchase call
+    // returns. Re-checking once, immediately, usually races the webhook and finds
+    // the profile still 'free'. Poll a handful of times so the screen unlocks on
+    // its own the moment the grant lands.
+    suspend fun awaitGrant() {
+        checking = true
+        repeat(6) {
+            onRecheck()
+            kotlinx.coroutines.delay(2000)
+        }
+        checking = false
+    }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -351,57 +364,53 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
         // Buy. The server grants access (RevenueCat webhook writes
         // subscription_status), so after a purchase we re-ask the API rather
         // than trusting the client.
-        if (isPurchasing) {
-            CircularProgressIndicator(color = FarmsyColors.farmGreen)
-        } else {
-            // Both plans render as two-line cards: a short label on top, the price
-            // beneath. Putting the price *inside* the label ("Yearly — €29,99/year")
-            // made the line long enough to wrap — and therefore the button to grow —
-            // once the system font scale went above 1.0.
-            PlanCard(
-                label = stringResource(R.string.plan_yearly),
-                detail = purchases.yearlyPrice?.let { stringResource(R.string.price_per_year_arg, it) },
-                filled = true,
-            ) {
-                val activity = context as? android.app.Activity ?: return@PlanCard
-                scope.launch { if (purchases.purchase(activity, yearlyPkg)) onRecheck() }
-            }
-            // Lifetime: one payment, never expires.
-            purchases.lifetimePrice?.let { price ->
-                Spacer(Modifier.height(10.dp))
-                PlanCard(
-                    label = stringResource(R.string.plan_lifetime),
-                    detail = price,
-                    footnote = stringResource(R.string.one_payment_yours_forever),
-                    filled = false,
+        when {
+            isPurchasing || checking -> CircularProgressIndicator(color = FarmsyColors.farmGreen)
+            // Offering still loading — show a spinner rather than a half-drawn
+            // paywall (the old code flashed a lone "Become a member" button, then
+            // the real cards once prices arrived).
+            purchases.yearlyPrice == null -> CircularProgressIndicator(color = FarmsyColors.farmGreen)
+            else -> {
+                // Two matched cards, tight together: a short label on top, price
+                // below. Both go through PlanCard so they're the same height and
+                // shape — one filled, one outlined.
+                Column(
+                    Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    val activity = context as? android.app.Activity ?: return@PlanCard
-                    scope.launch { if (purchases.purchase(activity, lifetimePkg)) onRecheck() }
+                    PlanCard(
+                        label = stringResource(R.string.plan_yearly),
+                        detail = purchases.yearlyPrice?.let { stringResource(R.string.price_per_year_arg, it) },
+                        filled = true,
+                    ) {
+                        val activity = context as? android.app.Activity ?: return@PlanCard
+                        scope.launch { if (purchases.purchase(activity, yearlyPkg, userId)) awaitGrant() }
+                    }
+                    purchases.lifetimePrice?.let { price ->
+                        PlanCard(
+                            label = stringResource(R.string.plan_lifetime),
+                            detail = "$price · ${stringResource(R.string.one_payment_yours_forever)}",
+                            filled = false,
+                        ) {
+                            val activity = context as? android.app.Activity ?: return@PlanCard
+                            scope.launch { if (purchases.purchase(activity, lifetimePkg, userId)) awaitGrant() }
+                        }
+                    }
                 }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text(
+                // Restore only. "I subscribed on the web" is gone — the app already
+                // re-checks the server on open, so web subscribers get access without
+                // it, and a manual "I paid elsewhere" control reads as sketchy.
+                FitText(
                     stringResource(R.string.restore_purchases),
                     style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
                     modifier = Modifier.clickable {
-                        scope.launch { if (purchases.restore()) onRecheck() }
-                    }
-                )
-                Text(
-                    stringResource(R.string.i_subscribed_on_the_web),
-                    style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
-                    modifier = Modifier.clickable {
-                        checking = true
-                        scope.launch { onRecheck(); checking = false }
+                        scope.launch { if (purchases.restore()) awaitGrant() }
                     }
                 )
             }
         }
 
-        if (checking) {
-            CircularProgressIndicator(color = FarmsyColors.farmGreen)
-        }
-        Text(
+        FitText(
             stringResource(R.string.is_arg_yours_claim_it, pin.name),
             style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted,
             modifier = Modifier.clickable { onClaim() }
