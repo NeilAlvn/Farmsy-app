@@ -14,11 +14,13 @@ object Backend {
     const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4a3l5cG16eGZremRkcmF4dGF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NjA5NzMsImV4cCI6MjA5MzQzNjk3M30.6WpDjAtun7TUixlqMBZrvDn57TXNKY8sIaGxPvX0fyU"
     const val WEB_API = "https://www.farmsy.app/api"
 
-    /// RevenueCat's *public* SDK key — safe to ship (it can only start purchases,
-    /// never read revenue or grant entitlements). Injected from the gitignored
-    /// android/secrets.properties at build time; empty means "no purchases", and
-    /// the app still runs.
+    /// All public client keys, injected from the gitignored secrets.properties at
+    /// build time. Every one is optional — empty disables its feature rather than
+    /// crashing, so builds without secrets still run.
     val REVENUECAT_KEY: String = BuildConfig.REVENUECAT_KEY
+    val SENTRY_DSN: String = BuildConfig.SENTRY_DSN
+    val POSTHOG_KEY: String = BuildConfig.POSTHOG_KEY
+    val POSTHOG_HOST: String = BuildConfig.POSTHOG_HOST
 }
 
 /// Shared HTTP client for the farmsy.app API calls (auth, profile, detail).

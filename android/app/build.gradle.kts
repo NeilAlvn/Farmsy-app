@@ -33,10 +33,10 @@ android {
         versionName = "1.0"
 
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
-        buildConfigField(
-            "String", "REVENUECAT_KEY",
-            "\"${secrets.getProperty("REVENUECAT_KEY", "")}\""
-        )
+        buildConfigField("String", "REVENUECAT_KEY", "\"${secrets.getProperty("REVENUECAT_KEY", "")}\"")
+        buildConfigField("String", "SENTRY_DSN", "\"${secrets.getProperty("SENTRY_DSN", "")}\"")
+        buildConfigField("String", "POSTHOG_KEY", "\"${secrets.getProperty("POSTHOG_KEY", "")}\"")
+        buildConfigField("String", "POSTHOG_HOST", "\"${secrets.getProperty("POSTHOG_HOST", "https://eu.i.posthog.com")}\"")
     }
 
     signingConfigs {
@@ -113,4 +113,8 @@ dependencies {
 
     // In-app purchases (Google Play Billing via RevenueCat)
     implementation("com.revenuecat.purchases:purchases:8.10.0")
+
+    // Crash reporting + product analytics
+    implementation("io.sentry:sentry-android:7.20.0")
+    implementation("com.posthog:posthog-android:3.11.1")
 }

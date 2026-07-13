@@ -2,6 +2,7 @@ package app.farmsy.android
 
 import android.app.Application
 import app.farmsy.android.core.FarmsStore
+import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FavoritesStore
 import app.farmsy.android.core.LocationHelper
 import app.farmsy.android.core.PurchaseStore
@@ -31,6 +32,7 @@ class FarmsyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Observability.start(this)
         PurchaseStore.configure(this)
         session = SessionStore(appScope)
         farms = FarmsStore(appScope)

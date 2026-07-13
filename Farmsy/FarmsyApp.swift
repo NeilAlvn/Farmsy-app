@@ -22,6 +22,7 @@ struct FarmsyApp: App {
             UserDefaults.standard.removeObject(forKey: "pendingRefCode")
         }
         #endif
+        Observability.start()
         PurchaseStore.configure()
         let store = SessionStore()
         #if DEBUG

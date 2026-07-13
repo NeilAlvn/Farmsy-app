@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		8FED61A00000000000000003 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED61A00000000000000002 /* Supabase */; };
 		8FED61A00000000000000013 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED61A00000000000000012 /* RevenueCat */; };
+		8FED61A00000000000000023 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED61A00000000000000022 /* Sentry */; };
+		8FED61A00000000000000033 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 8FED61A00000000000000032 /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +61,8 @@
 			files = (
 				8FED61A00000000000000003 /* Supabase in Frameworks */,
 				8FED61A00000000000000013 /* RevenueCat in Frameworks */,
+				8FED61A00000000000000023 /* Sentry in Frameworks */,
+				8FED61A00000000000000033 /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -121,6 +125,8 @@
 			packageProductDependencies = (
 				8FED61A00000000000000002 /* Supabase */,
 				8FED61A00000000000000012 /* RevenueCat */,
+				8FED61A00000000000000022 /* Sentry */,
+				8FED61A00000000000000032 /* PostHog */,
 			);
 			productName = Farmsy;
 			productReference = 8FED61372FD82AE8006A930D /* Farmsy.app */;
@@ -210,6 +216,8 @@
 			packageReferences = (
 				8FED61A00000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				8FED61A00000000000000011 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				8FED61A00000000000000021 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				8FED61A00000000000000031 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FED61382FD82AE8006A930D /* Products */;
@@ -596,6 +604,22 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		8FED61A00000000000000021 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+		8FED61A00000000000000031 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -608,6 +632,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8FED61A00000000000000011 /* XCRemoteSwiftPackageReference "purchases-ios" */;
 			productName = RevenueCat;
+		};
+		8FED61A00000000000000022 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FED61A00000000000000021 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+		8FED61A00000000000000032 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FED61A00000000000000031 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

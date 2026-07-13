@@ -59,12 +59,14 @@ final class SessionStore {
                     // RevenueCat must know the Supabase user id before any
                     // purchase, or its webhook can't find the profile to grant.
                     await PurchaseStore.identify(userId: session.user.id)
+                    Observability.identify(userId: session.user.id.uuidString)
                     if [.signedIn, .tokenRefreshed, .initialSession].contains(state.event) {
                         await self.refreshProfile()
                     }
                 } else {
                     self.profile = nil
                     await PurchaseStore.signOut()
+                    Observability.reset()
                 }
             }
         }
