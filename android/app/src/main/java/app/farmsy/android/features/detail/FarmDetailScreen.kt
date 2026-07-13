@@ -394,13 +394,23 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
                 // Two matched cards, tight together: a short label on top, price
                 // below. Both go through PlanCard so they're the same height and
                 // shape — one filled, one outlined.
+                // With a trial, lead with the free days and put the price it converts
+                // to underneath. Without one (a returning subscriber is not eligible,
+                // and the store tells us so), just the price — we never advertise a
+                // trial someone won't actually get.
+                val trialDays = purchases.yearlyFreeTrialDays
                 Column(
                     Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     PlanCard(
-                        label = stringResource(R.string.plan_yearly),
-                        detail = purchases.yearlyPrice?.let { stringResource(R.string.price_per_year_arg, it) },
+                        label = if (trialDays != null)
+                            stringResource(R.string.free_trial_days_arg, trialDays)
+                        else stringResource(R.string.plan_yearly),
+                        detail = purchases.yearlyPrice?.let {
+                            if (trialDays != null) stringResource(R.string.then_price_per_year_arg, it)
+                            else stringResource(R.string.price_per_year_arg, it)
+                        },
                         filled = true,
                     ) {
                         val activity = context as? android.app.Activity ?: return@PlanCard
@@ -416,6 +426,19 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
                             scope.launch { if (purchases.purchase(activity, lifetimePkg, userId)) awaitGrant() }
                         }
                     }
+                }
+                // The full terms, spelled out before the user can buy: how long it's
+                // free, what it renews at, and how to get out. A trial that quietly
+                // turns into a charge is the thing App Review guideline 3.1.2 exists
+                // to stop, and it's a rotten way to treat someone besides.
+                val price = purchases.yearlyPrice
+                if (trialDays != null && price != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.trial_terms_arg, trialDays, price),
+                        style = geist(12.sp), color = FarmsyColors.inkMuted,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
                 }
                 // Restore only. "I subscribed on the web" is gone — the app already
                 // re-checks the server on open, so web subscribers get access without

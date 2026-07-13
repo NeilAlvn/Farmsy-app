@@ -73,4 +73,7 @@
     <string name="manage_subscription">Manage subscription</string>
     <string name="trial_active">Your trial is active</string>
     <string name="membership_ends_arg">Access until %1$s</string>
+    <string name="free_trial_days_arg">%1$d days free</string>
+    <string name="then_price_per_year_arg">then %1$s / year</string>
+    <string name="trial_terms_arg">Free for %1$d days, then %2$s per year. Cancel anytime in Google Play.</string>
 </resources>

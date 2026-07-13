@@ -46,6 +46,26 @@ final class PurchaseStore {
     var yearlyPrice: String? { yearlyPackage?.storeProduct.localizedPriceString }
     var lifetimePrice: String? { lifetimePackage?.storeProduct.localizedPriceString }
 
+    /// Length of the yearly plan's free trial in days, or nil when there isn't one.
+    ///
+    /// Read from StoreKit, never hardcoded: Apple only reports an introductory offer
+    /// for customers who are actually *eligible*, so a returning subscriber gets
+    /// none. Advertising "3 days free" to someone who won't receive it is precisely
+    /// the misrepresentation App Review guideline 3.1.2 exists to catch — and it's a
+    /// rotten way to treat someone regardless. No offer, no claim.
+    var yearlyFreeTrialDays: Int? {
+        guard let intro = yearlyPackage?.storeProduct.introductoryDiscount,
+              intro.paymentMode == .freeTrial else { return nil }
+        let p = intro.subscriptionPeriod
+        switch p.unit {
+        case .day:   return p.value
+        case .week:  return p.value * 7
+        case .month: return p.value * 30
+        case .year:  return p.value * 365
+        @unknown default: return nil
+        }
+    }
+
     /// Back-compat for callers that just want the headline price.
     var displayPrice: String? { yearlyPrice }
 

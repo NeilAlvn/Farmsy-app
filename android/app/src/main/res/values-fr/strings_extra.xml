@@ -70,4 +70,7 @@
     <string name="manage_subscription">Gérer l\'abonnement</string>
     <string name="trial_active">Votre essai est actif</string>
     <string name="membership_ends_arg">Accès jusqu\'au %1$s</string>
+    <string name="free_trial_days_arg">%1$d jours offerts</string>
+    <string name="then_price_per_year_arg">puis %1$s / an</string>
+    <string name="trial_terms_arg">Gratuit pendant %1$d jours, puis %2$s par an. Annulable à tout moment dans Google Play.</string>
 </resources>

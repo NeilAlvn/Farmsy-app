@@ -17,6 +17,7 @@ import com.revenuecat.purchases.awaitRestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.revenuecat.purchases.models.Period
 
 /// In-app purchases via RevenueCat — mirrors iOS PurchaseStore.
 ///
@@ -44,6 +45,26 @@ class PurchaseStore {
     /// Prices as the Play Store formats them for the user's region ("€29,99").
     val yearlyPrice: String? get() = _yearly.value?.product?.price?.formatted
     val lifetimePrice: String? get() = _lifetime.value?.product?.price?.formatted
+
+    /// Length of the yearly plan's free trial in days, or null when there isn't one.
+    ///
+    /// Read from the store, never hardcoded: Play only attaches the free phase for
+    /// customers who are actually *eligible*, so a returning subscriber sees no
+    /// trial. Printing "3 days free" at someone who won't get it is exactly the
+    /// misrepresentation Apple's 3.1.2 (and plain honesty) forbids — so if the
+    /// store says there's no free phase, we say nothing.
+    val yearlyFreeTrialDays: Int?
+        get() {
+            val phase = _yearly.value?.product?.defaultOption?.freePhase ?: return null
+            val period = phase.billingPeriod
+            return when (period.unit) {
+                Period.Unit.DAY -> period.value
+                Period.Unit.WEEK -> period.value * 7
+                Period.Unit.MONTH -> period.value * 30
+                Period.Unit.YEAR -> period.value * 365
+                else -> null
+            }
+        }
 
     companion object {
         /// The yearly membership — the only thing we sell in-app. Lifetime stays

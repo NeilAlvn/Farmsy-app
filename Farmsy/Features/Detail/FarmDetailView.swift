@@ -414,11 +414,21 @@ struct LockedAccessView: View {
                     ProgressView().tint(Color.farmGreen)
                 } else {
                     let uid = session.session?.user.id
-                    // Two matched cards, tight together: short label on top, price
-                    // below. Same shape and height — one filled, one outlined.
-                    PlanButton(label: String(localized: "Yearly"),
-                               detail: purchases.yearlyPrice.map { "\($0) / year" },
-                               filled: true) {
+                    // With a trial, lead with the free days and put the price it
+                    // converts to underneath. Without one (a returning subscriber
+                    // isn't eligible, and StoreKit tells us so), just the price — we
+                    // never advertise a trial someone won't actually get.
+                    let trialDays = purchases.yearlyFreeTrialDays
+                    PlanButton(
+                        label: trialDays.map { String(localized: "\($0) days free") }
+                            ?? String(localized: "Yearly"),
+                        detail: purchases.yearlyPrice.map { price in
+                            trialDays == nil
+                                ? String(localized: "\(price) / year")
+                                : String(localized: "then \(price) / year")
+                        },
+                        filled: true
+                    ) {
                         Task {
                             if await purchases.purchase(purchases.yearlyPackage, userId: uid) {
                                 Haptics.success(); await awaitGrant()
@@ -435,6 +445,18 @@ struct LockedAccessView: View {
                                 }
                             }
                         }
+                    }
+
+                    // The full terms, spelled out before the user can buy: how long
+                    // it's free, what it renews at, and how to get out. A trial that
+                    // quietly turns into a charge is exactly what guideline 3.1.2
+                    // exists to stop — and a rotten way to treat someone besides.
+                    if let days = trialDays, let price = purchases.yearlyPrice {
+                        Text("Free for \(days) days, then \(price) per year. Cancel anytime in Settings.")
+                            .font(.geist(12))
+                            .foregroundStyle(Color.inkMuted)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
                     }
 
                     // Restore only. "I subscribed on the web" removed — the app

@@ -70,4 +70,7 @@
     <string name="manage_subscription">Abo verwalten</string>
     <string name="trial_active">Deine Testphase läuft</string>
     <string name="membership_ends_arg">Zugang bis %1$s</string>
+    <string name="free_trial_days_arg">%1$d Tage gratis</string>
+    <string name="then_price_per_year_arg">danach %1$s / Jahr</string>
+    <string name="trial_terms_arg">%1$d Tage gratis, danach %2$s pro Jahr. Jederzeit in Google Play kündbar.</string>
 </resources>
