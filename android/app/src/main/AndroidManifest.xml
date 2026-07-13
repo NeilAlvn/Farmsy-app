@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Google Play Billing. Play Console refuses to let you create in-app
+         products until an uploaded build declares this, so it must ship. -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+
     <application
         android:name=".FarmsyApp"
         android:label="@string/app_name"
