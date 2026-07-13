@@ -36,3 +36,9 @@ Farmsy/Secrets.plist
 
 # Local key staging (mobile) — never committed
 .env.local
+
+# Google Play service account credentials — grants API access to the Play
+# listing. Must never reach git. (Named farmsy-<hex>.json by Google Cloud.)
+farmsy-*.json
+*service-account*.json
+gcloud-*.json
