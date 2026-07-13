@@ -156,13 +156,21 @@ class SessionStore(private val scope: CoroutineScope) {
         when (status) {
             200 -> {
                 val tokens = lenientJson.decodeFromString<LoginResponse>(body).session
+                // Fetch the real user for the token instead of importing a session
+                // with `user = null`. That null was poison: *every* downstream reader
+                // goes through session.user — the id we hand RevenueCat as the
+                // app_user_id, the email in Settings, favorites — so the app looked
+                // signed out while holding a perfectly good token, and purchases
+                // attached to an anonymous RevenueCat customer with no profile to
+                // grant. retrieveUser() resolves the token to its actual user.
+                val user = runCatching { supabase.auth.retrieveUser(tokens.accessToken) }.getOrNull()
                 supabase.auth.importSession(
                     UserSession(
                         accessToken = tokens.accessToken,
                         refreshToken = tokens.refreshToken,
                         expiresIn = 3600,
                         tokenType = "bearer",
-                        user = null
+                        user = user
                     )
                 )
                 // No /api/session/create call on purpose: active_sessions only backs
