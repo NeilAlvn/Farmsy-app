@@ -59,4 +59,15 @@
     <string name="please_fill_all_fields">Bitte fülle alle Felder aus.</string>
     <string name="try_again">Erneut versuchen</string>
     <string name="membership_unavailable">Mitgliedschaft ist gerade nicht verfügbar.</string>
+    <string name="membership">Mitgliedschaft</string>
+    <string name="youre_on_yearly">Du hast den Jahresplan</string>
+    <string name="yearly_renews">Verlängert sich jährlich · in Google Play verwalten</string>
+    <string name="you_have_lifetime">Du hast lebenslangen Zugang</string>
+    <string name="lifetime_never_expires">Einmal zahlen, läuft nie ab. Sonst nichts zu tun.</string>
+    <string name="upgrade_to_lifetime">Auf Lebenslang upgraden</string>
+    <string name="no_membership_yet">Du hast noch keine Mitgliedschaft</string>
+    <string name="unlock_all_farms">Schalte alle Details jedes Hofs frei.</string>
+    <string name="manage_subscription">Abo verwalten</string>
+    <string name="trial_active">Deine Testphase läuft</string>
+    <string name="membership_ends_arg">Zugang bis %1$s</string>
 </resources>

@@ -82,6 +82,12 @@ struct SettingsSheet: View {
                         .card()
                     }
 
+                    // Membership. Signed-in users only — a guest has no subscription
+                    // to manage, and the paywall is where they'd start one.
+                    if session.isAuthenticated {
+                        MembershipSection()
+                    }
+
                     VStack(spacing: 0) {
                         SettingsRow(icon: "bell.fill", tintBg: 0xF5B301, label: "Notifications") {
                             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -190,5 +196,94 @@ struct SettingsRow: View {
             .padding(.horizontal, 14)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Membership status and what (if anything) is left to sell.
+///
+/// The rule that shapes this: **lifetime is the top of the ladder.** Someone who
+/// paid once, forever, must never see an upsell — there is nothing above it, and
+/// dangling an offer at them would be dishonest. Yearly members get exactly one
+/// thing to consider (lifetime); everyone else is pointed at the paywall rather
+/// than given a second purchase surface here.
+struct MembershipSection: View {
+    @Environment(SessionStore.self) private var session
+    @Environment(PurchaseStore.self) private var purchases
+
+    private var plan: String? { session.profile?.subscriptionPlan }
+    private var status: String? { session.profile?.subscriptionStatus }
+    private var hasAccess: Bool { session.profile?.hasFullAccess ?? false }
+    private var isLifetime: Bool { plan == "lifetime" && hasAccess }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Membership")
+                .font(.geist(13, .semibold))
+                .foregroundStyle(Color.inkMuted)
+                .padding(.leading, 4)
+
+            VStack(alignment: .leading, spacing: 4) {
+                if isLifetime {
+                    // Top of the ladder. Nothing to sell, nothing to manage.
+                    Text("You have Lifetime access")
+                        .font(.geist(16, .bold))
+                        .foregroundStyle(Color.ink)
+                    Text("One payment, never expires. Nothing else to do.")
+                        .font(.geist(14))
+                        .foregroundStyle(Color.inkMuted)
+                } else if hasAccess {
+                    Text(status == "trialing" ? "Your trial is active" : "You're on the Yearly plan")
+                        .font(.geist(16, .bold))
+                        .foregroundStyle(Color.ink)
+                    Text("Renews yearly · manage in the App Store")
+                        .font(.geist(14))
+                        .foregroundStyle(Color.inkMuted)
+
+                    if let price = purchases.lifetimePrice {
+                        if purchases.isPurchasing {
+                            ProgressView().tint(Color.farmGreen).padding(.top, 10)
+                        } else {
+                            Button("Upgrade to Lifetime · \(price)") {
+                                Haptics.tap()
+                                Task {
+                                    let uid = session.session?.user.id
+                                    if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
+                                        // The grant lands via the webhook a moment
+                                        // after the purchase call returns.
+                                        for _ in 0..<10 {
+                                            await session.refreshProfile()
+                                            if session.hasFullAccess { break }
+                                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                                        }
+                                    }
+                                }
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .padding(.top, 12)
+                        }
+                    }
+
+                    Button("Manage subscription") {
+                        Haptics.tap()
+                        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(.geist(14, .semibold))
+                    .foregroundStyle(Color.farmGreen)
+                    .padding(.top, 8)
+                } else {
+                    Text("You don't have a membership yet")
+                        .font(.geist(16, .bold))
+                        .foregroundStyle(Color.ink)
+                    Text("Unlock full details for every farm.")
+                        .font(.geist(14))
+                        .foregroundStyle(Color.inkMuted)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+        }
+        .task { await purchases.loadOffering() }
     }
 }

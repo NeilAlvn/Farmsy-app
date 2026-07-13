@@ -59,4 +59,15 @@
     <string name="please_fill_all_fields">Veuillez remplir tous les champs.</string>
     <string name="try_again">Réessayer</string>
     <string name="membership_unavailable">L\'abonnement n\'est pas disponible pour le moment.</string>
+    <string name="membership">Abonnement</string>
+    <string name="youre_on_yearly">Vous avez le forfait Annuel</string>
+    <string name="yearly_renews">Renouvellement annuel · gérer dans Google Play</string>
+    <string name="you_have_lifetime">Vous avez l\'accès À vie</string>
+    <string name="lifetime_never_expires">Un seul paiement, sans expiration. Rien d\'autre à faire.</string>
+    <string name="upgrade_to_lifetime">Passer à l\'offre À vie</string>
+    <string name="no_membership_yet">Vous n\'avez pas encore d\'abonnement</string>
+    <string name="unlock_all_farms">Débloquez tous les détails de chaque ferme.</string>
+    <string name="manage_subscription">Gérer l\'abonnement</string>
+    <string name="trial_active">Votre essai est actif</string>
+    <string name="membership_ends_arg">Accès jusqu\'au %1$s</string>
 </resources>

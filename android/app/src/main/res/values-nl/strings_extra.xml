@@ -59,4 +59,15 @@
     <string name="please_fill_all_fields">Vul alle velden in.</string>
     <string name="try_again">Opnieuw proberen</string>
     <string name="membership_unavailable">Lidmaatschap is nu niet beschikbaar.</string>
+    <string name="membership">Lidmaatschap</string>
+    <string name="youre_on_yearly">Je hebt het Jaarlijkse abonnement</string>
+    <string name="yearly_renews">Verlengt jaarlijks · beheer in Google Play</string>
+    <string name="you_have_lifetime">Je hebt Levenslange toegang</string>
+    <string name="lifetime_never_expires">Eén betaling, verloopt nooit. Verder niets te doen.</string>
+    <string name="upgrade_to_lifetime">Upgraden naar Levenslang</string>
+    <string name="no_membership_yet">Je hebt nog geen lidmaatschap</string>
+    <string name="unlock_all_farms">Ontgrendel alle details van elke boerderij.</string>
+    <string name="manage_subscription">Abonnement beheren</string>
+    <string name="trial_active">Je proefperiode is actief</string>
+    <string name="membership_ends_arg">Toegang tot %1$s</string>
 </resources>

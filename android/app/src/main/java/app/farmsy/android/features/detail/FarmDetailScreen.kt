@@ -321,14 +321,17 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
     // Access is granted by the server after RevenueCat's webhook writes
     // subscription_status — which lands a few seconds *after* the purchase call
     // returns. Re-checking once, immediately, races the webhook and finds the
-    // profile still 'free', leaving a paid-up buyer staring at the paywall. Poll
-    // until the grant shows up, and stop the moment it does rather than sitting on
-    // a spinner for the full budget.
+    // profile still 'free', leaving a paid-up buyer staring at the paywall they
+    // just paid to leave. Poll until the grant shows up, then fall straight
+    // through to the farm they were trying to open.
     suspend fun awaitGrant() {
         checking = true
-        repeat(8) {
+        for (attempt in 0 until 10) {
+            // Re-fetch the profile, not just the farm: hasFullAccess reads from the
+            // profile, so without this the loop would keep asking a stale copy.
+            session.refreshProfile()
             onRecheck()
-            if (session.hasFullAccess) return@repeat
+            if (session.hasFullAccess) break
             kotlinx.coroutines.delay(1500)
         }
         checking = false

@@ -62,4 +62,15 @@
     <string name="please_fill_all_fields">Please fill in all fields.</string>
     <string name="try_again">Try again</string>
     <string name="membership_unavailable">Membership isn\'t available right now.</string>
+    <string name="membership">Membership</string>
+    <string name="youre_on_yearly">You\'re on the Yearly plan</string>
+    <string name="yearly_renews">Renews yearly · manage in Google Play</string>
+    <string name="you_have_lifetime">You have Lifetime access</string>
+    <string name="lifetime_never_expires">One payment, never expires. Nothing else to do.</string>
+    <string name="upgrade_to_lifetime">Upgrade to Lifetime</string>
+    <string name="no_membership_yet">You don\'t have a membership yet</string>
+    <string name="unlock_all_farms">Unlock full details for every farm.</string>
+    <string name="manage_subscription">Manage subscription</string>
+    <string name="trial_active">Your trial is active</string>
+    <string name="membership_ends_arg">Access until %1$s</string>
 </resources>

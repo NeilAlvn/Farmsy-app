@@ -61,6 +61,8 @@ import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 import java.util.Locale
 import app.farmsy.android.ui.theme.FitText
+import androidx.compose.material3.CircularProgressIndicator
+import app.farmsy.android.ui.theme.PrimaryButton
 
 /// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
 /// sign out + delete account, version footer).
@@ -158,6 +160,13 @@ fun SettingsScreen() {
                         .padding(vertical = 7.dp, horizontal = 12.dp)
                 )
             }
+        }
+
+        // Membership. Only for signed-in users — a guest has no subscription to
+        // manage, and the paywall is where they'd start one.
+        if (isAuthenticated) {
+            Spacer(Modifier.height(14.dp))
+            MembershipSection(profile = profile)
         }
 
         Spacer(Modifier.height(14.dp))
@@ -279,5 +288,124 @@ private fun SettingsRow(
         }
         Spacer(Modifier.width(14.dp))
         Text(label, style = geist(16.sp, FontWeight.Medium), color = tint)
+    }
+}
+
+/// Membership status and what (if anything) is left to sell.
+///
+/// The rule that shapes this: **lifetime is the top of the ladder.** Someone who
+/// has paid once, forever, must never see an upsell — there is nothing above it,
+/// and dangling an offer at them would be dishonest. Yearly members get exactly
+/// one thing to consider (lifetime); everyone else gets the plans.
+///
+/// Purchases themselves live on the paywall, which is reached by opening a locked
+/// farm; this section links there rather than duplicating a second buy flow.
+@Composable
+private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
+    val context = LocalContext.current
+    val purchases = app.farmsy.android.LocalPurchases.current
+    val session = LocalSession.current
+    val scope = rememberCoroutineScope()
+
+    val lifetimePrice = purchases.lifetimePrice
+    val lifetimePkg by purchases.lifetime.collectAsState()
+    val currentSession by session.session.collectAsState()
+    val isPurchasing by purchases.isPurchasing.collectAsState()
+    val userId = currentSession?.user?.id
+
+    LaunchedEffect(Unit) { purchases.loadOffering() }
+
+    val plan = profile?.subscriptionPlan
+    val status = profile?.subscriptionStatus
+    val hasAccess = profile?.hasFullAccess == true
+    val isLifetime = plan == "lifetime" && hasAccess
+
+    Text(
+        stringResource(R.string.membership),
+        style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted,
+        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+    )
+
+    SettingsCard {
+        Column(Modifier.padding(16.dp)) {
+            when {
+                // Top of the ladder. Nothing to sell, nothing to manage.
+                isLifetime -> {
+                    FitText(
+                        stringResource(R.string.you_have_lifetime),
+                        style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.lifetime_never_expires),
+                        style = geist(14.sp), color = FarmsyColors.inkMuted
+                    )
+                }
+
+                // Paying yearly: tell them where to manage it, and offer the one
+                // genuine upgrade that exists.
+                hasAccess -> {
+                    FitText(
+                        stringResource(
+                            if (status == "trialing") R.string.trial_active else R.string.youre_on_yearly
+                        ),
+                        style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.yearly_renews),
+                        style = geist(14.sp), color = FarmsyColors.inkMuted
+                    )
+                    if (lifetimePrice != null) {
+                        Spacer(Modifier.height(14.dp))
+                        if (isPurchasing) {
+                            CircularProgressIndicator(color = FarmsyColors.farmGreen)
+                        } else {
+                            PrimaryButton("${stringResource(R.string.upgrade_to_lifetime)} · $lifetimePrice") {
+                                val activity = context as? android.app.Activity ?: return@PrimaryButton
+                                scope.launch {
+                                    if (purchases.purchase(activity, lifetimePkg, userId)) {
+                                        // Poll: the grant lands via the webhook a
+                                        // moment after the purchase returns.
+                                        repeat(10) {
+                                            session.refreshProfile()
+                                            if (session.hasFullAccess) return@repeat
+                                            kotlinx.coroutines.delay(1500)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        stringResource(R.string.manage_subscription),
+                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
+                        modifier = Modifier.clickable {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://play.google.com/store/account/subscriptions")
+                                )
+                            )
+                        }
+                    )
+                }
+
+                // No membership. Point at the paywall rather than growing a second
+                // purchase surface here.
+                else -> {
+                    FitText(
+                        stringResource(R.string.no_membership_yet),
+                        style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.unlock_all_farms),
+                        style = geist(14.sp), color = FarmsyColors.inkMuted
+                    )
+                }
+            }
+        }
     }
 }
