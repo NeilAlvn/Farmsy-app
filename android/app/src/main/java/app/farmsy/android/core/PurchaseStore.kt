@@ -79,18 +79,37 @@ class PurchaseStore {
         }
     }
 
-    suspend fun loadOffering() {
+    /// True once we've tried to load prices and come back with nothing. Lets the
+    /// paywall show a retry instead of an eternal spinner.
+    private val _offeringFailed = MutableStateFlow(false)
+    val offeringFailed: StateFlow<Boolean> = _offeringFailed.asStateFlow()
+
+    /// Fetches the offering once and keeps it. The paywall used to call this on
+    /// every open, so each visit paid the full RevenueCat round-trip (plus Play's
+    /// product lookup) before it could draw the buttons — a wait long enough to
+    /// look broken. Prices don't change between screens, so hold them: prefetch at
+    /// launch, and a second call is a no-op unless the first one failed.
+    ///
+    /// The fetch is bounded. RevenueCat retries internally when Play can't be
+    /// reached (a misconfigured store credential does exactly that), and without a
+    /// ceiling the caller waits on those retries with nothing on screen. Better to
+    /// give up at 10s and offer a retry than to leave someone staring at a spinner.
+    suspend fun loadOffering(force: Boolean = false) {
         if (!enabled) return
-        runCatching {
-            val packages = Purchases.sharedInstance.awaitOfferings()
-                .current?.availablePackages.orEmpty()
-            _yearly.value = packages.firstOrNull {
-                it.product.id.startsWith(YEARLY_PRODUCT_ID)
-            } ?: packages.firstOrNull()
-            _lifetime.value = packages.firstOrNull {
-                it.product.id.startsWith(LIFETIME_PRODUCT_ID)
+        if (!force && _yearly.value != null) return
+        val ok = runCatching {
+            kotlinx.coroutines.withTimeout(10_000) {
+                val packages = Purchases.sharedInstance.awaitOfferings()
+                    .current?.availablePackages.orEmpty()
+                _yearly.value = packages.firstOrNull {
+                    it.product.id.startsWith(YEARLY_PRODUCT_ID)
+                } ?: packages.firstOrNull()
+                _lifetime.value = packages.firstOrNull {
+                    it.product.id.startsWith(LIFETIME_PRODUCT_ID)
+                }
             }
-        }
+        }.isSuccess
+        _offeringFailed.value = !ok || _yearly.value == null
     }
 
     /// Buys the membership. Returns true once the purchase completes — the caller

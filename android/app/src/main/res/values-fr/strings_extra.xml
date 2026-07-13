@@ -57,4 +57,6 @@
     <string name="email_not_verified_msg">Vérifiez d\'abord votre e-mail — le lien est dans votre boîte mail.</string>
     <string name="invalid_dob_msg">Saisissez une date de naissance valide. Vous devez avoir au moins 16 ans.</string>
     <string name="please_fill_all_fields">Veuillez remplir tous les champs.</string>
+    <string name="try_again">Réessayer</string>
+    <string name="membership_unavailable">L\'abonnement n\'est pas disponible pour le moment.</string>
 </resources>

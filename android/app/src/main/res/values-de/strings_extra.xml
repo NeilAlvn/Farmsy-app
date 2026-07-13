@@ -57,4 +57,6 @@
     <string name="email_not_verified_msg">Bitte bestätige zuerst deine E-Mail — der Link ist in deinem Postfach.</string>
     <string name="invalid_dob_msg">Gib ein gültiges Geburtsdatum ein. Du musst mindestens 16 sein.</string>
     <string name="please_fill_all_fields">Bitte fülle alle Felder aus.</string>
+    <string name="try_again">Erneut versuchen</string>
+    <string name="membership_unavailable">Mitgliedschaft ist gerade nicht verfügbar.</string>
 </resources>

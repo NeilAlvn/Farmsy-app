@@ -57,4 +57,6 @@
     <string name="email_not_verified_msg">Verifieer eerst je e-mailadres — check je inbox voor de link.</string>
     <string name="invalid_dob_msg">Voer een geldige geboortedatum in. Je moet minstens 16 zijn.</string>
     <string name="please_fill_all_fields">Vul alle velden in.</string>
+    <string name="try_again">Opnieuw proberen</string>
+    <string name="membership_unavailable">Lidmaatschap is nu niet beschikbaar.</string>
 </resources>

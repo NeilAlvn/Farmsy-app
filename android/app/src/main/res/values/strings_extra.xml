@@ -60,4 +60,6 @@
     <string name="email_not_verified_msg">Please verify your email first — check your inbox for the link.</string>
     <string name="invalid_dob_msg">Enter a valid date of birth. You must be at least 16.</string>
     <string name="please_fill_all_fields">Please fill in all fields.</string>
+    <string name="try_again">Try again</string>
+    <string name="membership_unavailable">Membership isn\'t available right now.</string>
 </resources>

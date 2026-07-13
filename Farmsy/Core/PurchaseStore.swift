@@ -27,6 +27,9 @@ final class PurchaseStore {
     private(set) var offering: Offering?
     private(set) var isPurchasing = false
     private(set) var purchaseError: String?
+    /// True once we've tried to load prices and come back with nothing, so the
+    /// paywall can offer a retry instead of an eternal spinner.
+    private(set) var offeringFailed = false
 
     /// The two things we sell. Yearly renews; lifetime is a one-off that never
     /// expires (the server treats a lifetime grant as un-revocable).
@@ -66,9 +69,15 @@ final class PurchaseStore {
         _ = try? await Purchases.shared.logOut()
     }
 
-    func loadOffering() async {
+    /// Fetches the offering once and keeps it. The paywall used to call this on
+    /// every open, so each visit paid the full RevenueCat round-trip before it
+    /// could draw the buttons. Prices don't change between screens: prefetch at
+    /// launch, and a second call is a no-op unless the first one came back empty.
+    func loadOffering(force: Bool = false) async {
         guard !Backend.revenueCatKey.isEmpty else { return }
+        if !force, offering != nil { return }
         offering = try? await Purchases.shared.offerings().current
+        offeringFailed = (offering == nil)
     }
 
     /// Buys the membership. Returns true once the purchase completes — the caller

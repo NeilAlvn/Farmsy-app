@@ -311,20 +311,25 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
     val purchaseError by purchases.purchaseError.collectAsState()
     val yearlyPkg by purchases.yearly.collectAsState()
     val lifetimePkg by purchases.lifetime.collectAsState()
+    val offeringFailed by purchases.offeringFailed.collectAsState()
     val currentSession by session.session.collectAsState()
     val userId = currentSession?.user?.id
+    // Usually a no-op: prices are prefetched at launch. Only actually fetches if
+    // that failed (offline at start, say).
     LaunchedEffect(Unit) { purchases.loadOffering() }
 
     // Access is granted by the server after RevenueCat's webhook writes
     // subscription_status — which lands a few seconds *after* the purchase call
-    // returns. Re-checking once, immediately, usually races the webhook and finds
-    // the profile still 'free'. Poll a handful of times so the screen unlocks on
-    // its own the moment the grant lands.
+    // returns. Re-checking once, immediately, races the webhook and finds the
+    // profile still 'free', leaving a paid-up buyer staring at the paywall. Poll
+    // until the grant shows up, and stop the moment it does rather than sitting on
+    // a spinner for the full budget.
     suspend fun awaitGrant() {
         checking = true
-        repeat(6) {
+        repeat(8) {
             onRecheck()
-            kotlinx.coroutines.delay(2000)
+            if (session.hasFullAccess) return@repeat
+            kotlinx.coroutines.delay(1500)
         }
         checking = false
     }
@@ -366,9 +371,21 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
         // than trusting the client.
         when {
             isPurchasing || checking -> CircularProgressIndicator(color = FarmsyColors.farmGreen)
-            // Offering still loading — show a spinner rather than a half-drawn
-            // paywall (the old code flashed a lone "Become a member" button, then
-            // the real cards once prices arrived).
+            // The store never gave us prices. Say so and offer a retry — a spinner
+            // that never resolves is worse than an honest failure.
+            offeringFailed && purchases.yearlyPrice == null -> {
+                FitText(
+                    stringResource(R.string.membership_unavailable),
+                    style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
+                )
+                Spacer(Modifier.height(10.dp))
+                PrimaryButton(stringResource(R.string.try_again)) {
+                    scope.launch { purchases.loadOffering(force = true) }
+                }
+            }
+            // Offering still loading — a spinner rather than a half-drawn paywall
+            // (the old code flashed a lone "Become a member" button, then the real
+            // cards once prices arrived).
             purchases.yearlyPrice == null -> CircularProgressIndicator(color = FarmsyColors.farmGreen)
             else -> {
                 // Two matched cards, tight together: a short label on top, price

@@ -24,6 +24,9 @@ struct FarmsyApp: App {
         #endif
         Observability.start()
         PurchaseStore.configure()
+        // Warm the store prices now so the paywall has them in hand when a
+        // locked farm is opened, instead of paying the round-trip on screen.
+
         let store = SessionStore()
         #if DEBUG
         store.isDemoSession = CommandLine.arguments.contains("--demo-session")

@@ -10,6 +10,7 @@ import app.farmsy.android.core.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /// App-scoped singletons — the Android twin of the @Observable stores the
 /// iOS app injects via .environment().
@@ -41,5 +42,9 @@ class FarmsyApp : Application() {
         purchases = PurchaseStore()
         session.bootstrap()
         farms.loadIfNeeded()
+        // Warm the store prices now, in the background, so the paywall has them
+        // in hand the moment someone opens a locked farm. Fetching them on demand
+        // meant staring at a spinner through a RevenueCat round-trip.
+        appScope.launch { purchases.loadOffering() }
     }
 }
