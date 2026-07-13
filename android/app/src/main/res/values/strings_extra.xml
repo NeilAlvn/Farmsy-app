@@ -40,4 +40,7 @@
     <string name="become_a_member_arg">Become a member — %1$s/year</string>
     <string name="restore_purchases">Restore purchases</string>
     <string name="i_subscribed_on_the_web">I subscribed on the web</string>
+    <string name="yearly_arg">Yearly — %1$s/year</string>
+    <string name="lifetime_arg">Lifetime — %1$s</string>
+    <string name="one_payment_yours_forever">One payment, yours forever</string>
 </resources>

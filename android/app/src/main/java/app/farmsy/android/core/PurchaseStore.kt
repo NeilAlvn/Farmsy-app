@@ -29,8 +29,11 @@ import kotlinx.coroutines.flow.asStateFlow
 /// access and never see a purchase screen.
 class PurchaseStore {
 
-    private val _offering = MutableStateFlow<Package?>(null)
-    val offering: StateFlow<Package?> = _offering.asStateFlow()
+    private val _yearly = MutableStateFlow<Package?>(null)
+    val yearly: StateFlow<Package?> = _yearly.asStateFlow()
+
+    private val _lifetime = MutableStateFlow<Package?>(null)
+    val lifetime: StateFlow<Package?> = _lifetime.asStateFlow()
 
     private val _isPurchasing = MutableStateFlow(false)
     val isPurchasing: StateFlow<Boolean> = _isPurchasing.asStateFlow()
@@ -38,9 +41,9 @@ class PurchaseStore {
     private val _purchaseError = MutableStateFlow<String?>(null)
     val purchaseError: StateFlow<String?> = _purchaseError.asStateFlow()
 
-    /// Price as the Play Store formats it for the user's region ("€29,99").
-    val displayPrice: String?
-        get() = _offering.value?.product?.price?.formatted
+    /// Prices as the Play Store formats them for the user's region ("€29,99").
+    val yearlyPrice: String? get() = _yearly.value?.product?.price?.formatted
+    val lifetimePrice: String? get() = _lifetime.value?.product?.price?.formatted
 
     companion object {
         /// The yearly membership — the only thing we sell in-app. Lifetime stays
@@ -49,6 +52,7 @@ class PurchaseStore {
         /// monthly purchase would take the customer's money and then have the
         /// webhook write rejected by the database.
         const val YEARLY_PRODUCT_ID = "farmsy_membership_yearly"
+        const val LIFETIME_PRODUCT_ID = "farmsy_membership_lifetime"
 
         private val enabled: Boolean get() = Backend.REVENUECAT_KEY.isNotEmpty()
 
@@ -78,16 +82,22 @@ class PurchaseStore {
     suspend fun loadOffering() {
         if (!enabled) return
         runCatching {
-            _offering.value = Purchases.sharedInstance.awaitOfferings()
-                .current?.availablePackages?.firstOrNull()
+            val packages = Purchases.sharedInstance.awaitOfferings()
+                .current?.availablePackages.orEmpty()
+            _yearly.value = packages.firstOrNull {
+                it.product.id.startsWith(YEARLY_PRODUCT_ID)
+            } ?: packages.firstOrNull()
+            _lifetime.value = packages.firstOrNull {
+                it.product.id.startsWith(LIFETIME_PRODUCT_ID)
+            }
         }
     }
 
     /// Buys the membership. Returns true once the purchase completes — the caller
     /// then refreshes the profile, because access is granted by the server (via
     /// RevenueCat's webhook), not by this return value.
-    suspend fun purchase(activity: Activity): Boolean {
-        val pkg = _offering.value ?: run {
+    suspend fun purchase(activity: Activity, pkg: Package?): Boolean {
+        if (pkg == null) {
             _purchaseError.value = "unavailable"
             return false
         }

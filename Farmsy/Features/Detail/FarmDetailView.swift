@@ -392,25 +392,56 @@ struct LockedAccessView: View {
                 // Buy. The server grants access (RevenueCat webhook writes
                 // subscription_status), so after a purchase we re-ask the API
                 // rather than trusting the client.
-                Button {
-                    Haptics.tap()
-                    Task {
-                        if await purchases.purchase() {
-                            Haptics.success()
-                            await onRecheck()
+                if purchases.isPurchasing {
+                    ProgressView().tint(Color.farmGreen)
+                } else {
+                    Button {
+                        Haptics.tap()
+                        Task {
+                            if await purchases.purchase(purchases.yearlyPackage) {
+                                Haptics.success()
+                                await onRecheck()
+                            }
+                        }
+                    } label: {
+                        if let price = purchases.yearlyPrice {
+                            Text("Yearly — \(price)/year")
+                        } else {
+                            Text("Become a member")
                         }
                     }
-                } label: {
-                    if purchases.isPurchasing {
-                        ProgressView().tint(.white)
-                    } else if let price = purchases.displayPrice {
-                        Text("Become a member — \(price)/year")
-                    } else {
-                        Text("Become a member")
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    // Lifetime: one payment, never expires.
+                    if let price = purchases.lifetimePrice {
+                        Button {
+                            Haptics.tap()
+                            Task {
+                                if await purchases.purchase(purchases.lifetimePackage) {
+                                    Haptics.success()
+                                    await onRecheck()
+                                }
+                            }
+                        } label: {
+                            VStack(spacing: 2) {
+                                Text("Lifetime — \(price)")
+                                    .font(.geist(17, .semibold))
+                                Text("One payment, yours forever")
+                                    .font(.geist(13))
+                                    .foregroundStyle(Color.inkMuted)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                    .fill(.white)
+                                    .stroke(Color.farmGreen, lineWidth: 1.5)
+                            )
+                            .foregroundStyle(Color.farmGreen)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(purchases.isPurchasing)
 
                 HStack(spacing: 18) {
                     // Apple requires a visible restore path.

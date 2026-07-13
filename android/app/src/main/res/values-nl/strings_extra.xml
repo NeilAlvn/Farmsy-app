@@ -37,4 +37,7 @@
     <string name="become_a_member_arg">Word lid — %1$s/jaar</string>
     <string name="restore_purchases">Aankopen herstellen</string>
     <string name="i_subscribed_on_the_web">Ik heb online een abonnement</string>
+    <string name="yearly_arg">Jaarlijks — %1$s/jaar</string>
+    <string name="lifetime_arg">Levenslang — %1$s</string>
+    <string name="one_payment_yours_forever">Eén betaling, voor altijd van jou</string>
 </resources>

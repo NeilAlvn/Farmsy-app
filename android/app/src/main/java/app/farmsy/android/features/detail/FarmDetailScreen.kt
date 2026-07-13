@@ -262,7 +262,8 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
 
     val isPurchasing by purchases.isPurchasing.collectAsState()
     val purchaseError by purchases.purchaseError.collectAsState()
-    val offering by purchases.offering.collectAsState()
+    val yearlyPkg by purchases.yearly.collectAsState()
+    val lifetimePkg by purchases.lifetime.collectAsState()
     LaunchedEffect(Unit) { purchases.loadOffering() }
 
     Column(
@@ -304,12 +305,33 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
             CircularProgressIndicator(color = FarmsyColors.farmGreen)
         } else {
             app.farmsy.android.ui.theme.PrimaryButton(
-                purchases.displayPrice?.let { stringResource(R.string.become_a_member_arg, it) }
+                purchases.yearlyPrice?.let { stringResource(R.string.yearly_arg, it) }
                     ?: stringResource(R.string.become_a_member)
             ) {
                 val activity = context as? android.app.Activity ?: return@PrimaryButton
-                scope.launch {
-                    if (purchases.purchase(activity)) onRecheck()
+                scope.launch { if (purchases.purchase(activity, yearlyPkg)) onRecheck() }
+            }
+            // Lifetime: one payment, never expires.
+            purchases.lifetimePrice?.let { price ->
+                Spacer(Modifier.height(10.dp))
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(Color.White, androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                        .clickable {
+                            val activity = context as? android.app.Activity ?: return@clickable
+                            scope.launch { if (purchases.purchase(activity, lifetimePkg)) onRecheck() }
+                        }
+                        .padding(vertical = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        stringResource(R.string.lifetime_arg, price),
+                        style = geist(17.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen
+                    )
+                    Text(
+                        stringResource(R.string.one_payment_yours_forever),
+                        style = geist(13.sp), color = FarmsyColors.inkMuted
+                    )
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {

@@ -37,4 +37,7 @@
     <string name="become_a_member_arg">Mitglied werden — %1$s/Jahr</string>
     <string name="restore_purchases">Käufe wiederherstellen</string>
     <string name="i_subscribed_on_the_web">Ich habe im Web abonniert</string>
+    <string name="yearly_arg">Jährlich — %1$s/Jahr</string>
+    <string name="lifetime_arg">Lebenslang — %1$s</string>
+    <string name="one_payment_yours_forever">Einmal zahlen, für immer</string>
 </resources>

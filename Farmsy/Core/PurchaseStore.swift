@@ -22,15 +22,29 @@ final class PurchaseStore {
     /// constraint of ('yearly','lifetime'), so a monthly purchase would take the
     /// customer's money and then have the webhook write rejected.
     static let yearlyProductId = "farmsy_membership_yearly"
+    static let lifetimeProductId = "farmsy_membership_lifetime"
 
     private(set) var offering: Offering?
     private(set) var isPurchasing = false
     private(set) var purchaseError: String?
 
-    /// Price as the store formats it for the user's region ("€29,99").
-    var displayPrice: String? {
-        offering?.availablePackages.first?.storeProduct.localizedPriceString
+    /// The two things we sell. Yearly renews; lifetime is a one-off that never
+    /// expires (the server treats a lifetime grant as un-revocable).
+    var yearlyPackage: Package? {
+        offering?.availablePackages.first { $0.storeProduct.productIdentifier == Self.yearlyProductId }
+            ?? offering?.annual
     }
+    var lifetimePackage: Package? {
+        offering?.availablePackages.first { $0.storeProduct.productIdentifier == Self.lifetimeProductId }
+            ?? offering?.lifetime
+    }
+
+    /// Prices as the store formats them for the user's region ("€29,99").
+    var yearlyPrice: String? { yearlyPackage?.storeProduct.localizedPriceString }
+    var lifetimePrice: String? { lifetimePackage?.storeProduct.localizedPriceString }
+
+    /// Back-compat for callers that just want the headline price.
+    var displayPrice: String? { yearlyPrice }
 
     static func configure() {
         guard !Backend.revenueCatKey.isEmpty else { return }
@@ -60,8 +74,8 @@ final class PurchaseStore {
     /// Buys the membership. Returns true once the purchase completes — the caller
     /// then refreshes the profile, because access is granted by the server (via
     /// RevenueCat's webhook), not by this return value.
-    func purchase() async -> Bool {
-        guard let package = offering?.availablePackages.first else {
+    func purchase(_ package: Package?) async -> Bool {
+        guard let package else {
             purchaseError = String(localized: "Membership isn't available right now. Please try again later.")
             return false
         }
