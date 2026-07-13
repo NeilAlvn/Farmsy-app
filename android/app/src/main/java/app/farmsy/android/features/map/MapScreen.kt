@@ -75,6 +75,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
+import app.farmsy.android.ui.theme.FitText
 
 /// Compose maps slow down past a few hundred markers (same cap as iOS).
 private const val ANNOTATION_CAP = 130
@@ -391,9 +392,11 @@ private fun FarmRow(pin: FarmPin, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(pin.name, style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
+            // Names/addresses are arbitrary length and sit beside a chevron —
+            // shrink to fit rather than wrap and reflow the row.
+            FitText(pin.name, style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
             (pin.city ?: pin.address)?.let {
-                Text(it, style = geist(14.sp), color = FarmsyColors.inkMuted, maxLines = 1)
+                FitText(it, style = geist(14.sp), color = FarmsyColors.inkMuted)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 pin.categories.take(4).forEach { Text(it.emoji, fontSize = 16.sp) }

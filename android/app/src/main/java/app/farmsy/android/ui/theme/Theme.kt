@@ -5,6 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 
 // Farmsy design tokens — mirrors iOS Theme.swift (same hex values):
@@ -35,12 +38,32 @@ private val LightColors = lightColorScheme(
     error = FarmsyColors.warnRed,
 )
 
+/// How far we let the system font scale push our type.
+///
+/// SwiftUI shrinks text that doesn't fit (`minimumScaleFactor`); Compose has no
+/// such thing — it wraps instead, so a line that fits on iOS silently becomes two
+/// lines here and every fixed-height container it lives in bursts. A phone set to
+/// 1.25 (a common default on Xiaomi) was enough to break the search pill, the tab
+/// bar and the paywall buttons.
+///
+/// So: honour the user's preference, but stop it running away. Text still grows —
+/// just not past the point where the layout stops being the layout. Anything that
+/// must hold a single line uses [FitText] on top of this.
+private const val MAX_FONT_SCALE = 1.15f
+
 /// The app is light-only by design (same as iOS) — cream is the brand.
 @Composable
 fun FarmsyTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = LightColors,
-        typography = FarmsyTypography,
-        content = content
+    val base = LocalDensity.current
+    val clamped = Density(
+        density = base.density,
+        fontScale = base.fontScale.coerceAtMost(MAX_FONT_SCALE),
     )
+    CompositionLocalProvider(LocalDensity provides clamped) {
+        MaterialTheme(
+            colorScheme = LightColors,
+            typography = FarmsyTypography,
+            content = content
+        )
+    }
 }

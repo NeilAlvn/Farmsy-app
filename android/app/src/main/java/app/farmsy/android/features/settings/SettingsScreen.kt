@@ -60,6 +60,7 @@ import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 import java.util.Locale
+import app.farmsy.android.ui.theme.FitText
 
 /// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
 /// sign out + delete account, version footer).
@@ -105,13 +106,16 @@ fun SettingsScreen() {
             Image(painterResource(R.drawable.farmsy_logo), null, Modifier.height(42.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
+                // These are one-line identity labels sitting next to a fixed avatar
+                // and badge — if they wrap, the whole card grows and the badge drifts.
+                // FitText shrinks them to fit instead (see Components.FitText).
                 if (isAuthenticated) {
-                    Text(
+                    FitText(
                         session.email.ifEmpty { stringResource(R.string.signed_in) },
-                        style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink, maxLines = 1
+                        style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink
                     )
                     val plan = profile?.subscriptionPlan
-                    Text(
+                    FitText(
                         if (plan != null)
                             stringResource(
                                 R.string.arg_plan,
@@ -121,11 +125,11 @@ fun SettingsScreen() {
                         style = geist(13.sp), color = FarmsyColors.inkMuted
                     )
                 } else {
-                    Text(
+                    FitText(
                         stringResource(R.string.you_re_browsing_as_a_guest),
                         style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink
                     )
-                    Text(
+                    FitText(
                         stringResource(R.string.sign_in_to_save_farms_and_see_details),
                         style = geist(13.sp), color = FarmsyColors.inkMuted
                     )

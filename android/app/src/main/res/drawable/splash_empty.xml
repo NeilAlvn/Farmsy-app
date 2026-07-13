@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deliberately invisible.
+
+     Android 12+ *always* draws an icon on the system splash — you can choose
+     which one, but not whether. Any real icon lands on screen before our own
+     splash has run, so the barn appears once statically and then again as the
+     animated intro: the "logo before the logo" Neil saw.
+
+     Handing the platform a transparent shape means the system splash is just the
+     cream background, and the first mark the user ever sees is the animated one. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+</shape>

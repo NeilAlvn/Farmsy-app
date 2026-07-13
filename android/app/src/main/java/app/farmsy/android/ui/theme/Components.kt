@@ -22,6 +22,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.runtime.remember
 
 /// Serif headline with the one-italic-word treatment (iOS DisplayTitle).
 @Composable
@@ -121,3 +127,51 @@ fun SectionColumn(modifier: Modifier = Modifier, content: @Composable ColumnScop
 }
 
 typealias ColumnScope = androidx.compose.foundation.layout.ColumnScope
+
+/// Text that shrinks rather than wraps — Compose's missing `minimumScaleFactor`.
+///
+/// SwiftUI will scale a label down to fit its box; Compose only ever wraps, which
+/// is how "You're browsing as a guest" turned into two lines on a phone with a
+/// larger font scale. This measures the string at the requested size and steps the
+/// size down (never below [minSize]) until it fits on one line, so the label keeps
+/// its shape and the surrounding layout doesn't move.
+///
+/// Use it for single-line labels. Body copy that is *meant* to wrap should stay a
+/// plain Text.
+@Composable
+fun FitText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle,
+    color: Color = FarmsyColors.ink,
+    minSize: TextUnit = 11.sp,
+    textAlign: TextAlign? = null,
+) {
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(modifier) {
+        val maxWidth = constraints.maxWidth
+        val fitted = remember(text, style, maxWidth) {
+            var size = style.fontSize
+            // Step down in 0.5sp increments; bail out at minSize and let it clip.
+            while (size > minSize) {
+                val result = measurer.measure(
+                    text = AnnotatedString(text),
+                    style = style.copy(fontSize = size),
+                    maxLines = 1,
+                    constraints = Constraints(maxWidth = maxWidth),
+                )
+                if (!result.hasVisualOverflow) break
+                size = (size.value - 0.5f).sp
+            }
+            size
+        }
+        Text(
+            text,
+            style = style.copy(fontSize = fitted),
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = textAlign,
+        )
+    }
+}

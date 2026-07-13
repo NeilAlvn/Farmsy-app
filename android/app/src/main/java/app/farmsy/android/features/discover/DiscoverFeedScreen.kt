@@ -60,6 +60,7 @@ import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import app.farmsy.android.ui.theme.FitText
 
 /// Discover tab — mirrors iOS DiscoverFeedView: a scrolling feed of randomly
 /// picked farms that all have a photo. Save-heart and add-farm require login.
@@ -112,11 +113,12 @@ private fun AddFarmBanner(onClick: () -> Unit) {
         Icon(Icons.Filled.AddCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(26.dp))
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(
+            // Banner copy squeezed between an icon and the card edge — shrink, don't wrap.
+            FitText(
                 stringResource(R.string.know_a_farm_shop_we_re_missing),
                 style = geist(15.sp, FontWeight.Bold), color = FarmsyColors.ink
             )
-            Text(
+            FitText(
                 stringResource(R.string.add_it_to_the_map_for_everyone),
                 style = geist(13.sp), color = FarmsyColors.inkMuted
             )

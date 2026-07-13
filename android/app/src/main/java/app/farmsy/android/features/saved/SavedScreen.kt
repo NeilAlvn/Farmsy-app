@@ -38,6 +38,7 @@ import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
+import app.farmsy.android.ui.theme.FitText
 
 /// Saved farms — mirrors iOS SavedScreen (guest state, empty state, list).
 @Composable
@@ -113,9 +114,11 @@ private fun SavedCard(pin: FarmPin, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(pin.name, style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
+            // Farm names/addresses are arbitrary length and sit beside a chevron:
+            // shrink to fit rather than wrap and reflow the whole row.
+            FitText(pin.name, style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
             (pin.city ?: pin.address)?.let {
-                Text(it, style = geist(14.sp), color = FarmsyColors.inkMuted, maxLines = 1)
+                FitText(it, style = geist(14.sp), color = FarmsyColors.inkMuted)
             }
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = FarmsyColors.inkMuted)

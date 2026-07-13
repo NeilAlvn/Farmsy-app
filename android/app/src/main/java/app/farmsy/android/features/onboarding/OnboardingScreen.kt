@@ -61,6 +61,7 @@ import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import app.farmsy.android.ui.theme.FitText
 
 /// Question-per-screen onboarding — full port of iOS OnboardingView:
 /// category → location → finding → counts → value → notify → referral.
@@ -333,9 +334,9 @@ private fun CountsStep(place: Place?) {
                         "${animated.roundToInt()}",
                         style = geist(24.sp, FontWeight.Bold), color = FarmsyColors.farmGreen
                     )
-                    Text(
+                    FitText(
                         stringResource(cat.labelRes), style = geist(13.sp),
-                        color = FarmsyColors.ink, maxLines = 1
+                        color = FarmsyColors.ink
                     )
                 }
             }
@@ -403,8 +404,8 @@ private fun ValueStep() {
 @Composable
 private fun StatTile(value: String, caption: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = geist(22.sp, FontWeight.Bold), color = FarmsyColors.farmGreen, maxLines = 1)
-        Text(caption, style = geist(13.sp), color = FarmsyColors.inkMuted)
+        FitText(value, style = geist(22.sp, FontWeight.Bold), color = FarmsyColors.farmGreen)
+        FitText(caption, style = geist(13.sp), color = FarmsyColors.inkMuted)
     }
 }
 
