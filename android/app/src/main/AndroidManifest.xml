@@ -18,6 +18,13 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
 
+        <!-- Sentry's SDK auto-initializes from a ContentProvider before
+             Application.onCreate, and hard-crashes the app if no DSN is set in
+             the manifest. We init it ourselves in Observability (so a missing
+             key disables it instead of killing the app), so turn the automatic
+             one off. -->
+        <meta-data android:name="io.sentry.auto-init" android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

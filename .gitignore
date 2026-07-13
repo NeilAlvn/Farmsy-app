@@ -33,3 +33,6 @@ android/keystore.properties
 
 # Local secrets (public SDK keys, still not committed)
 Farmsy/Secrets.plist
+
+# Local key staging (mobile) — never committed
+.env.local
