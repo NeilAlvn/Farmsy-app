@@ -59,6 +59,14 @@ android {
                 "proguard-rules.pro"
             )
             signingConfigs.findByName("release")?.let { signingConfig = it }
+
+            // Play warns that the bundle ships native code without debug symbols.
+            // Deliberately left alone: every .so in here belongs to someone else
+            // (libsentry, androidx.graphics.path, datastore) — we write no native
+            // code — so symbolicating them would only give us readable stack traces
+            // inside libraries we can't fix. Real crashes come through Sentry with a
+            // proper trace already. Turning this on means installing the NDK just to
+            // strip symbols from other people's binaries.
         }
     }
 
