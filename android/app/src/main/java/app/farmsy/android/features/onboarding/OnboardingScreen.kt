@@ -62,6 +62,11 @@ import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 import app.farmsy.android.ui.theme.FitText
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
 
 /// Question-per-screen onboarding — full port of iOS OnboardingView:
 /// category → location → finding → counts → value → notify → referral.
@@ -88,18 +93,40 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     )
 
     fun advance() { if (stepIndex < Step.entries.lastIndex) stepIndex++ else onComplete() }
+    // FINDING advances itself on a timer; stepping back into it would just bounce the
+    // user forward again, so skip over it on the way back.
+    fun goBack() {
+        if (stepIndex == 0) return
+        stepIndex = if (Step.entries[stepIndex - 1] == Step.FINDING) stepIndex - 2 else stepIndex - 1
+    }
+
+    // Android's system back gesture should walk the steps, not dump the user out of
+    // onboarding entirely.
+    BackHandler(enabled = stepIndex > 0) { goBack() }
 
     Column(
         Modifier.fillMaxSize().background(FarmsyColors.cream).statusBarsPadding().padding(20.dp)
     ) {
-        Box(
-            Modifier.fillMaxWidth().height(5.dp)
-                .background(FarmsyColors.farmGreen.copy(alpha = 0.22f), CircleShape)
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // No way back until now: a mis-tapped category or the wrong city was a
+            // one-way door.
+            if (stepIndex > 0) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back),
+                    tint = FarmsyColors.inkMuted,
+                    modifier = Modifier.size(22.dp).clickable { goBack() }
+                )
+                Spacer(Modifier.width(12.dp))
+            }
             Box(
-                Modifier.fillMaxWidth(progress.coerceIn(0.05f, 1f)).height(5.dp)
-                    .background(FarmsyColors.farmGreen, CircleShape)
-            )
+                Modifier.weight(1f).height(5.dp)
+                    .background(FarmsyColors.farmGreen.copy(alpha = 0.22f), CircleShape)
+            ) {
+                Box(
+                    Modifier.fillMaxWidth(progress.coerceIn(0.05f, 1f)).height(5.dp)
+                        .background(FarmsyColors.farmGreen, CircleShape)
+                )
+            }
         }
         Spacer(Modifier.height(20.dp))
 
@@ -344,6 +371,7 @@ private fun CountsStep(place: Place?) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ValueStep() {
     val farms = LocalFarms.current
@@ -392,15 +420,24 @@ private fun ValueStep() {
         }
         Spacer(Modifier.height(24.dp))
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
-            modifier = Modifier.fillMaxWidth().height(140.dp)
+        // A plain wrapping row, sized by its contents.
+        //
+        // This was a LazyVerticalGrid pinned to 140dp — but eighteen emoji across six
+        // columns need three rows, which don't fit in 140dp. So the grid clipped its
+        // last row and quietly became scrollable: a scrolling list nested inside a
+        // scrolling page, for what is really just a static strip of decoration. Let
+        // it take the height it needs instead.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            items(emojiGrid) { e ->
+            emojiGrid.forEach { e ->
                 val scale by animateFloatAsState(if (revealed) 1f else 0.4f, tween(500), label = "e")
                 Text(
                     e, fontSize = 28.sp,
-                    modifier = Modifier.padding(8.dp).scale(scale).alpha(if (revealed) 1f else 0f)
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        .scale(scale).alpha(if (revealed) 1f else 0f)
                 )
             }
         }

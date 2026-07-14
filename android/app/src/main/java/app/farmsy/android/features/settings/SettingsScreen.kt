@@ -353,9 +353,19 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
+                    // Tappable: this is the app's route to cancel, which both stores
+                    // require to exist somewhere inside the app.
                     Text(
                         stringResource(R.string.yearly_renews),
-                        style = geist(14.sp), color = FarmsyColors.inkMuted
+                        style = geist(14.sp), color = FarmsyColors.inkMuted,
+                        modifier = Modifier.clickable {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://play.google.com/store/account/subscriptions")
+                                )
+                            )
+                        }
                     )
                     if (lifetimePrice != null) {
                         Spacer(Modifier.height(14.dp))
@@ -386,19 +396,10 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                             }
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        stringResource(R.string.manage_subscription),
-                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
-                        modifier = Modifier.clickable {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://play.google.com/store/account/subscriptions")
-                                )
-                            )
-                        }
-                    )
+                    // No separate "Manage subscription" line — the subtitle above
+                    // already says where to manage it, and it's tappable. Both stores
+                    // require a route to cancel from inside the app, so the link stays
+                    // even though the extra line doesn't.
                 }
 
                 // No membership. Point at the paywall rather than growing a second
