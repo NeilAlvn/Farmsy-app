@@ -96,7 +96,7 @@ struct SettingsSheet: View {
                         }
                         Divider().padding(.leading, 62)
                         SettingsRow(icon: "envelope.fill", tintBg: 0x38BDF8, label: "Contact us") {
-                            if let url = URL(string: "mailto:hello@farmsy.app") {
+                            if let url = URL(string: "https://www.farmsy.app/messages") {
                                 UIApplication.shared.open(url)
                             }
                         }

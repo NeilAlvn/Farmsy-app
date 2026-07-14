@@ -65,9 +65,18 @@ struct DisplayTitle: View {
     var size: CGFloat = 32
 
     var body: some View {
-        (Text(leading).font(.display(size, weight: .medium))
-            + Text(emphasis).font(.displayItalic(size, weight: .medium))
-            + Text(trailing).font(.display(size, weight: .medium)))
+        // Own the spacing between the parts rather than relying on every caller
+        // remembering a trailing space in its string. It survives here only because
+        // Swift literals keep their whitespace — the same code on Android read the
+        // strings from XML, which strips it, and shipped "farm'sfull story".
+        let lead = leading.trimmingCharacters(in: .whitespaces)
+        let emph = emphasis.trimmingCharacters(in: .whitespaces)
+        let trail = trailing.trimmingCharacters(in: .whitespaces)
+        return (Text(lead.isEmpty || emph.isEmpty ? lead : lead + " ")
+            .font(.display(size, weight: .medium))
+            + Text(emph).font(.displayItalic(size, weight: .medium))
+            + Text(trail.isEmpty ? "" : (emph.isEmpty ? trail : " " + trail))
+                .font(.display(size, weight: .medium)))
             .foregroundStyle(Color.ink)
             .multilineTextAlignment(.center)
     }

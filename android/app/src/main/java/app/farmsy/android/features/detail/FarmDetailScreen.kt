@@ -67,10 +67,17 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.text.style.TextOverflow
 import app.farmsy.android.ui.theme.FitText
 import app.farmsy.android.ui.theme.PlanCard
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.NearMe
 
 /// Farm detail — mirrors iOS FarmDetailView. The full payload only exists
 /// behind the farmsy.app API's subscription check; without access we show the
 /// locked state. No purchase button by design — membership is on the web.
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -125,46 +132,101 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                     Box(
                         Modifier.fillMaxWidth().height(210.dp).background(FarmsyColors.farmGreen),
                         contentAlignment = Alignment.Center
-                    ) { Text(pin.primaryCategory.emoji, fontSize = 64.sp) }
+                    ) { Text(pin.primaryCategory.emoji, fontSize = 56.sp) }
                 } else {
-                    AsyncImage(
-                        model = urls.first(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxWidth().height(240.dp)
-                    )
+                    // Swipe through every photo, with dots — Android was showing only
+                    // the first one while iOS paged through all of them, so a farm
+                    // with five pictures had four of them invisible on half our users'
+                    // phones.
+                    val pager = rememberPagerState { urls.size }
+                    Box {
+                        HorizontalPager(
+                            state = pager,
+                            modifier = Modifier.fillMaxWidth().height(240.dp)
+                        ) { page ->
+                            AsyncImage(
+                                model = urls[page],
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        if (urls.size > 1) {
+                            Row(
+                                Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                repeat(urls.size) { i ->
+                                    Box(
+                                        Modifier
+                                            .size(if (i == pager.currentPage) 8.dp else 6.dp)
+                                            .background(
+                                                Color.White.copy(alpha = if (i == pager.currentPage) 1f else 0.5f),
+                                                CircleShape
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Column(Modifier.padding(20.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Wrap, don't squeeze. A fixed Row gave the last chip whatever
+                    // width was left over, so "Wine" got crushed to a couple of
+                    // characters wide and its label broke across two lines, turning
+                    // the pill into a blob. Chips keep their natural width and spill
+                    // onto a second line instead.
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         pin.categories.take(4).forEach { cat ->
                             Text(
                                 "${cat.emoji} ${stringResource(cat.labelRes)}",
                                 style = geist(12.sp, FontWeight.SemiBold), color = FarmsyColors.ink,
+                                maxLines = 1,
                                 modifier = Modifier.background(cat.color.copy(alpha = 0.14f), CircleShape)
                                     .padding(vertical = 5.dp, horizontal = 9.dp)
                             )
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text(pin.name, style = display(30.sp), color = FarmsyColors.ink)
+                    // Farm names run long ("Kerstbomen Van Ginhoven"); shrink rather
+                    // than wrap under the chips.
+                    FitText(pin.name, style = display(30.sp), color = FarmsyColors.ink)
                     pin.city?.let {
                         Text(it, style = geist(15.sp), color = FarmsyColors.inkMuted)
                     }
                     Spacer(Modifier.height(16.dp))
 
-                    // Action buttons
+                    // Action buttons. Icons match the iOS row (phone / globe / turn
+                    // arrow); when a farm has no number and no website — plenty
+                    // don't — Directions was left alone at full width, which read as
+                    // a mistake rather than an absence.
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         val phone = detail?.phone ?: pin.phone
-                        if (phone != null) ActionButton(stringResource(R.string.call), Color(0xFF2563EB), Modifier.weight(1f)) {
+                        val site = detail?.website ?: pin.website
+                        val lonely = phone == null && site == null
+
+                        if (phone != null) ActionButton(
+                            Icons.Filled.Call, stringResource(R.string.call),
+                            Color(0xFF2563EB), Modifier.weight(1f)
+                        ) {
                             context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
                         }
-                        val site = detail?.website ?: pin.website
-                        if (site != null) ActionButton(stringResource(R.string.web), Color(0xFFF97316), Modifier.weight(1f)) {
+                        if (site != null) ActionButton(
+                            Icons.Filled.Public, stringResource(R.string.web),
+                            Color(0xFFF97316), Modifier.weight(1f)
+                        ) {
                             val u = if (site.startsWith("http")) site else "https://$site"
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u)))
                         }
-                        ActionButton(stringResource(R.string.directions), FarmsyColors.farmGreen, Modifier.weight(1f)) {
+                        ActionButton(
+                            Icons.Filled.NearMe, stringResource(R.string.directions),
+                            FarmsyColors.farmGreen,
+                            if (lonely) Modifier.fillMaxWidth(0.6f) else Modifier.weight(1f)
+                        ) {
                             context.startActivity(
                                 Intent(Intent.ACTION_VIEW, Uri.parse("geo:${pin.lat},${pin.lng}?q=${pin.lat},${pin.lng}(${pin.name})"))
                             )
@@ -181,20 +243,51 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             Text(it, style = geist(16.sp), color = FarmsyColors.ink)
                             Spacer(Modifier.height(16.dp))
                         }
-                        Column(Modifier.fillMaxWidth().card(6)) {
-                            (detail?.openingHours ?: pin.openingHours)?.let {
-                                InfoRow(stringResource(R.string.opening_hours), it)
-                            }
+
+                        // Gather the rows first. The card used to render regardless,
+                        // so a farm with no hours, address, email, owner or produce —
+                        // and plenty have none — got an empty grey slab sitting under
+                        // the buttons, which reads as a broken component rather than
+                        // an absence of data.
+                        val rows = listOfNotNull(
+                            (detail?.openingHours ?: pin.openingHours)
+                                ?.let { stringResource(R.string.opening_hours) to it },
                             (detail?.address ?: pin.address)?.let {
-                                InfoRow(
-                                    stringResource(R.string.address),
-                                    listOfNotNull(it, detail?.postalCode ?: pin.postalCode, pin.city).joinToString(", ")
-                                )
+                                stringResource(R.string.address) to
+                                    listOfNotNull(it, detail?.postalCode ?: pin.postalCode, pin.city)
+                                        .joinToString(", ")
+                            },
+                            detail?.email?.let { stringResource(R.string.email) to it },
+                            detail?.operatorName?.let { stringResource(R.string.run_by) to it },
+                            detail?.produce?.takeIf { it.isNotEmpty() }
+                                ?.let { stringResource(R.string.produce) to it },
+                        )
+
+                        if (rows.isNotEmpty()) {
+                            Column(Modifier.fillMaxWidth().card(6)) {
+                                rows.forEach { (label, value) -> InfoRow(label, value) }
                             }
-                            detail?.email?.let { InfoRow(stringResource(R.string.email), it) }
-                            detail?.operatorName?.let { InfoRow(stringResource(R.string.run_by), it) }
-                            detail?.produce?.takeIf { it.isNotEmpty() }?.let {
-                                InfoRow(stringResource(R.string.produce), it)
+                        } else {
+                            // Say the thing out loud instead of leaving a void: this
+                            // farm simply hasn't been filled in yet, and the person
+                            // best placed to fix that is the owner reading this.
+                            Column(
+                                Modifier.fillMaxWidth().card(20),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("🌾", fontSize = 34.sp)
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    stringResource(R.string.no_details_yet),
+                                    style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    stringResource(R.string.no_details_yet_body),
+                                    style = geist(14.sp), color = FarmsyColors.inkMuted,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                )
                             }
                         }
                         Spacer(Modifier.height(16.dp))
@@ -205,7 +298,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                                 .clickable { showClaim = true }.padding(vertical = 13.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Text(
+                            FitText(
                                 stringResource(R.string.is_this_your_farm_claim_it),
                                 style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen
                             )
@@ -237,13 +330,25 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
 }
 
 @Composable
-private fun ActionButton(label: String, fill: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun ActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    fill: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     Row(
         modifier.background(fill, RoundedCornerShape(14.dp)).clickable(onClick = onClick)
-            .padding(vertical = 13.dp),
-        horizontalArrangement = Arrangement.Center
+            .padding(vertical = 13.dp, horizontal = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = geist(15.sp, FontWeight.Bold), color = Color.White)
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            label, style = geist(15.sp, FontWeight.Bold), color = Color.White,
+            maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

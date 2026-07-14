@@ -42,12 +42,28 @@ fun DisplayTitle(
     modifier: Modifier = Modifier,
     textAlign: TextAlign = TextAlign.Center,
 ) {
+    // Own the spacing between the three parts rather than trusting each caller to
+    // remember a trailing space in its string — Android's XML parser strips trailing
+    // whitespace from resources anyway, so "Unlock every farm's " arrived here as
+    // "Unlock every farm's" and rendered as "farm'sfull story". Join the pieces with
+    // a single space when they need one, and never double it up.
     val text: AnnotatedString = buildAnnotatedString {
-        withStyle(SpanStyle(fontFamily = Fraunces, fontWeight = FontWeight.Medium)) { append(leading) }
+        val lead = leading.trim()
+        val emph = emphasis.trim()
+        val trail = trailing.trim()
+        withStyle(SpanStyle(fontFamily = Fraunces, fontWeight = FontWeight.Medium)) {
+            append(lead)
+            if (lead.isNotEmpty() && emph.isNotEmpty()) append(" ")
+        }
         withStyle(
             SpanStyle(fontFamily = Fraunces, fontWeight = FontWeight.Medium, fontStyle = FontStyle.Italic)
-        ) { append(emphasis) }
-        withStyle(SpanStyle(fontFamily = Fraunces, fontWeight = FontWeight.Medium)) { append(trailing) }
+        ) { append(emph) }
+        withStyle(SpanStyle(fontFamily = Fraunces, fontWeight = FontWeight.Medium)) {
+            if (trail.isNotEmpty()) {
+                if (emph.isNotEmpty()) append(" ")
+                append(trail)
+            }
+        }
     }
     Text(text, modifier = modifier, fontSize = size, color = FarmsyColors.ink, textAlign = textAlign, lineHeight = size * 1.15)
 }

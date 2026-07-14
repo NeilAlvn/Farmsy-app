@@ -73,4 +73,6 @@
     <string name="free_trial_days_arg">%1$d jours offerts</string>
     <string name="then_price_per_year_arg">puis %1$s / an</string>
     <string name="trial_terms_arg">Gratuit pendant %1$d jours, puis %2$s par an. Annulable à tout moment dans Google Play.</string>
+    <string name="no_details_yet">Pas encore de détails</string>
+    <string name="no_details_yet_body">Cette ferme n\'a pas encore indiqué ses horaires ni ses coordonnées.</string>
 </resources>

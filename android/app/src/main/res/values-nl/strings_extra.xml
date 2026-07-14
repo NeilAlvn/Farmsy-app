@@ -73,4 +73,6 @@
     <string name="free_trial_days_arg">%1$d dagen gratis</string>
     <string name="then_price_per_year_arg">daarna %1$s / jaar</string>
     <string name="trial_terms_arg">%1$d dagen gratis, daarna %2$s per jaar. Altijd opzegbaar in Google Play.</string>
+    <string name="no_details_yet">Nog geen gegevens</string>
+    <string name="no_details_yet_body">Deze boerderij heeft nog geen openingstijden of contactgegevens gedeeld.</string>
 </resources>

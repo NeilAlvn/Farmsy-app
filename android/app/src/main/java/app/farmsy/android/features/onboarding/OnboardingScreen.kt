@@ -358,12 +358,16 @@ private fun ValueStep() {
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // Sit in the middle of the step rather than crammed against the top with a
+        // void beneath. The content is short; anchoring it high left most of the
+        // screen empty and made the emoji grid look like it had run out.
+        verticalArrangement = Arrangement.Center
     ) {
         Kicker(stringResource(R.string.why_farmsy))
         Spacer(Modifier.height(10.dp))
         DisplayTitle(
-            leading = stringResource(R.string.ob_real_food) + " ",
+            leading = stringResource(R.string.ob_real_food),
             emphasis = stringResource(R.string.ob_farm),
             size = 32.sp
         )
@@ -378,7 +382,9 @@ private fun ValueStep() {
                 if (revealed) count.toFloat() else 0f, tween(1100), label = "stat"
             )
             StatTile(
-                if (count == 0) stringResource(R.string.ob_thousands) else "${animated.roundToInt()}+",
+                // Grouped, so 12667 reads as a number of farms and not a serial code.
+                if (count == 0) stringResource(R.string.ob_thousands)
+                else "%,d+".format(animated.roundToInt()),
                 stringResource(R.string.farm_shops)
             )
             StatTile("10", stringResource(R.string.ob_categories))
@@ -422,9 +428,12 @@ private fun NotifyStep() {
             emphasis = stringResource(R.string.near_you),
             size = 30.sp
         )
-        Spacer(Modifier.height(50.dp))
-        Text("🔔", fontSize = 76.sp)
-        Spacer(Modifier.height(30.dp))
+        // The bell used to sit in 50dp of air above and 30dp below at 76sp, which
+        // left it stranded in the middle of the screen rather than reading as part of
+        // the message.
+        Spacer(Modifier.height(28.dp))
+        Text("🔔", fontSize = 58.sp)
+        Spacer(Modifier.height(18.dp))
         Text(
             stringResource(R.string.new_farm_shops_join_farmsy_every_week),
             style = geist(15.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center

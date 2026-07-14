@@ -76,4 +76,6 @@
     <string name="free_trial_days_arg">%1$d days free</string>
     <string name="then_price_per_year_arg">then %1$s / year</string>
     <string name="trial_terms_arg">Free for %1$d days, then %2$s per year. Cancel anytime in Google Play.</string>
+    <string name="no_details_yet">No details yet</string>
+    <string name="no_details_yet_body">This farm hasn\'t shared its opening hours or contact details.</string>
 </resources>

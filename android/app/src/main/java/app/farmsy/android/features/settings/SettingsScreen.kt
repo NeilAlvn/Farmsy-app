@@ -23,10 +23,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -182,7 +182,7 @@ fun SettingsScreen() {
             }
             HorizontalDivider(Modifier.padding(start = 62.dp))
             SettingsRow(Icons.Filled.Email, Color(0xFF38BDF8), stringResource(R.string.contact_us)) {
-                open("mailto:hello@farmsy.app")
+                open("https://www.farmsy.app/messages")
             }
         }
 
@@ -190,11 +190,11 @@ fun SettingsScreen() {
 
         // Legal
         SettingsCard {
-            SettingsRow(Icons.Filled.PanTool, Color(0xFF8B5CF6), stringResource(R.string.privacy_policy)) {
+            SettingsRow(Icons.Filled.PrivacyTip, Color(0xFF8B5CF6), stringResource(R.string.privacy_policy)) {
                 open("https://farmsy.app/privacy")
             }
             HorizontalDivider(Modifier.padding(start = 62.dp))
-            SettingsRow(Icons.Filled.Description, Color(0xFF64748B), stringResource(R.string.terms_of_service)) {
+            SettingsRow(Icons.Filled.Article, Color(0xFF64748B), stringResource(R.string.terms_of_service)) {
                 open("https://farmsy.app/terms")
             }
         }
