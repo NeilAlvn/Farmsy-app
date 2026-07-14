@@ -8,12 +8,18 @@ struct SettingsSheet: View {
     @State private var showSignOutConfirm = false
     @State private var showDeleteInfo = false
 
+    // Key the badge off *access*, not the raw status word. A "canceled" status whose
+    // period has already lapsed still reads "canceled" in the DB, but the user has no
+    // access — labelling them Canceled while the section below says "no membership" is
+    // a contradiction on one screen. hasFullAccess is the truth both halves share.
     private var subscriptionBadge: (String, Color) {
+        guard session.profile?.hasFullAccess == true else {
+            return (String(localized: "Free"), .inkMuted)
+        }
         switch session.profile?.subscriptionStatus {
-        case "active":   (String(localized: "Member"), .farmGreen)
-        case "trialing": (String(localized: "Trial"), .farmGreen)
-        case "canceled": (String(localized: "Canceled"), .inkMuted)
-        default:         (String(localized: "Free"), .inkMuted)
+        case "trialing": return (String(localized: "Trial"), .farmGreen)
+        case "canceled": return (String(localized: "Canceled"), .inkMuted)
+        default:         return (String(localized: "Member"), .farmGreen)
         }
     }
 
@@ -39,7 +45,9 @@ struct SettingsSheet: View {
                                     .font(.geist(15, .semibold))
                                     .foregroundStyle(Color.ink)
                                     .lineLimit(1)
-                                Text(session.profile?.subscriptionPlan.map { String(localized: "\($0.capitalized) plan") } ?? String(localized: "Farmsy account"))
+                                // Only name a plan while it still grants access — a
+                                // lapsed cancellation keeps subscription_plan in the DB.
+                                Text((session.profile?.hasFullAccess == true ? session.profile?.subscriptionPlan : nil).map { String(localized: "\($0.capitalized) plan") } ?? String(localized: "Farmsy account"))
                                     .font(.geist(13))
                                     .foregroundStyle(Color.inkMuted)
                             }

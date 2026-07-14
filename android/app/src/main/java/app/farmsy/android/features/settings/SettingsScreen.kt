@@ -117,7 +117,11 @@ fun SettingsScreen() {
                         session.email.ifEmpty { stringResource(R.string.signed_in) },
                         style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink
                     )
-                    val plan = profile?.subscriptionPlan
+                    // Only name a plan while it actually grants access. After a lapsed
+                    // cancellation the DB still carries subscription_plan='yearly', but
+                    // the person isn't on a yearly plan any more — showing "Yearly plan"
+                    // there is the same stale-state lie as the badge.
+                    val plan = profile?.subscriptionPlan?.takeIf { profile?.hasFullAccess == true }
                     FitText(
                         if (plan != null)
                             stringResource(
@@ -139,11 +143,17 @@ fun SettingsScreen() {
                 }
             }
             if (isAuthenticated) {
-                val (badgeRes, badgeColor) = when (profile?.subscriptionStatus) {
-                    "active" -> R.string.member to FarmsyColors.farmGreen
-                    "trialing" -> R.string.trial to FarmsyColors.farmGreen
-                    "canceled" -> R.string.canceled to FarmsyColors.inkMuted
-                    else -> R.string.free to FarmsyColors.inkMuted
+                // Key the badge off *access*, not the raw status word. A "canceled"
+                // status whose period has already lapsed still reads as "canceled" in
+                // the DB — but the user has no access, so labelling them Canceled while
+                // the section below correctly says "no membership" is a contradiction
+                // on one screen. hasFullAccess is the same truth both halves should use.
+                val access = profile?.hasFullAccess == true
+                val (badgeRes, badgeColor) = when {
+                    !access -> R.string.free to FarmsyColors.inkMuted
+                    profile?.subscriptionStatus == "trialing" -> R.string.trial to FarmsyColors.farmGreen
+                    profile?.subscriptionStatus == "canceled" -> R.string.canceled to FarmsyColors.inkMuted
+                    else -> R.string.member to FarmsyColors.farmGreen
                 }
                 Text(
                     stringResource(badgeRes),
