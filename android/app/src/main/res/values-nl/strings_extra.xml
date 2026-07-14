@@ -77,4 +77,7 @@
     <string name="no_details_yet_body">Deze boerderij heeft nog geen openingstijden of contactgegevens gedeeld.</string>
     <string name="trial_converts_on_arg">Proefperiode · je betaalt vanaf %1$s</string>
     <string name="trial_then_charged">Proefperiode · wordt daarna automatisch verlengd</string>
+    <string name="membership_ending">Je lidmaatschap loopt af</string>
+    <string name="access_until_arg">Opgezegd · toegang tot %1$s</string>
+    <string name="wont_renew">Opgezegd · wordt niet verlengd</string>
 </resources>

@@ -77,4 +77,7 @@
     <string name="no_details_yet_body">Cette ferme n\'a pas encore indiqué ses horaires ni ses coordonnées.</string>
     <string name="trial_converts_on_arg">Essai gratuit · débit le %1$s</string>
     <string name="trial_then_charged">Essai gratuit · renouvellement automatique ensuite</string>
+    <string name="membership_ending">Votre abonnement se termine</string>
+    <string name="access_until_arg">Annulé · accès jusqu\'au %1$s</string>
+    <string name="wont_renew">Annulé · pas de renouvellement</string>
 </resources>

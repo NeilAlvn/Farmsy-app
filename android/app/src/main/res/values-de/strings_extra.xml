@@ -77,4 +77,7 @@
     <string name="no_details_yet_body">Dieser Hof hat noch keine Öffnungszeiten oder Kontaktdaten hinterlegt.</string>
     <string name="trial_converts_on_arg">Testphase · Abbuchung am %1$s</string>
     <string name="trial_then_charged">Testphase · verlängert sich danach automatisch</string>
+    <string name="membership_ending">Deine Mitgliedschaft endet</string>
+    <string name="access_until_arg">Gekündigt · Zugang bis %1$s</string>
+    <string name="wont_renew">Gekündigt · wird nicht verlängert</string>
 </resources>

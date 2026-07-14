@@ -80,4 +80,7 @@
     <string name="no_details_yet_body">This farm hasn\'t shared its opening hours or contact details.</string>
     <string name="trial_converts_on_arg">Free trial · you\'ll be charged on %1$s</string>
     <string name="trial_then_charged">Free trial · renews automatically after it ends</string>
+    <string name="membership_ending">Your membership is ending</string>
+    <string name="access_until_arg">Cancelled · you keep access until %1$s</string>
+    <string name="wont_renew">Cancelled · won\'t renew</string>
 </resources>

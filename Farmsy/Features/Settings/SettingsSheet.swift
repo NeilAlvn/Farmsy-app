@@ -216,6 +216,9 @@ struct MembershipSection: View {
     private var hasAccess: Bool { session.profile?.hasFullAccess ?? false }
     private var isLifetime: Bool { plan == "lifetime" && hasAccess }
     private var isTrialing: Bool { status == "trialing" }
+    /// Cancelled but still inside the period they already paid for — they keep access
+    /// to the end, and deserve to be told when that is rather than sold a renewal.
+    private var isCanceled: Bool { status == "canceled" }
 
     private var billingURL: URL? {
         switch session.profile?.subscriptionSource {
@@ -243,7 +246,9 @@ struct MembershipSection: View {
                         .font(.geist(14))
                         .foregroundStyle(Color.inkMuted)
                 } else if hasAccess {
-                    Text(isTrialing ? "Your trial is active" : "You're on the Yearly plan")
+                    Text(isCanceled ? "Your membership is ending"
+                         : isTrialing ? "Your trial is active"
+                         : "You're on the Yearly plan")
                         .font(.geist(16, .bold))
                         .foregroundStyle(Color.ink)
 
@@ -280,14 +285,22 @@ struct MembershipSection: View {
         }
     }
 
+    /// Say the true thing about what happens next.
+    ///
+    /// A cancelled plan was being told it "renews yearly" — flatly false, and it
+    /// buried the one fact the person actually needs: the day their access stops. A
+    /// trial was told nothing about the charge that's coming. Both are the same
+    /// failure — describing the happy path to someone who isn't on it.
     private var subtitle: String {
-        guard isTrialing else {
-            return String(localized: "Renews yearly · manage where you subscribed")
+        let ends = session.profile?.subscriptionEndDate?.formatted(date: .long, time: .omitted)
+        if isCanceled {
+            if let ends { return String(localized: "Cancelled · you keep access until \(ends)") }
+            return String(localized: "Cancelled · won't renew")
         }
-        if let end = session.profile?.subscriptionEndDate {
-            let d = end.formatted(date: .long, time: .omitted)
-            return String(localized: "Free trial · you'll be charged on \(d)")
+        if isTrialing {
+            if let ends { return String(localized: "Free trial · you'll be charged on \(ends)") }
+            return String(localized: "Free trial · renews automatically after it ends")
         }
-        return String(localized: "Free trial · renews automatically after it ends")
+        return String(localized: "Renews yearly · manage where you subscribed")
     }
 }

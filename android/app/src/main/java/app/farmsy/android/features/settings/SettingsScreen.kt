@@ -311,6 +311,9 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
     val hasAccess = profile?.hasFullAccess == true
     val isLifetime = plan == "lifetime" && hasAccess
     val isTrialing = status == "trialing"
+    // Cancelled but still inside the period they already paid for — they keep access
+    // to the end, and deserve to be told when that is rather than sold a renewal.
+    val isCanceled = status == "canceled"
 
     fun openBilling() {
         val url = when (profile?.subscriptionSource) {
@@ -346,17 +349,29 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                 }
 
                 hasAccess -> {
+                    val ends = profile?.subscriptionEndDate?.let { formatDate(it) }
                     FitText(
-                        stringResource(if (isTrialing) R.string.trial_active else R.string.youre_on_yearly),
+                        stringResource(
+                            when {
+                                isCanceled -> R.string.membership_ending
+                                isTrialing -> R.string.trial_active
+                                else -> R.string.youre_on_yearly
+                            }
+                        ),
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
-                    // During a trial, say when the charge lands. A free trial that
-                    // quietly turns into a bill is the thing guideline 3.1.2 exists to
-                    // stop, and the date is the whole point of the disclosure.
-                    val ends = profile?.subscriptionEndDate?.let { formatDate(it) }
+                    // Say the true thing about what happens next.
+                    //
+                    // A cancelled plan was being told it "renews yearly" — flatly
+                    // false, and it buried the one fact the person actually needs:
+                    // the day their access stops. A trial was told nothing about the
+                    // charge that's coming. Both are the same failure: describing the
+                    // happy path to someone who isn't on it.
                     Text(
                         when {
+                            isCanceled && ends != null -> stringResource(R.string.access_until_arg, ends)
+                            isCanceled -> stringResource(R.string.wont_renew)
                             isTrialing && ends != null -> stringResource(R.string.trial_converts_on_arg, ends)
                             isTrialing -> stringResource(R.string.trial_then_charged)
                             else -> stringResource(R.string.yearly_renews)
