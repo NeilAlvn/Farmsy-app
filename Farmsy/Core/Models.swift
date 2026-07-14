@@ -215,11 +215,18 @@ struct Profile: Decodable {
     let subscriptionStatus: String?
     let subscriptionPlan: String?
     let subscriptionEndDate: Date?
+    /// Which rail took the money: "google", "apple" or "stripe". Billing lives with
+    /// whoever charged the card — neither store lets us cancel on a user's behalf —
+    /// so this decides where "manage your subscription" has to send them. Pointing a
+    /// web subscriber at the App Store, where they'd find nothing, reads as hiding
+    /// the cancel button.
+    let subscriptionSource: String?
 
     enum CodingKeys: String, CodingKey {
         case subscriptionStatus = "subscription_status"
         case subscriptionPlan = "subscription_plan"
         case subscriptionEndDate = "subscription_end_date"
+        case subscriptionSource = "subscription_source"
     }
 
     /// Same rule as the web's isPaid(): active/trialing always pass, and a

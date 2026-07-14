@@ -78,4 +78,6 @@
     <string name="trial_terms_arg">Free for %1$d days, then %2$s per year. Cancel anytime in Google Play.</string>
     <string name="no_details_yet">No details yet</string>
     <string name="no_details_yet_body">This farm hasn\'t shared its opening hours or contact details.</string>
+    <string name="trial_converts_on_arg">Free trial · you\'ll be charged on %1$s</string>
+    <string name="trial_then_charged">Free trial · renews automatically after it ends</string>
 </resources>

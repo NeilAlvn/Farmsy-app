@@ -199,21 +199,31 @@ struct SettingsRow: View {
     }
 }
 
-/// Membership status and what (if anything) is left to sell.
+/// Membership status, and where to go to change it.
 ///
-/// The rule that shapes this: **lifetime is the top of the ladder.** Someone who
-/// paid once, forever, must never see an upsell — there is nothing above it, and
-/// dangling an offer at them would be dishonest. Yearly members get exactly one
-/// thing to consider (lifetime); everyone else is pointed at the paywall rather
-/// than given a second purchase surface here.
+/// Two rules shape this. **Lifetime is the top of the ladder** — someone who paid
+/// once, forever, must never see an upsell, because there is nothing above it and
+/// dangling an offer would be dishonest. And **billing lives with whoever took the
+/// money**: Apple, Play and Stripe are three separate contracts, and no store lets
+/// us cancel on a user's behalf. So "manage" has to send them to the rail that
+/// actually charged them — pointing a web subscriber at the App Store, where they'd
+/// find nothing, reads as hiding the cancel button.
 struct MembershipSection: View {
     @Environment(SessionStore.self) private var session
-    @Environment(PurchaseStore.self) private var purchases
 
     private var plan: String? { session.profile?.subscriptionPlan }
     private var status: String? { session.profile?.subscriptionStatus }
     private var hasAccess: Bool { session.profile?.hasFullAccess ?? false }
     private var isLifetime: Bool { plan == "lifetime" && hasAccess }
+    private var isTrialing: Bool { status == "trialing" }
+
+    private var billingURL: URL? {
+        switch session.profile?.subscriptionSource {
+        case "stripe": URL(string: "https://www.farmsy.app/profile")
+        case "google": URL(string: "https://play.google.com/store/account/subscriptions")
+        default:       URL(string: "https://apps.apple.com/account/subscriptions")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -224,54 +234,38 @@ struct MembershipSection: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 if isLifetime {
-                    // Top of the ladder. Nothing to sell, nothing to manage.
+                    // Nothing to sell, and nothing to cancel — but say so plainly. An
+                    // empty section reads as broken; a clear statement reads as meant.
                     Text("You have Lifetime access")
                         .font(.geist(16, .bold))
                         .foregroundStyle(Color.ink)
-                    Text("One payment, never expires. Nothing else to do.")
+                    Text("One payment, never expires. Nothing to manage.")
                         .font(.geist(14))
                         .foregroundStyle(Color.inkMuted)
                 } else if hasAccess {
-                    Text(status == "trialing" ? "Your trial is active" : "You're on the Yearly plan")
+                    Text(isTrialing ? "Your trial is active" : "You're on the Yearly plan")
                         .font(.geist(16, .bold))
                         .foregroundStyle(Color.ink)
-                    Text("Renews yearly · manage in the App Store")
+
+                    // During a trial, say when the charge lands. A free trial that
+                    // quietly becomes a bill is exactly what guideline 3.1.2 exists to
+                    // stop, and the date is the whole point of the disclosure.
+                    Text(subtitle)
                         .font(.geist(14))
                         .foregroundStyle(Color.inkMuted)
 
-                    if let price = purchases.lifetimePrice {
-                        if purchases.isPurchasing {
-                            ProgressView().tint(Color.farmGreen).padding(.top, 10)
-                        } else {
-                            Button("Upgrade to Lifetime · \(price)") {
-                                Haptics.tap()
-                                Task {
-                                    let uid = session.session?.user.id
-                                    if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
-                                        // The grant lands via the webhook a moment
-                                        // after the purchase call returns.
-                                        for _ in 0..<10 {
-                                            await session.refreshProfile()
-                                            if session.hasFullAccess { break }
-                                            try? await Task.sleep(nanoseconds: 1_500_000_000)
-                                        }
-                                    }
-                                }
-                            }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .padding(.top, 12)
-                        }
-                    }
-
+                    // No "Upgrade to Lifetime": the server now refuses to sell a second
+                    // subscription to someone who already has one (it used to happily
+                    // charge them twice), so the button could only ever 409 on a paying
+                    // customer. A real upgrade must cancel the running subscription
+                    // first — that's a feature, not a button.
                     Button("Manage subscription") {
                         Haptics.tap()
-                        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-                            UIApplication.shared.open(url)
-                        }
+                        if let url = billingURL { UIApplication.shared.open(url) }
                     }
                     .font(.geist(14, .semibold))
                     .foregroundStyle(Color.farmGreen)
-                    .padding(.top, 8)
+                    .padding(.top, 10)
                 } else {
                     Text("You don't have a membership yet")
                         .font(.geist(16, .bold))
@@ -284,6 +278,16 @@ struct MembershipSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
         }
-        .task { await purchases.loadOffering() }
+    }
+
+    private var subtitle: String {
+        guard isTrialing else {
+            return String(localized: "Renews yearly · manage where you subscribed")
+        }
+        if let end = session.profile?.subscriptionEndDate {
+            let d = end.formatted(date: .long, time: .omitted)
+            return String(localized: "Free trial · you'll be charged on \(d)")
+        }
+        return String(localized: "Free trial · renews automatically after it ends")
     }
 }

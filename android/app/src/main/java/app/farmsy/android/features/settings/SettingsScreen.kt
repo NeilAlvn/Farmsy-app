@@ -292,34 +292,34 @@ private fun SettingsRow(
     }
 }
 
-/// Membership status and what (if anything) is left to sell.
+/// Membership status, and where to go to change it.
 ///
-/// The rule that shapes this: **lifetime is the top of the ladder.** Someone who
-/// has paid once, forever, must never see an upsell — there is nothing above it,
-/// and dangling an offer at them would be dishonest. Yearly members get exactly
-/// one thing to consider (lifetime); everyone else gets the plans.
-///
-/// Purchases themselves live on the paywall, which is reached by opening a locked
-/// farm; this section links there rather than duplicating a second buy flow.
+/// Two rules shape this. **Lifetime is the top of the ladder** — someone who paid
+/// once, forever, must never see an upsell, because there is nothing above it and
+/// dangling an offer would be dishonest. And **billing lives with whoever took the
+/// money**: Play, Apple and Stripe are three separate contracts, and neither store
+/// lets us cancel on a user's behalf. So "manage" has to send them to the rail that
+/// actually charged them — pointing a web subscriber at Google Play, where they'd
+/// find nothing, reads as hiding the cancel button.
 @Composable
 private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
     val context = LocalContext.current
-    val purchases = app.farmsy.android.LocalPurchases.current
     val session = LocalSession.current
-    val scope = rememberCoroutineScope()
-
-    val lifetimePrice = purchases.lifetimePrice
-    val lifetimePkg by purchases.lifetime.collectAsState()
-    val currentSession by session.session.collectAsState()
-    val isPurchasing by purchases.isPurchasing.collectAsState()
-    val userId = currentSession?.user?.id
-
-    LaunchedEffect(Unit) { purchases.loadOffering() }
 
     val plan = profile?.subscriptionPlan
     val status = profile?.subscriptionStatus
     val hasAccess = profile?.hasFullAccess == true
     val isLifetime = plan == "lifetime" && hasAccess
+    val isTrialing = status == "trialing"
+
+    fun openBilling() {
+        val url = when (profile?.subscriptionSource) {
+            "apple" -> "https://apps.apple.com/account/subscriptions"
+            "stripe" -> "https://www.farmsy.app/profile"
+            else -> "https://play.google.com/store/account/subscriptions"
+        }
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
 
     Text(
         stringResource(R.string.membership),
@@ -330,7 +330,9 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
     SettingsCard {
         Column(Modifier.padding(16.dp)) {
             when {
-                // Top of the ladder. Nothing to sell, nothing to manage.
+                // Top of the ladder. Nothing to sell, and nothing to cancel — but say
+                // so plainly: an empty section reads as broken, a clear statement
+                // reads as deliberate.
                 isLifetime -> {
                     FitText(
                         stringResource(R.string.you_have_lifetime),
@@ -343,63 +345,36 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                     )
                 }
 
-                // Paying yearly: tell them where to manage it, and offer the one
-                // genuine upgrade that exists.
                 hasAccess -> {
                     FitText(
-                        stringResource(
-                            if (status == "trialing") R.string.trial_active else R.string.youre_on_yearly
-                        ),
+                        stringResource(if (isTrialing) R.string.trial_active else R.string.youre_on_yearly),
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
-                    // Tappable: this is the app's route to cancel, which both stores
-                    // require to exist somewhere inside the app.
+                    // During a trial, say when the charge lands. A free trial that
+                    // quietly turns into a bill is the thing guideline 3.1.2 exists to
+                    // stop, and the date is the whole point of the disclosure.
+                    val ends = profile?.subscriptionEndDate?.let { formatDate(it) }
                     Text(
-                        stringResource(R.string.yearly_renews),
-                        style = geist(14.sp), color = FarmsyColors.inkMuted,
-                        modifier = Modifier.clickable {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://play.google.com/store/account/subscriptions")
-                                )
-                            )
-                        }
+                        when {
+                            isTrialing && ends != null -> stringResource(R.string.trial_converts_on_arg, ends)
+                            isTrialing -> stringResource(R.string.trial_then_charged)
+                            else -> stringResource(R.string.yearly_renews)
+                        },
+                        style = geist(14.sp), color = FarmsyColors.inkMuted
                     )
-                    if (lifetimePrice != null) {
-                        Spacer(Modifier.height(14.dp))
-                        if (isPurchasing) {
-                            CircularProgressIndicator(color = FarmsyColors.farmGreen)
-                        } else {
-                            // Label and price on their own lines: "Upgrade to
-                            // Lifetime · ₱3,950.00" is too long for one line in a
-                            // full-width button and ends up cramped.
-                            PlanCard(
-                                label = stringResource(R.string.upgrade_to_lifetime),
-                                detail = lifetimePrice,
-                                filled = true,
-                                fallbackLabel = stringResource(R.string.upgrade_to_lifetime),
-                            ) {
-                                val activity = context as? android.app.Activity ?: return@PlanCard
-                                scope.launch {
-                                    if (purchases.purchase(activity, lifetimePkg, userId)) {
-                                        // Poll: the grant lands via the webhook a
-                                        // moment after the purchase returns.
-                                        for (attempt in 0 until 10) {
-                                            session.refreshProfile()
-                                            if (session.hasFullAccess) break
-                                            kotlinx.coroutines.delay(1500)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // No separate "Manage subscription" line — the subtitle above
-                    // already says where to manage it, and it's tappable. Both stores
-                    // require a route to cancel from inside the app, so the link stays
-                    // even though the extra line doesn't.
+                    Spacer(Modifier.height(12.dp))
+                    // No "Upgrade to Lifetime" here. The server now refuses to sell a
+                    // second subscription to someone who already has one (it used to
+                    // happily charge them twice), so an upgrade button would only
+                    // produce a 409 on a paying customer's screen. A real upgrade has
+                    // to cancel the running subscription first — that's a feature, not
+                    // a button.
+                    Text(
+                        stringResource(R.string.manage_subscription),
+                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
+                        modifier = Modifier.clickable { openBilling() }
+                    )
                 }
 
                 // No membership. Point at the paywall rather than growing a second
@@ -419,3 +394,9 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
         }
     }
 }
+
+/// "2026-07-17T…" -> "17 July 2026", in the user's locale.
+private fun formatDate(iso: String): String? = runCatching {
+    val d = java.time.OffsetDateTime.parse(iso)
+    d.format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG))
+}.getOrNull()

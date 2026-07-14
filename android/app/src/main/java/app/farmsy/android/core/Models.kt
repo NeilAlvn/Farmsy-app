@@ -190,6 +190,12 @@ data class Profile(
     @SerialName("subscription_status") val subscriptionStatus: String? = null,
     @SerialName("subscription_plan") val subscriptionPlan: String? = null,
     @SerialName("subscription_end_date") val subscriptionEndDate: String? = null,
+    /// Which rail took the money: "google", "apple" or "stripe". Billing lives with
+    /// whoever charged the card — neither store lets us cancel on the user's behalf —
+    /// so this decides where "manage your subscription" has to send them. Sending a
+    /// web subscriber into Google Play to find nothing is the kind of dead end that
+    /// reads as hiding the cancel button.
+    @SerialName("subscription_source") val subscriptionSource: String? = null,
 ) {
     /// Same rule as the web's isPaid(): active/trialing always pass, and a
     /// canceled plan keeps access until the already-paid period runs out.

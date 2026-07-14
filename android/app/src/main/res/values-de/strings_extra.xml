@@ -75,4 +75,6 @@
     <string name="trial_terms_arg">%1$d Tage gratis, danach %2$s pro Jahr. Jederzeit in Google Play kündbar.</string>
     <string name="no_details_yet">Noch keine Angaben</string>
     <string name="no_details_yet_body">Dieser Hof hat noch keine Öffnungszeiten oder Kontaktdaten hinterlegt.</string>
+    <string name="trial_converts_on_arg">Testphase · Abbuchung am %1$s</string>
+    <string name="trial_then_charged">Testphase · verlängert sich danach automatisch</string>
 </resources>
