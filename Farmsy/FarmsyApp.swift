@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct FarmsyApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var session: SessionStore
     @State private var farms = FarmsStore()
     @State private var favorites = FavoritesStore()
@@ -47,6 +48,18 @@ struct FarmsyApp: App {
                 .onOpenURL { captureReferral($0) }
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                     activity.webpageURL.map(captureReferral)
+                }
+                // Re-check the subscription whenever the app returns to the
+                // foreground. Buying, cancelling and managing a plan all happen
+                // outside the app — in the App Store — and the profile only changes
+                // once the webhook lands a few seconds later. Refreshing only on
+                // login and screen-open meant coming back from the store showed the
+                // state from before you left. onChange(scenePhase → .active) is the
+                // one hook that catches every one of those round-trips.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        Task { await session.refreshProfile() }
+                    }
                 }
         }
     }
