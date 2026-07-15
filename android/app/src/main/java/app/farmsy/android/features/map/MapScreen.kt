@@ -23,13 +23,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
@@ -149,7 +146,6 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     val selectedCategory by farms.selectedCategory.collectAsState()
     val userLocation by locationHelper.location.collectAsState()
 
-    var showList by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -190,20 +186,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     }
 
     Box(Modifier.fillMaxSize()) {
-        if (showList) {
-            LazyColumn(
-                Modifier.fillMaxSize().background(FarmsyColors.cream)
-                    .padding(horizontal = 14.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    top = 80.dp, bottom = 150.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(farms.sortedByDistance(filtered, userLocation)) { pin ->
-                    FarmRow(pin) { onOpenFarm(pin) }
-                }
-            }
-        } else {
+        run {
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
@@ -279,23 +262,21 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     }
                 }
             }
-            if (!showList) {
-                Spacer(Modifier.height(10.dp))
-                Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.95f), shadowElevation = 4.dp) {
-                    Row(
-                        Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreen)
-                            Spacer(Modifier.size(8.dp))
-                            Text(stringResource(R.string.loading_farms), style = geist(13.sp, FontWeight.Medium))
-                        } else {
-                            Text(
-                                stringResource(R.string.arg_farms, filtered.size.toString()),
-                                style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted
-                            )
-                        }
+            Spacer(Modifier.height(10.dp))
+            Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.95f), shadowElevation = 4.dp) {
+                Row(
+                    Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreen)
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.loading_farms), style = geist(13.sp, FontWeight.Medium))
+                    } else {
+                        Text(
+                            stringResource(R.string.arg_farms, filtered.size.toString()),
+                            style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted
+                        )
                     }
                 }
             }
@@ -317,27 +298,18 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
             }
         }
 
-        // Bottom controls, lifted clear of the floating tab bar. The inset is
-        // measured from the real tab bar (see MainScreen) so this stays put when
-        // the bar grows at a larger font scale.
-        Row(
-            Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                .padding(bottom = bottomInset, start = 12.dp, end = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Category filter, bottom-left and compact. The list toggle that used to sit
+        // beside it is gone — it duplicated the Discover tab, which already offers a
+        // browsable list of farms — so the map is just the map now. The pill sizes to
+        // its own label rather than stretching across, so it reads as a control, not
+        // a banner.
+        Box(
+            Modifier.align(Alignment.BottomStart).navigationBarsPadding()
+                .padding(bottom = bottomInset, start = 12.dp)
         ) {
-            Surface(
-                Modifier.size(48.dp).clickable { showList = !showList },
-                shape = CircleShape, color = Color.White, shadowElevation = 6.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.AutoMirrored.Filled.List, null, tint = FarmsyColors.farmGreen)
-                }
-            }
             CategoryMenu(
                 selected = selectedCategory,
                 onSelect = { farms.selectedCategory.value = it },
-                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -352,18 +324,20 @@ private fun CategoryMenu(
     var expanded by remember { mutableStateOf(false) }
     Box(modifier) {
         Surface(
-            Modifier.fillMaxWidth().clickable { expanded = true },
+            Modifier.clickable { expanded = true },
             shape = CircleShape, color = Color.White, shadowElevation = 6.dp
         ) {
             Row(
-                Modifier.padding(vertical = 14.dp, horizontal = 14.dp),
-                horizontalArrangement = Arrangement.Center,
+                Modifier.padding(vertical = 11.dp, horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // When a category is picked, show its emoji + name. With none, keep
+                // it short — "Categories", not "All Categories" — so the pill stays
+                // a compact control rather than a banner across the map.
                 Text(
                     selected?.let { "${it.emoji} ${stringResource(it.labelRes)}" }
-                        ?: stringResource(R.string.all_categories_2),
-                    style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen, maxLines = 1
+                        ?: "🍽️ ${stringResource(R.string.categories_short)}",
+                    style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen, maxLines = 1
                 )
                 Spacer(Modifier.size(6.dp))
                 Icon(Icons.Filled.KeyboardArrowUp, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(14.dp))
@@ -384,23 +358,3 @@ private fun CategoryMenu(
     }
 }
 
-@Composable
-private fun FarmRow(pin: FarmPin, onOpen: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(18.dp))
-            .clickable { onOpen() }.padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            // Names/addresses are arbitrary length and sit beside a chevron —
-            // shrink to fit rather than wrap and reflow the row.
-            FitText(pin.name, style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
-            (pin.city ?: pin.address)?.let {
-                FitText(it, style = geist(14.sp), color = FarmsyColors.inkMuted)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                pin.categories.take(4).forEach { Text(it.emoji, fontSize = 16.sp) }
-            }
-        }
-    }
-}

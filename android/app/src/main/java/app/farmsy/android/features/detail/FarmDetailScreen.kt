@@ -478,7 +478,7 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
                 val trialDays = purchases.yearlyFreeTrialDays
                 Column(
                     Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     PlanCard(
                         label = if (trialDays != null)

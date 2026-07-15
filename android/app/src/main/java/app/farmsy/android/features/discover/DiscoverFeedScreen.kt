@@ -61,6 +61,7 @@ import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import app.farmsy.android.ui.theme.FitText
+import androidx.compose.ui.text.style.TextOverflow
 
 /// Discover tab — mirrors iOS DiscoverFeedView: a scrolling feed of randomly
 /// picked farms that all have a photo. Save-heart and add-farm require login.
@@ -178,15 +179,19 @@ private fun DiscoverCard(pin: FarmPin, onOpen: () -> Unit) {
                     modifier = Modifier.size(18.dp)
                 )
             }
-            // Category chips
+            // Category chips overlaid on the image. Two, not three, and pinned to a
+            // single line each: three full labels ("🥬 Farm Produce" etc.) could run
+            // off the right edge of the card and get clipped mid-word by the rounded
+            // corner. Kept to what reliably fits.
             Row(
-                Modifier.align(Alignment.BottomStart).padding(10.dp),
+                Modifier.align(Alignment.BottomStart).padding(10.dp).fillMaxWidth(0.85f),
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                pin.categories.take(3).forEach { cat ->
+                pin.categories.take(2).forEach { cat ->
                     Text(
                         "${cat.emoji} ${stringResource(cat.labelRes)}",
                         style = geist(11.sp, FontWeight.SemiBold), color = FarmsyColors.ink,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.background(Color.White.copy(alpha = 0.94f), CircleShape)
                             .padding(vertical = 4.dp, horizontal = 8.dp)
                     )

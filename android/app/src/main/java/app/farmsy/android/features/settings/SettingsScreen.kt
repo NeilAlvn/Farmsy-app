@@ -64,6 +64,7 @@ import app.farmsy.android.ui.theme.FitText
 import androidx.compose.material3.CircularProgressIndicator
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.PlanCard
+import androidx.compose.material.icons.filled.CardGiftcard
 
 /// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
 /// sign out + delete account, version footer).
@@ -189,6 +190,16 @@ fun SettingsScreen() {
                     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                         .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                 )
+            }
+            // Refer friends, for signed-in users only — a guest has no code to
+            // share. Opens the web invite page rather than duplicating the whole
+            // referral dashboard natively; the signup-side code capture (the part
+            // that actually earns referrals) stays in the app.
+            if (isAuthenticated) {
+                HorizontalDivider(Modifier.padding(start = 62.dp))
+                SettingsRow(Icons.Filled.CardGiftcard, Color(0xFFEC4899), stringResource(R.string.refer_friends)) {
+                    open("https://www.farmsy.app/invite")
+                }
             }
             HorizontalDivider(Modifier.padding(start = 62.dp))
             SettingsRow(Icons.Filled.Email, Color(0xFF38BDF8), stringResource(R.string.contact_us)) {

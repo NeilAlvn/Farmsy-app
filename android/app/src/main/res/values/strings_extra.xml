@@ -83,4 +83,6 @@
     <string name="membership_ending">Your membership is ending</string>
     <string name="access_until_arg">Cancelled · you keep access until %1$s</string>
     <string name="wont_renew">Cancelled · won\'t renew</string>
+    <string name="categories_short">Categories</string>
+    <string name="refer_friends">Refer friends</string>
 </resources>

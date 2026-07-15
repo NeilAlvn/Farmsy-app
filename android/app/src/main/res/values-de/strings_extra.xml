@@ -80,4 +80,6 @@
     <string name="membership_ending">Deine Mitgliedschaft endet</string>
     <string name="access_until_arg">Gekündigt · Zugang bis %1$s</string>
     <string name="wont_renew">Gekündigt · wird nicht verlängert</string>
+    <string name="categories_short">Kategorien</string>
+    <string name="refer_friends">Freunde einladen</string>
 </resources>

@@ -80,4 +80,6 @@
     <string name="membership_ending">Votre abonnement se termine</string>
     <string name="access_until_arg">Annulé · accès jusqu\'au %1$s</string>
     <string name="wont_renew">Annulé · pas de renouvellement</string>
+    <string name="categories_short">Catégories</string>
+    <string name="refer_friends">Parrainer des amis</string>
 </resources>

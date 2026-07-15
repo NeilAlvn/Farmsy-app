@@ -102,6 +102,18 @@ struct SettingsSheet: View {
                                 UIApplication.shared.open(url)
                             }
                         }
+                        // Refer friends, signed-in only — a guest has no code to
+                        // share. Opens the web invite page rather than duplicating the
+                        // referral dashboard natively; the signup-side code capture,
+                        // the part that actually earns referrals, stays in the app.
+                        if session.isAuthenticated {
+                            Divider().padding(.leading, 62)
+                            SettingsRow(icon: "gift.fill", tintBg: 0xEC4899, label: "Refer friends") {
+                                if let url = URL(string: "https://www.farmsy.app/invite") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                        }
                         Divider().padding(.leading, 62)
                         SettingsRow(icon: "envelope.fill", tintBg: 0x38BDF8, label: "Contact us") {
                             if let url = URL(string: "https://www.farmsy.app/messages") {

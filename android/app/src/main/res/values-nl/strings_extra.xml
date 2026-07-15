@@ -80,4 +80,6 @@
     <string name="membership_ending">Je lidmaatschap loopt af</string>
     <string name="access_until_arg">Opgezegd · toegang tot %1$s</string>
     <string name="wont_renew">Opgezegd · wordt niet verlengd</string>
+    <string name="categories_short">Categorieën</string>
+    <string name="refer_friends">Vrienden uitnodigen</string>
 </resources>
