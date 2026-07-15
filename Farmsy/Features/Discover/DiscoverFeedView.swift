@@ -272,11 +272,15 @@ struct DiscoverFeedCard: View {
             .padding(10)
         }
         .overlay(alignment: .bottomLeading) {
+            // Two chips, not three, each pinned to one line: three full labels
+            // ("🥬 Farm Produce" …) could run off the card's right edge and get
+            // clipped mid-word by the rounded corner.
             HStack(spacing: 5) {
-                ForEach(pin.categories.prefix(3)) { cat in
+                ForEach(pin.categories.prefix(2)) { cat in
                     Text("\(cat.emoji) \(cat.label)")
                         .font(.geist(11, .semibold))
                         .foregroundStyle(Color.ink)
+                        .lineLimit(1)
                         .padding(.vertical, 4)
                         .padding(.horizontal, 8)
                         .background(.white.opacity(0.94), in: Capsule())

@@ -435,29 +435,33 @@ struct LockedAccessView: View {
                     // isn't eligible, and StoreKit tells us so), just the price — we
                     // never advertise a trial someone won't actually get.
                     let trialDays = purchases.yearlyFreeTrialDays
-                    PlanButton(
-                        label: trialDays.map { String(localized: "\($0) days free") }
-                            ?? String(localized: "Yearly"),
-                        detail: purchases.yearlyPrice.map { price in
-                            trialDays == nil
-                                ? String(localized: "\(price) / year")
-                                : String(localized: "then \(price) / year")
-                        },
-                        filled: true
-                    ) {
-                        Task {
-                            if await purchases.purchase(purchases.yearlyPackage, userId: uid) {
-                                Haptics.success(); await awaitGrant()
+                    // The two plan cards sit tight together (8pt), then the outer
+                    // stack's larger gap separates them from the terms/restore below.
+                    VStack(spacing: 8) {
+                        PlanButton(
+                            label: trialDays.map { String(localized: "\($0) days free") }
+                                ?? String(localized: "Yearly"),
+                            detail: purchases.yearlyPrice.map { price in
+                                trialDays == nil
+                                    ? String(localized: "\(price) / year")
+                                    : String(localized: "then \(price) / year")
+                            },
+                            filled: true
+                        ) {
+                            Task {
+                                if await purchases.purchase(purchases.yearlyPackage, userId: uid) {
+                                    Haptics.success(); await awaitGrant()
+                                }
                             }
                         }
-                    }
-                    if let price = purchases.lifetimePrice {
-                        PlanButton(label: String(localized: "Lifetime"),
-                                   detail: "\(price) · " + String(localized: "One payment, yours forever"),
-                                   filled: false) {
-                            Task {
-                                if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
-                                    Haptics.success(); await awaitGrant()
+                        if let price = purchases.lifetimePrice {
+                            PlanButton(label: String(localized: "Lifetime"),
+                                       detail: "\(price) · " + String(localized: "One payment, yours forever"),
+                                       filled: false) {
+                                Task {
+                                    if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
+                                        Haptics.success(); await awaitGrant()
+                                    }
                                 }
                             }
                         }

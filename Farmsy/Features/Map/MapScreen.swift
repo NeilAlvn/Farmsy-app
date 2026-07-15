@@ -2,15 +2,14 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
-/// Map-first discovery: search on top, live map (or list) of real Farmsy
-/// pins, and a floating bottom bar with the view toggle and category menu.
+/// Map-first discovery: search on top, a live map of real Farmsy
+/// pins, with a floating search row and a compact category filter.
 struct MapScreen: View {
     var onOpenFarm: (FarmPin) -> Void
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
 
-    @State private var showList = false
     @State private var camera: MapCameraPosition = .region(
         // Centered between NL and BE to start.
         MKCoordinateRegion(
@@ -47,18 +46,7 @@ struct MapScreen: View {
 
     var body: some View {
         ZStack {
-            if showList {
-                FarmListView(
-                    pins: farms.sortedByDistance(farms.filtered, from: locationManager.location),
-                    onOpenFarm: onOpenFarm,
-                    bottomInset: 150
-                )
-                .padding(.horizontal, 14)
-                // Room for the floating search row above the list.
-                .padding(.top, 64)
-            } else {
-                mapCard
-            }
+            mapCard
         }
         .frame(maxHeight: .infinity)
         // Search floats over the map; controls live at the bottom, lifted
@@ -66,9 +54,7 @@ struct MapScreen: View {
         .overlay(alignment: .top) {
             VStack(alignment: .trailing, spacing: 10) {
                 searchRow
-                if !showList {
-                    farmsCountBadge
-                }
+                farmsCountBadge
             }
             .padding(.horizontal, 14)
         }
@@ -143,21 +129,12 @@ struct MapScreen: View {
     // MARK: - Bottom control bar
 
     private var bottomBar: some View {
-        HStack(spacing: 10) {
-            Button {
-                Haptics.tap()
-                withAnimation(.spring(duration: 0.35)) { showList.toggle() }
-            } label: {
-                Image(systemName: showList ? "map" : "list.bullet")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.farmGreen)
-                    .frame(width: 48, height: 48)
-                    .background(.white, in: Circle())
-                    .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
-            }
-            .accessibilityIdentifier("toggle-view")
-
+        // Category filter only, bottom-left and compact. The list toggle that used to
+        // sit beside it is gone — it duplicated the Discover tab, which already offers
+        // a browsable list — so the map is just the map now.
+        HStack {
             categoryMenu
+            Spacer()
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
@@ -183,18 +160,20 @@ struct MapScreen: View {
                 }
             }
         } label: {
+            // Compact pill sized to its own label. With no category picked, keep it
+            // short — "Categories", not "All Categories" — so it reads as a control,
+            // not a banner stretched across the map.
             HStack(spacing: 6) {
-                Text(farms.selectedCategory.map { "\($0.emoji) \($0.label)" } ?? String(localized: "🍽️ All Categories"))
-                    .font(.geist(15, .semibold))
+                Text(farms.selectedCategory.map { "\($0.emoji) \($0.label)" } ?? String(localized: "🍽️ Categories"))
+                    .font(.geist(14, .semibold))
                     .foregroundStyle(Color.farmGreen)
                     .lineLimit(1)
                 Image(systemName: "chevron.up")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Color.farmGreen)
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, 11)
             .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity)
             .background(
                 Capsule()
                     .fill(.white)
@@ -269,37 +248,6 @@ struct FarmPinView: View {
                 .offset(y: isHighlighted ? -7 : -5)
         }
         .animation(.spring(duration: 0.3), value: isHighlighted)
-    }
-}
-
-// MARK: - List mode
-
-struct FarmListView: View {
-    let pins: [FarmPin]
-    var onOpenFarm: (FarmPin) -> Void
-    var bottomInset: CGFloat = 16
-
-    @Environment(LocationManager.self) private var locationManager
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 12) {
-                ForEach(pins.prefix(120)) { pin in
-                    FarmCard(pin: pin, onOpen: { onOpenFarm(pin) })
-                }
-                if pins.isEmpty {
-                    VStack(spacing: 8) {
-                        Text("🧺").font(.geist(44))
-                        Text("No farms match your search")
-                            .font(.geist(16, .medium))
-                            .foregroundStyle(Color.inkMuted)
-                    }
-                    .padding(.top, 60)
-                }
-            }
-            .padding(.top, 2)
-            .padding(.bottom, bottomInset)
-        }
     }
 }
 
