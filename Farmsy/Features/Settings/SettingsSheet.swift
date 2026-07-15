@@ -242,7 +242,7 @@ struct MembershipSection: View {
 
     private var billingURL: URL? {
         switch session.profile?.subscriptionSource {
-        case "stripe": URL(string: "https://www.farmsy.app/profile")
+        case "stripe": URL(string: "https://www.farmsy.app/account/subscription")
         case "google": URL(string: "https://play.google.com/store/account/subscriptions")
         default:       URL(string: "https://apps.apple.com/account/subscriptions")
         }

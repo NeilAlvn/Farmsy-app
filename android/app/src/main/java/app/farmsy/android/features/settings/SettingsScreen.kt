@@ -339,7 +339,7 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
     fun openBilling() {
         val url = when (profile?.subscriptionSource) {
             "apple" -> "https://apps.apple.com/account/subscriptions"
-            "stripe" -> "https://www.farmsy.app/profile"
+            "stripe" -> "https://www.farmsy.app/account/subscription"
             else -> "https://play.google.com/store/account/subscriptions"
         }
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
