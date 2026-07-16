@@ -85,5 +85,8 @@
     <string name="delete_account_failed">Je account kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.</string>
     <string name="account_deleted_title">Je account is verwijderd</string>
     <string name="account_deleted_body">Je profiel, opgeslagen boerderijen en abonnementsgegevens zijn verwijderd. Bedankt dat je Farmsy hebt geprobeerd.</string>
-    <string name="account_deleted_store_reminder">Je lidmaatschap is via de store gekocht. Annuleer het in je Google Play-abonnementen zodat je niet opnieuw wordt belast.</string>
+    <string name="account_deleted_store_reminder_arg">Je lidmaatschap is gekocht via %1$s. Annuleer het daar zodat je niet opnieuw wordt belast.</string>
+    <string name="store_google">Google Play</string>
+    <string name="store_apple">de App Store</string>
+    <string name="store_web">onze website</string>
 </resources>

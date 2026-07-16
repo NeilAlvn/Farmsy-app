@@ -85,5 +85,8 @@
     <string name="delete_account_failed">Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.</string>
     <string name="account_deleted_title">Votre compte a été supprimé</string>
     <string name="account_deleted_body">Votre profil, vos fermes enregistrées et vos données d\'abonnement ont été supprimés. Merci d\'avoir essayé Farmsy.</string>
-    <string name="account_deleted_store_reminder">Votre abonnement a été acheté via le store. Annulez-le dans vos abonnements Google Play pour ne plus être facturé.</string>
+    <string name="account_deleted_store_reminder_arg">Votre abonnement a été acheté via %1$s. Annulez-le là-bas pour ne plus être facturé.</string>
+    <string name="store_google">Google Play</string>
+    <string name="store_apple">l\'App Store</string>
+    <string name="store_web">notre site web</string>
 </resources>

@@ -233,21 +233,38 @@ final class SessionStore {
         profile = nil
     }
 
-    struct DeleteResult { let ok: Bool; let storeSubscriptionReminder: Bool }
+    struct DeleteResult {
+        let ok: Bool
+        let storeSubscriptionReminder: Bool
+        var subscriptionSource: String? = nil
+    }
 
     /// In-app account deletion — required by App Review guideline 5.1.1(v) for any
     /// app that supports account creation. The server actually erases the account;
     /// we only drop the local session once it confirms. The server can't cancel a
-    /// store subscription (Apple owns that contract), so it returns
+    /// store subscription (the stores own those contracts), so it returns
     /// `storeSubscriptionReminder` when the person still has a live sub to cancel
     /// themselves, and the UI surfaces that on the way out.
+    ///
+    /// `subscriptionSource` names the rail that actually charged them, which isn't
+    /// always this platform: someone can subscribe on Android, install the iOS app,
+    /// and delete from there — telling them to cancel in the App Store would send
+    /// them somewhere with nothing to cancel while Play kept billing.
     func deleteAccount() async -> DeleteResult {
         let token = (try? await supabase.auth.session.accessToken) ?? session?.accessToken
         guard let token else { return DeleteResult(ok: false, storeSubscriptionReminder: false) }
         var request = URLRequest(url: Backend.webAPI.appending(path: "account/delete"))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        struct DeleteBody: Decodable { let ok: Bool?; let storeSubscriptionReminder: Bool? }
+        struct DeleteBody: Decodable {
+            let ok: Bool?
+            let storeSubscriptionReminder: Bool?
+            let subscriptionSource: String?
+            enum CodingKeys: String, CodingKey {
+                case ok, storeSubscriptionReminder
+                case subscriptionSource = "subscription_source"
+            }
+        }
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let code = (response as? HTTPURLResponse)?.statusCode, (200...299).contains(code) else {
@@ -255,7 +272,11 @@ final class SessionStore {
             }
             let body = try? JSONDecoder().decode(DeleteBody.self, from: data)
             await signOut()
-            return DeleteResult(ok: true, storeSubscriptionReminder: body?.storeSubscriptionReminder ?? false)
+            return DeleteResult(
+                ok: true,
+                storeSubscriptionReminder: body?.storeSubscriptionReminder ?? false,
+                subscriptionSource: body?.subscriptionSource
+            )
         } catch {
             return DeleteResult(ok: false, storeSubscriptionReminder: false)
         }

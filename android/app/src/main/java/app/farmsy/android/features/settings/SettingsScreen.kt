@@ -86,8 +86,10 @@ fun SettingsScreen() {
     var isDeleting by remember { mutableStateOf(false) }
     var deleteFailed by remember { mutableStateOf(false) }
     // After the server confirms the erase we replace the whole screen with a plain
-    // "account deleted" state, and note whether they still owe a store cancellation.
-    var deletedReminder by remember { mutableStateOf<Boolean?>(null) }
+    // "account deleted" state. Non-null once deleted; the value is the rail that
+    // charged them ("google"/"apple"/"stripe"), or null when there's nothing left
+    // for them to cancel.
+    var deletedState by remember { mutableStateOf<DeletedState?>(null) }
 
     LaunchedEffect(Unit) { session.refreshProfile() }
 
@@ -98,8 +100,8 @@ fun SettingsScreen() {
     // Terminal state: the account is gone and the session is signed out. There's
     // nothing left to show, so the whole screen becomes a confirmation. The user is
     // now a guest — the rest of the app treats them as one the moment they leave.
-    deletedReminder?.let { remindStore ->
-        AccountDeletedScreen(remindStore = remindStore)
+    deletedState?.let { state ->
+        AccountDeletedScreen(state = state)
         return
     }
 
@@ -309,7 +311,10 @@ fun SettingsScreen() {
                             isDeleting = false
                             if (result.ok) {
                                 showDeleteInfo = false
-                                deletedReminder = result.storeSubscriptionReminder
+                                deletedState = DeletedState(
+                                    remindStore = result.storeSubscriptionReminder,
+                                    source = result.subscriptionSource,
+                                )
                             } else {
                                 deleteFailed = true
                             }
@@ -330,12 +335,14 @@ fun SettingsScreen() {
     }
 }
 
+private data class DeletedState(val remindStore: Boolean, val source: String?)
+
 /// Shown once the server confirms the account is erased. The person is signed out
 /// and can't do anything here but acknowledge — so it's a dead-simple confirmation,
 /// plus the store-cancellation nudge when they still have a live sub the app can't
 /// touch on their behalf.
 @Composable
-private fun AccountDeletedScreen(remindStore: Boolean) {
+private fun AccountDeletedScreen(state: DeletedState) {
     Column(
         Modifier.fillMaxSize().background(FarmsyColors.cream).padding(28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -357,10 +364,18 @@ private fun AccountDeletedScreen(remindStore: Boolean) {
             style = geist(15.sp), color = FarmsyColors.inkMuted,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
-        if (remindStore) {
+        if (state.remindStore) {
+            // Name the rail that actually charged them, not the phone they happen to
+            // be holding — an Android user who subscribed on iOS has to cancel in the
+            // App Store, and sending them to Play would leave the billing running.
+            val where = when (state.source) {
+                "apple" -> stringResource(R.string.store_apple)
+                "stripe" -> stringResource(R.string.store_web)
+                else -> stringResource(R.string.store_google)
+            }
             Spacer(Modifier.height(16.dp))
             Text(
-                stringResource(R.string.account_deleted_store_reminder),
+                stringResource(R.string.account_deleted_store_reminder_arg, where),
                 style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.ink,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().background(

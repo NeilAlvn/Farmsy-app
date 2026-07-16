@@ -9,9 +9,15 @@ struct SettingsSheet: View {
     @State private var showDeleteInfo = false
     @State private var isDeleting = false
     @State private var deleteFailed = false
-    // Non-nil once the server confirms the erase; the Bool is whether they still
-    // have a store subscription to cancel themselves.
-    @State private var deletedReminder: Bool?
+    // Non-nil once the server confirms the erase. Carries whether they still have a
+    // subscription to cancel, and which rail actually charged them.
+    @State private var deletedState: DeletedState?
+
+    struct DeletedState: Identifiable {
+        let id = UUID()
+        let remindStore: Bool
+        let source: String?
+    }
 
     // Key the badge off *access*, not the raw status word. A "canceled" status whose
     // period has already lapsed still reads "canceled" in the DB, but the user has no
@@ -184,7 +190,10 @@ struct SettingsSheet: View {
                     let result = await session.deleteAccount()
                     isDeleting = false
                     if result.ok {
-                        deletedReminder = result.storeSubscriptionReminder
+                        deletedState = DeletedState(
+                            remindStore: result.storeSubscriptionReminder,
+                            source: result.subscriptionSource
+                        )
                     } else {
                         deleteFailed = true
                     }
@@ -212,12 +221,9 @@ struct SettingsSheet: View {
         }
         // Terminal confirmation once the account is gone. Dismissing returns the
         // user to the app as a guest.
-        .fullScreenCover(isPresented: Binding(
-            get: { deletedReminder != nil },
-            set: { if !$0 { deletedReminder = nil } }
-        )) {
-            AccountDeletedView(remindStore: deletedReminder ?? false) {
-                deletedReminder = nil
+        .fullScreenCover(item: $deletedState) { state in
+            AccountDeletedView(remindStore: state.remindStore, source: state.source) {
+                deletedState = nil
                 dismiss()
             }
         }
@@ -229,7 +235,19 @@ struct SettingsSheet: View {
 /// when they still have a live subscription the app can't cancel for them.
 private struct AccountDeletedView: View {
     let remindStore: Bool
+    let source: String?
     let onDone: () -> Void
+
+    /// Name the rail that actually charged them, not the phone they're holding — an
+    /// iOS user who subscribed on Android has to cancel in Google Play, and pointing
+    /// them at the App Store would leave the billing running.
+    private var storeName: String {
+        switch source {
+        case "google": return String(localized: "Google Play")
+        case "stripe": return String(localized: "our website")
+        default:       return String(localized: "the App Store")
+        }
+    }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -246,7 +264,7 @@ private struct AccountDeletedView: View {
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
             if remindStore {
-                Text("Your membership was bought through the App Store. Cancel it in your Apple subscriptions so you aren't charged again.")
+                Text("Your membership was bought through \(storeName). Cancel it there so you aren't charged again.")
                     .font(.geist(14, .medium))
                     .foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)

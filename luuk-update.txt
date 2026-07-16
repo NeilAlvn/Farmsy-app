@@ -1,11 +1,5 @@
-Hi Luuk — quick status.
+Quick update — account deletion is fully sorted.
 
-The app itself is done and ready on both platforms — iOS build 7 (on TestFlight) and Android build 19 (the .aab). Payments fully tested, UI polished, everything working. No issues on the app side.
+Users can now delete their account and data right inside the app (Apple actually requires this for approval), and there's a public deletion page on the web for the store listing. Also set up an admin tool to manage deletion requests, so anything that comes in from signed-out users lands in a queue you can review.
 
-I'm now going through the Google Play store listing setup — descriptions, screenshots, content rating, and the required declarations. Making good progress; most of it is filled in.
-
-One thing I ran into that needs building: Google Play requires a public account-deletion page on the website — a page (no login needed) that explains how a user can request their account and data be deleted, what gets deleted vs. kept, and how to contact us. Our current account page is behind a login, so it doesn't meet Google's requirement. I'll get this page built (something like farmsy.app/delete-account) — it's a small web page, not an app change. Apple has the same requirement, so this one page covers both stores.
-
-Once that page is live, I'll plug its URL into the Play listing and finish the rest of the setup.
-
-So: the app is ready. I'm finishing the store paperwork, with that one small web page (the deletion page) as the last dependency. Nothing blocking on your end for this — I'll flag you when we're ready to actually submit.
+Cutting on with the Play store paperwork now — data safety, the required declarations, all that. Getting through it. Will flag you when we're ready to actually submit.

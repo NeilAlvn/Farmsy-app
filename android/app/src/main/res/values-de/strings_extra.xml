@@ -85,5 +85,8 @@
     <string name="delete_account_failed">Dein Konto konnte nicht gelöscht werden. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="account_deleted_title">Dein Konto wurde gelöscht</string>
     <string name="account_deleted_body">Dein Profil, gespeicherte Höfe und Abodaten wurden entfernt. Danke, dass du Farmsy ausprobiert hast.</string>
-    <string name="account_deleted_store_reminder">Dein Abo wurde über den Store gekauft. Kündige es in deinen Google-Play-Abos, damit dir nichts erneut berechnet wird.</string>
+    <string name="account_deleted_store_reminder_arg">Dein Abo wurde über %1$s gekauft. Kündige es dort, damit dir nichts erneut berechnet wird.</string>
+    <string name="store_google">Google Play</string>
+    <string name="store_apple">den App Store</string>
+    <string name="store_web">unsere Website</string>
 </resources>

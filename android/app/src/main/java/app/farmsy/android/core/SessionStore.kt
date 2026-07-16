@@ -243,8 +243,13 @@ class SessionStore(private val scope: CoroutineScope) {
     /// server can't touch a store subscription — Apple/Google own those contracts —
     /// so it flags `storeSubscriptionReminder` when the person still has a live
     /// store sub they should cancel themselves, and we surface that before leaving.
+    ///
+    /// `subscriptionSource` names the rail that actually charged them. It isn't
+    /// always this platform: someone can subscribe on Android, install the iOS app,
+    /// and delete from there — telling them to cancel in the App Store would send
+    /// them somewhere with nothing to cancel while Play kept billing.
     suspend fun deleteAccount(): DeleteResult = withContext(Dispatchers.IO) {
-        val token = freshAccessToken() ?: return@withContext DeleteResult(false, false)
+        val token = freshAccessToken() ?: return@withContext DeleteResult(false, false, null)
         val result = runCatching {
             val resp = httpClient.post("${Backend.WEB_API}/account/delete") {
                 header(HttpHeaders.Authorization, "Bearer $token")
@@ -253,20 +258,29 @@ class SessionStore(private val scope: CoroutineScope) {
                 val body = runCatching {
                     lenientJson.decodeFromString<DeleteResponse>(resp.bodyAsText())
                 }.getOrNull()
-                DeleteResult(true, body?.storeSubscriptionReminder == true)
-            } else DeleteResult(false, false)
-        }.getOrDefault(DeleteResult(false, false))
+                DeleteResult(
+                    ok = true,
+                    storeSubscriptionReminder = body?.storeSubscriptionReminder == true,
+                    subscriptionSource = body?.subscriptionSource,
+                )
+            } else DeleteResult(false, false, null)
+        }.getOrDefault(DeleteResult(false, false, null))
         // Only drop the local session once the server confirms the erase.
         if (result.ok) signOut()
         result
     }
 
-    data class DeleteResult(val ok: Boolean, val storeSubscriptionReminder: Boolean)
+    data class DeleteResult(
+        val ok: Boolean,
+        val storeSubscriptionReminder: Boolean,
+        val subscriptionSource: String? = null,
+    )
 
     @Serializable
     private data class DeleteResponse(
         val ok: Boolean = false,
         @SerialName("storeSubscriptionReminder") val storeSubscriptionReminder: Boolean = false,
+        @SerialName("subscription_source") val subscriptionSource: String? = null,
     )
 
     private suspend fun postJson(path: String, body: Map<String, String>): Pair<String, Int> {

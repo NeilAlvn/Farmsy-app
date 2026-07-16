@@ -88,5 +88,8 @@
     <string name="delete_account_failed">Couldn\'t delete your account. Please check your connection and try again.</string>
     <string name="account_deleted_title">Your account was deleted</string>
     <string name="account_deleted_body">Your profile, saved farms and subscription data have been removed. Thanks for trying Farmsy.</string>
-    <string name="account_deleted_store_reminder">Your membership was bought through the store. Cancel it in your Google Play subscriptions so you aren\'t charged again.</string>
+    <string name="account_deleted_store_reminder_arg">Your membership was bought through %1$s. Cancel it there so you aren\'t charged again.</string>
+    <string name="store_google">Google Play</string>
+    <string name="store_apple">the App Store</string>
+    <string name="store_web">our website</string>
 </resources>
