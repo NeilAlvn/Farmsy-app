@@ -233,6 +233,34 @@ final class SessionStore {
         profile = nil
     }
 
+    struct DeleteResult { let ok: Bool; let storeSubscriptionReminder: Bool }
+
+    /// In-app account deletion — required by App Review guideline 5.1.1(v) for any
+    /// app that supports account creation. The server actually erases the account;
+    /// we only drop the local session once it confirms. The server can't cancel a
+    /// store subscription (Apple owns that contract), so it returns
+    /// `storeSubscriptionReminder` when the person still has a live sub to cancel
+    /// themselves, and the UI surfaces that on the way out.
+    func deleteAccount() async -> DeleteResult {
+        let token = (try? await supabase.auth.session.accessToken) ?? session?.accessToken
+        guard let token else { return DeleteResult(ok: false, storeSubscriptionReminder: false) }
+        var request = URLRequest(url: Backend.webAPI.appending(path: "account/delete"))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        struct DeleteBody: Decodable { let ok: Bool?; let storeSubscriptionReminder: Bool? }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let code = (response as? HTTPURLResponse)?.statusCode, (200...299).contains(code) else {
+                return DeleteResult(ok: false, storeSubscriptionReminder: false)
+            }
+            let body = try? JSONDecoder().decode(DeleteBody.self, from: data)
+            await signOut()
+            return DeleteResult(ok: true, storeSubscriptionReminder: body?.storeSubscriptionReminder ?? false)
+        } catch {
+            return DeleteResult(ok: false, storeSubscriptionReminder: false)
+        }
+    }
+
     // MARK: - Helpers
 
     private func postJSON(path: String, body: [String: String]) async throws -> (Data, Int) {

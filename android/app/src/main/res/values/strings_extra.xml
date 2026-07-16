@@ -85,4 +85,8 @@
     <string name="wont_renew">Cancelled · won\'t renew</string>
     <string name="categories_short">Categories</string>
     <string name="refer_friends">Refer friends</string>
+    <string name="delete_account_failed">Couldn\'t delete your account. Please check your connection and try again.</string>
+    <string name="account_deleted_title">Your account was deleted</string>
+    <string name="account_deleted_body">Your profile, saved farms and subscription data have been removed. Thanks for trying Farmsy.</string>
+    <string name="account_deleted_store_reminder">Your membership was bought through the store. Cancel it in your Google Play subscriptions so you aren\'t charged again.</string>
 </resources>

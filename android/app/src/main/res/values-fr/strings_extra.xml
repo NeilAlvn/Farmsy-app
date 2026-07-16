@@ -82,4 +82,8 @@
     <string name="wont_renew">Annulé · pas de renouvellement</string>
     <string name="categories_short">Catégories</string>
     <string name="refer_friends">Parrainer des amis</string>
+    <string name="delete_account_failed">Impossible de supprimer votre compte. Vérifiez votre connexion et réessayez.</string>
+    <string name="account_deleted_title">Votre compte a été supprimé</string>
+    <string name="account_deleted_body">Votre profil, vos fermes enregistrées et vos données d\'abonnement ont été supprimés. Merci d\'avoir essayé Farmsy.</string>
+    <string name="account_deleted_store_reminder">Votre abonnement a été acheté via le store. Annulez-le dans vos abonnements Google Play pour ne plus être facturé.</string>
 </resources>

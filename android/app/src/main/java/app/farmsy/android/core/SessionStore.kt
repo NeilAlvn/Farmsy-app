@@ -238,6 +238,37 @@ class SessionStore(private val scope: CoroutineScope) {
         _profile.value = null
     }
 
+    /// In-app account deletion (Apple 5.1.1(v) / Play policy). Calls the server,
+    /// which actually erases the account, then signs the local session out. The
+    /// server can't touch a store subscription — Apple/Google own those contracts —
+    /// so it flags `storeSubscriptionReminder` when the person still has a live
+    /// store sub they should cancel themselves, and we surface that before leaving.
+    suspend fun deleteAccount(): DeleteResult = withContext(Dispatchers.IO) {
+        val token = freshAccessToken() ?: return@withContext DeleteResult(false, false)
+        val result = runCatching {
+            val resp = httpClient.post("${Backend.WEB_API}/account/delete") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            if (resp.status.value in 200..299) {
+                val body = runCatching {
+                    lenientJson.decodeFromString<DeleteResponse>(resp.bodyAsText())
+                }.getOrNull()
+                DeleteResult(true, body?.storeSubscriptionReminder == true)
+            } else DeleteResult(false, false)
+        }.getOrDefault(DeleteResult(false, false))
+        // Only drop the local session once the server confirms the erase.
+        if (result.ok) signOut()
+        result
+    }
+
+    data class DeleteResult(val ok: Boolean, val storeSubscriptionReminder: Boolean)
+
+    @Serializable
+    private data class DeleteResponse(
+        val ok: Boolean = false,
+        @SerialName("storeSubscriptionReminder") val storeSubscriptionReminder: Boolean = false,
+    )
+
     private suspend fun postJson(path: String, body: Map<String, String>): Pair<String, Int> {
         val resp = httpClient.post("${Backend.WEB_API}/$path") {
             contentType(ContentType.Application.Json)

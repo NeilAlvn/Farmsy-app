@@ -65,6 +65,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.PlanCard
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.filled.CheckCircle
 
 /// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
 /// sign out + delete account, version footer).
@@ -81,11 +83,24 @@ fun SettingsScreen() {
 
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showDeleteInfo by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
+    var deleteFailed by remember { mutableStateOf(false) }
+    // After the server confirms the erase we replace the whole screen with a plain
+    // "account deleted" state, and note whether they still owe a store cancellation.
+    var deletedReminder by remember { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(Unit) { session.refreshProfile() }
 
     fun open(url: String) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
+    // Terminal state: the account is gone and the session is signed out. There's
+    // nothing left to show, so the whole screen becomes a confirmation. The user is
+    // now a guest — the rest of the app treats them as one the moment they leave.
+    deletedReminder?.let { remindStore ->
+        AccountDeletedScreen(remindStore = remindStore)
+        return
     }
 
     Column(
@@ -263,23 +278,96 @@ fun SettingsScreen() {
 
     if (showDeleteInfo) {
         AlertDialog(
-            onDismissRequest = { showDeleteInfo = false },
+            // Block dismissal mid-request — a half-cancelled delete is a bad state to
+            // leave someone guessing about.
+            onDismissRequest = { if (!isDeleting) { showDeleteInfo = false; deleteFailed = false } },
             title = { Text(stringResource(R.string.delete_account)) },
             text = {
-                Text(stringResource(R.string.deleting_your_account_removes_your_profile_favourites_and_su))
+                Column {
+                    Text(stringResource(R.string.deleting_your_account_removes_your_profile_favourites_and_su))
+                    if (deleteFailed) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            stringResource(R.string.delete_account_failed),
+                            style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.warnRed
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteInfo = false
-                    open("https://www.farmsy.app/profile")
-                }) { Text(stringResource(R.string.open_my_account_page)) }
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        Modifier.size(22.dp).padding(end = 8.dp),
+                        color = FarmsyColors.warnRed, strokeWidth = 2.dp
+                    )
+                } else {
+                    TextButton(onClick = {
+                        deleteFailed = false
+                        isDeleting = true
+                        scope.launch {
+                            val result = session.deleteAccount()
+                            isDeleting = false
+                            if (result.ok) {
+                                showDeleteInfo = false
+                                deletedReminder = result.storeSubscriptionReminder
+                            } else {
+                                deleteFailed = true
+                            }
+                        }
+                    }) {
+                        Text(stringResource(R.string.delete_account), color = FarmsyColors.warnRed)
+                    }
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteInfo = false }) {
-                    Text(stringResource(R.string.cancel))
+                if (!isDeleting) {
+                    TextButton(onClick = { showDeleteInfo = false; deleteFailed = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
                 }
             }
         )
+    }
+}
+
+/// Shown once the server confirms the account is erased. The person is signed out
+/// and can't do anything here but acknowledge — so it's a dead-simple confirmation,
+/// plus the store-cancellation nudge when they still have a live sub the app can't
+/// touch on their behalf.
+@Composable
+private fun AccountDeletedScreen(remindStore: Boolean) {
+    Column(
+        Modifier.fillMaxSize().background(FarmsyColors.cream).padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Filled.CheckCircle, null,
+            tint = FarmsyColors.farmGreen, modifier = Modifier.size(56.dp)
+        )
+        Spacer(Modifier.height(18.dp))
+        Text(
+            stringResource(R.string.account_deleted_title),
+            style = display(24.sp), color = FarmsyColors.ink,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.account_deleted_body),
+            style = geist(15.sp), color = FarmsyColors.inkMuted,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        if (remindStore) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                stringResource(R.string.account_deleted_store_reminder),
+                style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.ink,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().background(
+                    FarmsyColors.creamCard, RoundedCornerShape(14.dp)
+                ).padding(16.dp)
+            )
+        }
     }
 }
 

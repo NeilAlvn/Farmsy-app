@@ -1,0 +1,17 @@
+Hey — need a small web page for the Play/App Store submission.
+
+Google (and Apple) now require a PUBLIC account-deletion page — no login. Our /profile page is behind auth, so reviewers can't see it and it gets rejected. Need a new public page, e.g. farmsy.app/delete-account.
+
+It has to be viewable logged-out and include:
+
+1. App / developer name — Farmsy (Vision Tech B.V.)
+2. How to request deletion — two ways:
+   - In-app / web: log in at farmsy.app -> account -> Delete account
+   - A real contact method (the chat portal / farmsy.app/messages — whatever we actually have; no hello@ email, that doesn't exist)
+3. What gets deleted vs kept:
+   - Deleted: profile, saved favourites, subscription data
+   - Kept: billing/transaction records for tax/legal reasons, retained [X years] then deleted (pick a real number)
+
+Reviewers actually open this without an account, so it must render logged-out with all the above visible.
+
+Once it's live, send me the URL — I'll plug it into the Play listing and point the app's in-app Delete button at it (both platforms currently go to /profile).

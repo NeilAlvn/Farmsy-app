@@ -82,4 +82,8 @@
     <string name="wont_renew">Gekündigt · wird nicht verlängert</string>
     <string name="categories_short">Kategorien</string>
     <string name="refer_friends">Freunde einladen</string>
+    <string name="delete_account_failed">Dein Konto konnte nicht gelöscht werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="account_deleted_title">Dein Konto wurde gelöscht</string>
+    <string name="account_deleted_body">Dein Profil, gespeicherte Höfe und Abodaten wurden entfernt. Danke, dass du Farmsy ausprobiert hast.</string>
+    <string name="account_deleted_store_reminder">Dein Abo wurde über den Store gekauft. Kündige es in deinen Google-Play-Abos, damit dir nichts erneut berechnet wird.</string>
 </resources>

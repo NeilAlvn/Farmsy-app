@@ -7,6 +7,11 @@ struct SettingsSheet: View {
 
     @State private var showSignOutConfirm = false
     @State private var showDeleteInfo = false
+    @State private var isDeleting = false
+    @State private var deleteFailed = false
+    // Non-nil once the server confirms the erase; the Bool is whether they still
+    // have a store subscription to cancel themselves.
+    @State private var deletedReminder: Bool?
 
     // Key the badge off *access*, not the raw status word. A "canceled" status whose
     // period has already lapsed still reads "canceled" in the DB, but the user has no
@@ -171,18 +176,95 @@ struct SettingsSheet: View {
                 }
             }
         }
+        // Apple 5.1.1(v): deletion is initiated and completed inside the app.
         .alert("Delete account", isPresented: $showDeleteInfo) {
-            // Apple requires deletion to be reachable from inside the app —
-            // hand off to the web account page where it's handled.
-            Button("Open my account page") {
-                if let url = URL(string: "https://www.farmsy.app/profile") {
-                    UIApplication.shared.open(url)
+            Button("Delete account", role: .destructive) {
+                isDeleting = true
+                Task {
+                    let result = await session.deleteAccount()
+                    isDeleting = false
+                    if result.ok {
+                        deletedReminder = result.storeSubscriptionReminder
+                    } else {
+                        deleteFailed = true
+                    }
                 }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Deleting your account removes your profile, favourites and subscription data. Continue on your Farmsy account page, or write to hello@farmsy.app.")
+            Text("This permanently removes your profile, saved farms and subscription data. This can't be undone.")
         }
+        .alert("Couldn't delete account", isPresented: $deleteFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Please check your connection and try again.")
+        }
+        // Cover the sheet while the request is in flight so nothing else is tappable.
+        .overlay {
+            if isDeleting {
+                ZStack {
+                    Color.black.opacity(0.15).ignoresSafeArea()
+                    ProgressView().tint(Color.farmGreen)
+                        .padding(24)
+                        .background(Color.cream, in: RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
+        // Terminal confirmation once the account is gone. Dismissing returns the
+        // user to the app as a guest.
+        .fullScreenCover(isPresented: Binding(
+            get: { deletedReminder != nil },
+            set: { if !$0 { deletedReminder = nil } }
+        )) {
+            AccountDeletedView(remindStore: deletedReminder ?? false) {
+                deletedReminder = nil
+                dismiss()
+            }
+        }
+    }
+}
+
+/// Shown after the server confirms the account is erased. The person is already
+/// signed out — this is a plain acknowledgement, plus the store-cancellation nudge
+/// when they still have a live subscription the app can't cancel for them.
+private struct AccountDeletedView: View {
+    let remindStore: Bool
+    let onDone: () -> Void
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Spacer()
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 56))
+                .foregroundStyle(Color.farmGreen)
+            Text("Your account was deleted")
+                .font(.display(24))
+                .foregroundStyle(Color.ink)
+                .multilineTextAlignment(.center)
+            Text("Your profile, saved farms and subscription data have been removed. Thanks for trying Farmsy.")
+                .font(.geist(15))
+                .foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+            if remindStore {
+                Text("Your membership was bought through the App Store. Cancel it in your Apple subscriptions so you aren't charged again.")
+                    .font(.geist(14, .medium))
+                    .foregroundStyle(Color.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(16)
+                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 14))
+            }
+            Spacer()
+            Button(action: onDone) {
+                Text("Done")
+                    .font(.geist(16, .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(Color.farmGreen, in: RoundedRectangle(cornerRadius: 14))
+            }
+        }
+        .padding(28)
+        .background(Color.cream.ignoresSafeArea())
     }
 }
 

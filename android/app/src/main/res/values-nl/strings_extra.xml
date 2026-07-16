@@ -82,4 +82,8 @@
     <string name="wont_renew">Opgezegd · wordt niet verlengd</string>
     <string name="categories_short">Categorieën</string>
     <string name="refer_friends">Vrienden uitnodigen</string>
+    <string name="delete_account_failed">Je account kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.</string>
+    <string name="account_deleted_title">Je account is verwijderd</string>
+    <string name="account_deleted_body">Je profiel, opgeslagen boerderijen en abonnementsgegevens zijn verwijderd. Bedankt dat je Farmsy hebt geprobeerd.</string>
+    <string name="account_deleted_store_reminder">Je lidmaatschap is via de store gekocht. Annuleer het in je Google Play-abonnementen zodat je niet opnieuw wordt belast.</string>
 </resources>
