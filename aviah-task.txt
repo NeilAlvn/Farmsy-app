@@ -1,17 +1,44 @@
-Hey — need a small web page for the Play/App Store submission.
+Hey — deep links are broken, and it's a web-side fix. Real impact: this is the referral capture path, so right now referrals silently don't get credited.
 
-Google (and Apple) now require a PUBLIC account-deletion page — no login. Our /profile page is behind auth, so reviewers can't see it and it gets rejected. Need a new public page, e.g. farmsy.app/delete-account.
+The flow is meant to be: someone taps farmsy.app/join?ref=CODE with the app installed -> OS opens the app -> app grabs the ref code, holds it, and sends it on signup so the referrer gets credited (mirrors the web's 7-day farmsy_ref cookie). Because the .well-known files are empty, the OS won't verify the app, so /join?ref=CODE just opens the browser, the app never sees the code, and the referrer is never credited. Fails silently — worst kind.
 
-It has to be viewable logged-out and include:
+The two files are live but EMPTY:
+  /.well-known/assetlinks.json                -> []
+  /.well-known/apple-app-site-association      -> {"applinks":{"details":[]}}
 
-1. App / developer name — Farmsy (Vision Tech B.V.)
-2. How to request deletion — two ways:
-   - In-app / web: log in at farmsy.app -> account -> Delete account
-   - A real contact method (the chat portal / farmsy.app/messages — whatever we actually have; no hello@ email, that doesn't exist)
-3. What gets deleted vs kept:
-   - Deleted: profile, saved favourites, subscription data
-   - Kept: billing/transaction records for tax/legal reasons, retained [X years] then deleted (pick a real number)
+The app side and the /join page are both fine. Just need these files filled in, on BOTH farmsy.app and www.farmsy.app.
 
-Reviewers actually open this without an account, so it must render logged-out with all the above visible.
+--- /.well-known/assetlinks.json (Android) ---
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.farmsy.android",
+      "sha256_cert_fingerprints": [
+        "CF:88:5D:AA:0D:36:5E:4E:B5:3D:76:D1:7B:DD:BC:66:EC:DC:84:A8:0F:D6:42:D6:F9:63:95:41:44:1F:96:88",
+        "D2:AE:C8:29:E8:0A:C3:8B:2A:8B:08:4D:BC:BE:A9:FD:40:7C:C1:E2:31:84:ED:99:44:37:CB:2F:34:A5:58:B0"
+      ]
+    }
+  }
+]
+(first fingerprint = Play app-signing key, for public store installs; second = our upload key, for internal/adb test builds. Both needed.)
 
-Once it's live, send me the URL — I'll plug it into the Play listing and point the app's in-app Delete button at it (both platforms currently go to /profile).
+--- /.well-known/apple-app-site-association (iOS) ---
+{
+  "applinks": {
+    "details": [
+      { "appID": "R8MCFDU64H.app.farmsy.ios", "paths": ["/join", "/join/*"] },
+      { "appID": "8UD57A925C.app.farmsy.ios", "paths": ["/join", "/join/*"] }
+    ]
+  }
+}
+(two team IDs on purpose — store prefix is R8MCFDU64H, local signing may be 8UD57A925C; listing both matches whichever the installed build carries.)
+
+Serving rules that trip people up:
+- Content-Type: application/json
+- apple-app-site-association has NO .json extension
+- NO redirect — Apple follows no redirects for the AASA, a 301 silently breaks it
+- Must be reachable at exactly /.well-known/... on both the apex and www
+
+Once it's deployed I'll verify: fresh install on both platforms, and adb shows the Android links as "verified". Ping me when it's live.

@@ -1,5 +1,11 @@
-Quick update — account deletion is fully sorted.
+Both are submitted — iOS is with App Review and Android is with Google. 🚜
 
-Users can now delete their account and data right inside the app (Apple actually requires this for approval), and there's a public deletion page on the web for the store listing. Also set up an admin tool to manage deletion requests, so anything that comes in from signed-out users lands in a queue you can review.
+Now we wait. Apple's usually a day or two, Google can be a bit longer for a first release.
 
-Cutting on with the Play store paperwork now — data safety, the required declarations, all that. Getting through it. Will flag you when we're ready to actually submit.
+Couple of things on your side while we wait:
+
+1. That payments notification in Play Console — only you can see it since you're the account owner. Worth clearing before the app goes live, otherwise subscriptions can't pay out.
+
+2. Quick question on the farm data — where did the dataset originally come from? The records carry OpenStreetMap IDs. If it's OSM-derived we probably need a small "© OpenStreetMap contributors" credit in the app to stay on the right side of their licence. Easy to add, just need to know. Apple also asks us to confirm we have rights to all third-party content, so worth being sure.
+
+Will ping you the moment either one comes back.
