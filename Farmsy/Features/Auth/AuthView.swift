@@ -44,8 +44,9 @@ struct AuthView: View {
     }
 
     private var detailsOK: Bool {
-        dob != nil &&
-        ![firstName, lastName, street, city, postalCode, country]
+        // Apple 5.1.1(v): DOB, street, city, and postal code must not be
+        // required. Only name + country are required; the rest are optional.
+        ![firstName, lastName, country]
             .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
@@ -129,7 +130,8 @@ struct AuthView: View {
                                 .textContentType(.newPassword)
                         }
                     } else {
-                        // Step 2: the profile fields the API now requires.
+                        // Step 2: name + country are required; DOB and address
+                        // are optional (Apple 5.1.1(v)).
                         HStack(spacing: 10) {
                             AuthField(label: String(localized: "First name"), placeholder: "", text: $firstName)
                                 .textContentType(.givenName)
@@ -137,16 +139,16 @@ struct AuthView: View {
                                 .textContentType(.familyName)
                         }
 
-                        // A wheel, not a text field: the server wants a real ISO date
-                        // and 16+, so typed input would only bounce as invalid_dob.
+                        // A wheel, not a text field: if provided the server wants a
+                        // real ISO date and 16+, so typed input would only bounce.
                         DOBField(date: $dob, latestAllowed: latestAllowedDOB)
 
-                        AuthField(label: String(localized: "Street address"), placeholder: "", text: $street)
+                        AuthField(label: String(localized: "Street address (optional)"), placeholder: "", text: $street)
                             .textContentType(.fullStreetAddress)
                         HStack(spacing: 10) {
-                            AuthField(label: String(localized: "City"), placeholder: "", text: $city)
+                            AuthField(label: String(localized: "City (optional)"), placeholder: "", text: $city)
                                 .textContentType(.addressCity)
-                            AuthField(label: String(localized: "Postal code"), placeholder: "", text: $postalCode)
+                            AuthField(label: String(localized: "Postal code (optional)"), placeholder: "", text: $postalCode)
                                 .textContentType(.postalCode)
                         }
                         AuthField(label: String(localized: "Country"), placeholder: "", text: $country)
@@ -301,7 +303,7 @@ struct DOBField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Date of birth")
+            Text("Date of birth (optional)")
                 .font(.geist(14, .semibold))
                 .foregroundStyle(Color.farmGreen)
             DatePicker(

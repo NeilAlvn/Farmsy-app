@@ -49,6 +49,7 @@
     <string name="dob_hint">JJJJ-MM-DD</string>
     <string name="city_label">Plaats</string>
     <string name="referral_code_optional">Verwijzingscode (optioneel)</string>
+    <string name="label_optional_suffix">optioneel</string>
     <string name="your_details">Jouw gegevens</string>
     <string name="we_need_these_to_set_up_your_account">We hebben deze nodig om je account aan te maken.</string>
     <string name="continue_label">Doorgaan</string>

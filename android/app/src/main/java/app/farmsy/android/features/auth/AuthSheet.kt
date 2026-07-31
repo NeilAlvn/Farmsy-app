@@ -90,8 +90,9 @@ fun AuthSheet(onDone: () -> Unit) {
 
     val credentialsOk = email.contains("@") && password.length >= 8 &&
         (!isSignUp || confirm == password)
-    val detailsOk = listOf(firstName, lastName, dob, street, city, postal, country)
-        .all { it.isNotBlank() }
+    // Apple 5.1.1(v): DOB, street, city, postal must not be required — only
+    // name + country are required, the rest are optional.
+    val detailsOk = listOf(firstName, lastName, country).all { it.isNotBlank() }
     val canSubmit = when {
         isWorking -> false
         !isSignUp -> credentialsOk
@@ -219,14 +220,15 @@ fun AuthSheet(onDone: () -> Unit) {
             // and a typed "12/04/98" would just bounce back as invalid_dob.
             DobField(value = dob, onPick = { dob = it })
             Spacer(Modifier.height(14.dp))
-            AuthField(stringResource(R.string.street_address), street, { street = it })
+            val optional = stringResource(R.string.label_optional_suffix)
+            AuthField("${stringResource(R.string.street_address)} ($optional)", street, { street = it })
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.weight(1.4f)) {
-                    AuthField(stringResource(R.string.city_label), city, { city = it })
+                    AuthField("${stringResource(R.string.city_label)} ($optional)", city, { city = it })
                 }
                 Box(Modifier.weight(1f)) {
-                    AuthField(stringResource(R.string.postal_code), postal, { postal = it })
+                    AuthField("${stringResource(R.string.postal_code)} ($optional)", postal, { postal = it })
                 }
             }
             Spacer(Modifier.height(14.dp))
@@ -329,7 +331,7 @@ private fun DobField(value: String, onPick: (String) -> Unit) {
 
     Column {
         Text(
-            stringResource(R.string.date_of_birth),
+            "${stringResource(R.string.date_of_birth)} (${stringResource(R.string.label_optional_suffix)})",
             style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen
         )
         Spacer(Modifier.height(6.dp))

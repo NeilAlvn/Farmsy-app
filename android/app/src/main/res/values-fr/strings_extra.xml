@@ -49,6 +49,7 @@
     <string name="dob_hint">AAAA-MM-JJ</string>
     <string name="city_label">Ville</string>
     <string name="referral_code_optional">Code de parrainage (facultatif)</string>
+    <string name="label_optional_suffix">facultatif</string>
     <string name="your_details">Vos informations</string>
     <string name="we_need_these_to_set_up_your_account">Nous en avons besoin pour créer votre compte.</string>
     <string name="continue_label">Continuer</string>

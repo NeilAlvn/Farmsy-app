@@ -52,6 +52,7 @@
     <string name="dob_hint">YYYY-MM-DD</string>
     <string name="city_label">City</string>
     <string name="referral_code_optional">Referral code (optional)</string>
+    <string name="label_optional_suffix">optional</string>
     <string name="your_details">Your details</string>
     <string name="we_need_these_to_set_up_your_account">We need these to set up your account.</string>
     <string name="continue_label">Continue</string>

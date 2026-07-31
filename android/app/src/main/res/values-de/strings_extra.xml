@@ -49,6 +49,7 @@
     <string name="dob_hint">JJJJ-MM-TT</string>
     <string name="city_label">Stadt</string>
     <string name="referral_code_optional">Empfehlungscode (optional)</string>
+    <string name="label_optional_suffix">optional</string>
     <string name="your_details">Deine Angaben</string>
     <string name="we_need_these_to_set_up_your_account">Wir brauchen sie, um dein Konto einzurichten.</string>
     <string name="continue_label">Weiter</string>
