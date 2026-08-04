@@ -25,7 +25,13 @@ struct SettingsSheet: View {
     // a contradiction on one screen. hasFullAccess is the truth both halves share.
     private var subscriptionBadge: (String, Color) {
         guard session.profile?.hasFullAccess == true else {
-            return (String(localized: "Free"), .inkMuted)
+            // A lapsed sub (canceled/expired past its end date) is not the same as
+            // never having subscribed — flag it clearly in red so it (and a reviewer)
+            // can't be mistaken for a plain free account.
+            switch session.profile?.subscriptionStatus {
+            case "canceled", "expired": return (String(localized: "Expired"), .warnRed)
+            default:                    return (String(localized: "Free"), .inkMuted)
+            }
         }
         switch session.profile?.subscriptionStatus {
         case "trialing": return (String(localized: "Trial"), .farmGreen)
@@ -339,6 +345,10 @@ struct MembershipSection: View {
     /// Cancelled but still inside the period they already paid for — they keep access
     /// to the end, and deserve to be told when that is rather than sold a renewal.
     private var isCanceled: Bool { status == "canceled" }
+    /// Had a membership that has now lapsed (canceled/expired past its end date). They
+    /// no longer have access, but "you don't have a membership yet" is wrong for them —
+    /// they had one, it ended. Distinguish so the copy (and a reviewer) read it right.
+    private var isExpired: Bool { !hasAccess && (status == "canceled" || status == "expired") }
 
     private var billingURL: URL? {
         switch session.profile?.subscriptionSource {
@@ -391,6 +401,13 @@ struct MembershipSection: View {
                     .font(.geist(14, .semibold))
                     .foregroundStyle(Color.farmGreen)
                     .padding(.top, 10)
+                } else if isExpired {
+                    Text("Your membership has expired")
+                        .font(.geist(16, .bold))
+                        .foregroundStyle(Color.ink)
+                    Text("Renew to unlock full details for every farm again.")
+                        .font(.geist(14))
+                        .foregroundStyle(Color.inkMuted)
                 } else {
                     Text("You don't have a membership yet")
                         .font(.geist(16, .bold))

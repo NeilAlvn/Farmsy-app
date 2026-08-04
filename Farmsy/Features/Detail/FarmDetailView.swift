@@ -369,11 +369,19 @@ struct LockedAccessView: View {
     private let emojiGrid = ["🥬", "🥛", "🧀", "🥚", "🥩", "🐟",
                              "🍯", "🍷", "🧺", "🌱", "🍎", "🥔"]
 
+    /// A returning member whose subscription has lapsed — frame the paywall as a
+    /// "welcome back / resubscribe", not a first-time "become a member".
+    private var isExpired: Bool {
+        let s = session.profile?.subscriptionStatus
+        return session.hasFullAccess == false && (s == "canceled" || s == "expired")
+    }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
                 VStack(spacing: 10) {
-                    Kicker(text: String(localized: "Members only"))
+                    Kicker(text: isExpired ? String(localized: "Welcome back")
+                                           : String(localized: "Members only"))
                     DisplayTitle(leading: String(localized: "Unlock every farm's "),
                                  emphasis: String(localized: "full story"),
                                  trailing: "", size: 32)
@@ -401,11 +409,13 @@ struct LockedAccessView: View {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 34))
                         .foregroundStyle(Color.farmGreen)
-                    Text("Unlock every farm")
+                    Text(isExpired ? "Your membership has expired" : "Unlock every farm")
                         .font(.geist(19, .bold))
                         .foregroundStyle(Color.ink)
                         .multilineTextAlignment(.center)
-                    Text("Opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map.")
+                    Text(isExpired
+                         ? "Resubscribe to reopen opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map."
+                         : "Opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map.")
                         .font(.geist(15))
                         .foregroundStyle(Color.inkMuted)
                         .multilineTextAlignment(.center)
