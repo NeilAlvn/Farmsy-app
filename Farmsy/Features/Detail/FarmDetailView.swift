@@ -425,6 +425,29 @@ struct LockedAccessView: View {
                 // rather than trusting the client.
                 if purchases.isPurchasing || isChecking {
                     ProgressView().tint(Color.farmGreen)
+                } else if purchases.productsUnavailable {
+                    // Fetched, but the store handed back nothing to sell (products
+                    // unavailable / rejected, or a network failure). Show a real
+                    // message + retry — never an endless spinner, which reads to a
+                    // reviewer as "can't access subscriptions" (guideline 2.1).
+                    VStack(spacing: 10) {
+                        Text("Memberships can't be loaded right now.")
+                            .font(.geist(15, .semibold))
+                            .foregroundStyle(Color.ink)
+                        Text("This is usually temporary — tap to try again.")
+                            .font(.geist(13))
+                            .foregroundStyle(Color.inkMuted)
+                            .multilineTextAlignment(.center)
+                        Button("Try again") {
+                            Haptics.tap()
+                            Task { await purchases.loadOffering(force: true) }
+                        }
+                        .font(.geist(14, .semibold))
+                        .foregroundStyle(Color.farmGreen)
+                        .padding(.top, 2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                 } else if purchases.yearlyPrice == nil {
                     // Offering still loading — a spinner, not a half-drawn paywall.
                     ProgressView().tint(Color.farmGreen)

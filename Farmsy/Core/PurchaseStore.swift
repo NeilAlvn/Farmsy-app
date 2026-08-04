@@ -30,6 +30,17 @@ final class PurchaseStore {
     /// True once we've tried to load prices and come back with nothing, so the
     /// paywall can offer a retry instead of an eternal spinner.
     private(set) var offeringFailed = false
+    /// True once a load attempt has actually finished (success or failure), so the
+    /// paywall can tell "still fetching" apart from "fetched, nothing to sell."
+    private(set) var didLoadOffering = false
+
+    /// We finished a fetch and still have no purchasable yearly product. This is
+    /// the App-Review deadlock case: the products can be in a Rejected/unavailable
+    /// state, so RevenueCat hands back an offering with **no** available packages —
+    /// the offering isn't nil, but there's nothing to buy. The paywall must show a
+    /// real message + retry here, never an endless spinner (guideline 2.1: the
+    /// reviewer needs to reach a working purchase, not a blank screen).
+    var productsUnavailable: Bool { didLoadOffering && yearlyPackage == nil }
 
     /// The two things we sell. Yearly renews; lifetime is a one-off that never
     /// expires (the server treats a lifetime grant as un-revocable).
@@ -94,10 +105,11 @@ final class PurchaseStore {
     /// could draw the buttons. Prices don't change between screens: prefetch at
     /// launch, and a second call is a no-op unless the first one came back empty.
     func loadOffering(force: Bool = false) async {
-        guard !Backend.revenueCatKey.isEmpty else { return }
+        guard !Backend.revenueCatKey.isEmpty else { didLoadOffering = true; return }
         if !force, offering != nil { return }
         offering = try? await Purchases.shared.offerings().current
         offeringFailed = (offering == nil)
+        didLoadOffering = true
     }
 
     /// Buys the membership. Returns true once the purchase completes — the caller
