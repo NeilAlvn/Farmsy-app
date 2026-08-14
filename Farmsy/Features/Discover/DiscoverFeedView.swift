@@ -14,8 +14,6 @@ struct DiscoverFeedView: View {
     @Environment(\.requestAuth) private var requestAuth
 
     @State private var feed: [FarmPin] = []
-    @State private var teasers: [String: String] = [:]
-    @State private var fetchingTeasers: Set<String> = []
     @State private var showAddFarm = false
 
     var body: some View {
@@ -25,12 +23,7 @@ struct DiscoverFeedView: View {
                 addFarmBanner
 
                 ForEach(feed) { pin in
-                    DiscoverFeedCard(
-                        pin: pin,
-                        teaser: teasers[pin.osmId],
-                        onOpen: { onOpenFarm(pin) }
-                    )
-                    .onAppear { loadTeaser(for: pin) }
+                    DiscoverFeedCard(pin: pin, onOpen: { onOpenFarm(pin) })
                 }
 
                 if feed.isEmpty && !farms.pins.isEmpty {
@@ -54,23 +47,6 @@ struct DiscoverFeedView: View {
 
     private func reshuffle() {
         feed = farms.feedPicks(near: locationManager.location)
-    }
-
-    /// Subscribers see a short story line on each card; the farm API is the
-    /// only place descriptions live, so fetch lazily and cache per farm.
-    private func loadTeaser(for pin: FarmPin) {
-        guard pin.hasDescription,
-              session.hasFullAccess,
-              let token = session.session?.accessToken,
-              teasers[pin.osmId] == nil,
-              !fetchingTeasers.contains(pin.osmId) else { return }
-        fetchingTeasers.insert(pin.osmId)
-        Task {
-            let detail = try? await FarmDetailAPI.fetch(osmId: pin.osmId, accessToken: token)
-            // Cache an empty string on failure so we don't refetch forever.
-            teasers[pin.osmId] = detail?.description ?? ""
-            fetchingTeasers.remove(pin.osmId)
-        }
     }
 
     private var header: some View {
@@ -129,11 +105,11 @@ struct DiscoverFeedView: View {
     }
 }
 
-/// One farm in the Discover feed: hero photo, save heart, categories,
-/// name, place + rating, optional story teaser, and action buttons.
+/// One farm in the Discover feed: a featured photo tile with the name, place,
+/// rating and category chips over the photograph, a TOP PICK badge when the farm
+/// is verified, and the save heart. Tapping opens the farm.
 struct DiscoverFeedCard: View {
     let pin: FarmPin
-    let teaser: String?
     var onOpen: () -> Void
 
     @Environment(LocationManager.self) private var locationManager
@@ -147,100 +123,11 @@ struct DiscoverFeedCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            hero
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(pin.name)
-                    .font(.display(22, weight: .semibold))
-                    .foregroundStyle(Color.ink)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-
-                HStack(spacing: 6) {
-                    if let city = pin.city {
-                        Text(city)
-                            .font(.geist(14))
-                            .foregroundStyle(Color.inkMuted)
-                    }
-                    if let distanceText {
-                        Text("·").foregroundStyle(Color.inkMuted)
-                        Text(distanceText)
-                            .font(.geist(14, .semibold))
-                            .foregroundStyle(Color.farmGreen)
-                    }
-                    if let rating = pin.avgRating {
-                        Text("·").foregroundStyle(Color.inkMuted)
-                        HStack(spacing: 3) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.star)
-                            Text(String(format: "%.1f (%d)", rating, pin.reviewCount))
-                                .font(.geist(13, .semibold))
-                                .foregroundStyle(Color.ink)
-                        }
-                    }
-                }
-
-                if let teaser, !teaser.isEmpty {
-                    Text(teaser)
-                        .font(.geist(14))
-                        .foregroundStyle(Color.inkMuted)
-                        .lineLimit(3)
-                        .lineSpacing(2)
-                }
-
-                HStack(spacing: 10) {
-                    Button {
-                        Haptics.tap()
-                        let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
-                        item.name = pin.name
-                        item.openInMaps()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
-                                .font(.system(size: 13, weight: .semibold))
-                            Text("Directions")
-                                .font(.geist(14, .bold))
-                        }
-                        .foregroundStyle(Color.farmGreen)
-                        .padding(.vertical, 11)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            Capsule().fill(.white).stroke(Color.farmGreen, lineWidth: 1.5)
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        Haptics.tap()
-                        onOpen()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text("View farm")
-                                .font(.geist(14, .bold))
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 11)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.farmGreen, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.top, 4)
-            }
-            .padding(14)
-        }
-        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onTapGesture { onOpen() }
-    }
-
-    private var hero: some View {
-        ZStack(alignment: .topTrailing) {
+        // A featured photo tile, like the web's "Fresh from the farm" shelf:
+        // everything sits over the photograph — the name, place, category chips —
+        // with a bottom gradient carrying the white text, a TOP PICK badge for a
+        // verified farm, and the save heart. Tapping opens the farm.
+        ZStack(alignment: .bottomLeading) {
             Group {
                 if let image = pin.image, let url = URL(string: image) {
                     AsyncImage(url: url) { phase in
@@ -254,41 +141,93 @@ struct DiscoverFeedCard: View {
                     categoryTile
                 }
             }
-            .frame(height: 195)
+            .frame(height: 210)
             .frame(maxWidth: .infinity)
             .clipped()
 
+            // Farm photos are mostly light at the bottom — soil, crates, gravel —
+            // so white text needs the gradient's help.
+            LinearGradient(colors: [.black.opacity(0.80), .black.opacity(0.22), .clear],
+                           startPoint: .bottom, endPoint: .top)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(pin.name)
+                    .font(.geist(16, .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                HStack(spacing: 6) {
+                    if let city = pin.city {
+                        Text(city)
+                            .font(.geist(12))
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    if let distanceText {
+                        Text("·").foregroundStyle(.white.opacity(0.7))
+                        Text(distanceText)
+                            .font(.geist(12, .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                    if let rating = pin.avgRating {
+                        Text("·").foregroundStyle(.white.opacity(0.7))
+                        HStack(spacing: 3) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color.star)
+                            Text(String(format: "%.1f", rating))
+                                .font(.geist(12, .semibold))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+
+                HStack(spacing: 5) {
+                    ForEach(pin.categories.prefix(2)) { cat in
+                        Text("\(cat.emoji) \(cat.label)")
+                            .font(.geist(10, .bold))
+                            .foregroundStyle(Color.ink)
+                            .lineLimit(1)
+                            .padding(.vertical, 3)
+                            .padding(.horizontal, 7)
+                            .background(.white.opacity(0.95), in: Capsule())
+                    }
+                }
+            }
+            .padding(12)
+        }
+        .frame(height: 210)
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .topLeading) {
+            if pin.isVerified {
+                Text("TOP PICK")
+                    .font(.geist(9, .bold))
+                    .kerning(0.5)
+                    .foregroundStyle(Color.farmGreen)
+                    .padding(.vertical, 3)
+                    .padding(.horizontal, 8)
+                    .background(.white.opacity(0.92), in: Capsule())
+                    .padding(10)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
             Button {
                 toggleFavorite()
             } label: {
                 Image(systemName: favorites.isSaved(pin.osmId) ? "heart.fill" : "heart")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(favorites.isSaved(pin.osmId) ? Color.warnRed : Color.ink)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 34, height: 34)
                     .background(.white.opacity(0.95), in: Circle())
                     .shadow(color: .black.opacity(0.15), radius: 4, y: 1)
             }
             .buttonStyle(.plain)
-            .padding(10)
+            .padding(8)
         }
-        .overlay(alignment: .bottomLeading) {
-            // Two chips, not three, each pinned to one line: three full labels
-            // ("🥬 Farm Produce" …) could run off the card's right edge and get
-            // clipped mid-word by the rounded corner.
-            HStack(spacing: 5) {
-                ForEach(pin.categories.prefix(2)) { cat in
-                    Text("\(cat.emoji) \(cat.label)")
-                        .font(.geist(11, .semibold))
-                        .foregroundStyle(Color.ink)
-                        .lineLimit(1)
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 8)
-                        .background(.white.opacity(0.94), in: Capsule())
-                }
-            }
-            .padding(10)
-        }
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture { onOpen() }
     }
 
     private var categoryTile: some View {
