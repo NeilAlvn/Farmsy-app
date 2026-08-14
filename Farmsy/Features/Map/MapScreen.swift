@@ -2,13 +2,22 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
-/// Map-first discovery: search on top, a live map of real Farmsy
-/// pins, with a floating search row and a compact category filter.
+/// The map is the app. A full-bleed map with a floating header (logo + account),
+/// search and filters on top, a What's New button and a locate button, and the
+/// farm card as a bottom sheet the parent presents.
 struct MapScreen: View {
     var onOpenFarm: (FarmPin) -> Void
+    var onOpenSaved: () -> Void = {}
+    var onOpenSettings: () -> Void = {}
+    var onOpenWhatsNew: () -> Void = {}
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
+    @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
+
+    /// Whether any farm has posted — the What's New button only shows when true.
+    @State private var hasPosts = false
 
     @State private var camera: MapCameraPosition = .region(
         // Centered between NL and BE to start.
@@ -49,63 +58,86 @@ struct MapScreen: View {
             mapCard
         }
         .frame(maxHeight: .infinity)
-        // Search floats over the map; controls live at the bottom, lifted
-        // above the floating tab bar.
+        // The header, search and filters float over the map at the top.
         .overlay(alignment: .top) {
-            VStack(alignment: .trailing, spacing: 10) {
+            VStack(spacing: 10) {
+                headerRow
+                    .padding(.horizontal, 14)
                 searchRow
                     .padding(.horizontal, 14)
                 filterRail
-                farmsCountBadge
-                    .padding(.horizontal, 14)
+            }
+            .padding(.top, 4)
+        }
+        // Category filter bottom-left, locate bottom-right — clear of the sheet.
+        .overlay(alignment: .bottomLeading) {
+            categoryMenu
+                .padding(.leading, 14)
+                .padding(.bottom, 24)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            locateButton
+                .padding(.trailing, 14)
+                .padding(.bottom, 24)
+        }
+        .task { await checkForPosts() }
+    }
+
+    // MARK: - Header (logo, What's New, account)
+
+    private var headerRow: some View {
+        HStack(spacing: 8) {
+            Text("Farmsy")
+                .font(.displayItalic(24, weight: .medium))
+                .foregroundStyle(Color.ink)
+            Spacer()
+            if hasPosts {
+                CircleMapButton(icon: "newspaper", action: onOpenWhatsNew)
+            }
+            Menu {
+                if session.isAuthenticated {
+                    Button { onOpenSaved() } label: { Label(String(localized: "Saved"), systemImage: "heart") }
+                    Button { onOpenSettings() } label: { Label(String(localized: "Settings"), systemImage: "gearshape") }
+                } else {
+                    Button { requestAuth() } label: { Label(String(localized: "Sign in"), systemImage: "person.crop.circle") }
+                }
+            } label: {
+                CircleMapButtonLabel(icon: session.isAuthenticated ? "person.crop.circle.fill" : "person.crop.circle")
             }
         }
-        .overlay(alignment: .bottom) {
-            bottomBar
-                .padding(.bottom, 66)
-        }
+    }
+
+    private var locateButton: some View {
+        CircleMapButton(icon: "location.fill", size: 48, action: locateNearMe)
+    }
+
+    /// A cheap "does any post exist" check, to decide whether the What's New
+    /// button appears at all (MOBILE-SPEC-MAP §1).
+    private func checkForPosts() async {
+        let rows: [Ping] = (try? await supabase
+            .from("farm_pings")
+            .select("id")
+            .eq("status", value: "visible")
+            .limit(1)
+            .execute()
+            .value) ?? []
+        hasPosts = !rows.isEmpty
     }
 
     // MARK: - Search row (top)
 
     private var searchRow: some View {
         @Bindable var farms = farms
-        return HStack(spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(Color.inkMuted)
-                TextField("Search by farm, city or postcode", text: $farms.searchText)
-                    .autocorrectionDisabled()
-            }
-            .padding(.vertical, 13)
-            .padding(.horizontal, 14)
-            .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
-
-            Button {
-                Haptics.tap()
-                locationManager.request()
-                if let loc = locationManager.location {
-                    withAnimation {
-                        camera = .region(MKCoordinateRegion(
-                            center: loc.coordinate,
-                            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-                        ))
-                    }
-                }
-            } label: {
-                Image(systemName: "location.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.farmGreenMap)
-                    .frame(width: 48, height: 48)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.white)
-                            .stroke(Color.farmGreenMap, lineWidth: 1.5)
-                    )
-                    .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
-            }
+        return HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Color.inkMuted)
+            TextField("Search by farm, city or postcode", text: $farms.searchText)
+                .autocorrectionDisabled()
         }
+        .padding(.vertical, 13)
+        .padding(.horizontal, 14)
+        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
     }
 
     /// The quick filters, as a horizontally scrolling rail of toggle chips —
@@ -148,39 +180,6 @@ struct MapScreen: View {
     }
 
     /// Live pin count, floating just under the search row.
-    private var farmsCountBadge: some View {
-        Group {
-            if farms.isLoading {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text("Loading farms…").font(.geist(13, .medium))
-                }
-            } else {
-                Text("\(farms.filtered.count.formatted()) farms")
-                    .font(.geist(13, .semibold))
-                    .foregroundStyle(Color.inkMuted)
-            }
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(.white.opacity(0.95), in: Capsule())
-        .shadow(color: .black.opacity(0.1), radius: 6, y: 2)
-    }
-
-    // MARK: - Bottom control bar
-
-    private var bottomBar: some View {
-        // Category filter only, bottom-left and compact. The list toggle that used to
-        // sit beside it is gone — it duplicated the Discover tab, which already offers
-        // a browsable list — so the map is just the map now.
-        HStack {
-            categoryMenu
-            Spacer()
-        }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
-    }
-
     private var categoryMenu: some View {
         @Bindable var farms = farms
         return Menu {
@@ -298,6 +297,41 @@ struct FilterChip: View {
                     .stroke(isOn ? Color.farmGreenMap : Color.hairline, lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.10), radius: 5, y: 1)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A floating map control — a circular white button that sits over the map
+/// (MOBILE-SPEC-DETAIL §10): the What's New button, the account button, locate.
+struct CircleMapButtonLabel: View {
+    let icon: String
+    var size: CGFloat = 44
+    var tint: Color = Color(hex: 0x4B5563)
+
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: size * 0.42, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: size, height: size)
+            .background(.white.opacity(0.94), in: Circle())
+            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
+            .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+    }
+}
+
+struct CircleMapButton: View {
+    let icon: String
+    var size: CGFloat = 44
+    var tint: Color = Color(hex: 0x4B5563)
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            CircleMapButtonLabel(icon: icon, size: size, tint: tint)
         }
         .buttonStyle(.plain)
     }

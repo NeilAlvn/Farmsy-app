@@ -1,142 +1,73 @@
 import SwiftUI
 
-/// Main shell: brand header up top, content in the middle, and the
-/// Map / Saved / Settings menu in a floating bar at the bottom.
+/// The map is the app. There is no feed, list or discovery tab — everything is a
+/// layer over the map (MOBILE-SPEC-MAP §0). The farm card is a bottom sheet at
+/// three heights with the map usable behind it; Saved and Settings live behind an
+/// account button in the header; posts and featured farms live in the What's New
+/// sheet, opened from a floating button on the map.
 struct MainView: View {
-    enum Tab: String, CaseIterable {
-        case map = "Map"
-        case discover = "Discover"
-        case saved = "Saved"
-        case settings = "Settings"
-
-        var icon: String {
-            switch self {
-            case .map: "map.fill"
-            case .discover: "sparkles"
-            case .saved: "heart.fill"
-            case .settings: "gearshape.fill"
-            }
-        }
-
-        /// User-facing name — rawValue stays English for identifiers.
-        var label: String {
-            switch self {
-            case .map: String(localized: "Map")
-            case .discover: String(localized: "Discover")
-            case .saved: String(localized: "Saved")
-            case .settings: String(localized: "Settings")
-            }
-        }
-    }
-
     @Environment(SessionStore.self) private var session
 
-    @State private var tab: Tab = .map
-    @State private var path: [FarmPin] = []
+    /// The open farm. A bound value (not a `.sheet(item:)`) so tapping another pin
+    /// swaps the card's contents in place rather than dismissing and re-presenting.
+    @State private var selectedPin: FarmPin?
     @State private var showAuth = false
+    @State private var accountRoute: AccountRoute?
+    @State private var showWhatsNew = false
+
+    enum AccountRoute: Identifiable {
+        case saved, settings
+        var id: Int { hashValue }
+    }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if tab == .map {
-                    // Map is the hero: full-bleed edge to edge, with the
-                    // tab bar floating on top of it.
-                    ZStack(alignment: .bottom) {
-                        MapScreen { pin in openFarm(pin) }
-                        tabBar
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 4)
-                    }
-                } else {
-                    VStack(spacing: 0) {
-                        header
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 8)
-
-                        Group {
-                            switch tab {
-                            case .map:
-                                EmptyView()
-                            case .discover:
-                                DiscoverFeedView { pin in openFarm(pin) }
-                            case .saved:
-                                SavedScreen { pin in openFarm(pin) }
-                            case .settings:
-                                SettingsSheet()
-                            }
-                        }
-                        .frame(maxHeight: .infinity)
-
-                        tabBar
-                            .padding(.horizontal, 24)
-                            .padding(.top, 8)
-                            .padding(.bottom, 4)
-                    }
-                }
-            }
-            .background(Color.cream.ignoresSafeArea())
-            // No chrome on the root — the empty translucent nav bar would
-            // otherwise blur a band across the top of the full-bleed map.
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: FarmPin.self) { pin in
-                FarmDetailView(pin: pin)
-            }
-        }
+        MapScreen(
+            onOpenFarm: { openFarm($0) },
+            onOpenSaved: { accountRoute = .saved },
+            onOpenSettings: { accountRoute = .settings },
+            onOpenWhatsNew: { showWhatsNew = true }
+        )
+        .background(Color.cream.ignoresSafeArea())
+        .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
         .environment(\.requestAuth, { showAuth = true })
+        // The farm card — three resting heights, and the map stays interactive
+        // behind it up through half so you can still read where the farm is.
+        .sheet(isPresented: Binding(
+            get: { selectedPin != nil },
+            set: { if !$0 { selectedPin = nil } }
+        )) {
+            if let pin = selectedPin {
+                FarmDetailView(pin: pin)
+                    .id(pin.osmId)   // swap contents when another pin is tapped
+                    .presentationDetents([.height(152), .fraction(0.55), .large])
+                    .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
+                    .presentationContentInteraction(.scrolls)
+                    .presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(isPresented: $showWhatsNew) {
+            WhatsNewSheet(onOpenFarm: { pin in
+                showWhatsNew = false
+                openFarm(pin)
+            })
+            .presentationDetents([.fraction(0.55), .fraction(0.92)])
+            .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $accountRoute) { route in
+            switch route {
+            case .saved:    SavedScreen { openFarm($0) }
+            case .settings: SettingsSheet()
+            }
+        }
         .sheet(isPresented: $showAuth) { AuthView() }
     }
 
-    /// Guests can browse the map and feed freely; opening a farm's details
-    /// asks for an account first. Once signed in, the detail view's own
-    /// subscription gate takes over.
+    /// Farm cards open for everyone, signed out included (MOBILE-SPEC-MAP §0) —
+    /// the card shows the free content and locks the paid fields inside. Actions
+    /// that need an account (save, subscribe) prompt for one from within the card.
     private func openFarm(_ pin: FarmPin) {
-        if session.isAuthenticated {
-            path.append(pin)
-        } else {
-            showAuth = true
-        }
-    }
-
-    private var header: some View {
-        HStack {
-            HStack(spacing: 8) {
-                Image("FarmsyLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 34)
-                Text("Farmsy")
-                    .font(.display(22, weight: .semibold))
-                    .foregroundStyle(Color.ink)
-            }
-            Spacer()
-        }
-    }
-
-    private var tabBar: some View {
-        HStack(spacing: 6) {
-            ForEach(Tab.allCases, id: \.self) { t in
-                Button {
-                    Haptics.tap()
-                    withAnimation(.spring(duration: 0.3)) { tab = t }
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: t.icon)
-                            .font(.system(size: 17, weight: .semibold))
-                        Text(t.label)
-                            .font(.geist(11, .semibold))
-                    }
-                    .foregroundStyle(tab == t ? .white : Color.inkMuted)
-                    .padding(.vertical, 9)
-                    .frame(maxWidth: .infinity)
-                    .background(tab == t ? Color.farmGreen : .clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("tab-\(t.rawValue.lowercased())")
-            }
-        }
-        .padding(5)
-        .background(.white, in: RoundedRectangle(cornerRadius: 21, style: .continuous))
-        .shadow(color: .black.opacity(0.1), radius: 10, y: 3)
+        selectedPin = pin
     }
 }
