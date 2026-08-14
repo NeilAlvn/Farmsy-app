@@ -14,12 +14,18 @@ struct DiscoverFeedView: View {
     @Environment(\.requestAuth) private var requestAuth
 
     @State private var feed: [FarmPin] = []
+    @State private var pings: [Ping] = []
     @State private var showAddFarm = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 16) {
                 header
+
+                if !pings.isEmpty {
+                    whatsNewSection
+                }
+
                 addFarmBanner
 
                 ForEach(feed) { pin in
@@ -37,16 +43,55 @@ struct DiscoverFeedView: View {
             .padding(.top, 4)
             .padding(.bottom, 14)
         }
-        .refreshable { reshuffle() }
+        .refreshable { reshuffle(); await loadPings() }
         .onAppear { if feed.isEmpty { reshuffle() } }
         .onChange(of: farms.pins.count) {
             if feed.isEmpty { reshuffle() }
         }
+        .task { await loadPings() }
         .sheet(isPresented: $showAddFarm) { AddFarmView() }
     }
 
     private func reshuffle() {
         feed = farms.feedPicks(near: locationManager.location)
+    }
+
+    /// The farms' latest posts, read straight from Supabase (RLS lets anyone read
+    /// visible pings). Newest first, best-effort — a failure just leaves the
+    /// section hidden.
+    private func loadPings() async {
+        do {
+            let rows: [Ping] = try await supabase
+                .from("farm_pings")
+                .select("id, farm_osm_id, author_name, body, like_count, created_at, farm_ping_images(url, sort_order)")
+                .eq("status", value: "visible")
+                .order("created_at", ascending: false)
+                .limit(30)
+                .execute()
+                .value
+            pings = rows
+        } catch {
+            // Leave the section hidden on failure.
+        }
+    }
+
+    /// "WHAT'S NEW" — the recent farm posts, matching the web panel's section.
+    private var whatsNewSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("WHAT'S NEW")
+                .font(.geist(11, .semibold))
+                .kerning(1.2)
+                .foregroundStyle(Color.inkMuted)
+
+            ForEach(pings.prefix(8)) { ping in
+                PingCard(ping: ping,
+                         farmName: farms.pin(forOsmId: ping.farmOsmId)?.name,
+                         onOpenFarm: {
+                             if let pin = farms.pin(forOsmId: ping.farmOsmId) { onOpenFarm(pin) }
+                         })
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var header: some View {
@@ -244,5 +289,103 @@ struct DiscoverFeedCard: View {
         }
         Haptics.tap()
         Task { await favorites.toggle(pin.osmId, userId: userId) }
+    }
+}
+
+/// One farm post in the "What's new" feed. Matches the web PingList card: an
+/// initials avatar, the author, the farm it belongs to, time since, the body,
+/// a row of equal-square photos, and the like count. Read-only for now — tapping
+/// the card or a photo opens the farm.
+struct PingCard: View {
+    let ping: Ping
+    let farmName: String?
+    var onOpenFarm: () -> Void
+
+    private var initials: String {
+        let parts = ping.authorName.split(separator: " ").compactMap { $0.first }
+        let s = String(parts.prefix(2)).uppercased()
+        return s.isEmpty ? "?" : s
+    }
+
+    private var timeAgo: String {
+        guard let date = ping.date else { return "" }
+        let mins = Int(Date().timeIntervalSince(date) / 60)
+        if mins < 1 { return String(localized: "just now") }
+        if mins < 60 { return String(localized: "\(mins)m") }
+        let hours = mins / 60
+        if hours < 24 { return String(localized: "\(hours)h") }
+        return String(localized: "\(hours / 24)d")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(initials)
+                    .font(.geist(10, .bold))
+                    .foregroundStyle(Color.farmGreen)
+                    .frame(width: 26, height: 26)
+                    .background(Color.farmGreen.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(ping.authorName)
+                        .font(.geist(13, .semibold))
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(1)
+                    if let farmName {
+                        Text(farmName)
+                            .font(.geist(11, .medium))
+                            .foregroundStyle(Color.farmGreenMap)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 6)
+                Text(timeAgo)
+                    .font(.geist(11))
+                    .foregroundStyle(Color.inkMuted)
+            }
+
+            if !ping.body.isEmpty {
+                Text(ping.body)
+                    .font(.geist(14))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(4)
+                    .lineSpacing(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if !ping.images.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(ping.images.prefix(3), id: \.self) { url in
+                        AsyncImage(url: URL(string: url)) { phase in
+                            if case .success(let img) = phase {
+                                img.resizable().scaledToFill()
+                            } else {
+                                Color.creamCard
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(1, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+
+            HStack(spacing: 5) {
+                Image(systemName: "heart")
+                    .font(.system(size: 12))
+                if ping.likeCount > 0 {
+                    Text("\(ping.likeCount)").font(.geist(12))
+                }
+            }
+            .foregroundStyle(Color.inkMuted)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.hairline, lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture { onOpenFarm() }
     }
 }

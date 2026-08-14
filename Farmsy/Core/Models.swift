@@ -212,6 +212,55 @@ struct FarmDetail: Decodable {
     }
 }
 
+// MARK: - Farm post ("What's new" ping, read straight from Supabase)
+
+/// A short post a farm published, with up to 3 photos. Read via RLS
+/// (status = 'visible'); author_name is denormalised on the row so it survives
+/// an account being deleted. like_count is kept by a trigger.
+struct Ping: Decodable, Identifiable, Hashable {
+    let id: String
+    let farmOsmId: String
+    let authorName: String
+    let body: String
+    let likeCount: Int
+    let createdAt: String
+    let images: [String]
+
+    private struct PingImage: Decodable {
+        let url: String
+        let sortOrder: Int
+        enum CodingKeys: String, CodingKey { case url; case sortOrder = "sort_order" }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, farmOsmId = "farm_osm_id", authorName = "author_name"
+        case body, likeCount = "like_count", createdAt = "created_at"
+        case images = "farm_ping_images"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        farmOsmId = try c.decode(String.self, forKey: .farmOsmId)
+        authorName = try c.decode(String.self, forKey: .authorName)
+        body = try c.decode(String.self, forKey: .body)
+        likeCount = try c.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
+        createdAt = try c.decode(String.self, forKey: .createdAt)
+        let imgs = (try? c.decodeIfPresent([PingImage].self, forKey: .images)) ?? []
+        images = imgs.sorted { $0.sortOrder < $1.sortOrder }.map(\.url)
+    }
+
+    /// Parsed timestamp, tolerant of the fractional seconds Postgres emits.
+    var date: Date? {
+        let withFrac = ISO8601DateFormatter()
+        withFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = withFrac.date(from: createdAt) { return d }
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        return plain.date(from: createdAt)
+    }
+}
+
 // MARK: - Farm teaser (public description opener from GET /api/farm/[osmId]/teaser)
 
 /// The first ~200 characters of a farm's description, cut on a word. `truncated`
