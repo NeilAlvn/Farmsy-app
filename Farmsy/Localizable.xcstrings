@@ -5218,6 +5218,50 @@
           }
         }
       }
+    },
+    "See more": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehr ansehen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir plus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meer bekijken"
+          }
+        }
+      }
+    },
+    "FEATURED FARMS": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EMPFOHLENE HÖFE"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FERMES EN VEDETTE"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UITGELICHTE BOERDERIJEN"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
