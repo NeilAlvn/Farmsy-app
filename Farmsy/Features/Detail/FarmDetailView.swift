@@ -109,12 +109,15 @@ struct FarmDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         ForEach(pin.categories.prefix(4)) { cat in
+                            // Solid category colour with white text, like the web —
+                            // a farm's colour is how it is recognised, so it carries
+                            // the chip rather than sitting as a faint tint behind it.
                             Text("\(cat.emoji) \(cat.label)")
                                 .font(.geist(12, .semibold))
                                 .padding(.vertical, 5)
-                                .padding(.horizontal, 9)
-                                .background(cat.color.opacity(0.14), in: Capsule())
-                                .foregroundStyle(Color.ink)
+                                .padding(.horizontal, 10)
+                                .background(cat.color, in: Capsule())
+                                .foregroundStyle(.white)
                         }
                     }
                     Text(pin.name)
@@ -264,38 +267,73 @@ struct FarmDetailView: View {
         }
     }
 
-    /// The single membership ask, inside the card: a lock, one line naming what
-    /// is behind it, and a soft-green button to the purchase sheet.
+    /// The single membership ask, inside the card, matching the web: empty grey
+    /// bars behind a blur (the paid values are never sent, so there is nothing
+    /// real to reveal — the blur is texture, not a cover), a lock in a soft disc,
+    /// one line naming what is behind it, and a soft-green button to the purchase.
     private var lockedBlock: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 26))
-                .foregroundStyle(Color.farmGreenMap)
-            Text("Farm details are for members")
-                .font(.geist(17, .bold))
-                .foregroundStyle(Color.ink)
-                .multilineTextAlignment(.center)
-            Text("Address, phone, website, directions and the full story — for \(pin.name) and every other farm on the map.")
-                .font(.geist(14))
-                .foregroundStyle(Color.inkMuted)
-                .multilineTextAlignment(.center)
-                .lineSpacing(2)
-            Button {
-                Haptics.tap()
-                showPaywall = true
-            } label: {
-                Text("See membership")
-                    .font(.geist(15, .semibold))
+        ZStack {
+            lockedBarsBackground
+                .blur(radius: 7)
+                .allowsHitTesting(false)
+
+            VStack(spacing: 12) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.farmGreenMap)
+                    .frame(width: 52, height: 52)
+                    .background(Color.inkMuted.opacity(0.10), in: Circle())
+                Text("Farm details are for members")
+                    .font(.geist(17, .bold))
+                    .foregroundStyle(Color.ink)
+                    .multilineTextAlignment(.center)
+                Text("Address, phone, website and what this farm sells.")
+                    .font(.geist(14))
+                    .foregroundStyle(Color.inkMuted)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                Button {
+                    Haptics.tap()
+                    showPaywall = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("See full details")
+                            .font(.geist(15, .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
+                    .padding(.vertical, 14)
                     .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 2)
         }
+        .padding(20)
         .frame(maxWidth: .infinity)
-        .card(padding: 20)
+        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.hairline, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// Faux content behind the lock: uneven grey bars, so the blurred area reads
+    /// as "there is more here" rather than as an empty panel.
+    private var lockedBarsBackground: some View {
+        GeometryReader { geo in
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(Array([0.78, 0.95, 0.6, 0.88, 0.5].enumerated()), id: \.offset) { _, fraction in
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.inkMuted.opacity(0.14))
+                        .frame(width: geo.size.width * fraction, height: 13)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
     }
 
     @ViewBuilder
