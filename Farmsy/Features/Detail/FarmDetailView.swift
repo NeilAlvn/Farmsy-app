@@ -10,6 +10,7 @@ struct FarmDetailView: View {
 
     @Environment(SessionStore.self) private var session
     @Environment(FavoritesStore.self) private var favorites
+    @Environment(\.dismiss) private var dismiss
 
     @State private var detail: FarmDetail?
     @State private var teaser: FarmTeaser?
@@ -17,50 +18,54 @@ struct FarmDetailView: View {
     @State private var isLocked = false
     @State private var showClaim = false
     @State private var showPaywall = false
+    @State private var lightbox: LightboxSource?
 
     var body: some View {
-        // The card is open to everyone now — the paid fields are locked *inside* it
-        // rather than in front of it, matching the web. A non-member still sees the
-        // photos, name, rating and the opening of the story; the membership prompt is
-        // a block within the page and a sheet, not a wall that replaces it.
-        content
-            .sheet(isPresented: $showClaim) { ClaimFarmView(pin: pin) }
-            .sheet(isPresented: $showPaywall) {
-                LockedAccessView(pin: pin, onClaim: { showPaywall = false; showClaim = true }) {
-                    await reload()
-                }
-            }
-            .background(Color.cream.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Haptics.tap()
-                        // Saving a farm is a member feature — send a non-member to the
-                        // paywall rather than silently doing nothing.
-                        if isLocked { showPaywall = true; return }
-                        guard let userId = session.session?.user.id else { return }
-                        Task { await favorites.toggle(pin.osmId, userId: userId) }
-                    } label: {
-                        Image(systemName: favorites.isSaved(pin.osmId) ? "heart.fill" : "heart")
-                            .foregroundStyle(favorites.isSaved(pin.osmId) ? Color.warnRed : Color.ink)
+        // The card is open to everyone — paid fields are locked *inside* it. The
+        // footer is pinned outside the scroll; everything else scrolls.
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    photoStrip
+                        .padding(.horizontal, 14)
+
+                    if isLoading && detail == nil && teaser == nil {
+                        cardSkeleton
+                            .padding(.horizontal, 14)
+                    } else if isLocked {
+                        lockedSections
+                            .padding(.horizontal, 14)
+                    } else {
+                        detailSections
+                            .padding(.horizontal, 14)
                     }
                 }
+                .padding(.top, 6)
+                .padding(.bottom, 20)
             }
-            .task { await reload() }
-            // Open the farm the moment access is granted, however long that takes.
-            //
-            // The grant arrives from the server via RevenueCat's webhook some seconds
-            // after the purchase call returns, and polling for a fixed budget is a losing
-            // game: if the webhook is slower than the budget, the buyer is left sitting on
-            // the very paywall they just paid to leave. Watching the profile instead means
-            // the screen unlocks itself whenever the grant lands — on time or late.
-            .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
-                if granted && isLocked {
-                    showPaywall = false
-                    Task { await reload() }
-                }
+            footer
+        }
+        .background(Color.cream.ignoresSafeArea())
+        .sheet(isPresented: $showClaim) { ClaimFarmView(pin: pin) }
+        .sheet(isPresented: $showPaywall) {
+            LockedAccessView(pin: pin, onClaim: { showPaywall = false; showClaim = true }) {
+                await reload()
             }
+        }
+        .fullScreenCover(item: $lightbox) { src in
+            ImageLightbox(source: src) { lightbox = nil }
+                .presentationBackground(.clear)
+        }
+        .task { await reload() }
+        // Open the farm the moment access is granted, however long that takes —
+        // the grant lands seconds after the purchase call via RevenueCat's webhook.
+        .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
+            if granted && isLocked {
+                showPaywall = false
+                Task { await reload() }
+            }
+        }
     }
 
     private func reload() async {
@@ -99,132 +104,251 @@ struct FarmDetailView: View {
         if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId) }
     }
 
-    // MARK: - Unlocked content
+    // MARK: - Header (name, actions, rating, address, badges)
 
-    private var content: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 18) {
-                gallery
-
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        ForEach(pin.categories.prefix(4)) { cat in
-                            // Solid category colour with white text, like the web —
-                            // a farm's colour is how it is recognised, so it carries
-                            // the chip rather than sitting as a faint tint behind it.
-                            Text("\(cat.emoji) \(cat.label)")
-                                .font(.geist(12, .semibold))
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 10)
-                                .background(cat.color, in: Capsule())
-                                .foregroundStyle(.white)
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Text(pin.name)
+                    .font(.geist(19, .bold))
+                    .foregroundStyle(Color.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                HStack(spacing: 6) {
+                    headerCircle(favorites.isSaved(pin.osmId) ? "heart.fill" : "heart",
+                                 tint: favorites.isSaved(pin.osmId) ? Color.warnRed : Color(hex: 0x6B7280),
+                                 action: saveTapped)
+                    if let shareURL {
+                        ShareLink(item: shareURL) {
+                            headerCircleLabel("square.and.arrow.up", tint: Color(hex: 0x6B7280))
                         }
                     }
-                    Text(pin.name)
-                        .font(.display(30))
-                        .foregroundStyle(Color.ink)
-                    HStack(spacing: 6) {
-                        if let city = pin.city {
-                            Text("\(city)\(pin.country.map { ", \($0)" } ?? "")")
-                                .font(.geist(15))
-                                .foregroundStyle(Color.inkMuted)
-                        }
-                        if let rating = pin.avgRating {
-                            HStack(spacing: 3) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(Color.star)
-                                Text(String(format: "%.1f (%d)", rating, pin.reviewCount))
-                                    .font(.geist(14, .semibold))
-                                    .foregroundStyle(Color.ink)
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-
-                actionRow
-                    .padding(.horizontal, 20)
-
-                if isLoading && detail == nil && teaser == nil {
-                    HStack {
-                        Spacer()
-                        ProgressView("Loading details…")
-                        Spacer()
-                    }
-                    .padding(.vertical, 30)
-                } else if isLocked {
-                    lockedSections
-                        .padding(.horizontal, 20)
-                } else {
-                    detailSections
-                        .padding(.horizontal, 20)
+                    headerCircle("xmark", tint: Color(hex: 0x6B7280)) { dismiss() }
                 }
             }
-            .padding(.bottom, 30)
+
+            ratingRow
+
+            if let address = detail?.address, !address.isEmpty {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.inkMuted)
+                    Text([address, detail?.postalCode ?? pin.postalCode, pin.city]
+                        .compactMap(\.self).joined(separator: ", "))
+                        .font(.geist(13))
+                        .foregroundStyle(Color.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            badgeRow
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+    }
+
+    private var ratingRow: some View {
+        Button {
+            if isLocked { Haptics.tap(); showPaywall = true }
+        } label: {
+            HStack(spacing: 6) {
+                if let rating = pin.avgRating {
+                    Image(systemName: "star.fill").font(.system(size: 13)).foregroundStyle(Color.star)
+                    Text(String(format: "%.1f", rating)).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
+                    Text("(\(pin.reviewCount))").font(.geist(12)).foregroundStyle(Color.inkMuted)
+                } else {
+                    Text("No reviews yet").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Category chips (in their colours), then verified, then open-now — one line
+    /// that scrolls horizontally rather than wrapping (MOBILE-SPEC-MAP §3).
+    private var badgeRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(pin.categories.prefix(4)) { cat in
+                    Text("\(cat.emoji) \(cat.label)")
+                        .font(.geist(11, .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 4).padding(.horizontal, 10)
+                        .background(cat.color, in: Capsule())
+                }
+                if pin.isVerified {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.seal.fill").font(.system(size: 10))
+                        Text("Verified").font(.geist(11, .semibold))
+                    }
+                    .foregroundStyle(Color.farmGreenMap)
+                    .padding(.vertical, 4).padding(.horizontal, 10)
+                    .overlay(Capsule().stroke(Color.farmGreenMap.opacity(0.4), lineWidth: 1))
+                }
+                if FarmFilters.isOpenToday(pin.openingHours) {
+                    HStack(spacing: 5) {
+                        Circle().fill(Color(hex: 0x10B981)).frame(width: 6, height: 6)
+                        Text("Open now").font(.geist(11, .semibold))
+                    }
+                    .foregroundStyle(Color(hex: 0x047857))
+                    .padding(.vertical, 4).padding(.horizontal, 10)
+                    .background(Color(hex: 0xECFDF5), in: Capsule())
+                }
+            }
         }
     }
 
-    private var gallery: some View {
-        let urls = (detail?.images.isEmpty == false ? detail?.images : nil)
-            ?? [detail?.image ?? pin.image].compactMap(\.self)
+    private func headerCircleLabel(_ icon: String, tint: Color) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 32, height: 32)
+            .background(Color(hex: 0xF3F4F6), in: Circle())
+    }
 
+    private func headerCircle(_ icon: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: { headerCircleLabel(icon, tint: tint) }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Photo strip (cover 160 + two 72 thumbnails + "+N")
+
+    private var photoStrip: some View {
+        let imgs = (detail?.images.isEmpty == false ? detail!.images : [pin.image].compactMap(\.self))
         return Group {
-            if urls.isEmpty {
-                LinearGradient(
-                    colors: [Color.farmGreen.opacity(0.85), Color.farmGreenDeep],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-                .frame(height: 210)
-                .overlay(Text(pin.primaryCategory.emoji).font(.geist(64)))
+            if imgs.isEmpty {
+                LinearGradient(colors: [Color.farmGreen.opacity(0.85), Color.farmGreenDeep],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .frame(height: 160)
+                    .overlay(Text(pin.primaryCategory.emoji).font(.geist(56)))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
-                TabView {
-                    ForEach(urls, id: \.self) { url in
-                        AsyncImage(url: URL(string: url)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable().scaledToFill()
-                            default:
-                                Color.creamCard
-                                    .overlay(ProgressView())
+                HStack(spacing: 8) {
+                    photoTile(imgs[0], radius: 16) { openLightbox(imgs, 0) }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 160)
+                    if imgs.count > 1 {
+                        VStack(spacing: 8) {
+                            photoTile(imgs[1], radius: 12) { openLightbox(imgs, 1) }
+                                .frame(height: 72)
+                            if imgs.count > 2 {
+                                photoTile(imgs[2], radius: 12,
+                                          plusN: imgs.count > 3 ? imgs.count - 3 : nil) {
+                                    openLightbox(imgs, imgs.count > 3 ? 3 : 2)
+                                }
+                                .frame(height: 72)
                             }
                         }
+                        .frame(width: 80)
                     }
                 }
-                .tabViewStyle(.page)
-                .frame(height: 260)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 0))
     }
 
-    private var actionRow: some View {
-        HStack(spacing: 10) {
-            if let phone = detail?.phone ?? pin.phone,
+    private func photoTile(_ url: String, radius: CGFloat, plusN: Int? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: { Haptics.tap(); action() }) {
+            ZStack {
+                Color(hex: 0xF3F4F6)
+                AsyncImage(url: URL(string: url)) { phase in
+                    if case .success(let img) = phase { img.resizable().scaledToFill() }
+                    else { Color(hex: 0xF3F4F6) }
+                }
+                if let plusN {
+                    Color.black.opacity(0.6)
+                    Text("+\(plusN)").font(.geist(14, .bold)).foregroundStyle(.white)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Footer (pinned, does not scroll)
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            footerButton(icon: isLocked ? "lock.fill" : "location.fill",
+                         label: String(localized: "Directions"), filled: false) {
+                if isLocked { showPaywall = true } else { openDirections() }
+            }
+            if let phone = detail?.phone,
                let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
-                ActionButton(icon: "phone.fill", label: String(localized: "Call"), fill: Color(hex: 0x2563EB)) {
+                footerButton(icon: "phone.fill", label: String(localized: "Call"), filled: true) {
                     UIApplication.shared.open(url)
                 }
-            }
-            if let site = detail?.website ?? pin.website,
-               let url = URL(string: site.hasPrefix("http") ? site : "https://\(site)") {
-                ActionButton(icon: "globe", label: String(localized: "Web"), fill: Color(hex: 0xF97316)) {
+            } else if let site = detail?.website,
+                      let url = URL(string: site.hasPrefix("http") ? site : "https://\(site)") {
+                footerButton(icon: "globe", label: String(localized: "Website"), filled: true) {
                     UIApplication.shared.open(url)
-                }
-            }
-            // Directions is a member feature — the maps route carries the exact
-            // coordinates, which is the address in another form. Locked → paywall.
-            ActionButton(icon: isLocked ? "lock.fill" : "arrow.triangle.turn.up.right.diamond.fill",
-                         label: String(localized: "Directions"), fill: .farmGreen) {
-                if isLocked {
-                    showPaywall = true
-                } else {
-                    let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
-                    item.name = pin.name
-                    item.openInMaps()
                 }
             }
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            Color.cream
+                .overlay(alignment: .top) { Rectangle().fill(Color.hairline).frame(height: 1) }
+                .ignoresSafeArea(edges: .bottom)
+        )
+    }
+
+    private func footerButton(icon: String, label: String, filled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: { Haptics.tap(); action() }) {
+            HStack(spacing: 7) {
+                Image(systemName: icon).font(.system(size: 14, weight: .semibold))
+                Text(label).font(.geist(14, .semibold))
+            }
+            .foregroundStyle(filled ? .white : Color.ink)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(filled ? Color.farmGreenMap : Color.clear)
+                    .stroke(filled ? Color.clear : Color.hairline, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var cardSkeleton: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RoundedRectangle(cornerRadius: 6).fill(Color(hex: 0xECEBE8)).frame(height: 12).frame(maxWidth: .infinity)
+            RoundedRectangle(cornerRadius: 6).fill(Color(hex: 0xECEBE8)).frame(height: 12).padding(.trailing, 60)
+            RoundedRectangle(cornerRadius: 6).fill(Color(hex: 0xECEBE8)).frame(height: 12).padding(.trailing, 140)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
+    }
+
+    // MARK: - Actions
+
+    private var shareURL: URL? {
+        let encoded = pin.osmId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? pin.osmId
+        return URL(string: "https://www.farmsy.app/map?id=\(encoded)")
+    }
+
+    private func saveTapped() {
+        if isLocked { showPaywall = true; return }
+        guard let userId = session.session?.user.id else { return }
+        Task { await favorites.toggle(pin.osmId, userId: userId) }
+    }
+
+    private func openDirections() {
+        let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
+        item.name = pin.name
+        item.openInMaps()
+    }
+
+    private func openLightbox(_ imgs: [String], _ start: Int) {
+        lightbox = LightboxSource(images: imgs, startIndex: start,
+                                  eyebrow: String(localized: "Farm photo"), title: pin.name)
     }
 
     // MARK: - Locked content (non-member: teaser + one membership block)
