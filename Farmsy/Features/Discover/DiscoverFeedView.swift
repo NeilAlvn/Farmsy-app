@@ -174,7 +174,7 @@ struct DiscoverFeedCard: View {
                         HStack(spacing: 3) {
                             Image(systemName: "star.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(.yellow)
+                                .foregroundStyle(Color.star)
                             Text(String(format: "%.1f (%d)", rating, pin.reviewCount))
                                 .font(.geist(13, .semibold))
                                 .foregroundStyle(Color.ink)

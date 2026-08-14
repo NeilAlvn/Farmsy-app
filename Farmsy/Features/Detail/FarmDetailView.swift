@@ -110,7 +110,7 @@ struct FarmDetailView: View {
                             HStack(spacing: 3) {
                                 Image(systemName: "star.fill")
                                     .font(.system(size: 12))
-                                    .foregroundStyle(.yellow)
+                                    .foregroundStyle(Color.star)
                                 Text(String(format: "%.1f (%d)", rating, pin.reviewCount))
                                     .font(.geist(14, .semibold))
                                     .foregroundStyle(Color.ink)
@@ -575,7 +575,7 @@ struct PlanButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(filled ? Color.farmGreen : Color.white)
                     .stroke(filled ? Color.clear : Color.farmGreen.opacity(0.45), lineWidth: 1.5)
             )

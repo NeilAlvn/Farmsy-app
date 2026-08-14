@@ -94,12 +94,12 @@ struct MapScreen: View {
             } label: {
                 Image(systemName: "location.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.farmGreen)
+                    .foregroundStyle(Color.farmGreenMap)
                     .frame(width: 48, height: 48)
                     .background(
                         RoundedRectangle(cornerRadius: 15, style: .continuous)
                             .fill(.white)
-                            .stroke(Color.farmGreen, lineWidth: 1.5)
+                            .stroke(Color.farmGreenMap, lineWidth: 1.5)
                     )
                     .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
             }
@@ -166,18 +166,18 @@ struct MapScreen: View {
             HStack(spacing: 6) {
                 Text(farms.selectedCategory.map { "\($0.emoji) \($0.label)" } ?? String(localized: "🍽️ Categories"))
                     .font(.geist(14, .semibold))
-                    .foregroundStyle(Color.farmGreen)
+                    .foregroundStyle(Color.farmGreenMap)
                     .lineLimit(1)
                 Image(systemName: "chevron.up")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.farmGreen)
+                    .foregroundStyle(Color.farmGreenMap)
             }
             .padding(.vertical, 11)
             .padding(.horizontal, 14)
             .background(
                 Capsule()
                     .fill(.white)
-                    .stroke(Color.farmGreen, lineWidth: 1.5)
+                    .stroke(Color.farmGreenMap, lineWidth: 1.5)
             )
             .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
         }
@@ -216,7 +216,7 @@ struct MapScreen: View {
                         Task { await farms.loadIfNeeded() }
                     }
                     .font(.geist(15, .semibold))
-                    .foregroundStyle(Color.farmGreen)
+                    .foregroundStyle(Color.farmGreenMap)
                 }
                 .padding(16)
                 .background(.white.opacity(0.97), in: RoundedRectangle(cornerRadius: 16))
@@ -302,7 +302,7 @@ struct FarmCard: View {
                         HStack(spacing: 3) {
                             Image(systemName: "star.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(.yellow)
+                                .foregroundStyle(Color.star)
                             Text(String(format: "%.1f", rating))
                                 .font(.geist(13, .semibold))
                                 .foregroundStyle(Color.ink)

@@ -13,14 +13,22 @@ extension Color {
         )
     }
 
-    static let farmGreen     = Color(hex: 0x3F5E3A)
-    static let farmGreenDeep = Color(hex: 0x2E4A2B)
-    static let farmGreenSoft = Color(hex: 0x3F5E3A).opacity(0.14)
-    static let cream         = Color(hex: 0xF8F6F0)
-    static let creamCard     = Color(hex: 0xF1EEE5)
-    static let ink           = Color(hex: 0x16211B)
-    static let inkMuted      = Color(hex: 0x6B7280)
-    static let warnRed       = Color(hex: 0xDC2626)
+    // Values measured out of the web app (docs/DESIGN-SYSTEM.md), converted from
+    // oklch to sRGB hex — not eyeballed. Two greens on purpose: `farmGreen` is the
+    // brand green for surfaces away from the map; `farmGreenMap` is lighter, for
+    // controls sitting *on* the map where the dark green reads as a heavy block.
+    static let farmGreen     = Color(hex: 0x234725)  // --primary
+    static let farmGreenDeep = Color(hex: 0x18321A)  // darker, for gradients
+    static let farmGreenMap  = Color(hex: 0x4E7F54)  // --primary-soft (on-map controls)
+    static let farmGreenSoft = Color(hex: 0x234725).opacity(0.10)  // primary tint, no new swatch
+    static let cream         = Color(hex: 0xFCFAF6)  // --background, warm off-white
+    static let creamCard     = Color(hex: 0xFDFCF9)  // --card, a hair lighter than ground
+    static let creamFill     = Color(hex: 0xF3EAD9)  // --cream, marketing blocks only
+    static let ink           = Color(hex: 0x15110D)  // --foreground, warm near-black
+    static let inkMuted      = Color(hex: 0x68625E)  // --muted-foreground
+    static let hairline      = Color(hex: 0xE1DDD8)  // --border
+    static let star          = Color(hex: 0xFBBF24)  // amber — a rating reads as stars, not brand
+    static let warnRed       = Color(hex: 0xBA2B28)  // --destructive
 }
 
 extension Font {
@@ -125,7 +133,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 17)
-            .background(fill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(duration: 0.25), value: configuration.isPressed)
     }
@@ -148,9 +156,15 @@ struct SecondaryButtonStyle: ButtonStyle {
 struct CardBackground: ViewModifier {
     var padding: CGFloat = 16
     func body(content: Content) -> some View {
+        // Web card: --card fill with a 1px hairline, no shadow at rest. Shadows are
+        // for things that float (sheets, popovers), not for items in a list.
         content
             .padding(padding)
-            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.hairline, lineWidth: 1)
+            )
     }
 }
 
