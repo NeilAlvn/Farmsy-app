@@ -219,7 +219,7 @@ struct RadioRow: View {
             .padding(.vertical, 17)
             .padding(.horizontal, 16)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(isSelected ? Color.farmGreenSoft : Color.creamCard)
                     .stroke(isSelected ? Color.farmGreen : .clear, lineWidth: 1.5)
             )
@@ -257,7 +257,7 @@ private struct LocationStep: View {
                     .autocorrectionDisabled()
                     .padding(.vertical, 16)
                     .padding(.horizontal, 18)
-                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .onChange(of: query) { _, text in
                         matchCity(text)
                     }
@@ -477,7 +477,7 @@ private struct CountsStep: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
-                        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .opacity(revealed ? 1 : 0)
                         .scaleEffect(revealed ? 1 : 0.9)
                         .animation(
@@ -690,7 +690,7 @@ private struct ReferralStep: View {
                 .kerning(2)
                 .padding(.vertical, 16)
                 .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(Color.creamCard)
                         .stroke(Color.inkMuted.opacity(0.25), lineWidth: 1)
                 )

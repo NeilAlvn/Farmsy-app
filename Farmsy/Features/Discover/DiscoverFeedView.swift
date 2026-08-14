@@ -112,7 +112,7 @@ struct DiscoverFeedView: View {
                     .foregroundStyle(Color.inkMuted.opacity(0.6))
             }
             .padding(14)
-            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("add-farm-banner")
@@ -233,9 +233,9 @@ struct DiscoverFeedCard: View {
             }
             .padding(14)
         }
-        .background(.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
-        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onTapGesture { onOpen() }
     }
 

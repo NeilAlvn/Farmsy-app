@@ -83,7 +83,7 @@ struct ClaimFarmView: View {
                     field("Phone *", text: $phone, prompt: "+31 …", keyboard: .phonePad)
                 }
                 .padding(16)
-                .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("How should we verify you?")
@@ -117,7 +117,7 @@ struct ClaimFarmView: View {
                     }
                 }
                 .padding(16)
-                .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 if let errorMessage {
                     Text(errorMessage)

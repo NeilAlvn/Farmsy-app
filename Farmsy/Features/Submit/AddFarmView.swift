@@ -149,7 +149,7 @@ struct AddFarmView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: - Pieces
@@ -163,7 +163,7 @@ struct AddFarmView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func labeledField(
@@ -232,7 +232,7 @@ struct AddFarmView: View {
                 }
             }
             .frame(height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             Button {
                 Haptics.tap()

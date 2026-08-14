@@ -77,7 +77,7 @@ struct MapScreen: View {
             }
             .padding(.vertical, 13)
             .padding(.horizontal, 14)
-            .background(.white, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
 
             Button {
@@ -97,7 +97,7 @@ struct MapScreen: View {
                     .foregroundStyle(Color.farmGreenMap)
                     .frame(width: 48, height: 48)
                     .background(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(.white)
                             .stroke(Color.farmGreenMap, lineWidth: 1.5)
                     )
@@ -321,7 +321,7 @@ struct FarmCard: View {
                 }
             }
             .padding(16)
-            .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("farm-card")

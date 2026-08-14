@@ -275,7 +275,7 @@ private struct AccountDeletedView: View {
                     .foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
                     .padding(16)
-                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16))
             }
             Spacer()
             Button(action: onDone) {
@@ -284,7 +284,7 @@ private struct AccountDeletedView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
-                    .background(Color.farmGreen, in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.farmGreen, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .padding(28)

@@ -258,7 +258,7 @@ struct FarmDetailView: View {
             .foregroundStyle(Color.farmGreen)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 13)
-            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("claim-farm")
@@ -288,7 +288,7 @@ struct ActionButton: View {
             .foregroundStyle(.white)
             .padding(.vertical, 13)
             .frame(maxWidth: .infinity)
-            .background(fill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
     }
