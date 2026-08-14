@@ -209,6 +209,15 @@ struct FarmDetail: Decodable {
     }
 }
 
+// MARK: - Farm teaser (public description opener from GET /api/farm/[osmId]/teaser)
+
+/// The first ~200 characters of a farm's description, cut on a word. `truncated`
+/// is true when there is more behind the paywall, which drives the "View more".
+struct FarmTeaser: Decodable {
+    let text: String
+    let truncated: Bool
+}
+
 // MARK: - Profile (own row in profiles; RLS-protected)
 
 struct Profile: Decodable {

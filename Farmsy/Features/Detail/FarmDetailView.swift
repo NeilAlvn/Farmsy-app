@@ -12,71 +12,91 @@ struct FarmDetailView: View {
     @Environment(FavoritesStore.self) private var favorites
 
     @State private var detail: FarmDetail?
+    @State private var teaser: FarmTeaser?
     @State private var isLoading = true
     @State private var isLocked = false
     @State private var showClaim = false
+    @State private var showPaywall = false
 
     var body: some View {
-        Group {
-            if isLocked {
-                LockedAccessView(pin: pin, onClaim: { showClaim = true }) {
+        // The card is open to everyone now — the paid fields are locked *inside* it
+        // rather than in front of it, matching the web. A non-member still sees the
+        // photos, name, rating and the opening of the story; the membership prompt is
+        // a block within the page and a sheet, not a wall that replaces it.
+        content
+            .sheet(isPresented: $showClaim) { ClaimFarmView(pin: pin) }
+            .sheet(isPresented: $showPaywall) {
+                LockedAccessView(pin: pin, onClaim: { showPaywall = false; showClaim = true }) {
                     await reload()
                 }
-            } else {
-                content
             }
-        }
-        .sheet(isPresented: $showClaim) { ClaimFarmView(pin: pin) }
-        .background(Color.cream.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    guard let userId = session.session?.user.id else { return }
-                    Haptics.tap()
-                    Task { await favorites.toggle(pin.osmId, userId: userId) }
-                } label: {
-                    Image(systemName: favorites.isSaved(pin.osmId) ? "heart.fill" : "heart")
-                        .foregroundStyle(favorites.isSaved(pin.osmId) ? Color.warnRed : Color.ink)
+            .background(Color.cream.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Haptics.tap()
+                        // Saving a farm is a member feature — send a non-member to the
+                        // paywall rather than silently doing nothing.
+                        if isLocked { showPaywall = true; return }
+                        guard let userId = session.session?.user.id else { return }
+                        Task { await favorites.toggle(pin.osmId, userId: userId) }
+                    } label: {
+                        Image(systemName: favorites.isSaved(pin.osmId) ? "heart.fill" : "heart")
+                            .foregroundStyle(favorites.isSaved(pin.osmId) ? Color.warnRed : Color.ink)
+                    }
                 }
             }
-        }
-        .task { await reload() }
-        // Open the farm the moment access is granted, however long that takes.
-        //
-        // The grant arrives from the server via RevenueCat's webhook some seconds
-        // after the purchase call returns, and polling for a fixed budget is a losing
-        // game: if the webhook is slower than the budget, the buyer is left sitting on
-        // the very paywall they just paid to leave. Watching the profile instead means
-        // the screen unlocks itself whenever the grant lands — on time or late.
-        .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
-            if granted && isLocked {
-                Task { await reload() }
+            .task { await reload() }
+            // Open the farm the moment access is granted, however long that takes.
+            //
+            // The grant arrives from the server via RevenueCat's webhook some seconds
+            // after the purchase call returns, and polling for a fixed budget is a losing
+            // game: if the webhook is slower than the budget, the buyer is left sitting on
+            // the very paywall they just paid to leave. Watching the profile instead means
+            // the screen unlocks itself whenever the grant lands — on time or late.
+            .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
+                if granted && isLocked {
+                    showPaywall = false
+                    Task { await reload() }
+                }
             }
-        }
     }
 
     private func reload() async {
         isLoading = true
-        isLocked = false
         defer { isLoading = false }
 
         await session.refreshProfile()
         guard let token = session.session?.accessToken else {
             isLocked = true
+            await loadTeaser()
             return
         }
         // The farmsy.app API is the source of truth for access — always ask
         // it, and only its explicit 401/403 means "no subscription".
         do {
             detail = try await FarmDetailAPI.fetch(osmId: pin.osmId, accessToken: token)
+            isLocked = false
         } catch FarmDetailError.locked {
             isLocked = true
+            await loadTeaser()
         } catch {
-            // Transient failure: fall through with pin-level info if the
-            // profile says the account has access, otherwise lock.
-            if !session.hasFullAccess { isLocked = true }
+            // Transient failure: keep the member view if the profile says the
+            // account has access, otherwise fall back to the open/locked card.
+            if session.hasFullAccess {
+                isLocked = false
+            } else {
+                isLocked = true
+                await loadTeaser()
+            }
         }
+    }
+
+    /// The public description opener, shown to non-members above the locked block.
+    /// Fetched once and cached in @State so a re-check after purchase doesn't refetch.
+    private func loadTeaser() async {
+        if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId) }
     }
 
     // MARK: - Unlocked content
@@ -123,13 +143,16 @@ struct FarmDetailView: View {
                 actionRow
                     .padding(.horizontal, 20)
 
-                if isLoading {
+                if isLoading && detail == nil && teaser == nil {
                     HStack {
                         Spacer()
                         ProgressView("Loading details…")
                         Spacer()
                     }
                     .padding(.vertical, 30)
+                } else if isLocked {
+                    lockedSections
+                        .padding(.horizontal, 20)
                 } else {
                     detailSections
                         .padding(.horizontal, 20)
@@ -186,12 +209,93 @@ struct FarmDetailView: View {
                     UIApplication.shared.open(url)
                 }
             }
-            ActionButton(icon: "arrow.triangle.turn.up.right.diamond.fill", label: String(localized: "Directions"), fill: .farmGreen) {
-                let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
-                item.name = pin.name
-                item.openInMaps()
+            // Directions is a member feature — the maps route carries the exact
+            // coordinates, which is the address in another form. Locked → paywall.
+            ActionButton(icon: isLocked ? "lock.fill" : "arrow.triangle.turn.up.right.diamond.fill",
+                         label: String(localized: "Directions"), fill: .farmGreen) {
+                if isLocked {
+                    showPaywall = true
+                } else {
+                    let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
+                    item.name = pin.name
+                    item.openInMaps()
+                }
             }
         }
+    }
+
+    // MARK: - Locked content (non-member: teaser + one membership block)
+
+    @ViewBuilder
+    private var lockedSections: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Opening hours are free — show them on the open card, not behind the lock.
+            if let hours = pin.openingHours, !hours.isEmpty {
+                VStack(spacing: 0) {
+                    InfoRow(icon: "clock", label: String(localized: "Opening hours"), value: hours)
+                }
+                .card(padding: 6)
+            }
+
+            if let teaser {
+                VStack(alignment: .leading, spacing: 8) {
+                    (Text(teaser.text) + Text(teaser.truncated ? " …" : ""))
+                        .font(.geist(16))
+                        .foregroundStyle(Color.ink)
+                        .lineSpacing(3)
+                    if teaser.truncated {
+                        Button {
+                            Haptics.tap()
+                            showPaywall = true
+                        } label: {
+                            Text("View more")
+                                .font(.geist(15, .semibold))
+                                .foregroundStyle(Color.farmGreen)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            lockedBlock
+
+            claimLink
+                .padding(.top, 6)
+        }
+    }
+
+    /// The single membership ask, inside the card: a lock, one line naming what
+    /// is behind it, and a soft-green button to the purchase sheet.
+    private var lockedBlock: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 26))
+                .foregroundStyle(Color.farmGreenMap)
+            Text("Farm details are for members")
+                .font(.geist(17, .bold))
+                .foregroundStyle(Color.ink)
+                .multilineTextAlignment(.center)
+            Text("Address, phone, website, directions and the full story — for \(pin.name) and every other farm on the map.")
+                .font(.geist(14))
+                .foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+            Button {
+                Haptics.tap()
+                showPaywall = true
+            } label: {
+                Text("See membership")
+                    .font(.geist(15, .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity)
+        .card(padding: 20)
     }
 
     @ViewBuilder

@@ -29,4 +29,20 @@ enum FarmDetailAPI {
             throw FarmDetailError.other
         }
     }
+
+    /// The opening of a farm's description, for someone without a membership.
+    /// Public on purpose — a farm that has written about itself gets to say its
+    /// first sentence to every visitor, which is the reason to unlock the rest.
+    /// The full text stays behind the 403 on `fetch(osmId:)`. Best-effort: any
+    /// failure yields nil and the card simply shows no teaser.
+    static func teaser(osmId: String) async -> FarmTeaser? {
+        let url = Backend.webAPI
+            .appending(path: "farm").appending(path: osmId).appending(path: "teaser")
+        guard let (data, response) = try? await URLSession.shared.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let teaser = try? JSONDecoder().decode(FarmTeaser.self, from: data),
+              !teaser.text.isEmpty
+        else { return nil }
+        return teaser
+    }
 }
