@@ -89,6 +89,7 @@ struct FarmPin: Identifiable, Hashable {
     let avgRating: Double?
     let reviewCount: Int
     let hasDescription: Bool
+    let isVerified: Bool
 
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: lat, longitude: lng)
@@ -117,6 +118,7 @@ extension FarmPin: Decodable {
         case openingHours = "opening_hours", image, primaryTag = "primary_tag"
         case farmType = "farm_type", avgRating = "avg_rating"
         case reviewCount = "review_count", hasDescription = "has_description"
+        case isVerified = "is_verified"
     }
 
     init(from decoder: Decoder) throws {
@@ -138,6 +140,7 @@ extension FarmPin: Decodable {
         avgRating = try c.decodeIfPresent(Double.self, forKey: .avgRating)
         reviewCount = try c.decodeIfPresent(Int.self, forKey: .reviewCount) ?? 0
         hasDescription = try c.decodeIfPresent(Bool.self, forKey: .hasDescription) ?? false
+        isVerified = try c.decodeIfPresent(Bool.self, forKey: .isVerified) ?? false
         // farm_type arrives as an array, a `{a,b}` postgres literal, a plain
         // string, or null depending on the source row — normalize like the web.
         if let arr = try? c.decodeIfPresent([String].self, forKey: .farmType) {

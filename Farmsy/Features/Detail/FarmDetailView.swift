@@ -280,9 +280,9 @@ struct FarmDetailView: View {
             VStack(spacing: 12) {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(Color.farmGreenMap)
+                    .foregroundStyle(Color.farmGreen)
                     .frame(width: 52, height: 52)
-                    .background(Color.inkMuted.opacity(0.10), in: Circle())
+                    .background(Color.farmGreen.opacity(0.10), in: Circle())
                 Text("Farm details are for members")
                     .font(.geist(17, .bold))
                     .foregroundStyle(Color.ink)

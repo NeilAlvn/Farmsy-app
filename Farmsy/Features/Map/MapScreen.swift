@@ -54,9 +54,11 @@ struct MapScreen: View {
         .overlay(alignment: .top) {
             VStack(alignment: .trailing, spacing: 10) {
                 searchRow
+                    .padding(.horizontal, 14)
+                filterRail
                 farmsCountBadge
+                    .padding(.horizontal, 14)
             }
-            .padding(.horizontal, 14)
         }
         .overlay(alignment: .bottom) {
             bottomBar
@@ -102,6 +104,45 @@ struct MapScreen: View {
                             .stroke(Color.farmGreenMap, lineWidth: 1.5)
                     )
                     .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+            }
+        }
+    }
+
+    /// The quick filters, as a horizontally scrolling rail of toggle chips —
+    /// the same set the web panel offers (Verified / Open now / Automaat /
+    /// Zelfpluk / Has photos), plus "Near me" as an action.
+    private var filterRail: some View {
+        @Bindable var farms = farms
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                FilterChip(title: String(localized: "Verified"), icon: "checkmark.seal.fill",
+                           isOn: farms.filterVerified) { farms.filterVerified.toggle() }
+                FilterChip(title: String(localized: "Open now"), icon: "clock",
+                           isOn: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
+                FilterChip(title: String(localized: "Open 24/7"), icon: "bolt.fill",
+                           isOn: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
+                FilterChip(title: String(localized: "Pick your own"), icon: "leaf.fill",
+                           isOn: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
+                FilterChip(title: String(localized: "Has photos"), icon: "camera.fill",
+                           isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
+                FilterChip(title: String(localized: "Near me"), icon: "location.north.fill",
+                           isOn: false, action: locateNearMe)
+            }
+            .padding(.horizontal, 14)
+        }
+    }
+
+    /// Center the map on the user — shared by the locate button and the "Near me"
+    /// chip. Asks for permission if we don't have a fix yet.
+    private func locateNearMe() {
+        Haptics.tap()
+        locationManager.request()
+        if let loc = locationManager.location {
+            withAnimation {
+                camera = .region(MKCoordinateRegion(
+                    center: loc.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                ))
             }
         }
     }
@@ -225,6 +266,41 @@ struct MapScreen: View {
         }
     }
 
+}
+
+/// One quick-filter toggle. Matches the web rail: a bordered pill on the map,
+/// filling with the soft map-green and white text when on, a map-green glyph
+/// when off. Floats on the map so it uses the on-map green, not the brand green.
+struct FilterChip: View {
+    let title: String
+    let icon: String
+    let isOn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isOn ? .white : Color.farmGreenMap)
+                Text(title)
+                    .font(.geist(13, .semibold))
+                    .foregroundStyle(isOn ? .white : Color.ink)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(
+                Capsule()
+                    .fill(isOn ? Color.farmGreenMap : .white)
+                    .stroke(isOn ? Color.farmGreenMap : Color.hairline, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.10), radius: 5, y: 1)
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 /// Teardrop pin in the category's color, like the web map markers.

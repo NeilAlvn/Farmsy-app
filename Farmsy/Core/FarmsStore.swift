@@ -14,6 +14,18 @@ final class FarmsStore {
     var searchText = ""
     var selectedCategory: FarmCategory?
 
+    // Quick filters — mirror the web's rail (Verified / Open now / Automaat /
+    // Zelfpluk / Has photos). "Near me" is an action (locate), not a filter.
+    var filterVerified = false
+    var filterOpenToday = false
+    var filterAutomaat = false
+    var filterZelfpluk = false
+    var filterHasPhotos = false
+
+    var anyQuickFilterOn: Bool {
+        filterVerified || filterOpenToday || filterAutomaat || filterZelfpluk || filterHasPhotos
+    }
+
     private static let pageSize = 1000
 
     func loadIfNeeded() async {
@@ -41,12 +53,19 @@ final class FarmsStore {
         }
     }
 
-    /// Pins matching the current search + category filter.
+    /// Pins matching the current search + category + quick filters.
     var filtered: [FarmPin] {
         var result = pins
         if let cat = selectedCategory {
             result = result.filter { $0.categories.contains(cat) }
         }
+        // Quick filters, same predicates the web applies (FarmFilters ports them).
+        if filterVerified  { result = result.filter { $0.isVerified } }
+        if filterOpenToday { result = result.filter { FarmFilters.isOpenToday($0.openingHours) } }
+        if filterHasPhotos { result = result.filter { $0.image != nil } }
+        if filterAutomaat  { result = result.filter { FarmFilters.looksLikeAutomaat($0.name, openingHours: $0.openingHours) } }
+        if filterZelfpluk  { result = result.filter { FarmFilters.looksLikeZelfpluk($0.name) } }
+
         let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
         if !query.isEmpty {
             result = result.filter {
