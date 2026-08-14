@@ -114,7 +114,8 @@ struct MapScreen: View {
     /// A cheap "does any post exist" check, to decide whether the What's New
     /// button appears at all (MOBILE-SPEC-MAP §1).
     private func checkForPosts() async {
-        let rows: [Ping] = (try? await supabase
+        struct IdRow: Decodable { let id: String }
+        let rows: [IdRow] = (try? await supabase
             .from("farm_pings")
             .select("id")
             .eq("status", value: "visible")
