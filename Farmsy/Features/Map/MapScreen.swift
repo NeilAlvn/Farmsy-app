@@ -18,6 +18,10 @@ struct MapScreen: View {
 
     /// Whether any farm has posted — the What's New button only shows when true.
     @State private var hasPosts = false
+    @State private var showFilters = false
+
+    /// A pin the parent asked us to fly to (e.g. tapped in the What's New sheet).
+    var focusPin: FarmPin?
 
     @State private var camera: MapCameraPosition = .region(
         // Centered between NL and BE to start.
@@ -65,16 +69,16 @@ struct MapScreen: View {
                     .padding(.horizontal, 14)
                 searchRow
                     .padding(.horizontal, 14)
-                filterRail
             }
             .padding(.top, 4)
         }
-        // Category filter bottom-left, locate bottom-right — clear of the sheet.
-        .overlay(alignment: .bottomLeading) {
-            categoryMenu
-                .padding(.leading, 14)
-                .padding(.bottom, 24)
+        .sheet(isPresented: $showFilters) {
+            FilterSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
+        .onChange(of: focusPin?.osmId) { _, _ in flyToFocus() }
+        // Locate bottom-right, clear of the sheet.
         .overlay(alignment: .bottomTrailing) {
             locateButton
                 .padding(.trailing, 14)
@@ -129,42 +133,44 @@ struct MapScreen: View {
 
     private var searchRow: some View {
         @Bindable var farms = farms
-        return HStack(spacing: 8) {
+        let filtersActive = farms.anyQuickFilterOn || farms.selectedCategory != nil
+        return HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: 15))
                 .foregroundStyle(Color.inkMuted)
             TextField("Search by farm, city or postcode", text: $farms.searchText)
                 .autocorrectionDisabled()
+            // Filters live on the search bar, web-style: tapping slides a sheet up.
+            Button {
+                Haptics.tap()
+                showFilters = true
+            } label: {
+                Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill"
+                                                 : "line.3.horizontal.decrease.circle")
+                    .font(.system(size: 21))
+                    .foregroundStyle(Color.farmGreenMap)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 13)
-        .padding(.horizontal, 14)
-        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, 18)
+        .background(.white, in: Capsule())
         .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+    }
+
+    private func flyToFocus() {
+        guard let pin = focusPin else { return }
+        withAnimation(.easeInOut(duration: 0.6)) {
+            camera = .region(MKCoordinateRegion(
+                center: pin.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+            ))
+        }
     }
 
     /// The quick filters, as a horizontally scrolling rail of toggle chips —
     /// the same set the web panel offers (Verified / Open now / Automaat /
     /// Zelfpluk / Has photos), plus "Near me" as an action.
-    private var filterRail: some View {
-        @Bindable var farms = farms
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                FilterChip(title: String(localized: "Verified"), icon: "checkmark.seal.fill",
-                           isOn: farms.filterVerified) { farms.filterVerified.toggle() }
-                FilterChip(title: String(localized: "Open now"), icon: "clock",
-                           isOn: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
-                FilterChip(title: String(localized: "Open 24/7"), icon: "bolt.fill",
-                           isOn: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
-                FilterChip(title: String(localized: "Pick your own"), icon: "leaf.fill",
-                           isOn: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
-                FilterChip(title: String(localized: "Has photos"), icon: "camera.fill",
-                           isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
-                FilterChip(title: String(localized: "Near me"), icon: "location.north.fill",
-                           isOn: false, action: locateNearMe)
-            }
-            .padding(.horizontal, 14)
-        }
-    }
-
     /// Center the map on the user — shared by the locate button and the "Near me"
     /// chip. Asks for permission if we don't have a fix yet.
     private func locateNearMe() {
@@ -177,50 +183,6 @@ struct MapScreen: View {
                     span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
                 ))
             }
-        }
-    }
-
-    /// Live pin count, floating just under the search row.
-    private var categoryMenu: some View {
-        @Bindable var farms = farms
-        return Menu {
-            Button {
-                farms.selectedCategory = nil
-            } label: {
-                Label("All Categories", systemImage: farms.selectedCategory == nil ? "checkmark" : "")
-            }
-            ForEach(FarmCategory.allCases) { cat in
-                Button {
-                    farms.selectedCategory = cat
-                } label: {
-                    if farms.selectedCategory == cat {
-                        Label("\(cat.emoji) \(cat.label)", systemImage: "checkmark")
-                    } else {
-                        Text("\(cat.emoji) \(cat.label)")
-                    }
-                }
-            }
-        } label: {
-            // Compact pill sized to its own label. With no category picked, keep it
-            // short — "Categories", not "All Categories" — so it reads as a control,
-            // not a banner stretched across the map.
-            HStack(spacing: 6) {
-                Text(farms.selectedCategory.map { "\($0.emoji) \($0.label)" } ?? String(localized: "🍽️ Categories"))
-                    .font(.geist(14, .semibold))
-                    .foregroundStyle(Color.farmGreenMap)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.farmGreenMap)
-            }
-            .padding(.vertical, 11)
-            .padding(.horizontal, 14)
-            .background(
-                Capsule()
-                    .fill(.white)
-                    .stroke(Color.farmGreenMap, lineWidth: 1.5)
-            )
-            .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
         }
     }
 
@@ -445,5 +407,105 @@ struct FarmCard: View {
         }
         Haptics.tap()
         Task { await favorites.toggle(pin.osmId, userId: userId) }
+    }
+}
+
+/// The filter sheet that slides up from the search bar — every filter in one
+/// place: the quick toggles, then a single-select category.
+struct FilterSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(FarmsStore.self) private var farms
+    @Environment(LocationManager.self) private var locationManager
+
+    private let cols = [GridItem(.flexible()), GridItem(.flexible())]
+
+    var body: some View {
+        @Bindable var farms = farms
+        VStack(spacing: 0) {
+            HStack {
+                Text("Filters").font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                Spacer()
+                if farms.anyQuickFilterOn || farms.selectedCategory != nil {
+                    Button {
+                        Haptics.tap()
+                        farms.filterVerified = false; farms.filterOpenToday = false
+                        farms.filterAutomaat = false; farms.filterZelfpluk = false
+                        farms.filterHasPhotos = false; farms.selectedCategory = nil
+                    } label: {
+                        Text("Clear").font(.geist(14, .semibold)).foregroundStyle(Color.farmGreenMap)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x6B7280))
+                        .frame(width: 32, height: 32)
+                        .background(Color(hex: 0xF3F4F6), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(16)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    sectionLabel("QUICK FILTERS")
+                    LazyVGrid(columns: cols, spacing: 8) {
+                        FilterChip(title: String(localized: "Verified"), icon: "checkmark.seal.fill",
+                                   isOn: farms.filterVerified) { farms.filterVerified.toggle() }
+                        FilterChip(title: String(localized: "Open now"), icon: "clock",
+                                   isOn: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
+                        FilterChip(title: String(localized: "Open 24/7"), icon: "bolt.fill",
+                                   isOn: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
+                        FilterChip(title: String(localized: "Pick your own"), icon: "leaf.fill",
+                                   isOn: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
+                        FilterChip(title: String(localized: "Has photos"), icon: "camera.fill",
+                                   isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
+                        FilterChip(title: String(localized: "Near me"), icon: "location.north.fill",
+                                   isOn: false) {
+                            locationManager.request()
+                            dismiss()
+                        }
+                    }
+
+                    sectionLabel("CATEGORIES")
+                    LazyVGrid(columns: cols, spacing: 8) {
+                        categoryChip(nil, label: String(localized: "All categories"), emoji: "🍽️")
+                        ForEach(FarmCategory.allCases) { cat in
+                            categoryChip(cat, label: cat.label, emoji: cat.emoji)
+                        }
+                    }
+                }
+                .padding(16)
+            }
+        }
+        .background(Color.cream.ignoresSafeArea())
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text).font(.geist(11, .semibold)).kerning(1.1).foregroundStyle(Color.inkMuted)
+    }
+
+    private func categoryChip(_ cat: FarmCategory?, label: String, emoji: String) -> some View {
+        @Bindable var farms = farms
+        let isOn = farms.selectedCategory == cat
+        return Button {
+            Haptics.tap()
+            farms.selectedCategory = cat
+        } label: {
+            HStack(spacing: 6) {
+                Text(emoji).font(.system(size: 13))
+                Text(label).font(.geist(13, .semibold)).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(isOn ? .white : Color.ink)
+            .padding(.vertical, 10).padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isOn ? Color.farmGreenMap : .white)
+                    .stroke(isOn ? Color.farmGreenMap : Color.hairline, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

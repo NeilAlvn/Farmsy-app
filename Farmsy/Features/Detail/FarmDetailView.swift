@@ -18,6 +18,7 @@ struct FarmDetailView: View {
     @State private var isLocked = false
     @State private var showClaim = false
     @State private var showPaywall = false
+    @State private var showDescriptionModal = false
     @State private var lightbox: LightboxSource?
 
     var body: some View {
@@ -27,6 +28,8 @@ struct FarmDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     header
+                    tripButton
+                        .padding(.horizontal, 14)
                     photoStrip
                         .padding(.horizontal, 14)
 
@@ -53,6 +56,7 @@ struct FarmDetailView: View {
                 await reload()
             }
         }
+        .sheet(isPresented: $showDescriptionModal) { descriptionModal }
         .fullScreenCover(item: $lightbox) { src in
             ImageLightbox(source: src) { lightbox = nil }
                 .presentationBackground(.clear)
@@ -145,7 +149,7 @@ struct FarmDetailView: View {
             badgeRow
         }
         .padding(.horizontal, 14)
-        .padding(.top, 8)
+        .padding(.top, 16)
     }
 
     private var ratingRow: some View {
@@ -212,6 +216,30 @@ struct FarmDetailView: View {
             Haptics.tap()
             action()
         } label: { headerCircleLabel(icon, tint: tint) }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Trip button (Pro, not built yet — a locked, dashed prompt)
+
+    private var tripButton: some View {
+        Button {
+            Haptics.tap()
+            showPaywall = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "lock.fill").font(.system(size: 13, weight: .semibold))
+                Text("Plan a trip with Farmsy Pro").font(.geist(14, .semibold))
+            }
+            .foregroundStyle(Color(hex: 0x6B7280))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.white)
+                    .strokeBorder(Color(hex: 0x9CA3AF),
+                                  style: StrokeStyle(lineWidth: 1.5, dash: [5]))
+            )
+        }
         .buttonStyle(.plain)
     }
 
@@ -356,18 +384,10 @@ struct FarmDetailView: View {
     @ViewBuilder
     private var lockedSections: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Opening hours are free — show them on the open card, not behind the lock.
-            if let hours = pin.openingHours, !hours.isEmpty {
-                VStack(spacing: 0) {
-                    InfoRow(icon: "clock", label: String(localized: "Opening hours"), value: hours)
-                }
-                .card(padding: 6)
-            }
-
             if let teaser {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     (Text(teaser.text) + Text(teaser.truncated ? " …" : ""))
-                        .font(.geist(16))
+                        .font(.geist(15))
                         .foregroundStyle(Color.ink)
                         .lineSpacing(3)
                     if teaser.truncated {
@@ -376,7 +396,7 @@ struct FarmDetailView: View {
                             showPaywall = true
                         } label: {
                             Text("View more")
-                                .font(.geist(15, .semibold))
+                                .font(.geist(14, .semibold))
                                 .foregroundStyle(Color.farmGreen)
                         }
                         .buttonStyle(.plain)
@@ -385,9 +405,6 @@ struct FarmDetailView: View {
             }
 
             lockedBlock
-
-            claimLink
-                .padding(.top, 6)
         }
     }
 
@@ -395,20 +412,18 @@ struct FarmDetailView: View {
     /// bars behind a blur (the paid values are never sent, so there is nothing
     /// real to reveal — the blur is texture, not a cover), a lock in a soft disc,
     /// one line naming what is behind it, and a soft-green button to the purchase.
+    /// The ask sits unboxed at the top; the blurred grey bars fall away beneath it
+    /// (there is nothing real behind the blur — the paid values are never sent).
     private var lockedBlock: some View {
-        ZStack {
-            lockedBarsBackground
-                .blur(radius: 7)
-                .allowsHitTesting(false)
-
-            VStack(spacing: 12) {
+        VStack(spacing: 14) {
+            VStack(spacing: 10) {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.farmGreen)
-                    .frame(width: 52, height: 52)
+                    .frame(width: 48, height: 48)
                     .background(Color.farmGreen.opacity(0.10), in: Circle())
                 Text("Farm details are for members")
-                    .font(.geist(17, .bold))
+                    .font(.geist(16, .bold))
                     .foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
                 Text("Address, phone, website and what this farm sells.")
@@ -427,22 +442,22 @@ struct FarmDetailView: View {
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: 260)
                     .padding(.vertical, 14)
                     .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 4)
             }
+            .frame(maxWidth: .infinity)
+
+            lockedBarsBackground
+                .frame(height: 180)
+                .blur(radius: 7)
+                .opacity(0.6)
+                .allowsHitTesting(false)
         }
-        .padding(20)
         .frame(maxWidth: .infinity)
-        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.hairline, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     /// Faux content behind the lock: uneven grey bars, so the blurred area reads
@@ -464,16 +479,27 @@ struct FarmDetailView: View {
     private var detailSections: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let description = detail?.description, !description.isEmpty {
-                Text(description)
-                    .font(.geist(16))
-                    .foregroundStyle(Color.ink)
-                    .lineSpacing(3)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(description)
+                        .font(.geist(15))
+                        .foregroundStyle(Color.ink)
+                        .lineSpacing(3)
+                        .lineLimit(4)
+                    if description.count > 220 {
+                        Button {
+                            Haptics.tap()
+                            showDescriptionModal = true
+                        } label: {
+                            Text("See more")
+                                .font(.geist(14, .semibold))
+                                .foregroundStyle(Color.farmGreen)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
 
             VStack(spacing: 0) {
-                if let hours = detail?.openingHours ?? pin.openingHours {
-                    InfoRow(icon: "clock", label: String(localized: "Opening hours"), value: hours)
-                }
                 if let address = detail?.address ?? pin.address {
                     InfoRow(icon: "mappin.and.ellipse", label: String(localized: "Address"),
                             value: [address, detail?.postalCode ?? pin.postalCode, pin.city]
@@ -504,30 +530,31 @@ struct FarmDetailView: View {
                     }
                 }
             }
-
-            claimLink
-                .padding(.top, 6)
         }
     }
 
-    private var claimLink: some View {
-        Button {
-            Haptics.tap()
-            showClaim = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.seal")
-                    .font(.system(size: 15))
-                Text("Is this your farm? Claim it")
-                    .font(.geist(14, .semibold))
+    /// The full description in a popup modal, opened by "See more".
+    private var descriptionModal: some View {
+        NavigationStack {
+            ScrollView {
+                Text(detail?.description ?? "")
+                    .font(.geist(16))
+                    .foregroundStyle(Color.ink)
+                    .lineSpacing(4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(20)
             }
-            .foregroundStyle(Color.farmGreen)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
-            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color.cream.ignoresSafeArea())
+            .navigationTitle(pin.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showDescriptionModal = false } label: {
+                        Image(systemName: "xmark").font(.system(size: 14, weight: .semibold))
+                    }
+                }
+            }
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("claim-farm")
     }
 
     private func socialURL(_ value: String, base: String) -> URL? {

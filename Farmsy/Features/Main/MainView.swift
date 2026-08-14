@@ -14,6 +14,10 @@ struct MainView: View {
     @State private var showAuth = false
     @State private var accountRoute: AccountRoute?
     @State private var showWhatsNew = false
+    /// The card opens at half and can be dragged to peek or full.
+    @State private var farmDetent: PresentationDetent = .fraction(0.55)
+    /// A pin the map should fly to (set when opening from the What's New sheet).
+    @State private var flyTarget: FarmPin?
 
     enum AccountRoute: Identifiable {
         case saved, settings
@@ -25,14 +29,15 @@ struct MainView: View {
             onOpenFarm: { openFarm($0) },
             onOpenSaved: { accountRoute = .saved },
             onOpenSettings: { accountRoute = .settings },
-            onOpenWhatsNew: { showWhatsNew = true }
+            onOpenWhatsNew: { showWhatsNew = true },
+            focusPin: flyTarget
         )
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
         .environment(\.requestAuth, { showAuth = true })
-        // The farm card — three resting heights, and the map stays interactive
-        // behind it up through half so you can still read where the farm is.
+        // The farm card — three resting heights, opening at half, and the map
+        // stays interactive behind it up through half.
         .sheet(isPresented: Binding(
             get: { selectedPin != nil },
             set: { if !$0 { selectedPin = nil } }
@@ -40,7 +45,7 @@ struct MainView: View {
             if let pin = selectedPin {
                 FarmDetailView(pin: pin)
                     .id(pin.osmId)   // swap contents when another pin is tapped
-                    .presentationDetents([.height(152), .fraction(0.55), .large])
+                    .presentationDetents([.height(180), .fraction(0.55), .large], selection: $farmDetent)
                     .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
                     .presentationContentInteraction(.scrolls)
                     .presentationDragIndicator(.visible)
@@ -48,6 +53,7 @@ struct MainView: View {
         }
         .sheet(isPresented: $showWhatsNew) {
             WhatsNewSheet(onOpenFarm: { pin in
+                flyTarget = pin          // fly the map straight to it
                 showWhatsNew = false
                 openFarm(pin)
             })
@@ -68,6 +74,7 @@ struct MainView: View {
     /// the card shows the free content and locks the paid fields inside. Actions
     /// that need an account (save, subscribe) prompt for one from within the card.
     private func openFarm(_ pin: FarmPin) {
+        farmDetent = .fraction(0.55)   // always open at half
         selectedPin = pin
     }
 }

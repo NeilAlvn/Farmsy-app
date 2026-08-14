@@ -359,11 +359,12 @@ struct PingCard: View {
                             if case .success(let img) = phase {
                                 img.resizable().scaledToFill()
                             } else {
-                                Color.creamCard
+                                Color(hex: 0xF3F4F6)
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .aspectRatio(1, contentMode: .fit)
+                        .frame(height: 96)
+                        .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                 }

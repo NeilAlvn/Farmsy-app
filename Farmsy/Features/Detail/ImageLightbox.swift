@@ -23,6 +23,7 @@ struct ImageLightbox: View {
     var onClose: () -> Void
 
     @State private var index: Int
+    @State private var shown = false
 
     init(source: LightboxSource, onClose: @escaping () -> Void) {
         self.source = source
@@ -34,19 +35,28 @@ struct ImageLightbox: View {
 
     var body: some View {
         ZStack {
-            // A pale veil plus a blur, not a dark screen: a photograph does not
-            // need the room darkened to be looked at. Tapping outside closes.
+            // A pale veil plus a blur, not a dark screen — and it fades in place
+            // (pops), it does not slide. Tapping outside closes.
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(Color.white.opacity(0.35))
+                .overlay(Color.white.opacity(0.30))
                 .ignoresSafeArea()
-                .onTapGesture { onClose() }
+                .opacity(shown ? 1 : 0)
+                .onTapGesture { close() }
 
             panel
-                .frame(maxWidth: 480)
-                .frame(height: 512) // 32rem, fixed
-                .padding(16)
+                .frame(maxWidth: 460, maxHeight: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 44)
+                .opacity(shown ? 1 : 0)
+                .scaleEffect(shown ? 1 : 0.94)
         }
+        .onAppear { withAnimation(.easeOut(duration: 0.22)) { shown = true } }
+    }
+
+    private func close() {
+        withAnimation(.easeIn(duration: 0.15)) { shown = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { onClose() }
     }
 
     private var panel: some View {
@@ -98,7 +108,7 @@ struct ImageLightbox: View {
             }
             Button {
                 Haptics.tap()
-                onClose()
+                close()
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
@@ -129,6 +139,7 @@ struct ImageLightbox: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(alignment: .leading) {
