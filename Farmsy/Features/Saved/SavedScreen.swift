@@ -70,32 +70,84 @@ struct SavedScreen: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
-            } else if savedPins.isEmpty {
-                VStack(spacing: 12) {
-                    Spacer()
-                    Text("🤍").font(.geist(54))
-                    Text("No saved farms yet")
-                        .font(.display(24))
-                        .foregroundStyle(Color.ink)
-                    Text("Tap the heart on any farm to keep it here.")
-                        .font(.geist(15))
-                        .foregroundStyle(Color.inkMuted)
-                    Spacer()
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
             } else {
+                // A numbered list, like the web: filled green circle + number for a
+                // saved farm (with an X to remove), dashed circle + "Tap a heart to
+                // save a farm" for the empty slots up to ten.
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 12) {
-                        ForEach(savedPins) { pin in
-                            FarmCard(pin: pin, onOpen: { onOpenFarm(pin) })
+                    VStack(spacing: 0) {
+                        ForEach(0..<max(10, savedPins.count), id: \.self) { i in
+                            if i < savedPins.count {
+                                savedRow(index: i, pin: savedPins[i])
+                            } else {
+                                emptyRow(index: i)
+                            }
+                            if i < max(10, savedPins.count) - 1 {
+                                Divider().padding(.leading, 62)
+                            }
                         }
                     }
+                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.hairline, lineWidth: 1))
                     .padding(.horizontal, 14)
-                    .padding(.top, 6)
+                    .padding(.top, 4)
                     .padding(.bottom, 16)
                 }
             }
         }
+    }
+
+    private func savedRow(index: Int, pin: FarmPin) -> some View {
+        HStack(spacing: 14) {
+            Text("\(index + 1)")
+                .font(.geist(13, .bold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(Color.farmGreenMap, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(pin.name)
+                    .font(.geist(15, .semibold))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(1)
+                if let city = pin.city {
+                    Text(city).font(.geist(12)).foregroundStyle(Color.inkMuted).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 6)
+            Image(systemName: "xmark")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.inkMuted)
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+                .tapCard { remove(pin) }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .contentShape(Rectangle())
+        .tapCard(excludeTopTrailing: 44) { onOpenFarm(pin) }
+    }
+
+    private func emptyRow(index: Int) -> some View {
+        HStack(spacing: 14) {
+            Text("\(index + 1)")
+                .font(.geist(13, .bold))
+                .foregroundStyle(Color.inkMuted.opacity(0.6))
+                .frame(width: 30, height: 30)
+                .overlay(Circle().strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1.5, dash: [3])))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Tap a heart to save a farm")
+                    .font(.geist(15))
+                    .foregroundStyle(Color.inkMuted)
+                Text("—").font(.geist(12)).foregroundStyle(Color.inkMuted.opacity(0.5))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+    }
+
+    private func remove(_ pin: FarmPin) {
+        guard let userId = session.session?.user.id else { return }
+        Task { await favorites.toggle(pin.osmId, userId: userId) }
     }
 }

@@ -300,6 +300,8 @@ struct PingCard: View {
     let ping: Ping
     let farmName: String?
     var onOpenFarm: () -> Void
+    /// Tapping a photo opens the viewer at that index, rather than opening the farm.
+    var onOpenImage: ((Int) -> Void)? = nil
 
     private var initials: String {
         let parts = ping.authorName.split(separator: " ").compactMap { $0.first }
@@ -318,44 +320,50 @@ struct PingCard: View {
     }
 
     var body: some View {
-        // tapCard, not Button — a tap that was really a scroll is ignored, so a
-        // scroll through the feed no longer opens a farm by accident.
+        // Two tap regions, siblings not nested: the header + text open the farm,
+        // the photos open the viewer. Keeping them separate avoids a nested-gesture
+        // double-fire (opening the farm *and* the photo).
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Text(initials)
-                    .font(.geist(14, .bold))
-                    .foregroundStyle(Color.farmGreen)
-                    .frame(width: 40, height: 40)
-                    .background(Color.farmGreen.opacity(0.12), in: Circle())
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(ping.authorName)
-                        .font(.geist(14, .semibold))
-                        .foregroundStyle(Color.ink)
-                        .lineLimit(1)
-                    if let farmName {
-                        Text(farmName)
-                            .font(.geist(12, .medium))
-                            .foregroundStyle(Color.farmGreenMap)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    Text(initials)
+                        .font(.geist(14, .bold))
+                        .foregroundStyle(Color.farmGreen)
+                        .frame(width: 40, height: 40)
+                        .background(Color.farmGreen.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(ping.authorName)
+                            .font(.geist(14, .semibold))
+                            .foregroundStyle(Color.ink)
                             .lineLimit(1)
+                        if let farmName {
+                            Text(farmName)
+                                .font(.geist(12, .medium))
+                                .foregroundStyle(Color.farmGreenMap)
+                                .lineLimit(1)
+                        }
                     }
+                    Spacer(minLength: 6)
+                    Text(timeAgo)
+                        .font(.geist(11))
+                        .foregroundStyle(Color.inkMuted)
                 }
-                Spacer(minLength: 6)
-                Text(timeAgo)
-                    .font(.geist(11))
-                    .foregroundStyle(Color.inkMuted)
-            }
 
-            if !ping.body.isEmpty {
-                Text(ping.body)
-                    .font(.geist(14))
-                    .foregroundStyle(Color.ink)
-                    .lineLimit(3)
-                    .lineSpacing(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !ping.body.isEmpty {
+                    Text(ping.body)
+                        .font(.geist(14))
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(3)
+                        .lineSpacing(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
+            .contentShape(Rectangle())
+            .tapCard(onOpenFarm)
 
             if !ping.images.isEmpty {
-                FixedImageRow(urls: Array(ping.images.prefix(3)), height: 100)
+                FixedImageRow(urls: Array(ping.images.prefix(3)), height: 100,
+                              onTap: onOpenImage)
             }
 
             HStack(spacing: 5) {
@@ -366,6 +374,8 @@ struct PingCard: View {
                 }
             }
             .foregroundStyle(Color.inkMuted)
+            .contentShape(Rectangle())
+            .tapCard(onOpenFarm)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -374,7 +384,6 @@ struct PingCard: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.hairline, lineWidth: 1)
         )
-        .tapCard(onOpenFarm)
     }
 }
 
@@ -385,10 +394,12 @@ struct PingCard: View {
 struct FixedImageRow: View {
     let urls: [String]
     var height: CGFloat = 100
+    /// Tapping a photo — passes its index. When nil the row is not tappable.
+    var onTap: ((Int) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(urls, id: \.self) { url in
+            ForEach(Array(urls.enumerated()), id: \.element) { i, url in
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color(hex: 0xF3F4F6))
                     .frame(maxWidth: .infinity)
@@ -398,13 +409,23 @@ struct FixedImageRow: View {
                             if case .success(let img) = phase {
                                 img.resizable().scaledToFill()
                             } else {
-                                Color(hex: 0xF3F4F6)
+                                SkeletonBox(cornerRadius: 10)
                             }
                         }
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .modifier(OptionalTap(onTap: onTap.map { cb in { cb(i) } }))
             }
         }
+    }
+}
+
+/// Applies tapCard only when an action is provided, so a plain image row stays
+/// non-interactive.
+private struct OptionalTap: ViewModifier {
+    let onTap: (() -> Void)?
+    func body(content: Content) -> some View {
+        if let onTap { content.tapCard(onTap) } else { content }
     }
 }
 

@@ -30,6 +30,36 @@ final class FarmsStore {
 
     var anyFilterOn: Bool { anyQuickFilterOn || !selectedCategories.isEmpty }
 
+    // Featured farms (What's New shelf): a farm's gallery photos from the public
+    // flags endpoint, plus a *cached, once-shuffled* order so the shelf doesn't
+    // reshuffle every time the sheet is opened. Both persist for the session.
+    private(set) var galleries: [String: [String]] = [:]
+    private(set) var galleriesLoaded = false
+    private(set) var featuredOrder: [String] = []
+
+    private struct FarmFlag: Decodable { let o: String; let g: [String]? }
+
+    /// Fetch the galleries once, keep only farms with 2+ photos, and freeze a
+    /// random order for the featured shelf.
+    func loadGalleriesIfNeeded() async {
+        guard !galleriesLoaded else { return }
+        let url = Backend.webAPI.appending(path: "farms").appending(path: "flags")
+        guard let (data, resp) = try? await URLSession.shared.data(from: url),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let rows = try? JSONDecoder().decode([FarmFlag].self, from: data)
+        else { return }
+        var map: [String: [String]] = [:]
+        for r in rows where (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
+        galleries = map
+        featuredOrder = Array(map.keys).shuffled()
+        galleriesLoaded = true
+    }
+
+    /// The featured farms, in the frozen random order, resolved to pins.
+    var featuredFarms: [FarmPin] {
+        featuredOrder.compactMap { id in pins.first { $0.osmId == id } }
+    }
+
     func clearAllFilters() {
         selectedCategories = []
         filterVerified = false; filterOpenToday = false

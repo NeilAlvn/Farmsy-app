@@ -106,22 +106,25 @@ struct ImageLightbox: View {
                 }
             }
             Spacer(minLength: 8)
-            if hasMany {
-                Text("\(index + 1) / \(source.images.count)")
-                    .font(.geist(12, .semibold))
-                    .foregroundStyle(Color.inkMuted)
+            // Counter and close aligned on one centred row, at the top of the header.
+            HStack(spacing: 10) {
+                if hasMany {
+                    Text("\(index + 1) / \(source.images.count)")
+                        .font(.geist(13, .semibold))
+                        .foregroundStyle(Color.inkMuted)
+                }
+                Button {
+                    Haptics.tap()
+                    close()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x6B7280))
+                        .frame(width: 36, height: 36)
+                        .background(Color(hex: 0xF3F4F6), in: Circle())
+                }
+                .buttonStyle(.plain)
             }
-            Button {
-                Haptics.tap()
-                close()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(hex: 0x6B7280))
-                    .frame(width: 36, height: 36)
-                    .background(Color(hex: 0xF3F4F6), in: Circle())
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
@@ -129,32 +132,37 @@ struct ImageLightbox: View {
     }
 
     private var picture: some View {
-        ZStack {
-            Color(hex: 0xF3F4F6)
-            if let url = URL(string: source.images[safe: index] ?? "") {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                    case .failure:
-                        Image(systemName: "photo").font(.system(size: 40)).foregroundStyle(Color.inkMuted)
-                    default:
-                        ProgressView()
+        // A base rectangle carries the size; the image is an overlay that fills
+        // and is clipped — so the photo can never push past the container (which
+        // was the overflow that hid the arrows).
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color(hex: 0xF3F4F6))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(
+                Group {
+                    if let url = URL(string: source.images[safe: index] ?? "") {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                            case .failure:
+                                Image(systemName: "photo").font(.system(size: 40)).foregroundStyle(Color.inkMuted)
+                            default:
+                                ProgressView()
+                            }
+                        }
                     }
                 }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(alignment: .leading) {
+                if hasMany { arrow("chevron.left") { step(-1) }.padding(.leading, 8) }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(alignment: .leading) {
-            if hasMany { arrow("chevron.left") { step(-1) }.padding(.leading, 8) }
-        }
-        .overlay(alignment: .trailing) {
-            if hasMany { arrow("chevron.right") { step(1) }.padding(.trailing, 8) }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
+            .overlay(alignment: .trailing) {
+                if hasMany { arrow("chevron.right") { step(1) }.padding(.trailing, 8) }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
     }
 
     private func arrow(_ icon: String, _ action: @escaping () -> Void) -> some View {

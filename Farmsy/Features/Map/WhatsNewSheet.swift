@@ -12,18 +12,11 @@ struct WhatsNewSheet: View {
 
     @State private var pings: [Ping] = []
     @State private var loadingPings = true
-    /// osm_id → gallery photos, for farms that published two or more.
-    @State private var galleries: [String: [String]] = [:]
+    @State private var lightbox: LightboxSource?
 
-    private struct FarmFlag: Decodable { let o: String; let g: [String]? }
-
-    /// Farms with a gallery of two or more photos — the shelf's picks.
+    /// Featured farms — the store's frozen random order, capped, resolved to pins.
     private var multiImageFarms: [FarmPin] {
-        farms.pins
-            .filter { galleries[$0.osmId] != nil }
-            .sorted { $0.osmId < $1.osmId }
-            .prefix(10)
-            .map { $0 }
+        Array(farms.featuredFarms.prefix(10))
     }
 
     var body: some View {
@@ -50,7 +43,7 @@ struct WhatsNewSheet: View {
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 14) {
                     if loadingPings {
-                        ProgressView().tint(Color.farmGreenMap).padding(.vertical, 24)
+                        ForEach(0..<2, id: \.self) { _ in SkeletonBox(cornerRadius: 16).frame(height: 150) }
                     } else if pings.isEmpty {
                         emptyPosts
                     } else {
@@ -59,21 +52,31 @@ struct WhatsNewSheet: View {
                                      farmName: farms.pin(forOsmId: ping.farmOsmId)?.name,
                                      onOpenFarm: {
                                          if let pin = farms.pin(forOsmId: ping.farmOsmId) { onOpenFarm(pin) }
+                                     },
+                                     onOpenImage: { idx in
+                                         lightbox = LightboxSource(
+                                             images: ping.images, startIndex: idx,
+                                             eyebrow: String(localized: "From a post"),
+                                             title: ping.authorName,
+                                             subtitle: farms.pin(forOsmId: ping.farmOsmId)?.name,
+                                             postText: ping.body)
                                      })
                         }
                     }
 
-                    if !multiImageFarms.isEmpty {
-                        Text("FEATURED FARMS")
-                            .font(.geist(11, .semibold))
-                            .kerning(1.2)
-                            .foregroundStyle(Color.inkMuted)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 4)
+                    Text("FEATURED FARMS")
+                        .font(.geist(11, .semibold))
+                        .kerning(1.2)
+                        .foregroundStyle(Color.inkMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
 
+                    if !farms.galleriesLoaded {
+                        ForEach(0..<3, id: \.self) { _ in SkeletonBox(cornerRadius: 16).frame(height: 180) }
+                    } else {
                         ForEach(multiImageFarms) { pin in
                             MultiImageFarmCard(pin: pin,
-                                               images: galleries[pin.osmId] ?? [],
+                                               images: farms.galleries[pin.osmId] ?? [],
                                                onOpen: { onOpenFarm(pin) })
                         }
                     }
@@ -83,8 +86,12 @@ struct WhatsNewSheet: View {
             }
         }
         .background(Color.cream.ignoresSafeArea())
+        .fullScreenCover(item: $lightbox) { src in
+            ImageLightbox(source: src) { lightbox = nil }
+                .presentationBackground(.clear)
+        }
         .task { await loadPings() }
-        .task { await loadFlags() }
+        .task { await farms.loadGalleriesIfNeeded() }
     }
 
     private var emptyPosts: some View {
@@ -110,19 +117,6 @@ struct WhatsNewSheet: View {
             .value) ?? []
         pings = rows
         loadingPings = false
-    }
-
-    /// Gallery photos per farm, from the public flags endpoint. Only farms with
-    /// two or more are kept — those are the ones worth a card.
-    private func loadFlags() async {
-        let url = Backend.webAPI.appending(path: "farms").appending(path: "flags")
-        guard let (data, resp) = try? await URLSession.shared.data(from: url),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
-              let rows = try? JSONDecoder().decode([FarmFlag].self, from: data)
-        else { return }
-        var map: [String: [String]] = [:]
-        for r in rows where (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
-        galleries = map
     }
 }
 

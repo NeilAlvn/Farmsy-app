@@ -22,6 +22,7 @@ struct FarmDetailView: View {
     /// Public gallery photos, so multiple images show even for non-members (the
     /// members' `detail.images` needs a subscription).
     @State private var galleryImages: [String] = []
+    @State private var galleryLoaded = false
 
     var body: some View {
         // The card is open to everyone — paid fields are locked *inside* it. The
@@ -126,6 +127,14 @@ struct FarmDetailView: View {
             .execute()
             .value) ?? []
         if !rows.isEmpty { galleryImages = rows.map(\.url) }
+        galleryLoaded = true
+    }
+
+    /// True once we have the photos to show (members' payload, or the public
+    /// gallery has finished loading) — until then the strip shows a skeleton so
+    /// images don't pop in one at a time.
+    private var photosReady: Bool {
+        (detail?.images.isEmpty == false) || galleryLoaded
     }
 
     // MARK: - Header
@@ -294,10 +303,27 @@ struct FarmDetailView: View {
         return source.filter { seen.insert($0).inserted }
     }
 
+    /// A 3-slot skeleton matching the strip layout, shown while photos load so a
+    /// farm doesn't first show one image and then pop the rest in.
+    private var photoStripSkeleton: some View {
+        HStack(spacing: 8) {
+            SkeletonBox(cornerRadius: 16)
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+            VStack(spacing: 8) {
+                SkeletonBox().frame(height: 76)
+                SkeletonBox().frame(height: 76)
+            }
+            .frame(width: 84)
+        }
+    }
+
     private var photoStrip: some View {
         let imgs = stripImages
         return Group {
-            if imgs.isEmpty {
+            if !photosReady {
+                photoStripSkeleton
+            } else if imgs.isEmpty {
                 LinearGradient(colors: [Color.farmGreen.opacity(0.85), Color.farmGreenDeep],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
                     .frame(height: 160)
@@ -345,7 +371,7 @@ struct FarmDetailView: View {
             .overlay(
                 AsyncImage(url: URL(string: url)) { phase in
                     if case .success(let img) = phase { img.resizable().scaledToFill() }
-                    else { Color(hex: 0xF3F4F6) }
+                    else { SkeletonBox(cornerRadius: radius) }
                 }
             )
             .overlay {
@@ -909,10 +935,11 @@ extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
-/// A description that clamps to three lines with "… View more" fading in at the
-/// end of the last line, and expands *inline* to the whole text when tapped —
-/// no modal, no preview screen. Truncation is measured, so the control only
-/// appears when the text really doesn't fit.
+/// A description that clamps to N lines with "… View more" fading in at the end
+/// of the last visible line, and expands *inline* to the whole text when tapped —
+/// no modal. Truncation is measured with the real font so the control only shows
+/// when the text genuinely doesn't fit, and the overlay sits exactly on the last
+/// clamped line (the Text's own bottom edge, nothing hidden inflating its frame).
 struct ExpandableText: View {
     let text: String
     var lineLimit: Int = 3
@@ -923,65 +950,52 @@ struct ExpandableText: View {
     @State private var truncated = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(text)
-                .font(.geist(15))
-                .foregroundStyle(Color.ink)
-                .lineSpacing(3)
-                .lineLimit(expanded ? nil : lineLimit)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(measurement)
-                .overlay(alignment: .bottomTrailing) {
-                    if truncated && !expanded {
-                        Button {
-                            withAnimation(.easeOut(duration: 0.2)) { expanded = true }
-                        } label: {
-                            HStack(spacing: 0) {
-                                LinearGradient(colors: [background.opacity(0), background],
-                                               startPoint: .leading, endPoint: .trailing)
-                                    .frame(width: 28)
-                                Text("… View more")
-                                    .font(.geist(14, .semibold))
-                                    .foregroundStyle(Color.farmGreen)
-                                    .background(background)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-            if truncated && expanded {
-                Button {
-                    withAnimation(.easeOut(duration: 0.2)) { expanded = false }
-                } label: {
-                    Text("View less")
-                        .font(.geist(14, .semibold))
-                        .foregroundStyle(Color.farmGreen)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    /// Renders the text clamped and unclamped off-screen to learn whether the
-    /// clamp actually cut anything, so the control never shows on short text.
-    private var measurement: some View {
         Text(text)
             .font(.geist(15))
+            .foregroundStyle(Color.ink)
             .lineSpacing(3)
-            .lineLimit(lineLimit)
-            .background(GeometryReader { clamped in
-                Text(text)
-                    .font(.geist(15))
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .background(GeometryReader { full in
-                        Color.clear.onAppear {
-                            truncated = full.size.height > clamped.size.height + 1
+            .lineLimit(expanded ? nil : lineLimit)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // Read the actual layout width (matches the Text's own size — does not
+            // inflate the frame) and measure the line count off it.
+            .background(
+                GeometryReader { geo in
+                    Color.clear.onAppear { measure(width: geo.size.width) }
+                        .onChange(of: geo.size.width) { _, w in measure(width: w) }
+                }
+            )
+            .overlay(alignment: .bottomTrailing) {
+                if truncated {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() }
+                    } label: {
+                        HStack(spacing: 0) {
+                            if !expanded {
+                                LinearGradient(colors: [background.opacity(0), background],
+                                               startPoint: .leading, endPoint: .trailing)
+                                    .frame(width: 30)
+                            }
+                            Text(expanded ? "View less" : "… View more")
+                                .font(.geist(14, .semibold))
+                                .foregroundStyle(Color.farmGreen)
+                                .background(background)
                         }
-                    })
-                    .hidden()
-            })
-            .hidden()
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+    }
+
+    private func measure(width: CGFloat) {
+        guard width > 0 else { return }
+        let font = UIFont(name: "Geist-Regular", size: 15) ?? .systemFont(ofSize: 15)
+        let bounds = (text as NSString).boundingRect(
+            with: CGSize(width: width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font],
+            context: nil
+        )
+        let lines = Int((bounds.height / font.lineHeight).rounded())
+        truncated = lines > lineLimit
     }
 }
