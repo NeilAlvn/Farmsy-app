@@ -30,7 +30,7 @@ struct MapScreen: View {
     /// Instead the viewport is divided into a grid and the pins in each cell are
     /// grouped into one marker — a single pin when a cell holds one farm, a green
     /// count bubble when it holds several. Zooming in splits the clusters apart.
-    private static let gridCellsAcross = 11.0
+    private static let gridCellsAcross = 6.5
 
     private var clusters: [MapCluster] {
         let all = farms.filtered
@@ -101,6 +101,38 @@ struct MapScreen: View {
                 .presentationDragIndicator(.visible)
         }
         .onChange(of: focusPin?.osmId) { _, _ in flyToFocus() }
+        // Keep the trip route on the map live wherever stops are added — not only
+        // while the Trips sheet is open. On add, fit the camera to the trip so the
+        // whole trace is visible; a single stop just centres on that farm.
+        .onChange(of: trip.stopIds) { old, new in
+            Task { await trip.refreshRoute(pins: pinLookup) }
+            if new.count > old.count { fitToTrip() }
+        }
+    }
+
+    private var pinLookup: [String: FarmPin] {
+        Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    /// Centre on the single stop, or fit the whole trip when there are several.
+    private func fitToTrip() {
+        let coords = trip.stopIds.compactMap { pinLookup[$0]?.coordinate }
+        guard !coords.isEmpty else { return }
+        if coords.count == 1 {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                camera = .region(MKCoordinateRegion(center: coords[0],
+                    span: MKCoordinateSpan(latitudeDelta: 0.12, longitudeDelta: 0.12)))
+            }
+            return
+        }
+        let lats = coords.map(\.latitude), lngs = coords.map(\.longitude)
+        let center = CLLocationCoordinate2D(latitude: (lats.min()! + lats.max()!) / 2,
+                                            longitude: (lngs.min()! + lngs.max()!) / 2)
+        let span = MKCoordinateSpan(latitudeDelta: max((lats.max()! - lats.min()!) * 1.4, 0.05),
+                                    longitudeDelta: max((lngs.max()! - lngs.min()!) * 1.4, 0.05))
+        withAnimation(.easeInOut(duration: 0.5)) {
+            camera = .region(MKCoordinateRegion(center: center, span: span))
+        }
     }
 
     // MARK: - Search row (top)
@@ -165,11 +197,6 @@ struct MapScreen: View {
     private var mapCard: some View {
         Map(position: $camera) {
             UserAnnotation()
-            // The active trip's road line.
-            if trip.routeLine.count >= 2 {
-                MapPolyline(coordinates: trip.routeLine)
-                    .stroke(Color.farmGreenMap, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
-            }
             ForEach(clusters) { cluster in
                 if cluster.isCluster {
                     Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .center) {
@@ -190,6 +217,15 @@ struct MapScreen: View {
                     }
                     .annotationTitles(.hidden)
                 }
+            }
+            // The active trip's road line — declared last so it draws above the
+            // pins and clusters. A white casing under a light-green line so it
+            // stays visible over motorways and field boundaries.
+            if trip.routeLine.count >= 2 {
+                MapPolyline(coordinates: trip.routeLine)
+                    .stroke(.white, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                MapPolyline(coordinates: trip.routeLine)
+                    .stroke(Color.farmGreenMap, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))

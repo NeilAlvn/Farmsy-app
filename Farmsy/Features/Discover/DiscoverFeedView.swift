@@ -398,12 +398,15 @@ struct FixedImageRow: View {
     var onTap: ((Int) -> Void)? = nil
 
     var body: some View {
+        // A single photo is shown as a square; two or three fill the row as equal
+        // tiles of the given height.
+        let single = urls.count == 1
         HStack(spacing: 6) {
             ForEach(Array(urls.enumerated()), id: \.element) { i, url in
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color(hex: 0xF3F4F6))
                     .frame(maxWidth: .infinity)
-                    .frame(height: height)
+                    .modifier(SquareOrHeight(single: single, height: height))
                     .overlay(
                         AsyncImage(url: URL(string: url)) { phase in
                             if case .success(let img) = phase {
@@ -417,6 +420,16 @@ struct FixedImageRow: View {
                     .modifier(OptionalTap(onTap: onTap.map { cb in { cb(i) } }))
             }
         }
+    }
+}
+
+/// One image → square (1:1); several → the fixed row height.
+private struct SquareOrHeight: ViewModifier {
+    let single: Bool
+    let height: CGFloat
+    func body(content: Content) -> some View {
+        if single { content.aspectRatio(1, contentMode: .fit) }
+        else { content.frame(height: height) }
     }
 }
 

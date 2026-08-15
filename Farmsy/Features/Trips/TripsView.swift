@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 /// The trip planner (Aviah's spec + Neil's screenshots): two tabs — Plan (the
 /// local draft) and My trips (saved trips from the DB). Stops come from "Add to
@@ -19,6 +20,8 @@ struct TripsView: View {
     @State private var tripName = ""
     @State private var armedDelete: String?
     @State private var reorderNote: String?
+    @State private var originQuery = ""
+    @State private var searchingOrigin = false
 
     enum Tab { case plan, mine }
 
@@ -52,20 +55,13 @@ struct TripsView: View {
     // MARK: - Header + tabs
 
     private var header: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
-                .font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Trip planner").font(.geist(19, .bold)).foregroundStyle(Color.ink)
-                Text("Plan your farm adventure").font(.geist(13)).foregroundStyle(Color.inkMuted)
-            }
+        HStack {
+            Text("TRIP PLANNER")
+                .font(.geist(11, .semibold)).kerning(1.2).foregroundStyle(Color.inkMuted)
             Spacer()
-            circleButton("plus") { Haptics.tap(); trip.clear(); tab = .plan }
             circleButton("xmark") { dismiss() }
         }
-        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
+        .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
     }
 
     private var tabs: some View {
@@ -88,9 +84,9 @@ struct TripsView: View {
 
     private func circleButton(_ icon: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: icon).font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color(hex: 0x6B7280)).frame(width: 40, height: 40)
-                .overlay(Circle().stroke(Color.hairline, lineWidth: 1))
+            Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(hex: 0x6B7280)).frame(width: 32, height: 32)
+                .background(Color(hex: 0xF3F4F6), in: Circle())
         }.buttonStyle(.plain)
     }
 
@@ -98,13 +94,19 @@ struct TripsView: View {
 
     private var planTab: some View {
         VStack(spacing: 14) {
-            // Starting point.
+            // Starting point — type a place (geocoded on submit) or use "my location".
             HStack(spacing: 10) {
                 Image(systemName: "mappin.circle").font(.system(size: 18)).foregroundStyle(Color.inkMuted)
-                Text(trip.originLabel ?? String(localized: "Choose a starting point"))
-                    .font(.geist(15)).foregroundStyle(trip.originLabel == nil ? Color.inkMuted : Color.ink)
-                    .lineLimit(1)
-                Spacer()
+                TextField(trip.originLabel ?? String(localized: "Choose a starting point"),
+                          text: $originQuery)
+                    .font(.geist(15)).foregroundStyle(Color.ink)
+                    .submitLabel(.search)
+                    .onSubmit { Task { await geocodeOrigin() } }
+                if trip.originLabel != nil {
+                    Button { Haptics.tap(); trip.setOrigin(trip.originCoord!, label: ""); originQuery = "" } label: {
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Color.inkMuted)
+                    }.buttonStyle(.plain)
+                }
                 Button { Task { await locate() } } label: {
                     Image(systemName: "location.circle").font(.system(size: 20)).foregroundStyle(Color.farmGreenMap)
                 }.buttonStyle(.plain)
@@ -112,6 +114,10 @@ struct TripsView: View {
             .padding(14)
             .background(.white, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
+            if searchingOrigin {
+                Text("Finding that place…").font(.geist(12)).foregroundStyle(Color.inkMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             // Trip overview.
             VStack(alignment: .leading, spacing: 0) {
@@ -357,6 +363,25 @@ struct TripsView: View {
     }
 
     // MARK: - Actions
+
+    /// Geocode the typed place (city / postcode / address) and set it as origin.
+    private func geocodeOrigin() async {
+        let q = originQuery.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return }
+        searchingOrigin = true; defer { searchingOrigin = false }
+        // Bias the search to NL/BE where the farms are.
+        let req = MKLocalSearch.Request()
+        req.naturalLanguageQuery = q
+        req.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.8, longitude: 4.7),
+                                        span: MKCoordinateSpan(latitudeDelta: 4, longitudeDelta: 4))
+        if let item = try? await MKLocalSearch(request: req).start().mapItems.first {
+            let coord = item.placemark.coordinate
+            let label = item.placemark.locality ?? item.name ?? q
+            trip.setOrigin(coord, label: label)
+            originQuery = ""
+            await trip.refreshRoute(pins: pinIndex)
+        }
+    }
 
     private func locate() async {
         locationManager.request()

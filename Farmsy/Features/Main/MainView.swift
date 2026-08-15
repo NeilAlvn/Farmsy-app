@@ -49,6 +49,7 @@ struct MainView: View {
                     .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
                     .presentationContentInteraction(.scrolls)
                     .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
             }
         }
         .sheet(isPresented: $showWhatsNew) {
@@ -60,15 +61,26 @@ struct MainView: View {
             .presentationDetents([.fraction(0.55), .fraction(0.92)])
             .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
             .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
         }
         .sheet(item: $accountRoute) { route in
-            switch route {
-            case .saved:    SavedScreen { openFarm($0) }
-            case .settings: SettingsSheet()
+            Group {
+                switch route {
+                case .saved:    SavedScreen { openFarm($0) }
+                case .settings: SettingsSheet()
+                }
             }
+            .presentationDetents([.fraction(0.55), .fraction(0.92)])
+            .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
+            .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showTrips) {
             TripsView(onOpenFarm: { openFarm($0) })
+                .presentationDetents([.fraction(0.55), .fraction(0.92)])
+                .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showAuth) { AuthView() }
     }
