@@ -54,12 +54,15 @@ struct WhatsNewSheet: View {
                                          if let pin = farms.pin(forOsmId: ping.farmOsmId) { onOpenFarm(pin) }
                                      },
                                      onOpenImage: { idx in
-                                         lightbox = LightboxSource(
-                                             images: ping.images, startIndex: idx,
-                                             eyebrow: String(localized: "From a post"),
-                                             title: ping.authorName,
-                                             subtitle: farms.pin(forOsmId: ping.farmOsmId)?.name,
-                                             postText: ping.body)
+                                         var t = Transaction(); t.disablesAnimations = true
+                                         withTransaction(t) {
+                                             lightbox = LightboxSource(
+                                                 images: ping.images, startIndex: idx,
+                                                 eyebrow: String(localized: "From a post"),
+                                                 title: ping.authorName,
+                                                 subtitle: farms.pin(forOsmId: ping.farmOsmId)?.name,
+                                                 postText: ping.body)
+                                         }
                                      })
                         }
                     }
@@ -87,8 +90,11 @@ struct WhatsNewSheet: View {
         }
         .background(Color.cream.ignoresSafeArea())
         .fullScreenCover(item: $lightbox) { src in
-            ImageLightbox(source: src) { lightbox = nil }
-                .presentationBackground(.clear)
+            ImageLightbox(source: src) {
+                var t = Transaction(); t.disablesAnimations = true
+                withTransaction(t) { lightbox = nil }
+            }
+            .presentationBackground(.clear)
         }
         .task { await loadPings() }
         .task { await farms.loadGalleriesIfNeeded() }
@@ -133,6 +139,7 @@ struct MultiImageFarmCard: View {
     @Environment(\.requestAuth) private var requestAuth
 
     @State private var teaser: String?
+    @State private var teaserLoaded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -173,7 +180,14 @@ struct MultiImageFarmCard: View {
                     .tapCard(toggleSave)
             }
 
-            if let teaser, !teaser.isEmpty {
+            // Description: skeleton while the teaser loads, then the text (or
+            // nothing if the farm genuinely has no description).
+            if !teaserLoaded {
+                VStack(alignment: .leading, spacing: 5) {
+                    SkeletonBox(cornerRadius: 4).frame(height: 10)
+                    SkeletonBox(cornerRadius: 4).frame(height: 10).padding(.trailing, 40)
+                }
+            } else if let teaser, !teaser.isEmpty {
                 Text(teaser)
                     .font(.geist(13))
                     .foregroundStyle(Color.ink)
@@ -197,8 +211,9 @@ struct MultiImageFarmCard: View {
         )
         .tapCard(excludeTopTrailing: 52, onOpen)
         .task {
-            if teaser == nil {
+            if !teaserLoaded {
                 teaser = await FarmDetailAPI.teaser(osmId: pin.osmId)?.text
+                teaserLoaded = true
             }
         }
     }

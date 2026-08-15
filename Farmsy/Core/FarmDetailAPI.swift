@@ -10,10 +10,20 @@ enum FarmDetailError: Error {
 /// caller's subscription server-side. The public pins RPC never contains
 /// these fields, so there is nothing to bypass on-device.
 enum FarmDetailAPI {
+    /// `/api/farm/[osmId]` is a single dynamic segment, but ~35% of osm_ids
+    /// contain a slash (`node/123`, `amsterdam_urban/…`). `URL.appending(path:)`
+    /// treats that slash as a path separator and breaks the route — the API then
+    /// answers empty/404, which read as "descriptions don't load". Encode the id
+    /// (slashes → %2F) and build the URL from the string instead.
+    private static func farmURL(_ osmId: String, suffix: String = "") -> URL? {
+        let allowed = CharacterSet.urlPathAllowed.subtracting(CharacterSet(charactersIn: "/"))
+        let encoded = osmId.addingPercentEncoding(withAllowedCharacters: allowed) ?? osmId
+        return URL(string: "\(Backend.webAPI.absoluteString)/farm/\(encoded)\(suffix)")
+    }
+
     static func fetch(osmId: String, accessToken: String) async throws -> FarmDetail {
-        var request = URLRequest(
-            url: Backend.webAPI.appending(path: "farm").appending(path: osmId)
-        )
+        guard let url = farmURL(osmId) else { throw FarmDetailError.other }
+        var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -36,9 +46,8 @@ enum FarmDetailAPI {
     /// The full text stays behind the 403 on `fetch(osmId:)`. Best-effort: any
     /// failure yields nil and the card simply shows no teaser.
     static func teaser(osmId: String) async -> FarmTeaser? {
-        let url = Backend.webAPI
-            .appending(path: "farm").appending(path: osmId).appending(path: "teaser")
-        guard let (data, response) = try? await URLSession.shared.data(from: url),
+        guard let url = farmURL(osmId, suffix: "/teaser"),
+              let (data, response) = try? await URLSession.shared.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let teaser = try? JSONDecoder().decode(FarmTeaser.self, from: data),
               !teaser.text.isEmpty

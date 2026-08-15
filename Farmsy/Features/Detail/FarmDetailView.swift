@@ -10,6 +10,7 @@ struct FarmDetailView: View {
 
     @Environment(SessionStore.self) private var session
     @Environment(FavoritesStore.self) private var favorites
+    @Environment(FarmsStore.self) private var farms
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: FarmDetail?
@@ -61,7 +62,7 @@ struct FarmDetailView: View {
             }
         }
         .fullScreenCover(item: $lightbox) { src in
-            ImageLightbox(source: src) { lightbox = nil }
+            ImageLightbox(source: src) { closeLightbox() }
                 .presentationBackground(.clear)
         }
         .task { await reload() }
@@ -112,21 +113,13 @@ struct FarmDetailView: View {
         if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId) }
     }
 
-    /// The farm's gallery photos, read straight from Supabase (public read). This
-    /// is what lets a non-member see the multi-photo strip — the members' payload
-    /// isn't sent to them. Best-effort: if the read is blocked it stays empty and
-    /// the strip falls back to the cover.
+    /// The farm's gallery photos. `farm_images` is NOT anon-readable (RLS blocks
+    /// it — confirmed with Aviah), so the public gallery comes from the flags
+    /// endpoint's `g` array instead, which the store caches. This is what lets a
+    /// non-member see the multi-photo strip.
     private func loadGallery() async {
-        struct Row: Decodable { let url: String; let sortOrder: Int?
-            enum CodingKeys: String, CodingKey { case url; case sortOrder = "sort_order" } }
-        let rows: [Row] = (try? await supabase
-            .from("farm_images")
-            .select("url, sort_order")
-            .eq("farm_osm_id", value: pin.osmId)
-            .order("sort_order", ascending: true)
-            .execute()
-            .value) ?? []
-        if !rows.isEmpty { galleryImages = rows.map(\.url) }
+        await farms.loadGalleriesIfNeeded()
+        galleryImages = farms.galleries[pin.osmId] ?? []
         galleryLoaded = true
     }
 
@@ -463,8 +456,18 @@ struct FarmDetailView: View {
     }
 
     private func openLightbox(_ imgs: [String], _ start: Int) {
-        lightbox = LightboxSource(images: imgs, startIndex: start,
-                                  eyebrow: String(localized: "Farm photo"), title: pin.name)
+        // Present without the sheet's slide-up so the viewer pops in from the
+        // centre (its own scale + fade) rather than sliding from the bottom.
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) {
+            lightbox = LightboxSource(images: imgs, startIndex: start,
+                                      eyebrow: String(localized: "Farm photo"), title: pin.name)
+        }
+    }
+
+    private func closeLightbox() {
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) { lightbox = nil }
     }
 
     // MARK: - Locked content (non-member: teaser + one membership block)
@@ -943,59 +946,69 @@ extension String {
 struct ExpandableText: View {
     let text: String
     var lineLimit: Int = 3
-    /// The surface behind the text, so the "View more" gradient blends in.
-    var background: Color = .cream
 
     @State private var expanded = false
-    @State private var truncated = false
+    @State private var width: CGFloat = 0
+
+    private let font = UIFont(name: "Geist-Regular", size: 15) ?? .systemFont(ofSize: 15)
+    private let moreLabel = "  … View more"
+    private let lessLabel = "  View less"
 
     var body: some View {
-        Text(text)
+        content
             .font(.geist(15))
-            .foregroundStyle(Color.ink)
             .lineSpacing(3)
-            .lineLimit(expanded ? nil : lineLimit)
             .frame(maxWidth: .infinity, alignment: .leading)
-            // Read the actual layout width (matches the Text's own size — does not
-            // inflate the frame) and measure the line count off it.
             .background(
                 GeometryReader { geo in
-                    Color.clear.onAppear { measure(width: geo.size.width) }
-                        .onChange(of: geo.size.width) { _, w in measure(width: w) }
+                    Color.clear
+                        .onAppear { width = geo.size.width }
+                        .onChange(of: geo.size.width) { _, w in width = w }
                 }
             )
-            .overlay(alignment: .bottomTrailing) {
-                if truncated {
-                    Button {
-                        withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() }
-                    } label: {
-                        HStack(spacing: 0) {
-                            if !expanded {
-                                LinearGradient(colors: [background.opacity(0), background],
-                                               startPoint: .leading, endPoint: .trailing)
-                                    .frame(width: 30)
-                            }
-                            Text(expanded ? "View less" : "… View more")
-                                .font(.geist(14, .semibold))
-                                .foregroundStyle(Color.farmGreen)
-                                .background(background)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+            .tapCard { withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() } }
     }
 
-    private func measure(width: CGFloat) {
-        guard width > 0 else { return }
-        let font = UIFont(name: "Geist-Regular", size: 15) ?? .systemFont(ofSize: 15)
-        let bounds = (text as NSString).boundingRect(
+    /// The description with "… View more" / "View less" appended *inline* at the
+    /// exact end of the visible text — the string is truncated to fit the clamp so
+    /// the control always lands at the end of the last line, never mid-paragraph.
+    private var content: Text {
+        guard width > 0 else {
+            return Text(text).foregroundColor(Color.ink)
+        }
+        if expanded {
+            return Text(text).foregroundColor(Color.ink)
+                + Text(lessLabel).foregroundColor(Color.farmGreen).bold()
+        }
+        let fit = truncatedToFit()
+        guard fit.truncated else {
+            return Text(text).foregroundColor(Color.ink)
+        }
+        return Text(fit.text).foregroundColor(Color.ink)
+            + Text(moreLabel).foregroundColor(Color.farmGreen).bold()
+    }
+
+    private func height(of s: String) -> CGFloat {
+        (s as NSString).boundingRect(
             with: CGSize(width: width, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: [.font: font],
-            context: nil
-        )
-        let lines = Int((bounds.height / font.lineHeight).rounded())
-        truncated = lines > lineLimit
+            attributes: [.font: font], context: nil
+        ).height
+    }
+
+    /// The longest prefix of the text such that prefix + "… View more" still fits
+    /// in `lineLimit` lines. Binary search over character count.
+    private func truncatedToFit() -> (text: String, truncated: Bool) {
+        let maxHeight = font.lineHeight * CGFloat(lineLimit) + 1
+        if height(of: text) <= maxHeight { return (text, false) }
+
+        let chars = Array(text)
+        var lo = 0, hi = chars.count, best = 0
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let candidate = String(chars[0..<mid]).trimmingCharacters(in: .whitespacesAndNewlines) + moreLabel
+            if height(of: candidate) <= maxHeight { best = mid; lo = mid + 1 } else { hi = mid - 1 }
+        }
+        return (String(chars[0..<best]).trimmingCharacters(in: .whitespacesAndNewlines), true)
     }
 }
