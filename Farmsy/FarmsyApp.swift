@@ -15,6 +15,7 @@ struct FarmsyApp: App {
     @State private var favorites = FavoritesStore()
     @State private var locationManager = LocationManager()
     @State private var purchases = PurchaseStore()
+    @State private var trip = TripStore()
 
     init() {
         #if DEBUG
@@ -43,6 +44,7 @@ struct FarmsyApp: App {
                 .environment(favorites)
                 .environment(locationManager)
                 .environment(purchases)
+                .environment(trip)
                 .tint(.farmGreen)
                 .preferredColorScheme(.light)
                 .onOpenURL { captureReferral($0) }

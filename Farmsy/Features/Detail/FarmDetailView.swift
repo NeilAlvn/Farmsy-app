@@ -11,6 +11,7 @@ struct FarmDetailView: View {
     @Environment(SessionStore.self) private var session
     @Environment(FavoritesStore.self) private var favorites
     @Environment(FarmsStore.self) private var farms
+    @Environment(TripStore.self) private var trip
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: FarmDetail?
@@ -261,26 +262,53 @@ struct FarmDetailView: View {
 
     // MARK: - Trip button (Pro, not built yet — a locked, dashed prompt)
 
+    @ViewBuilder
     private var tripButton: some View {
-        Button {
-            Haptics.tap()
-            showPaywall = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "lock.fill").font(.system(size: 13, weight: .semibold))
-                Text("Plan a trip with Farmsy Pro").font(.geist(14, .semibold))
+        if isLoading && detail == nil && teaser == nil {
+            // Pro status unknown — a placeholder rather than flashing "upgrade".
+            SkeletonBox(cornerRadius: 16).frame(height: 44)
+        } else if isLocked {
+            // Non-member: the locked, dashed prompt.
+            Button {
+                Haptics.tap()
+                showPaywall = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill").font(.system(size: 13, weight: .semibold))
+                    Text("Plan a trip with Farmsy Pro").font(.geist(14, .semibold))
+                }
+                .foregroundStyle(Color(hex: 0x6B7280))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(.white)
+                        .strokeBorder(Color(hex: 0x9CA3AF), style: StrokeStyle(lineWidth: 1.5, dash: [5]))
+                )
             }
-            .foregroundStyle(Color(hex: 0x6B7280))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.white)
-                    .strokeBorder(Color(hex: 0x9CA3AF),
-                                  style: StrokeStyle(lineWidth: 1.5, dash: [5]))
-            )
+            .buttonStyle(.plain)
+        } else {
+            // Member: add to / remove from the trip.
+            let inTrip = trip.contains(pin.osmId)
+            Button {
+                Haptics.tap()
+                trip.toggle(pin.osmId)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: inTrip ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold))
+                    Text(inTrip ? "In your trip" : "Add to trip").font(.geist(14, .semibold))
+                }
+                .foregroundStyle(inTrip ? .white : Color.farmGreen)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(inTrip ? Color.farmGreen : Color.clear)
+                        .strokeBorder(Color.farmGreen, lineWidth: inTrip ? 0 : 1.5)
+                )
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Photo strip (cover 160 + two 72 thumbnails + "+N")

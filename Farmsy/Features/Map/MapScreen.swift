@@ -10,6 +10,7 @@ struct MapScreen: View {
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
+    @Environment(TripStore.self) private var trip
 
     @State private var showFilters = false
 
@@ -164,6 +165,11 @@ struct MapScreen: View {
     private var mapCard: some View {
         Map(position: $camera) {
             UserAnnotation()
+            // The active trip's road line.
+            if trip.routeLine.count >= 2 {
+                MapPolyline(coordinates: trip.routeLine)
+                    .stroke(Color.farmGreenMap, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+            }
             ForEach(clusters) { cluster in
                 if cluster.isCluster {
                     Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .center) {
