@@ -261,6 +261,35 @@ struct Ping: Decodable, Identifiable, Hashable {
     }
 }
 
+// MARK: - Review (public read from `reviews`; write is upsert-own)
+
+/// A farm review. `reviewer_name` is denormalised on the row (use it, don't join).
+/// `rating` is 1–5; `body` is optional. One review per user per farm (unique
+/// constraint), so writing is an upsert of the caller's own row.
+struct Review: Decodable, Identifiable, Hashable {
+    let id: String
+    let userId: String?
+    let reviewerName: String
+    let rating: Int
+    let body: String?
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, userId = "user_id", reviewerName = "reviewer_name"
+        case rating, body, createdAt = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        userId = try? c.decodeIfPresent(String.self, forKey: .userId)
+        reviewerName = (try? c.decodeIfPresent(String.self, forKey: .reviewerName)) ?? "?"
+        rating = (try? c.decodeIfPresent(Int.self, forKey: .rating)) ?? 0
+        body = try? c.decodeIfPresent(String.self, forKey: .body)
+        createdAt = (try? c.decodeIfPresent(String.self, forKey: .createdAt)) ?? ""
+    }
+}
+
 // MARK: - Farm teaser (public description opener from GET /api/farm/[osmId]/teaser)
 
 /// The first ~200 characters of a farm's description, cut on a word. `truncated`
@@ -282,17 +311,27 @@ struct Profile: Decodable {
     /// web subscriber at the App Store, where they'd find nothing, reads as hiding
     /// the cancel button.
     let subscriptionSource: String?
+    /// 'admin', 'farmer' or 'user'. Admins (Neil, Luuk) and farmers who own a farm
+    /// get full access with no subscription — the same `hasPaidAccess()` rule the
+    /// server applies, mirrored here so the app doesn't need a round trip to know.
+    let role: String?
+    /// The 13 who paid during the original paywalled era — also full access.
+    let foundingMember: Bool?
 
     enum CodingKeys: String, CodingKey {
         case subscriptionStatus = "subscription_status"
         case subscriptionPlan = "subscription_plan"
         case subscriptionEndDate = "subscription_end_date"
         case subscriptionSource = "subscription_source"
+        case role
+        case foundingMember = "founding_member"
     }
 
-    /// Same rule as the web's isPaid(): active/trialing always pass, and a
-    /// canceled plan keeps access until the already-paid period runs out.
+    /// Same order as the web's `hasPaidAccess()`: admin → farmer → founding member
+    /// → active/trialing → a canceled plan still inside its paid period.
     var hasFullAccess: Bool {
+        if role == "admin" || role == "farmer" { return true }
+        if foundingMember == true { return true }
         switch subscriptionStatus {
         case "active", "trialing":
             return true

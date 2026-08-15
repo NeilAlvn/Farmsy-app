@@ -572,50 +572,17 @@ struct FarmDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// Member content: the description, then all the member-only sections in the
+    /// web's order (what people are saying → details → what's new → reviews →
+    /// claim → report).
     @ViewBuilder
     private var detailSections: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             if let description = detail?.description, !description.isEmpty {
                 ExpandableText(text: description)
             }
-
-            VStack(spacing: 0) {
-                if let address = detail?.address ?? pin.address {
-                    InfoRow(icon: "mappin.and.ellipse", label: String(localized: "Address"),
-                            value: [address, detail?.postalCode ?? pin.postalCode, pin.city]
-                                .compactMap(\.self).joined(separator: ", "))
-                }
-                if let email = detail?.email {
-                    InfoRow(icon: "envelope", label: String(localized: "Email"), value: email)
-                }
-                if let op = detail?.operatorName {
-                    InfoRow(icon: "person", label: String(localized: "Run by"), value: op)
-                }
-                if detail?.organic == true {
-                    InfoRow(icon: "leaf", label: String(localized: "Organic"), value: String(localized: "Yes 🌱"))
-                }
-                if let produce = detail?.produce, !produce.isEmpty {
-                    InfoRow(icon: "basket", label: String(localized: "Produce"), value: produce)
-                }
-            }
-            .card(padding: 6)
-
-            if detail?.facebook != nil || detail?.instagram != nil {
-                HStack(spacing: 12) {
-                    if let fb = detail?.facebook, let url = socialURL(fb, base: "https://facebook.com/") {
-                        SocialChip(label: "Facebook") { UIApplication.shared.open(url) }
-                    }
-                    if let ig = detail?.instagram, let url = socialURL(ig, base: "https://instagram.com/") {
-                        SocialChip(label: "Instagram") { UIApplication.shared.open(url) }
-                    }
-                }
-            }
+            FarmMemberSections(pin: pin, detail: detail, onClaim: { showClaim = true })
         }
-    }
-
-    private func socialURL(_ value: String, base: String) -> URL? {
-        if value.hasPrefix("http") { return URL(string: value) }
-        return URL(string: base + value.trimmingCharacters(in: CharacterSet(charactersIn: "@/")))
     }
 }
 
