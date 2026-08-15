@@ -139,9 +139,10 @@ struct MultiImageFarmCard: View {
     var body: some View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    // First image is the farm's profile picture.
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                HStack(spacing: 10) {
+                    // The farm's first photo, as a round profile (a copy — the
+                    // photo also stays in the row below).
+                    Circle()
                         .fill(Color(hex: 0xF3F4F6))
                         .frame(width: 40, height: 40)
                         .overlay(
@@ -150,7 +151,7 @@ struct MultiImageFarmCard: View {
                                 else { Text(pin.primaryCategory.emoji).font(.system(size: 18)) }
                             }
                         )
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .clipShape(Circle())
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(pin.name)
@@ -176,10 +177,10 @@ struct MultiImageFarmCard: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                // The remaining photos (after the profile) as a fixed row.
-                let rest = Array(images.dropFirst().prefix(3))
-                if !rest.isEmpty {
-                    FixedImageRow(urls: rest, height: 96)
+                // All photos in a fixed row — including the first, which is also
+                // the profile; we copy it here rather than dropping it.
+                if !images.isEmpty {
+                    FixedImageRow(urls: Array(images.prefix(3)), height: 96)
                 }
             }
             .padding(12)

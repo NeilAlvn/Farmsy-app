@@ -14,6 +14,7 @@ struct MainView: View {
     @State private var showAuth = false
     @State private var accountRoute: AccountRoute?
     @State private var showWhatsNew = false
+    @State private var showTrips = false
     /// The card opens at half and can be dragged to peek or full.
     @State private var farmDetent: PresentationDetent = .fraction(0.55)
     /// A pin the map should fly to (set when opening from the What's New sheet).
@@ -25,17 +26,16 @@ struct MainView: View {
     }
 
     var body: some View {
-        MapScreen(
-            onOpenFarm: { openFarm($0) },
-            onOpenSaved: { accountRoute = .saved },
-            onOpenSettings: { accountRoute = .settings },
-            onOpenWhatsNew: { showWhatsNew = true },
-            focusPin: flyTarget
-        )
+        MapScreen(onOpenFarm: { openFarm($0) }, focusPin: flyTarget)
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
         .environment(\.requestAuth, { showAuth = true })
+        .overlay(alignment: .bottom) {
+            bottomPanel
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
+        }
         // The farm card — three resting heights, opening at half, and the map
         // stays interactive behind it up through half.
         .sheet(isPresented: Binding(
@@ -67,6 +67,7 @@ struct MainView: View {
             case .settings: SettingsSheet()
             }
         }
+        .sheet(isPresented: $showTrips) { TripsPlaceholderView() }
         .sheet(isPresented: $showAuth) { AuthView() }
     }
 
@@ -76,5 +77,68 @@ struct MainView: View {
     private func openFarm(_ pin: FarmPin) {
         farmDetent = .fraction(0.55)   // always open at half
         selectedPin = pin
+    }
+
+    // MARK: - Bottom floating panel
+
+    /// A floating pill over the map, the width of the search bar: Discover (the
+    /// What's New sheet), Save, Trips and Settings.
+    private var bottomPanel: some View {
+        HStack(spacing: 4) {
+            panelItem(icon: "newspaper", label: String(localized: "Discover")) { showWhatsNew = true }
+            panelItem(icon: "heart", label: String(localized: "Saved")) { requireAuth { accountRoute = .saved } }
+            panelItem(icon: "map", label: String(localized: "Trips")) { requireAuth { showTrips = true } }
+            panelItem(icon: "gearshape", label: String(localized: "Settings")) { requireAuth { accountRoute = .settings } }
+        }
+        .padding(6)
+        .background(.white, in: Capsule())
+        .shadow(color: .black.opacity(0.14), radius: 12, y: 3)
+    }
+
+    private func panelItem(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: icon).font(.system(size: 17, weight: .semibold))
+                Text(label).font(.geist(10, .semibold))
+            }
+            .foregroundStyle(Color.farmGreenMap)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func requireAuth(_ action: @escaping () -> Void) {
+        if session.isAuthenticated { action() } else { showAuth = true }
+    }
+}
+
+/// Placeholder until the Trips spec lands from Aviah — trip planning is a Pro
+/// feature and the web owns the route logic (POST /api/route).
+struct TripsPlaceholderView: View {
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "map")
+                .font(.system(size: 34))
+                .foregroundStyle(Color.farmGreenMap)
+            Text("Trips are coming soon")
+                .font(.geist(18, .bold))
+                .foregroundStyle(Color.ink)
+            Text("Plan a route between farms — a Farmsy Pro feature.")
+                .font(.geist(14))
+                .foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+            Button("Close") { dismiss() }
+                .font(.geist(15, .semibold))
+                .foregroundStyle(Color.farmGreen)
+                .padding(.top, 4)
+        }
+        .padding(30)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.cream.ignoresSafeArea())
     }
 }

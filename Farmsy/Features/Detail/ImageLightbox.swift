@@ -34,22 +34,27 @@ struct ImageLightbox: View {
     private var hasMany: Bool { source.images.count > 1 }
 
     var body: some View {
-        ZStack {
-            // A pale veil plus a blur, not a dark screen — and it fades in place
-            // (pops), it does not slide. Tapping outside closes.
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .overlay(Color.white.opacity(0.30))
-                .ignoresSafeArea()
-                .opacity(shown ? 1 : 0)
-                .onTapGesture { close() }
+        GeometryReader { geo in
+            ZStack {
+                // A pale veil plus a blur, not a dark screen — and it fades in
+                // place (pops), it does not slide. Tapping outside closes.
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Color.white.opacity(0.30))
+                    .ignoresSafeArea()
+                    .opacity(shown ? 1 : 0)
+                    .onTapGesture { close() }
 
-            panel
-                .frame(maxWidth: 460, maxHeight: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 44)
-                .opacity(shown ? 1 : 0)
-                .scaleEffect(shown ? 1 : 0.94)
+                // Bounded to the safe area so the frame never runs off the screen:
+                // it takes the space available minus a margin, capped so it stays
+                // a card rather than filling edge to edge.
+                panel
+                    .frame(width: min(geo.size.width - 32, 440),
+                           height: min(geo.size.height - 64, 620))
+                    .opacity(shown ? 1 : 0)
+                    .scaleEffect(shown ? 1 : 0.94)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .onAppear { withAnimation(.easeOut(duration: 0.22)) { shown = true } }
     }

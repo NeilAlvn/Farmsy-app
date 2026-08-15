@@ -7,17 +7,10 @@ import CoreLocation
 /// farm card as a bottom sheet the parent presents.
 struct MapScreen: View {
     var onOpenFarm: (FarmPin) -> Void
-    var onOpenSaved: () -> Void = {}
-    var onOpenSettings: () -> Void = {}
-    var onOpenWhatsNew: () -> Void = {}
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
-    @Environment(SessionStore.self) private var session
-    @Environment(\.requestAuth) private var requestAuth
 
-    /// Whether any farm has posted — the What's New button only shows when true.
-    @State private var hasPosts = false
     @State private var showFilters = false
 
     /// A pin the parent asked us to fly to (e.g. tapped in the What's New sheet).
@@ -32,29 +25,58 @@ struct MapScreen: View {
     )
     @State private var visibleRegion: MKCoordinateRegion?
 
-    /// SwiftUI Map slows down past a few hundred annotations, so cap what we
-    /// draw to the pins inside the current viewport.
-    private let annotationCap = 130
+    /// Drawing thousands of individual annotations is what made the map lag.
+    /// Instead the viewport is divided into a grid and the pins in each cell are
+    /// grouped into one marker — a single pin when a cell holds one farm, a green
+    /// count bubble when it holds several. Zooming in splits the clusters apart.
+    private static let gridCellsAcross = 11.0
 
-    private var visiblePins: [FarmPin] {
+    private var clusters: [MapCluster] {
         let all = farms.filtered
-        guard let region = visibleRegion else { return Self.capRepresentative(all, annotationCap) }
-        let latHalf = region.span.latitudeDelta / 2 * 1.15
-        let lngHalf = region.span.longitudeDelta / 2 * 1.15
+        guard let region = visibleRegion else {
+            return Self.cluster(all, span: MKCoordinateSpan(latitudeDelta: 3.4, longitudeDelta: 3.4))
+        }
+        let latHalf = region.span.latitudeDelta / 2 * 1.2
+        let lngHalf = region.span.longitudeDelta / 2 * 1.2
         let inView = all.filter {
             abs($0.lat - region.center.latitude) < latHalf &&
             abs($0.lng - region.center.longitude) < lngHalf
         }
-        return Self.capRepresentative(inView, annotationCap)
+        return Self.cluster(inView, span: region.span)
     }
 
-    /// Cap the drawn annotations without skewing the visible category mix.
-    /// Taking the first N draws them in database order, which clusters one or
-    /// two pin colors; spread the budget evenly across the pins in view instead.
-    private static func capRepresentative(_ pins: [FarmPin], _ cap: Int) -> [FarmPin] {
-        guard pins.count > cap else { return pins }
-        let stride = Double(pins.count) / Double(cap)
-        return (0..<cap).map { pins[Int(Double($0) * stride)] }
+    /// Grid-cluster pins by the current span. Cell size is the span divided by a
+    /// fixed number of cells across, so clusters merge when zoomed out and split
+    /// when zoomed in. The bucket's own centre positions the marker, so it does
+    /// not jitter as pins come and go from the viewport.
+    private static func cluster(_ pins: [FarmPin], span: MKCoordinateSpan) -> [MapCluster] {
+        let cellLat = max(span.latitudeDelta / gridCellsAcross, 0.0001)
+        let cellLng = max(span.longitudeDelta / gridCellsAcross, 0.0001)
+        var buckets: [String: [FarmPin]] = [:]
+        for pin in pins {
+            let row = Int((pin.lat / cellLat).rounded(.down))
+            let col = Int((pin.lng / cellLng).rounded(.down))
+            buckets["\(row)_\(col)", default: []].append(pin)
+        }
+        return buckets.map { key, group in
+            if group.count == 1 {
+                return MapCluster(id: group[0].osmId, coordinate: group[0].coordinate, pins: group)
+            }
+            let lat = group.reduce(0.0) { $0 + $1.lat } / Double(group.count)
+            let lng = group.reduce(0.0) { $0 + $1.lng } / Double(group.count)
+            return MapCluster(id: key, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), pins: group)
+        }
+    }
+
+    private func zoomInto(_ cluster: MapCluster) {
+        let current = visibleRegion?.span ?? MKCoordinateSpan(latitudeDelta: 3.4, longitudeDelta: 3.4)
+        withAnimation(.easeInOut(duration: 0.4)) {
+            camera = .region(MKCoordinateRegion(
+                center: cluster.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: current.latitudeDelta / 3.2,
+                                       longitudeDelta: current.longitudeDelta / 3.2)
+            ))
+        }
     }
 
     var body: some View {
@@ -62,15 +84,15 @@ struct MapScreen: View {
             mapCard
         }
         .frame(maxHeight: .infinity)
-        // The header, search and filters float over the map at the top.
+        // Search sits at the top with the locate button beside it — the wordmark,
+        // What's New and account controls moved to the bottom panel.
         .overlay(alignment: .top) {
-            VStack(spacing: 10) {
-                headerRow
-                    .padding(.horizontal, 14)
+            HStack(spacing: 10) {
                 searchRow
-                    .padding(.horizontal, 14)
+                CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
             }
-            .padding(.top, 4)
+            .padding(.horizontal, 14)
+            .padding(.top, 6)
         }
         .sheet(isPresented: $showFilters) {
             FilterSheet()
@@ -78,55 +100,6 @@ struct MapScreen: View {
                 .presentationDragIndicator(.visible)
         }
         .onChange(of: focusPin?.osmId) { _, _ in flyToFocus() }
-        // Locate bottom-right, clear of the sheet.
-        .overlay(alignment: .bottomTrailing) {
-            locateButton
-                .padding(.trailing, 14)
-                .padding(.bottom, 24)
-        }
-        .task { await checkForPosts() }
-    }
-
-    // MARK: - Header (logo, What's New, account)
-
-    private var headerRow: some View {
-        HStack(spacing: 8) {
-            Text("Farmsy")
-                .font(.displayItalic(24, weight: .medium))
-                .foregroundStyle(Color.ink)
-            Spacer()
-            if hasPosts {
-                CircleMapButton(icon: "newspaper", action: onOpenWhatsNew)
-            }
-            Menu {
-                if session.isAuthenticated {
-                    Button { onOpenSaved() } label: { Label(String(localized: "Saved"), systemImage: "heart") }
-                    Button { onOpenSettings() } label: { Label(String(localized: "Settings"), systemImage: "gearshape") }
-                } else {
-                    Button { requestAuth() } label: { Label(String(localized: "Sign in"), systemImage: "person.crop.circle") }
-                }
-            } label: {
-                CircleMapButtonLabel(icon: session.isAuthenticated ? "person.crop.circle.fill" : "person.crop.circle")
-            }
-        }
-    }
-
-    private var locateButton: some View {
-        CircleMapButton(icon: "location.fill", size: 48, action: locateNearMe)
-    }
-
-    /// A cheap "does any post exist" check, to decide whether the What's New
-    /// button appears at all (MOBILE-SPEC-MAP §1).
-    private func checkForPosts() async {
-        struct IdRow: Decodable { let id: String }
-        let rows: [IdRow] = (try? await supabase
-            .from("farm_pings")
-            .select("id")
-            .eq("status", value: "visible")
-            .limit(1)
-            .execute()
-            .value) ?? []
-        hasPosts = !rows.isEmpty
     }
 
     // MARK: - Search row (top)
@@ -191,15 +164,26 @@ struct MapScreen: View {
     private var mapCard: some View {
         Map(position: $camera) {
             UserAnnotation()
-            ForEach(visiblePins) { pin in
-                Annotation(pin.name, coordinate: pin.coordinate, anchor: .bottom) {
-                    FarmPinView(category: pin.primaryCategory)
-                        .onTapGesture {
-                            Haptics.tap()
-                            onOpenFarm(pin)
-                        }
+            ForEach(clusters) { cluster in
+                if cluster.isCluster {
+                    Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .center) {
+                        ClusterBubble(count: cluster.pins.count)
+                            .onTapGesture {
+                                Haptics.tap()
+                                zoomInto(cluster)
+                            }
+                    }
+                    .annotationTitles(.hidden)
+                } else {
+                    Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .bottom) {
+                        FarmPinView(category: cluster.representative.primaryCategory)
+                            .onTapGesture {
+                                Haptics.tap()
+                                onOpenFarm(cluster.representative)
+                            }
+                    }
+                    .annotationTitles(.hidden)
                 }
-                .annotationTitles(.hidden)
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
@@ -297,6 +281,38 @@ struct CircleMapButton: View {
             CircleMapButtonLabel(icon: icon, size: size, tint: tint)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// A cluster of farms, drawn as a green count bubble (the map green used on the
+/// buttons). Tapping it zooms the map in so the cluster splits apart.
+struct MapCluster: Identifiable {
+    let id: String
+    let coordinate: CLLocationCoordinate2D
+    let pins: [FarmPin]
+    var isCluster: Bool { pins.count > 1 }
+    var representative: FarmPin { pins[0] }
+}
+
+struct ClusterBubble: View {
+    let count: Int
+
+    private var size: CGFloat {
+        switch count {
+        case ..<10: 38
+        case ..<100: 46
+        default: 54
+        }
+    }
+
+    var body: some View {
+        Text(count > 999 ? "999+" : "\(count)")
+            .font(.geist(count > 99 ? 13 : 15, .bold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Color.farmGreenMap, in: Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 2.5))
+            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
     }
 }
 

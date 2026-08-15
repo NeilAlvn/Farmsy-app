@@ -18,7 +18,6 @@ struct FarmDetailView: View {
     @State private var isLocked = false
     @State private var showClaim = false
     @State private var showPaywall = false
-    @State private var showDescriptionModal = false
     @State private var lightbox: LightboxSource?
 
     var body: some View {
@@ -57,7 +56,6 @@ struct FarmDetailView: View {
                 await reload()
             }
         }
-        .sheet(isPresented: $showDescriptionModal) { descriptionModal }
         .fullScreenCover(item: $lightbox) { src in
             ImageLightbox(source: src) { lightbox = nil }
                 .presentationBackground(.clear)
@@ -137,27 +135,38 @@ struct FarmDetailView: View {
         .padding(.bottom, 4)
     }
 
-    /// Rating, address and the badge row — these scroll with the rest.
+    /// Rating, location and the badge row — these scroll with the rest.
     private var subHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             ratingRow
 
-            if let address = detail?.address, !address.isEmpty {
-                HStack(alignment: .top, spacing: 6) {
+            // Public location line — just the town and country (NL / BE), shown to
+            // everyone. The full street address stays in the members' details list.
+            if let locationLine {
+                HStack(spacing: 6) {
                     Image(systemName: "mappin.and.ellipse")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.inkMuted)
-                    Text([address, detail?.postalCode ?? pin.postalCode, pin.city]
-                        .compactMap(\.self).joined(separator: ", "))
-                        .font(.geist(13))
+                    Text(locationLine)
+                        .font(.geist(14))
                         .foregroundStyle(Color.inkMuted)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
             badgeRow
         }
         .padding(.horizontal, 14)
+    }
+
+    /// "Aardenburg, NL" — town plus a two-letter country. Farms are NL & BE.
+    private var locationLine: String? {
+        let country = pin.country.map { c -> String in
+            let u = c.uppercased()
+            if u.hasPrefix("NE") || u == "NL" { return "NL" }
+            if u.hasPrefix("BE") { return "BE" }
+            return c
+        }
+        return [pin.city, country].compactMap(\.self).joined(separator: ", ").nilIfEmpty
     }
 
     private var ratingRow: some View {
@@ -262,25 +271,34 @@ struct FarmDetailView: View {
                     .frame(height: 160)
                     .overlay(Text(pin.primaryCategory.emoji).font(.geist(56)))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            } else if imgs.count == 1 {
+                // One photo — no rail, just the cover.
+                photoTile(imgs[0], radius: 16) { openLightbox(imgs, 0) }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 160)
             } else {
                 HStack(spacing: 8) {
                     photoTile(imgs[0], radius: 16) { openLightbox(imgs, 0) }
                         .frame(maxWidth: .infinity)
                         .frame(height: 160)
-                    if imgs.count > 1 {
-                        VStack(spacing: 8) {
-                            photoTile(imgs[1], radius: 12) { openLightbox(imgs, 1) }
-                                .frame(height: 72)
-                            if imgs.count > 2 {
-                                photoTile(imgs[2], radius: 12,
-                                          plusN: imgs.count > 3 ? imgs.count - 3 : nil) {
-                                    openLightbox(imgs, imgs.count > 3 ? 3 : 2)
-                                }
-                                .frame(height: 72)
+                    VStack(spacing: 8) {
+                        photoTile(imgs[1], radius: 12) { openLightbox(imgs, 1) }
+                            .frame(height: 76)
+                        if imgs.count > 2 {
+                            photoTile(imgs[2], radius: 12,
+                                      plusN: imgs.count > 3 ? imgs.count - 3 : nil) {
+                                openLightbox(imgs, imgs.count > 3 ? 3 : 2)
                             }
+                            .frame(height: 76)
+                        } else {
+                            // Exactly two photos — the bottom slot is a light-grey
+                            // placeholder so the rail keeps its shape.
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(hex: 0xF3F4F6))
+                                .frame(height: 76)
                         }
-                        .frame(width: 80)
                     }
+                    .frame(width: 84)
                 }
             }
         }
@@ -499,25 +517,7 @@ struct FarmDetailView: View {
     private var detailSections: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let description = detail?.description, !description.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(description)
-                        .font(.geist(15))
-                        .foregroundStyle(Color.ink)
-                        .lineSpacing(3)
-                        .lineLimit(3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if description.count > 140 {
-                        Button {
-                            Haptics.tap()
-                            showDescriptionModal = true
-                        } label: {
-                            Text("… View more")
-                                .font(.geist(14, .semibold))
-                                .foregroundStyle(Color.farmGreen)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                ExpandableText(text: description)
             }
 
             VStack(spacing: 0) {
@@ -548,30 +548,6 @@ struct FarmDetailView: View {
                     }
                     if let ig = detail?.instagram, let url = socialURL(ig, base: "https://instagram.com/") {
                         SocialChip(label: "Instagram") { UIApplication.shared.open(url) }
-                    }
-                }
-            }
-        }
-    }
-
-    /// The full description in a popup modal, opened by "See more".
-    private var descriptionModal: some View {
-        NavigationStack {
-            ScrollView {
-                Text(detail?.description ?? "")
-                    .font(.geist(16))
-                    .foregroundStyle(Color.ink)
-                    .lineSpacing(4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(20)
-            }
-            .background(Color.cream.ignoresSafeArea())
-            .navigationTitle(pin.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showDescriptionModal = false } label: {
-                        Image(systemName: "xmark").font(.system(size: 14, weight: .semibold))
                     }
                 }
             }
@@ -896,5 +872,86 @@ struct PlanButton: View {
             .foregroundStyle(filled ? Color.white : Color.farmGreen)
         }
         .buttonStyle(.plain)
+    }
+}
+
+extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
+}
+
+/// A description that clamps to three lines with "… View more" fading in at the
+/// end of the last line, and expands *inline* to the whole text when tapped —
+/// no modal, no preview screen. Truncation is measured, so the control only
+/// appears when the text really doesn't fit.
+struct ExpandableText: View {
+    let text: String
+    var lineLimit: Int = 3
+    /// The surface behind the text, so the "View more" gradient blends in.
+    var background: Color = .cream
+
+    @State private var expanded = false
+    @State private var truncated = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(text)
+                .font(.geist(15))
+                .foregroundStyle(Color.ink)
+                .lineSpacing(3)
+                .lineLimit(expanded ? nil : lineLimit)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(measurement)
+                .overlay(alignment: .bottomTrailing) {
+                    if truncated && !expanded {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) { expanded = true }
+                        } label: {
+                            HStack(spacing: 0) {
+                                LinearGradient(colors: [background.opacity(0), background],
+                                               startPoint: .leading, endPoint: .trailing)
+                                    .frame(width: 28)
+                                Text("… View more")
+                                    .font(.geist(14, .semibold))
+                                    .foregroundStyle(Color.farmGreen)
+                                    .background(background)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+            if truncated && expanded {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { expanded = false }
+                } label: {
+                    Text("View less")
+                        .font(.geist(14, .semibold))
+                        .foregroundStyle(Color.farmGreen)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// Renders the text clamped and unclamped off-screen to learn whether the
+    /// clamp actually cut anything, so the control never shows on short text.
+    private var measurement: some View {
+        Text(text)
+            .font(.geist(15))
+            .lineSpacing(3)
+            .lineLimit(lineLimit)
+            .background(GeometryReader { clamped in
+                Text(text)
+                    .font(.geist(15))
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .background(GeometryReader { full in
+                        Color.clear.onAppear {
+                            truncated = full.size.height > clamped.size.height + 1
+                        }
+                    })
+                    .hidden()
+            })
+            .hidden()
     }
 }

@@ -322,20 +322,20 @@ struct PingCard: View {
         // scroll view fires mid-scroll; a button is cancelled by the drag.
         Button(action: onOpenFarm) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     Text(initials)
-                        .font(.geist(10, .bold))
+                        .font(.geist(14, .bold))
                         .foregroundStyle(Color.farmGreen)
-                        .frame(width: 26, height: 26)
+                        .frame(width: 40, height: 40)
                         .background(Color.farmGreen.opacity(0.12), in: Circle())
                     VStack(alignment: .leading, spacing: 1) {
                         Text(ping.authorName)
-                            .font(.geist(13, .semibold))
+                            .font(.geist(14, .semibold))
                             .foregroundStyle(Color.ink)
                             .lineLimit(1)
                         if let farmName {
                             Text(farmName)
-                                .font(.geist(11, .medium))
+                                .font(.geist(12, .medium))
                                 .foregroundStyle(Color.farmGreenMap)
                                 .lineLimit(1)
                         }
