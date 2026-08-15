@@ -33,7 +33,11 @@ struct MapScreen: View {
     private static let gridCellsAcross = 6.5
 
     private var clusters: [MapCluster] {
-        let all = farms.filtered
+        // Trip stops are drawn as their own always-visible numbered markers, so
+        // keep them out of the clustering — otherwise a stop vanishes into a
+        // cluster when zoomed out and you lose sight of the route's ends.
+        let tripSet = Set(trip.stopIds)
+        let all = farms.filtered.filter { !tripSet.contains($0.osmId) }
         guard let region = visibleRegion else {
             return Self.cluster(all, span: MKCoordinateSpan(latitudeDelta: 3.4, longitudeDelta: 3.4))
         }
@@ -44,6 +48,13 @@ struct MapScreen: View {
             abs($0.lng - region.center.longitude) < lngHalf
         }
         return Self.cluster(inView, span: region.span)
+    }
+
+    /// The trip's stops, as pins, in visiting order — drawn on top of everything.
+    private var tripStopPins: [(index: Int, pin: FarmPin)] {
+        trip.stopIds.enumerated().compactMap { i, id in
+            farms.pins.first { $0.osmId == id }.map { (i, $0) }
+        }
     }
 
     /// Grid-cluster pins by the current span. Cell size is the span divided by a
@@ -231,6 +242,14 @@ struct MapScreen: View {
                             ? StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
                             : StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round, dash: [2, 4]))
             }
+            // Numbered trip-stop markers, above the route and always visible.
+            ForEach(tripStopPins, id: \.pin.osmId) { item in
+                Annotation(item.pin.name, coordinate: item.pin.coordinate, anchor: .center) {
+                    TripStopMarker(number: item.index + 1)
+                        .onTapGesture { Haptics.tap(); onOpenFarm(item.pin) }
+                }
+                .annotationTitles(.hidden)
+            }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
         .onMapCameraChange(frequency: .onEnd) { context in
@@ -359,6 +378,21 @@ struct ClusterBubble: View {
             .background(Color.farmGreenMap, in: Circle())
             .overlay(Circle().stroke(.white, lineWidth: 2.5))
             .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+    }
+}
+
+/// A numbered stop on the active trip — a dark-green circle so it reads as part
+/// of the route, above the softer route line.
+struct TripStopMarker: View {
+    let number: Int
+    var body: some View {
+        Text("\(number)")
+            .font(.geist(14, .bold))
+            .foregroundStyle(.white)
+            .frame(width: 34, height: 34)
+            .background(Color.farmGreen, in: Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 2.5))
+            .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
     }
 }
 

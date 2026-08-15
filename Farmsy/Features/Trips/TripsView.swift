@@ -20,12 +20,14 @@ struct TripsView: View {
     @State private var tripName = ""
     @State private var armedDelete: String?
     @State private var reorderNote: String?
-    @State private var originQuery = ""
-    @State private var searchingOrigin = false
+    @State private var showOriginSearch = false
 
     enum Tab { case plan, mine }
 
     private var stops: [FarmPin] { trip.stopIds.compactMap { farms.pin(forOsmId: $0) } }
+    /// A route needs at least two points — either a starting point + one farm, or
+    /// two farms.
+    private var canRoute: Bool { (trip.originCoord != nil && stops.count >= 1) || stops.count >= 2 }
     private var pinIndex: [String: FarmPin] {
         Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -47,6 +49,16 @@ struct TripsView: View {
             TextField("My weekend trip", text: $tripName)
             Button("Save") { Task { await save() } }
             Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showOriginSearch) {
+            PlaceSearchSheet(
+                onPick: { coord, label in
+                    trip.setOrigin(coord, label: label)
+                    Task { await trip.refreshRoute(pins: pinIndex) }
+                },
+                onLocate: { Task { await locate() } })
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -94,30 +106,27 @@ struct TripsView: View {
 
     private var planTab: some View {
         VStack(spacing: 14) {
-            // Starting point — type a place (geocoded on submit) or use "my location".
-            HStack(spacing: 10) {
-                Image(systemName: "mappin.circle").font(.system(size: 18)).foregroundStyle(Color.inkMuted)
-                TextField(trip.originLabel ?? String(localized: "Choose a starting point"),
-                          text: $originQuery)
-                    .font(.geist(15)).foregroundStyle(Color.ink)
-                    .submitLabel(.search)
-                    .onSubmit { Task { await geocodeOrigin() } }
-                if trip.originLabel != nil {
-                    Button { Haptics.tap(); trip.setOrigin(trip.originCoord!, label: ""); originQuery = "" } label: {
+            // Starting point — a search bar that opens live place suggestions.
+            Button { Haptics.tap(); showOriginSearch = true } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(Color.inkMuted)
+                    Text(trip.originLabel?.isEmpty == false ? trip.originLabel! : String(localized: "Choose a starting point"))
+                        .font(.geist(15))
+                        .foregroundStyle(trip.originLabel?.isEmpty == false ? Color.ink : Color.inkMuted)
+                        .lineLimit(1)
+                    Spacer()
+                    if trip.originLabel?.isEmpty == false {
                         Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Color.inkMuted)
-                    }.buttonStyle(.plain)
+                            .onTapGesture { Haptics.tap(); trip.clearOrigin() }
+                    } else {
+                        Image(systemName: "location.circle").font(.system(size: 20)).foregroundStyle(Color.farmGreenMap)
+                    }
                 }
-                Button { Task { await locate() } } label: {
-                    Image(systemName: "location.circle").font(.system(size: 20)).foregroundStyle(Color.farmGreenMap)
-                }.buttonStyle(.plain)
+                .padding(.vertical, 14).padding(.horizontal, 16)
+                .background(.white, in: Capsule())
+                .overlay(Capsule().stroke(Color.hairline, lineWidth: 1))
             }
-            .padding(14)
-            .background(.white, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
-            if searchingOrigin {
-                Text("Finding that place…").font(.geist(12)).foregroundStyle(Color.inkMuted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            .buttonStyle(.plain)
 
             // Trip overview.
             VStack(alignment: .leading, spacing: 0) {
@@ -148,7 +157,7 @@ struct TripsView: View {
                     Task { await trip.refreshRoute(pins: pinIndex) }
                     dismiss()
                 }
-                .disabled(stops.count < 2)
+                .disabled(!canRoute)
             }
 
             outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") { openGoogleMaps() }
@@ -201,7 +210,7 @@ struct TripsView: View {
         HStack(spacing: 10) {
             Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
                 .font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
-            if stops.count < 2 {
+            if !canRoute {
                 Text("Add farms to see time and distance").font(.geist(14)).foregroundStyle(Color.inkMuted)
             } else if trip.isRouting {
                 Text("Finding the road…").font(.geist(14)).foregroundStyle(Color.inkMuted)
@@ -358,30 +367,11 @@ struct TripsView: View {
                 Text(title).font(.geist(14, .semibold))
             }
             .foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 14)
-            .background(Color.farmGreenMap.opacity(stops.count < 2 ? 0.5 : 1), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.farmGreenMap.opacity(canRoute ? 1 : 0.5), in: RoundedRectangle(cornerRadius: 16))
         }.buttonStyle(.plain)
     }
 
     // MARK: - Actions
-
-    /// Geocode the typed place (city / postcode / address) and set it as origin.
-    private func geocodeOrigin() async {
-        let q = originQuery.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { return }
-        searchingOrigin = true; defer { searchingOrigin = false }
-        // Bias the search to NL/BE where the farms are.
-        let req = MKLocalSearch.Request()
-        req.naturalLanguageQuery = q
-        req.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.8, longitude: 4.7),
-                                        span: MKCoordinateSpan(latitudeDelta: 4, longitudeDelta: 4))
-        if let item = try? await MKLocalSearch(request: req).start().mapItems.first {
-            let coord = item.placemark.coordinate
-            let label = item.placemark.locality ?? item.name ?? q
-            trip.setOrigin(coord, label: label)
-            originQuery = ""
-            await trip.refreshRoute(pins: pinIndex)
-        }
-    }
 
     private func locate() async {
         locationManager.request()

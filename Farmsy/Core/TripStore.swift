@@ -203,6 +203,12 @@ final class TripStore {
         UserDefaults.standard.set(label, forKey: originKey + ".label")
     }
 
+    func clearOrigin() {
+        originCoord = nil; originLabel = nil
+        UserDefaults.standard.removeObject(forKey: originKey)
+        UserDefaults.standard.removeObject(forKey: originKey + ".label")
+    }
+
     /// Wipe the draft if the account changed (a shared device must not carry the
     /// previous person's stops). Signed-out counts as owner "anon".
     func reconcileOwner(_ userId: String?) {
