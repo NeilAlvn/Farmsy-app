@@ -36,11 +36,11 @@ struct ImageLightbox: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // A pale veil plus a blur, not a dark screen — and it fades in
-                // place (pops), it does not slide. Tapping outside closes.
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Color.white.opacity(0.30))
+                // A light veil — the surroundings stay recognisable, only softly
+                // dimmed. It fades in place (pops), it does not slide. Tapping
+                // outside closes.
+                Color.white.opacity(0.55)
+                    .background(.ultraThinMaterial)
                     .ignoresSafeArea()
                     .opacity(shown ? 1 : 0)
                     .onTapGesture { close() }

@@ -4,6 +4,7 @@ import SwiftUI
 struct SavedScreen: View {
     var onOpenFarm: (FarmPin) -> Void
 
+    @Environment(\.dismiss) private var dismiss
     @Environment(FarmsStore.self) private var farms
     @Environment(FavoritesStore.self) private var favorites
     @Environment(LocationManager.self) private var locationManager
@@ -16,6 +17,35 @@ struct SavedScreen: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            // Same header treatment as the What's New sheet: an eyebrow and a
+            // circular close.
+            HStack {
+                Text("SAVED FARMS")
+                    .font(.geist(11, .semibold))
+                    .kerning(1.2)
+                    .foregroundStyle(Color.inkMuted)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x6B7280))
+                        .frame(width: 32, height: 32)
+                        .background(Color(hex: 0xF3F4F6), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            content
+        }
+        .background(Color.cream.ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private var content: some View {
         Group {
             if !session.isAuthenticated {
                 VStack(spacing: 12) {

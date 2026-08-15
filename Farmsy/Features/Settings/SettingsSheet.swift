@@ -42,11 +42,26 @@ struct SettingsSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Settings")
-                .font(.display(26))
-                .foregroundStyle(Color.ink)
-                .padding(.top, 26)
-                .padding(.bottom, 18)
+            // Same header treatment as What's New / Saved: an eyebrow and a
+            // circular close, in Geist (product UI uses no serif).
+            HStack {
+                Text("SETTINGS")
+                    .font(.geist(11, .semibold))
+                    .kerning(1.2)
+                    .foregroundStyle(Color.inkMuted)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x6B7280))
+                        .frame(width: 32, height: 32)
+                        .background(Color(hex: 0xF3F4F6), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {

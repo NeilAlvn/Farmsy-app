@@ -318,61 +318,63 @@ struct PingCard: View {
     }
 
     var body: some View {
-        // A Button, not an .onTapGesture — a tap gesture on a card inside a
-        // scroll view fires mid-scroll; a button is cancelled by the drag.
-        Button(action: onOpenFarm) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 10) {
-                    Text(initials)
-                        .font(.geist(14, .bold))
-                        .foregroundStyle(Color.farmGreen)
-                        .frame(width: 40, height: 40)
-                        .background(Color.farmGreen.opacity(0.12), in: Circle())
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(ping.authorName)
-                            .font(.geist(14, .semibold))
-                            .foregroundStyle(Color.ink)
+        // tapCard, not Button — a tap that was really a scroll is ignored, so a
+        // scroll through the feed no longer opens a farm by accident.
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text(initials)
+                    .font(.geist(14, .bold))
+                    .foregroundStyle(Color.farmGreen)
+                    .frame(width: 40, height: 40)
+                    .background(Color.farmGreen.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(ping.authorName)
+                        .font(.geist(14, .semibold))
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(1)
+                    if let farmName {
+                        Text(farmName)
+                            .font(.geist(12, .medium))
+                            .foregroundStyle(Color.farmGreenMap)
                             .lineLimit(1)
-                        if let farmName {
-                            Text(farmName)
-                                .font(.geist(12, .medium))
-                                .foregroundStyle(Color.farmGreenMap)
-                                .lineLimit(1)
-                        }
-                    }
-                    Spacer(minLength: 6)
-                    Text(timeAgo)
-                        .font(.geist(11))
-                        .foregroundStyle(Color.inkMuted)
-                }
-
-                if !ping.body.isEmpty {
-                    ClampedDescription(text: ping.body, onMore: onOpenFarm)
-                }
-
-                if !ping.images.isEmpty {
-                    FixedImageRow(urls: Array(ping.images.prefix(3)), height: 100)
-                }
-
-                HStack(spacing: 5) {
-                    Image(systemName: "heart")
-                        .font(.system(size: 12))
-                    if ping.likeCount > 0 {
-                        Text("\(ping.likeCount)").font(.geist(12))
                     }
                 }
-                .foregroundStyle(Color.inkMuted)
+                Spacer(minLength: 6)
+                Text(timeAgo)
+                    .font(.geist(11))
+                    .foregroundStyle(Color.inkMuted)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.hairline, lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            if !ping.body.isEmpty {
+                Text(ping.body)
+                    .font(.geist(14))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(3)
+                    .lineSpacing(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if !ping.images.isEmpty {
+                FixedImageRow(urls: Array(ping.images.prefix(3)), height: 100)
+            }
+
+            HStack(spacing: 5) {
+                Image(systemName: "heart")
+                    .font(.system(size: 12))
+                if ping.likeCount > 0 {
+                    Text("\(ping.likeCount)").font(.geist(12))
+                }
+            }
+            .foregroundStyle(Color.inkMuted)
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.hairline, lineWidth: 1)
+        )
+        .tapCard(onOpenFarm)
     }
 }
 

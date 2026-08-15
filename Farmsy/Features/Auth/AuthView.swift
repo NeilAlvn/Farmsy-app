@@ -9,7 +9,9 @@ struct AuthView: View {
 
     @AppStorage("pendingRefCode") private var pendingRefCode = ""
 
-    @State private var mode: Mode = .signUp
+    // Default to log in — most people reaching this already have an account, and
+    // it's the screen they expect when they tap "Sign in". New users switch.
+    @State private var mode: Mode = .logIn
     /// Signup is two steps, like the web: credentials, then personal details +
     /// address. Every one of those fields is required by POST /api/auth/signup.
     @State private var step = 1
@@ -38,9 +40,14 @@ struct AuthView: View {
     }
 
     private var credentialsOK: Bool {
-        guard email.contains("@"), password.count >= 8 else { return false }
-        if mode == .signUp && confirm != password { return false }
-        return true
+        guard email.contains("@") else { return false }
+        if mode == .logIn {
+            // Logging in: an existing password can be any length — the button just
+            // needs something to send. The server validates.
+            return !password.isEmpty
+        }
+        // Signing up: enforce the 8-char minimum and the confirmation match.
+        return password.count >= 8 && confirm == password
     }
 
     private var detailsOK: Bool {
@@ -361,19 +368,36 @@ struct AuthField: View {
     @Binding var text: String
     var isSecure = false
 
+    @State private var reveal = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.geist(14, .semibold))
                 .foregroundStyle(Color.farmGreen)
-            Group {
+            HStack(spacing: 8) {
+                Group {
+                    if isSecure && !reveal {
+                        SecureField(placeholder, text: $text)
+                    } else {
+                        TextField(placeholder, text: $text)
+                            .textInputAutocapitalization(isSecure ? .never : nil)
+                            .autocorrectionDisabled(isSecure)
+                    }
+                }
+                .font(.geist(17))
+                // A show/hide toggle on password fields.
                 if isSecure {
-                    SecureField(placeholder, text: $text)
-                } else {
-                    TextField(placeholder, text: $text)
+                    Button {
+                        reveal.toggle()
+                    } label: {
+                        Image(systemName: reveal ? "eye.slash" : "eye")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.inkMuted)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .font(.geist(17))
             .padding(.vertical, 15)
             .padding(.horizontal, 16)
             .background(

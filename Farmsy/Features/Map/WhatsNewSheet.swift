@@ -134,71 +134,83 @@ struct MultiImageFarmCard: View {
     let images: [String]
     var onOpen: () -> Void
 
+    @Environment(FavoritesStore.self) private var favorites
+    @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
+
     @State private var teaser: String?
 
     var body: some View {
-        Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 10) {
-                    // The farm's first photo, as a round profile (a copy — the
-                    // photo also stays in the row below).
-                    Circle()
-                        .fill(Color(hex: 0xF3F4F6))
-                        .frame(width: 40, height: 40)
-                        .overlay(
-                            AsyncImage(url: URL(string: images.first ?? "")) { phase in
-                                if case .success(let img) = phase { img.resizable().scaledToFill() }
-                                else { Text(pin.primaryCategory.emoji).font(.system(size: 18)) }
-                            }
-                        )
-                        .clipShape(Circle())
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(pin.name)
-                            .font(.geist(14, .bold))
-                            .foregroundStyle(Color.ink)
-                            .lineLimit(1)
-                        if let city = pin.city {
-                            Text(city)
-                                .font(.geist(12))
-                                .foregroundStyle(Color.inkMuted)
-                                .lineLimit(1)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                // The farm's first photo, as a round profile (a copy — the
+                // photo also stays in the row below).
+                Circle()
+                    .fill(Color(hex: 0xF3F4F6))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        AsyncImage(url: URL(string: images.first ?? "")) { phase in
+                            if case .success(let img) = phase { img.resizable().scaledToFill() }
+                            else { Text(pin.primaryCategory.emoji).font(.system(size: 18)) }
                         }
-                    }
-                    Spacer(minLength: 0)
-                }
+                    )
+                    .clipShape(Circle())
 
-                if let teaser, !teaser.isEmpty {
-                    Text(teaser)
-                        .font(.geist(13))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(pin.name)
+                        .font(.geist(14, .bold))
                         .foregroundStyle(Color.ink)
-                        .lineLimit(3)
-                        .lineSpacing(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(1)
+                    if let city = pin.city {
+                        Text(city)
+                            .font(.geist(12))
+                            .foregroundStyle(Color.inkMuted)
+                            .lineLimit(1)
+                    }
                 }
-
-                // All photos in a fixed row — including the first, which is also
-                // the profile; we copy it here rather than dropping it.
-                if !images.isEmpty {
-                    FixedImageRow(urls: Array(images.prefix(3)), height: 96)
-                }
+                Spacer(minLength: 0)
+                // Save heart, top-right — its own tap area, excluded from the
+                // card's open action so saving doesn't also open the farm.
+                Image(systemName: favorites.isSaved(pin.osmId) ? "heart.fill" : "heart")
+                    .font(.system(size: 17))
+                    .foregroundStyle(favorites.isSaved(pin.osmId) ? Color.warnRed : Color.inkMuted)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Circle())
+                    .tapCard(toggleSave)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.hairline, lineWidth: 1)
-            )
+
+            if let teaser, !teaser.isEmpty {
+                Text(teaser)
+                    .font(.geist(13))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(3)
+                    .lineSpacing(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            // All photos in a fixed row — including the first, which is also
+            // the profile; we copy it here rather than dropping it.
+            if !images.isEmpty {
+                FixedImageRow(urls: Array(images.prefix(3)), height: 96)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.hairline, lineWidth: 1)
+        )
+        .tapCard(excludeTopTrailing: 52, onOpen)
         .task {
-            // Prefer the farm's own description (present on the pin) and fall back
-            // to the public teaser endpoint, so the line renders even if the
-            // teaser request is slow or fails.
             if teaser == nil {
                 teaser = await FarmDetailAPI.teaser(osmId: pin.osmId)?.text
             }
         }
+    }
+
+    private func toggleSave() {
+        guard let userId = session.session?.user.id else { requestAuth(); return }
+        Task { await favorites.toggle(pin.osmId, userId: userId) }
     }
 }

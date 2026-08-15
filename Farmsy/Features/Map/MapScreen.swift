@@ -503,43 +503,38 @@ struct FilterSheet: View {
 
     private func row(icon: String?, emoji: String?, tint: Color, label: String,
                      trailing: String?, isOn: Bool, action: @escaping () -> Void) -> some View {
-        Button {
-            Haptics.tap()
-            action()
-        } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(emoji != nil ? tint : Color(hex: 0xF3F4F6))
-                        .frame(width: 34, height: 34)
-                    if let emoji {
-                        Text(emoji).font(.system(size: 15))
-                    } else if let icon {
-                        Image(systemName: icon).font(.system(size: 15)).foregroundStyle(Color.inkMuted)
-                    }
-                }
-                Text(label)
-                    .font(.geist(15))
-                    .foregroundStyle(Color.ink)
-                    .lineLimit(1)
-                Spacer(minLength: 6)
-                if let trailing {
-                    Text(trailing)
-                        .font(.geist(13, .semibold))
-                        .foregroundStyle(Color.inkMuted)
-                        .padding(.vertical, 3).padding(.horizontal, 8)
-                        .background(Color(hex: 0xF3F4F6), in: Capsule())
-                }
-                if isOn {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.farmGreenMap)
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(emoji != nil ? tint : Color(hex: 0xF3F4F6))
+                    .frame(width: 34, height: 34)
+                if let emoji {
+                    Text(emoji).font(.system(size: 15))
+                } else if let icon {
+                    Image(systemName: icon).font(.system(size: 15)).foregroundStyle(Color.inkMuted)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
-            .contentShape(Rectangle())
+            Text(label)
+                .font(.geist(15))
+                .foregroundStyle(Color.ink)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            if let trailing {
+                Text(trailing)
+                    .font(.geist(13, .semibold))
+                    .foregroundStyle(Color.inkMuted)
+                    .padding(.vertical, 3).padding(.horizontal, 8)
+                    .background(Color(hex: 0xF3F4F6), in: Capsule())
+            }
+            if isOn {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.farmGreenMap)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .contentShape(Rectangle())
+        .tapCard(action)
     }
 }

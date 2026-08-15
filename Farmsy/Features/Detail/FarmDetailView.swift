@@ -19,6 +19,9 @@ struct FarmDetailView: View {
     @State private var showClaim = false
     @State private var showPaywall = false
     @State private var lightbox: LightboxSource?
+    /// Public gallery photos, so multiple images show even for non-members (the
+    /// members' `detail.images` needs a subscription).
+    @State private var galleryImages: [String] = []
 
     var body: some View {
         // The card is open to everyone — paid fields are locked *inside* it. The
@@ -61,6 +64,7 @@ struct FarmDetailView: View {
                 .presentationBackground(.clear)
         }
         .task { await reload() }
+        .task { await loadGallery() }
         // Open the farm the moment access is granted, however long that takes —
         // the grant lands seconds after the purchase call via RevenueCat's webhook.
         .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
@@ -105,6 +109,23 @@ struct FarmDetailView: View {
     /// Fetched once and cached in @State so a re-check after purchase doesn't refetch.
     private func loadTeaser() async {
         if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId) }
+    }
+
+    /// The farm's gallery photos, read straight from Supabase (public read). This
+    /// is what lets a non-member see the multi-photo strip — the members' payload
+    /// isn't sent to them. Best-effort: if the read is blocked it stays empty and
+    /// the strip falls back to the cover.
+    private func loadGallery() async {
+        struct Row: Decodable { let url: String; let sortOrder: Int?
+            enum CodingKeys: String, CodingKey { case url; case sortOrder = "sort_order" } }
+        let rows: [Row] = (try? await supabase
+            .from("farm_images")
+            .select("url, sort_order")
+            .eq("farm_osm_id", value: pin.osmId)
+            .order("sort_order", ascending: true)
+            .execute()
+            .value) ?? []
+        if !rows.isEmpty { galleryImages = rows.map(\.url) }
     }
 
     // MARK: - Header
@@ -262,8 +283,19 @@ struct FarmDetailView: View {
 
     // MARK: - Photo strip (cover 160 + two 72 thumbnails + "+N")
 
+    /// Photos to show: the members' payload if we have it, else the public
+    /// gallery, else just the cover — merged with the cover and de-duplicated so
+    /// a farm with a cover plus gallery shows them all.
+    private var stripImages: [String] {
+        var source = detail?.images.isEmpty == false ? detail!.images : galleryImages
+        if let cover = pin.image, !source.contains(cover) { source.insert(cover, at: 0) }
+        if source.isEmpty, let cover = pin.image { source = [cover] }
+        var seen = Set<String>()
+        return source.filter { seen.insert($0).inserted }
+    }
+
     private var photoStrip: some View {
-        let imgs = (detail?.images.isEmpty == false ? detail!.images : [pin.image].compactMap(\.self))
+        let imgs = stripImages
         return Group {
             if imgs.isEmpty {
                 LinearGradient(colors: [Color.farmGreen.opacity(0.85), Color.farmGreenDeep],
@@ -307,27 +339,25 @@ struct FarmDetailView: View {
     private func photoTile(_ url: String, radius: CGFloat, plusN: Int? = nil, action: @escaping () -> Void) -> some View {
         // A base rectangle carries the size; the image is an overlay that fills
         // and is clipped — so the photo can never push the tile past its bounds.
-        Button(action: { Haptics.tap(); action() }) {
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .fill(Color(hex: 0xF3F4F6))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(
-                    AsyncImage(url: URL(string: url)) { phase in
-                        if case .success(let img) = phase { img.resizable().scaledToFill() }
-                        else { Color(hex: 0xF3F4F6) }
-                    }
-                )
-                .overlay {
-                    if let plusN {
-                        ZStack {
-                            Color.black.opacity(0.6)
-                            Text("+\(plusN)").font(.geist(14, .bold)).foregroundStyle(.white)
-                        }
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .fill(Color(hex: 0xF3F4F6))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(
+                AsyncImage(url: URL(string: url)) { phase in
+                    if case .success(let img) = phase { img.resizable().scaledToFill() }
+                    else { Color(hex: 0xF3F4F6) }
+                }
+            )
+            .overlay {
+                if let plusN {
+                    ZStack {
+                        Color.black.opacity(0.6)
+                        Text("+\(plusN)").font(.geist(14, .bold)).foregroundStyle(.white)
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-        }
-        .buttonStyle(.plain)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .tapCard(action)
     }
 
     // MARK: - Footer (pinned, does not scroll)
