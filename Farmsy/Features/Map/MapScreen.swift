@@ -133,7 +133,7 @@ struct MapScreen: View {
 
     private var searchRow: some View {
         @Bindable var farms = farms
-        let filtersActive = farms.anyQuickFilterOn || farms.selectedCategory != nil
+        let filtersActive = farms.anyFilterOn
         return HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15))
@@ -410,14 +410,14 @@ struct FarmCard: View {
     }
 }
 
-/// The filter sheet that slides up from the search bar — every filter in one
-/// place: the quick toggles, then a single-select category.
+/// The filter sheet that slides up from the search bar — one unified list, like
+/// the web: an "All" row, then the categories (each a coloured circle + name),
+/// then the quick filters (grey circle + icon). Everything is multi-select; a
+/// tick marks what's on. No section headers.
 struct FilterSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
-
-    private let cols = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
         @Bindable var farms = farms
@@ -425,86 +425,104 @@ struct FilterSheet: View {
             HStack {
                 Text("Filters").font(.geist(18, .bold)).foregroundStyle(Color.ink)
                 Spacer()
-                if farms.anyQuickFilterOn || farms.selectedCategory != nil {
-                    Button {
-                        Haptics.tap()
-                        farms.filterVerified = false; farms.filterOpenToday = false
-                        farms.filterAutomaat = false; farms.filterZelfpluk = false
-                        farms.filterHasPhotos = false; farms.selectedCategory = nil
-                    } label: {
-                        Text("Clear").font(.geist(14, .semibold)).foregroundStyle(Color.farmGreenMap)
-                    }
-                    .buttonStyle(.plain)
-                }
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color(hex: 0x6B7280))
                         .frame(width: 32, height: 32)
                         .background(Color(hex: 0xF3F4F6), in: Circle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    sectionLabel("QUICK FILTERS")
-                    LazyVGrid(columns: cols, spacing: 8) {
-                        FilterChip(title: String(localized: "Verified"), icon: "checkmark.seal.fill",
-                                   isOn: farms.filterVerified) { farms.filterVerified.toggle() }
-                        FilterChip(title: String(localized: "Open now"), icon: "clock",
-                                   isOn: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
-                        FilterChip(title: String(localized: "Open 24/7"), icon: "bolt.fill",
-                                   isOn: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
-                        FilterChip(title: String(localized: "Pick your own"), icon: "leaf.fill",
-                                   isOn: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
-                        FilterChip(title: String(localized: "Has photos"), icon: "camera.fill",
-                                   isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
-                        FilterChip(title: String(localized: "Near me"), icon: "location.north.fill",
-                                   isOn: false) {
-                            locationManager.request()
-                            dismiss()
-                        }
+                VStack(spacing: 0) {
+                    // "All" clears every filter — on when nothing is selected.
+                    row(icon: nil, emoji: "🍽️", tint: Color.inkMuted,
+                        label: String(localized: "All categories"),
+                        trailing: "\(farms.pins.count)",
+                        isOn: !farms.anyFilterOn) {
+                        farms.clearAllFilters()
                     }
+                    divider
 
-                    sectionLabel("CATEGORIES")
-                    LazyVGrid(columns: cols, spacing: 8) {
-                        categoryChip(nil, label: String(localized: "All categories"), emoji: "🍽️")
-                        ForEach(FarmCategory.allCases) { cat in
-                            categoryChip(cat, label: cat.label, emoji: cat.emoji)
+                    ForEach(FarmCategory.allCases) { cat in
+                        row(icon: nil, emoji: cat.emoji, tint: cat.color,
+                            label: cat.label, trailing: nil,
+                            isOn: farms.selectedCategories.contains(cat)) {
+                            if farms.selectedCategories.contains(cat) { farms.selectedCategories.remove(cat) }
+                            else { farms.selectedCategories.insert(cat) }
                         }
                     }
+                    divider
+
+                    row(icon: "checkmark.seal", emoji: nil, tint: Color.inkMuted,
+                        label: String(localized: "Verified farm shops"), trailing: nil,
+                        isOn: farms.filterVerified) { farms.filterVerified.toggle() }
+                    row(icon: "bolt", emoji: nil, tint: Color.inkMuted,
+                        label: String(localized: "Open 24/7 (automaat)"), trailing: nil,
+                        isOn: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
+                    row(icon: "clock", emoji: nil, tint: Color.inkMuted,
+                        label: String(localized: "Open today"), trailing: nil,
+                        isOn: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
+                    row(icon: "leaf", emoji: nil, tint: Color.inkMuted,
+                        label: String(localized: "Pick your own"), trailing: nil,
+                        isOn: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
+                    row(icon: "camera", emoji: nil, tint: Color.inkMuted,
+                        label: String(localized: "Has photos"), trailing: nil,
+                        isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
                 }
-                .padding(16)
+                .padding(.bottom, 24)
             }
         }
         .background(Color.cream.ignoresSafeArea())
     }
 
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text).font(.geist(11, .semibold)).kerning(1.1).foregroundStyle(Color.inkMuted)
+    private var divider: some View {
+        Rectangle().fill(Color.hairline).frame(height: 1).padding(.vertical, 4)
     }
 
-    private func categoryChip(_ cat: FarmCategory?, label: String, emoji: String) -> some View {
-        @Bindable var farms = farms
-        let isOn = farms.selectedCategory == cat
-        return Button {
+    private func row(icon: String?, emoji: String?, tint: Color, label: String,
+                     trailing: String?, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button {
             Haptics.tap()
-            farms.selectedCategory = cat
+            action()
         } label: {
-            HStack(spacing: 6) {
-                Text(emoji).font(.system(size: 13))
-                Text(label).font(.geist(13, .semibold)).lineLimit(1)
-                Spacer(minLength: 0)
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(emoji != nil ? tint : Color(hex: 0xF3F4F6))
+                        .frame(width: 34, height: 34)
+                    if let emoji {
+                        Text(emoji).font(.system(size: 15))
+                    } else if let icon {
+                        Image(systemName: icon).font(.system(size: 15)).foregroundStyle(Color.inkMuted)
+                    }
+                }
+                Text(label)
+                    .font(.geist(15))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                if let trailing {
+                    Text(trailing)
+                        .font(.geist(13, .semibold))
+                        .foregroundStyle(Color.inkMuted)
+                        .padding(.vertical, 3).padding(.horizontal, 8)
+                        .background(Color(hex: 0xF3F4F6), in: Capsule())
+                }
+                if isOn {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.farmGreenMap)
+                }
             }
-            .foregroundStyle(isOn ? .white : Color.ink)
-            .padding(.vertical, 10).padding(.horizontal, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isOn ? Color.farmGreenMap : .white)
-                    .stroke(isOn ? Color.farmGreenMap : Color.hairline, lineWidth: 1)
-            )
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

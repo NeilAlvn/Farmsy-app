@@ -25,9 +25,10 @@ struct FarmDetailView: View {
         // The card is open to everyone — paid fields are locked *inside* it. The
         // footer is pinned outside the scroll; everything else scrolls.
         VStack(spacing: 0) {
+            pinnedHeader
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    header
+                    subHeader
                     tripButton
                         .padding(.horizontal, 14)
                     photoStrip
@@ -44,7 +45,7 @@ struct FarmDetailView: View {
                             .padding(.horizontal, 14)
                     }
                 }
-                .padding(.top, 6)
+                .padding(.top, 12)
                 .padding(.bottom, 20)
             }
             footer
@@ -108,29 +109,37 @@ struct FarmDetailView: View {
         if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId) }
     }
 
-    // MARK: - Header (name, actions, rating, address, badges)
+    // MARK: - Header
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 10) {
-                Text(pin.name)
-                    .font(.geist(19, .bold))
-                    .foregroundStyle(Color.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                HStack(spacing: 6) {
-                    headerCircle(favorites.isSaved(pin.osmId) ? "heart.fill" : "heart",
-                                 tint: favorites.isSaved(pin.osmId) ? Color.warnRed : Color(hex: 0x6B7280),
-                                 action: saveTapped)
-                    if let shareURL {
-                        ShareLink(item: shareURL) {
-                            headerCircleLabel("square.and.arrow.up", tint: Color(hex: 0x6B7280))
-                        }
+    /// Name + save/share/close, aligned on one row and pinned above the scroll —
+    /// like the What's New sheet, they don't move when the card scrolls.
+    private var pinnedHeader: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text(pin.name)
+                .font(.geist(19, .bold))
+                .foregroundStyle(Color.ink)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            HStack(spacing: 6) {
+                headerCircle(favorites.isSaved(pin.osmId) ? "heart.fill" : "heart",
+                             tint: favorites.isSaved(pin.osmId) ? Color.warnRed : Color(hex: 0x6B7280),
+                             action: saveTapped)
+                if let shareURL {
+                    ShareLink(item: shareURL) {
+                        headerCircleLabel("square.and.arrow.up", tint: Color(hex: 0x6B7280))
                     }
-                    headerCircle("xmark", tint: Color(hex: 0x6B7280)) { dismiss() }
                 }
+                headerCircle("xmark", tint: Color(hex: 0x6B7280)) { dismiss() }
             }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 18)
+        .padding(.bottom, 4)
+    }
 
+    /// Rating, address and the badge row — these scroll with the rest.
+    private var subHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
             ratingRow
 
             if let address = detail?.address, !address.isEmpty {
@@ -149,7 +158,6 @@ struct FarmDetailView: View {
             badgeRow
         }
         .padding(.horizontal, 14)
-        .padding(.top, 16)
     }
 
     private var ratingRow: some View {
@@ -279,21 +287,27 @@ struct FarmDetailView: View {
     }
 
     private func photoTile(_ url: String, radius: CGFloat, plusN: Int? = nil, action: @escaping () -> Void) -> some View {
+        // A base rectangle carries the size; the image is an overlay that fills
+        // and is clipped — so the photo can never push the tile past its bounds.
         Button(action: { Haptics.tap(); action() }) {
-            ZStack {
-                Color(hex: 0xF3F4F6)
-                AsyncImage(url: URL(string: url)) { phase in
-                    if case .success(let img) = phase { img.resizable().scaledToFill() }
-                    else { Color(hex: 0xF3F4F6) }
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(Color(hex: 0xF3F4F6))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(
+                    AsyncImage(url: URL(string: url)) { phase in
+                        if case .success(let img) = phase { img.resizable().scaledToFill() }
+                        else { Color(hex: 0xF3F4F6) }
+                    }
+                )
+                .overlay {
+                    if let plusN {
+                        ZStack {
+                            Color.black.opacity(0.6)
+                            Text("+\(plusN)").font(.geist(14, .bold)).foregroundStyle(.white)
+                        }
+                    }
                 }
-                if let plusN {
-                    Color.black.opacity(0.6)
-                    Text("+\(plusN)").font(.geist(14, .bold)).foregroundStyle(.white)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -408,14 +422,16 @@ struct FarmDetailView: View {
         }
     }
 
-    /// The single membership ask, inside the card, matching the web: empty grey
-    /// bars behind a blur (the paid values are never sent, so there is nothing
-    /// real to reveal — the blur is texture, not a cover), a lock in a soft disc,
-    /// one line naming what is behind it, and a soft-green button to the purchase.
-    /// The ask sits unboxed at the top; the blurred grey bars fall away beneath it
-    /// (there is nothing real behind the blur — the paid values are never sent).
+    /// The membership ask sits in the *middle* of the blurred region, with grey
+    /// bars falling away above and below it (per the reference). Nothing behind
+    /// the blur is real — the paid values are never sent, so these are empty bars.
     private var lockedBlock: some View {
-        VStack(spacing: 14) {
+        ZStack {
+            lockedBarsBackground
+                .blur(radius: 7)
+                .opacity(0.6)
+                .allowsHitTesting(false)
+
             VStack(spacing: 10) {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 20))
@@ -442,55 +458,60 @@ struct FarmDetailView: View {
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundStyle(.white)
-                    .frame(maxWidth: 260)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 4)
             }
-            .frame(maxWidth: .infinity)
-
-            lockedBarsBackground
-                .frame(height: 180)
-                .blur(radius: 7)
-                .opacity(0.6)
-                .allowsHitTesting(false)
+            .padding(.horizontal, 8)
         }
+        .frame(minHeight: 300)
         .frame(maxWidth: .infinity)
     }
 
-    /// Faux content behind the lock: uneven grey bars, so the blurred area reads
-    /// as "there is more here" rather than as an empty panel.
+    /// Faux content behind the lock: uneven grey bars top and bottom, so the
+    /// blurred area reads as "there is more here" around the centred ask.
     private var lockedBarsBackground: some View {
         GeometryReader { geo in
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(Array([0.78, 0.95, 0.6, 0.88, 0.5].enumerated()), id: \.offset) { _, fraction in
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.inkMuted.opacity(0.14))
-                        .frame(width: geo.size.width * fraction, height: 13)
-                }
+            VStack {
+                bars(geo.size.width, [0.78, 0.95, 0.6, 0.88])
+                Spacer(minLength: 60)
+                bars(geo.size.width, [0.7, 0.9, 0.5])
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+    }
+
+    private func bars(_ width: CGFloat, _ fractions: [Double]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(Array(fractions.enumerated()), id: \.offset) { _, fraction in
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.inkMuted.opacity(0.14))
+                    .frame(width: width * fraction, height: 13)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
     private var detailSections: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let description = detail?.description, !description.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(description)
                         .font(.geist(15))
                         .foregroundStyle(Color.ink)
                         .lineSpacing(3)
-                        .lineLimit(4)
-                    if description.count > 220 {
+                        .lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if description.count > 140 {
                         Button {
                             Haptics.tap()
                             showDescriptionModal = true
                         } label: {
-                            Text("See more")
+                            Text("… View more")
                                 .font(.geist(14, .semibold))
                                 .foregroundStyle(Color.farmGreen)
                         }

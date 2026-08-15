@@ -126,8 +126,9 @@ struct WhatsNewSheet: View {
     }
 }
 
-/// A featured farm in the What's New shelf: its gallery photos across the top,
-/// then the name, place and the opening of its description.
+/// A featured farm in the What's New shelf, laid out like a post: the first
+/// gallery photo is the farm's round profile, then its name, city and the
+/// opening of its description, then the rest of its photos in a fixed row.
 struct MultiImageFarmCard: View {
     let pin: FarmPin
     let images: [String]
@@ -138,34 +139,47 @@ struct MultiImageFarmCard: View {
     var body: some View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
-                    ForEach(images.prefix(3), id: \.self) { url in
-                        AsyncImage(url: URL(string: url)) { phase in
-                            if case .success(let img) = phase { img.resizable().scaledToFill() }
-                            else { Color(hex: 0xF3F4F6) }
+                HStack(spacing: 8) {
+                    // First image is the farm's profile picture.
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(Color(hex: 0xF3F4F6))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            AsyncImage(url: URL(string: images.first ?? "")) { phase in
+                                if case .success(let img) = phase { img.resizable().scaledToFill() }
+                                else { Text(pin.primaryCategory.emoji).font(.system(size: 18)) }
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(pin.name)
+                            .font(.geist(14, .bold))
+                            .foregroundStyle(Color.ink)
+                            .lineLimit(1)
+                        if let city = pin.city {
+                            Text(city)
+                                .font(.geist(12))
+                                .foregroundStyle(Color.inkMuted)
+                                .lineLimit(1)
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 104)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
+                    Spacer(minLength: 0)
                 }
 
-                Text(pin.name)
-                    .font(.geist(15, .bold))
-                    .foregroundStyle(Color.ink)
-                    .lineLimit(1)
-                if let city = pin.city {
-                    Text(city)
-                        .font(.geist(12))
-                        .foregroundStyle(Color.inkMuted)
-                }
                 if let teaser, !teaser.isEmpty {
                     Text(teaser)
                         .font(.geist(13))
-                        .foregroundStyle(Color.inkMuted)
+                        .foregroundStyle(Color.ink)
                         .lineLimit(3)
                         .lineSpacing(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // The remaining photos (after the profile) as a fixed row.
+                let rest = Array(images.dropFirst().prefix(3))
+                if !rest.isEmpty {
+                    FixedImageRow(urls: rest, height: 96)
                 }
             }
             .padding(12)
@@ -178,7 +192,12 @@ struct MultiImageFarmCard: View {
         }
         .buttonStyle(.plain)
         .task {
-            if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId)?.text }
+            // Prefer the farm's own description (present on the pin) and fall back
+            // to the public teaser endpoint, so the line renders even if the
+            // teaser request is slow or fails.
+            if teaser == nil {
+                teaser = await FarmDetailAPI.teaser(osmId: pin.osmId)?.text
+            }
         }
     }
 }

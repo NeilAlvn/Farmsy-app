@@ -12,7 +12,9 @@ final class FarmsStore {
     private(set) var loadError: String?
 
     var searchText = ""
-    var selectedCategory: FarmCategory?
+    /// Categories are multi-select, like the web filter — a farm matches if it is
+    /// in any selected category. Empty means "all".
+    var selectedCategories: Set<FarmCategory> = []
 
     // Quick filters — mirror the web's rail (Verified / Open now / Automaat /
     // Zelfpluk / Has photos). "Near me" is an action (locate), not a filter.
@@ -24,6 +26,14 @@ final class FarmsStore {
 
     var anyQuickFilterOn: Bool {
         filterVerified || filterOpenToday || filterAutomaat || filterZelfpluk || filterHasPhotos
+    }
+
+    var anyFilterOn: Bool { anyQuickFilterOn || !selectedCategories.isEmpty }
+
+    func clearAllFilters() {
+        selectedCategories = []
+        filterVerified = false; filterOpenToday = false
+        filterAutomaat = false; filterZelfpluk = false; filterHasPhotos = false
     }
 
     private static let pageSize = 1000
@@ -56,8 +66,8 @@ final class FarmsStore {
     /// Pins matching the current search + category + quick filters.
     var filtered: [FarmPin] {
         var result = pins
-        if let cat = selectedCategory {
-            result = result.filter { $0.categories.contains(cat) }
+        if !selectedCategories.isEmpty {
+            result = result.filter { pin in pin.categories.contains { selectedCategories.contains($0) } }
         }
         // Quick filters, same predicates the web applies (FarmFilters ports them).
         if filterVerified  { result = result.filter { $0.isVerified } }

@@ -318,43 +318,80 @@ struct PingCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(initials)
-                    .font(.geist(10, .bold))
-                    .foregroundStyle(Color.farmGreen)
-                    .frame(width: 26, height: 26)
-                    .background(Color.farmGreen.opacity(0.12), in: Circle())
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(ping.authorName)
-                        .font(.geist(13, .semibold))
-                        .foregroundStyle(Color.ink)
-                        .lineLimit(1)
-                    if let farmName {
-                        Text(farmName)
-                            .font(.geist(11, .medium))
-                            .foregroundStyle(Color.farmGreenMap)
+        // A Button, not an .onTapGesture — a tap gesture on a card inside a
+        // scroll view fires mid-scroll; a button is cancelled by the drag.
+        Button(action: onOpenFarm) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text(initials)
+                        .font(.geist(10, .bold))
+                        .foregroundStyle(Color.farmGreen)
+                        .frame(width: 26, height: 26)
+                        .background(Color.farmGreen.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(ping.authorName)
+                            .font(.geist(13, .semibold))
+                            .foregroundStyle(Color.ink)
                             .lineLimit(1)
+                        if let farmName {
+                            Text(farmName)
+                                .font(.geist(11, .medium))
+                                .foregroundStyle(Color.farmGreenMap)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 6)
+                    Text(timeAgo)
+                        .font(.geist(11))
+                        .foregroundStyle(Color.inkMuted)
+                }
+
+                if !ping.body.isEmpty {
+                    ClampedDescription(text: ping.body, onMore: onOpenFarm)
+                }
+
+                if !ping.images.isEmpty {
+                    FixedImageRow(urls: Array(ping.images.prefix(3)), height: 100)
+                }
+
+                HStack(spacing: 5) {
+                    Image(systemName: "heart")
+                        .font(.system(size: 12))
+                    if ping.likeCount > 0 {
+                        Text("\(ping.likeCount)").font(.geist(12))
                     }
                 }
-                Spacer(minLength: 6)
-                Text(timeAgo)
-                    .font(.geist(11))
-                    .foregroundStyle(Color.inkMuted)
+                .foregroundStyle(Color.inkMuted)
             }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.hairline, lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
 
-            if !ping.body.isEmpty {
-                Text(ping.body)
-                    .font(.geist(14))
-                    .foregroundStyle(Color.ink)
-                    .lineLimit(4)
-                    .lineSpacing(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+/// A row of equal fixed-size photo containers. Whatever a photo's aspect ratio,
+/// it fills its slot and is clipped — so two photos are two equal squares that
+/// never overlap or spill. Base rectangles carry the layout; the image is an
+/// overlay, so the widths stay equal regardless of the images' own sizes.
+struct FixedImageRow: View {
+    let urls: [String]
+    var height: CGFloat = 100
 
-            if !ping.images.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(ping.images.prefix(3), id: \.self) { url in
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(urls, id: \.self) { url in
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(hex: 0xF3F4F6))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: height)
+                    .overlay(
                         AsyncImage(url: URL(string: url)) { phase in
                             if case .success(let img) = phase {
                                 img.resizable().scaledToFill()
@@ -362,31 +399,33 @@ struct PingCard: View {
                                 Color(hex: 0xF3F4F6)
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 96)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    }
-                }
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
-
-            HStack(spacing: 5) {
-                Image(systemName: "heart")
-                    .font(.system(size: 12))
-                if ping.likeCount > 0 {
-                    Text("\(ping.likeCount)").font(.geist(12))
-                }
-            }
-            .foregroundStyle(Color.inkMuted)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.hairline, lineWidth: 1)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onTapGesture { onOpenFarm() }
+    }
+}
+
+/// A description clamped to three lines with a "View more" that does something
+/// (opens the farm / the paywall), matching the web's clamp.
+struct ClampedDescription: View {
+    let text: String
+    var lineLimit: Int = 3
+    var onMore: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(text)
+                .font(.geist(14))
+                .foregroundStyle(Color.ink)
+                .lineLimit(lineLimit)
+                .lineSpacing(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if text.count > 120 {
+                Text("… View more")
+                    .font(.geist(13, .semibold))
+                    .foregroundStyle(Color.farmGreen)
+            }
+        }
     }
 }
