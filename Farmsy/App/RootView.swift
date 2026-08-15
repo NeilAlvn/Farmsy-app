@@ -7,6 +7,7 @@ struct RootView: View {
     @Environment(SessionStore.self) private var session
     @Environment(FarmsStore.self) private var farms
     @Environment(FavoritesStore.self) private var favorites
+    @Environment(TripStore.self) private var trip
 
     @AppStorage("didFinishOnboarding") private var didFinishOnboarding = false
     @State private var splashDone = false
@@ -35,6 +36,8 @@ struct RootView: View {
             await farms.loadIfNeeded()
         }
         .onChange(of: session.session?.user.id, initial: true) { _, userId in
+            // Wipe the local trip draft if the account changed (shared-device safety).
+            trip.reconcileOwner(userId?.uuidString.lowercased())
             if let userId {
                 Task { await favorites.load(userId: userId) }
             } else {
