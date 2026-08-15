@@ -68,6 +68,15 @@ struct FarmMemberSections: View {
 
     // MARK: - Details (members)
 
+    private struct DetailRow: Identifiable {
+        let id = UUID()
+        let icon: String
+        let label: String
+        let value: String
+        /// When set, the row is tappable and opens this URL in the browser.
+        var url: URL? = nil
+    }
+
     @ViewBuilder
     private var detailsList: some View {
         let rows = detailRows
@@ -75,8 +84,14 @@ struct FarmMemberSections: View {
             VStack(alignment: .leading, spacing: 10) {
                 sectionHeader(String(localized: "Details"))
                 VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                        InfoRow(icon: row.icon, label: row.label, value: row.value)
+                    ForEach(rows) { row in
+                        if let url = row.url {
+                            InfoRow(icon: row.icon, label: row.label, value: row.value, isLink: true)
+                                .contentShape(Rectangle())
+                                .onTapGesture { Haptics.tap(); UIApplication.shared.open(url) }
+                        } else {
+                            InfoRow(icon: row.icon, label: row.label, value: row.value)
+                        }
                     }
                 }
                 .card(padding: 6)
@@ -84,20 +99,45 @@ struct FarmMemberSections: View {
         }
     }
 
-    private var detailRows: [(icon: String, label: String, value: String)] {
-        var out: [(String, String, String)] = []
+    private func webURL(_ s: String, base: String = "") -> URL? {
+        let v = s.trimmingCharacters(in: .whitespaces)
+        if v.hasPrefix("http") { return URL(string: v) }
+        if base.isEmpty { return URL(string: "https://\(v)") }
+        return URL(string: base + v.trimmingCharacters(in: CharacterSet(charactersIn: "@/")))
+    }
+
+    private var detailRows: [DetailRow] {
+        var out: [DetailRow] = []
         if let hours = detail?.openingHours ?? pin.openingHours {
-            out.append(("clock", String(localized: "Hours"), hours))
+            out.append(DetailRow(icon: "clock", label: String(localized: "Hours"), value: hours))
         }
         if let address = detail?.address ?? pin.address {
-            out.append(("mappin.and.ellipse", String(localized: "Address"),
-                        [address, detail?.postalCode ?? pin.postalCode, pin.city].compactMap(\.self).joined(separator: ", ")))
+            out.append(DetailRow(icon: "mappin.and.ellipse", label: String(localized: "Address"),
+                        value: [address, detail?.postalCode ?? pin.postalCode, pin.city].compactMap(\.self).joined(separator: ", ")))
         }
-        if let phone = detail?.phone { out.append(("phone", String(localized: "Phone"), phone)) }
-        if let website = detail?.website { out.append(("globe", String(localized: "Website"), website)) }
-        if let email = detail?.email { out.append(("envelope", String(localized: "Email"), email)) }
-        if detail?.organic == true { out.append(("leaf", String(localized: "Organic"), String(localized: "Yes 🌱"))) }
-        if let produce = detail?.produce, !produce.isEmpty { out.append(("basket", String(localized: "Produce"), produce)) }
+        if let phone = detail?.phone {
+            out.append(DetailRow(icon: "phone", label: String(localized: "Phone"), value: phone,
+                        url: URL(string: "tel:\(phone.filter { !$0.isWhitespace })")))
+        }
+        if let website = detail?.website {
+            out.append(DetailRow(icon: "globe", label: String(localized: "Website"), value: website, url: webURL(website)))
+        }
+        if let email = detail?.email {
+            out.append(DetailRow(icon: "envelope", label: String(localized: "Email"), value: email,
+                        url: URL(string: "mailto:\(email)")))
+        }
+        if let fb = detail?.facebook {
+            out.append(DetailRow(icon: "link", label: "Facebook", value: fb, url: webURL(fb, base: "https://facebook.com/")))
+        }
+        if let ig = detail?.instagram {
+            out.append(DetailRow(icon: "link", label: "Instagram", value: ig, url: webURL(ig, base: "https://instagram.com/")))
+        }
+        if detail?.organic == true {
+            out.append(DetailRow(icon: "leaf", label: String(localized: "Organic"), value: String(localized: "Yes 🌱")))
+        }
+        if let produce = detail?.produce, !produce.isEmpty {
+            out.append(DetailRow(icon: "basket", label: String(localized: "Produce"), value: produce))
+        }
         return out
     }
 
@@ -158,7 +198,7 @@ struct FarmMemberSections: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color.farmGreen, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
             Text("Claim it to keep its details, photos and opening hours up to date. We check every claim by hand.")
@@ -357,8 +397,8 @@ private struct ReviewComposer: View {
                     if posting { ProgressView().tint(.white).frame(width: 80) }
                     else { Text("Submit").font(.geist(14, .semibold)).foregroundStyle(.white).frame(width: 80) }
                 }
-                .padding(.vertical, 10)
-                .background(rating > 0 ? Color.farmGreen : Color.farmGreen.opacity(0.4),
+                .padding(.vertical, 11)
+                .background(rating > 0 ? Color.farmGreenMap : Color.farmGreenMap.opacity(0.4),
                             in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .disabled(rating == 0 || posting)
                 .buttonStyle(.plain)
@@ -426,16 +466,16 @@ private struct PostComposer: View {
                 Text("\(limit - text.count)").font(.geist(13)).foregroundStyle(Color.inkMuted)
                 Spacer()
                 Button { Task { await post() } } label: {
-                    if posting { ProgressView().tint(.white).frame(width: 60) }
+                    if posting { ProgressView().tint(.white).frame(width: 80) }
                     else {
                         HStack(spacing: 6) {
                             Image(systemName: "paperplane.fill").font(.system(size: 13))
                             Text("Post").font(.geist(14, .semibold))
-                        }.foregroundStyle(.white).frame(width: 60)
+                        }.foregroundStyle(.white).frame(width: 80)
                     }
                 }
-                .padding(.vertical, 10)
-                .background(canPost ? Color.farmGreen : Color.farmGreen.opacity(0.4),
+                .padding(.vertical, 11)
+                .background(canPost ? Color.farmGreenMap : Color.farmGreenMap.opacity(0.4),
                             in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .disabled(!canPost || posting)
                 .buttonStyle(.plain)

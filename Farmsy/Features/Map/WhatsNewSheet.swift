@@ -80,6 +80,7 @@ struct WhatsNewSheet: View {
                         ForEach(multiImageFarms) { pin in
                             MultiImageFarmCard(pin: pin,
                                                images: farms.galleries[pin.osmId] ?? [],
+                                               teaser: farms.featuredTeasers[pin.osmId],
                                                onOpen: { onOpenFarm(pin) })
                         }
                     }
@@ -132,14 +133,14 @@ struct WhatsNewSheet: View {
 struct MultiImageFarmCard: View {
     let pin: FarmPin
     let images: [String]
+    /// The prefetched description (from the store) — no per-card fetch, so it's
+    /// there on first render and the shelf can already be ordered by it.
+    var teaser: String?
     var onOpen: () -> Void
 
     @Environment(FavoritesStore.self) private var favorites
     @Environment(SessionStore.self) private var session
     @Environment(\.requestAuth) private var requestAuth
-
-    @State private var teaser: String?
-    @State private var teaserLoaded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -180,15 +181,11 @@ struct MultiImageFarmCard: View {
                     .tapCard(toggleSave)
             }
 
-            // Description: skeleton while the teaser loads, then the text (or
-            // nothing if the farm genuinely has no description).
-            if !teaserLoaded {
-                VStack(alignment: .leading, spacing: 5) {
-                    SkeletonBox(cornerRadius: 4).frame(height: 10)
-                    SkeletonBox(cornerRadius: 4).frame(height: 10).padding(.trailing, 40)
-                }
-            } else if let teaser, !teaser.isEmpty {
-                Text(teaser)
+            // Description (prefetched). Clamp to three lines; when it's cut, end
+            // with a green "… View more" — tapping the card opens the farm.
+            if let teaser, !teaser.isEmpty {
+                (Text(teaser) + Text(teaser.count > 140 ? "  … View more" : "")
+                    .foregroundColor(Color.farmGreen).bold())
                     .font(.geist(13))
                     .foregroundStyle(Color.ink)
                     .lineLimit(3)
@@ -210,12 +207,6 @@ struct MultiImageFarmCard: View {
                 .stroke(Color.hairline, lineWidth: 1)
         )
         .tapCard(excludeTopTrailing: 52, onOpen)
-        .task {
-            if !teaserLoaded {
-                teaser = await FarmDetailAPI.teaser(osmId: pin.osmId)?.text
-                teaserLoaded = true
-            }
-        }
     }
 
     private func toggleSave() {

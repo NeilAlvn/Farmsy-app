@@ -116,7 +116,7 @@ struct SettingsSheet: View {
                             .foregroundStyle(.white)
                             .padding(.vertical, 7)
                             .padding(.horizontal, 12)
-                            .background(Color.farmGreen, in: Capsule())
+                            .background(Color.farmGreenMap, in: Capsule())
                             .buttonStyle(.plain)
                         }
                         .card()
@@ -299,7 +299,7 @@ private struct AccountDeletedView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
-                    .background(Color.farmGreen, in: RoundedRectangle(cornerRadius: 16))
+                    .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .padding(28)

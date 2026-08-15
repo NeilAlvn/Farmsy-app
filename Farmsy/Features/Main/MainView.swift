@@ -78,6 +78,7 @@ struct MainView: View {
     /// that need an account (save, subscribe) prompt for one from within the card.
     private func openFarm(_ pin: FarmPin) {
         farmDetent = .fraction(0.55)   // always open at half
+        flyTarget = pin                // fly the map to the farm, wherever it was opened from
         selectedPin = pin
     }
 

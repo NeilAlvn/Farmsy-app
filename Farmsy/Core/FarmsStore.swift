@@ -36,11 +36,15 @@ final class FarmsStore {
     private(set) var galleries: [String: [String]] = [:]
     private(set) var galleriesLoaded = false
     private(set) var featuredOrder: [String] = []
+    /// Prefetched description teasers for the featured farms, so the cards render
+    /// instantly and the shelf can put farms *with* a description first.
+    private(set) var featuredTeasers: [String: String] = [:]
 
     private struct FarmFlag: Decodable { let o: String; let g: [String]? }
 
-    /// Fetch the galleries once, keep only farms with 2+ photos, and freeze a
-    /// random order for the featured shelf.
+    /// Fetch the galleries once, keep only farms with 2+ photos, prefetch their
+    /// teasers, and freeze an order — farms that have a description first (so the
+    /// top of the shelf always has one), shuffled within each group.
     func loadGalleriesIfNeeded() async {
         guard !galleriesLoaded else { return }
         let url = Backend.webAPI.appending(path: "farms").appending(path: "flags")
@@ -51,7 +55,23 @@ final class FarmsStore {
         var map: [String: [String]] = [:]
         for r in rows where (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
         galleries = map
-        featuredOrder = Array(map.keys).shuffled()
+
+        // Prefetch teasers concurrently so the shelf can rank by "has description".
+        let ids = Array(map.keys)
+        var teasers: [String: String] = [:]
+        await withTaskGroup(of: (String, String?).self) { group in
+            for id in ids {
+                group.addTask { (id, await FarmDetailAPI.teaser(osmId: id)?.text) }
+            }
+            for await (id, text) in group {
+                if let text, !text.isEmpty { teasers[id] = text }
+            }
+        }
+        featuredTeasers = teasers
+
+        let described = ids.filter { teasers[$0] != nil }.shuffled()
+        let rest = ids.filter { teasers[$0] == nil }.shuffled()
+        featuredOrder = described + rest
         galleriesLoaded = true
     }
 

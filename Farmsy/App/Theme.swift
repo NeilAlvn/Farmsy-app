@@ -125,7 +125,7 @@ enum Haptics {
 
 /// Big rounded primary CTA, like the reference app's Continue buttons.
 struct PrimaryButtonStyle: ButtonStyle {
-    var fill: Color = .farmGreen
+    var fill: Color = .farmGreenMap
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

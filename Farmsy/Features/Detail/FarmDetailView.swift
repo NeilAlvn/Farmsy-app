@@ -303,7 +303,7 @@ struct FarmDetailView: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(inTrip ? Color.farmGreen : Color.clear)
+                        .fill(inTrip ? Color.farmGreenMap : Color.clear)
                         .strokeBorder(Color.farmGreen, lineWidth: inTrip ? 0 : 1.5)
                 )
             }
@@ -642,12 +642,14 @@ struct InfoRow: View {
     let icon: String
     let label: String
     let value: String
+    /// A tappable link row draws its value in green with a chevron.
+    var isLink: Bool = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundStyle(Color.farmGreen)
+                .foregroundStyle(Color.farmGreenMap)
                 .frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
@@ -655,9 +657,15 @@ struct InfoRow: View {
                     .foregroundStyle(Color.inkMuted)
                 Text(value)
                     .font(.geist(15))
-                    .foregroundStyle(Color.ink)
+                    .foregroundStyle(isLink ? Color.farmGreenMap : Color.ink)
+                    .lineLimit(isLink ? 1 : nil)
             }
             Spacer()
+            if isLink {
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.inkMuted)
+            }
         }
         .padding(12)
     }
@@ -920,7 +928,7 @@ struct PlanButton: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(filled ? Color.farmGreen : Color.white)
+                    .fill(filled ? Color.farmGreenMap : Color.white)
                     .stroke(filled ? Color.clear : Color.farmGreen.opacity(0.45), lineWidth: 1.5)
             )
             .foregroundStyle(filled ? Color.white : Color.farmGreen)
