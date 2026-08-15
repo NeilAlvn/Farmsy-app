@@ -14,7 +14,10 @@ struct FarmMemberSections: View {
 
     @State private var reviews: [Review] = []
     @State private var posts: [Ping] = []
+    @State private var likedIds: Set<String> = []
     @State private var lightbox: LightboxSource?
+
+    private var uid: String? { session.session?.user.id.uuidString.lowercased() }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -26,7 +29,10 @@ struct FarmMemberSections: View {
             reportLink
         }
         .task { reviews = await FarmContentAPI.reviews(osmId: pin.osmId) }
-        .task { posts = await FarmContentAPI.posts(osmId: pin.osmId) }
+        .task {
+            posts = await FarmContentAPI.posts(osmId: pin.osmId)
+            if let uid { likedIds = await FarmContentAPI.likedPingIds(userId: uid) }
+        }
         .fullScreenCover(item: $lightbox) { src in
             ImageLightbox(source: src) {
                 var t = Transaction(); t.disablesAnimations = true
@@ -105,9 +111,12 @@ struct FarmMemberSections: View {
                 dashedNote(String(localized: "Nothing posted here today."))
             } else {
                 ForEach(posts) { ping in
-                    FarmPostRow(ping: ping) { idx in
-                        openLightbox(ping.images, idx, author: ping.authorName)
-                    }
+                    FarmPostRow(
+                        ping: ping,
+                        liked: likedIds.contains(ping.id),
+                        onOpenImage: { idx in openLightbox(ping.images, idx, author: ping.authorName) },
+                        onLike: { await like(ping) },
+                        onReport: { await report(ping) })
                 }
             }
         }
@@ -200,6 +209,21 @@ struct FarmMemberSections: View {
     private func reload() async {
         reviews = await FarmContentAPI.reviews(osmId: pin.osmId)
         posts = await FarmContentAPI.posts(osmId: pin.osmId)
+        if let uid { likedIds = await FarmContentAPI.likedPingIds(userId: uid) }
+    }
+
+    private func like(_ ping: Ping) async {
+        guard let uid else { return }
+        let wasLiked = likedIds.contains(ping.id)
+        // Optimistic toggle.
+        if wasLiked { likedIds.remove(ping.id) } else { likedIds.insert(ping.id) }
+        await FarmContentAPI.toggleLike(pingId: ping.id, userId: uid, currentlyLiked: wasLiked)
+    }
+
+    private func report(_ ping: Ping) async {
+        guard let uid else { return }
+        await FarmContentAPI.reportPing(pingId: ping.id, userId: uid)
+        Haptics.success()
     }
 }
 
@@ -207,11 +231,22 @@ struct FarmMemberSections: View {
 
 private struct FarmPostRow: View {
     let ping: Ping
+    let liked: Bool
     var onOpenImage: (Int) -> Void
+    var onLike: () async -> Void
+    var onReport: () async -> Void
+
+    @State private var reported = false
 
     private var initials: String {
         let s = String(ping.authorName.split(separator: " ").compactMap { $0.first }.prefix(2)).uppercased()
         return s.isEmpty ? "?" : s
+    }
+
+    /// The count adjusted for the viewer's own optimistic like.
+    private var displayCount: Int {
+        let base = ping.likeCount
+        return liked && base == 0 ? 1 : base
     }
 
     var body: some View {
@@ -229,6 +264,28 @@ private struct FarmPostRow: View {
             if !ping.images.isEmpty {
                 FixedImageRow(urls: Array(ping.images.prefix(3)), height: 100, onTap: onOpenImage)
             }
+            HStack(spacing: 16) {
+                Button { Task { await onLike() } } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: liked ? "heart.fill" : "heart").font(.system(size: 13))
+                        if displayCount > 0 { Text("\(displayCount)").font(.geist(12)) }
+                    }
+                    .foregroundStyle(liked ? Color.farmGreen : Color.inkMuted)
+                }.buttonStyle(.plain)
+
+                Button {
+                    guard !reported else { return }
+                    reported = true
+                    Task { await onReport() }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "flag").font(.system(size: 12))
+                        Text(reported ? "Reported" : "Report").font(.geist(12))
+                    }
+                    .foregroundStyle(Color.inkMuted)
+                }.buttonStyle(.plain).disabled(reported)
+            }
+            .padding(.top, 2)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)

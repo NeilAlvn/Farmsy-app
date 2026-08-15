@@ -51,6 +51,39 @@ enum FarmContentAPI {
             .value) ?? []
     }
 
+    // MARK: - Likes & reports
+
+    /// The ping ids the viewer has liked (select is `using (true)`; own rows only
+    /// on insert/delete).
+    static func likedPingIds(userId: String) async -> Set<String> {
+        struct Row: Decodable { let ping_id: String }
+        let rows: [Row] = (try? await supabase
+            .from("farm_ping_likes")
+            .select("ping_id")
+            .eq("user_id", value: userId)
+            .execute()
+            .value) ?? []
+        return Set(rows.map(\.ping_id))
+    }
+
+    static func toggleLike(pingId: String, userId: String, currentlyLiked: Bool) async {
+        if currentlyLiked {
+            _ = try? await supabase.from("farm_ping_likes")
+                .delete().eq("ping_id", value: pingId).eq("user_id", value: userId).execute()
+        } else {
+            struct Payload: Encodable { let ping_id: String; let user_id: String }
+            _ = try? await supabase.from("farm_ping_likes")
+                .insert(Payload(ping_id: pingId, user_id: userId)).execute()
+        }
+    }
+
+    /// Report a post — insert only, one per person per ping (unique constraint).
+    static func reportPing(pingId: String, userId: String) async {
+        struct Payload: Encodable { let ping_id: String; let user_id: String }
+        _ = try? await supabase.from("farm_ping_reports")
+            .insert(Payload(ping_id: pingId, user_id: userId)).execute()
+    }
+
     // MARK: - Composer
 
     /// Post to a farm: upload the photos to storage first (bucket `ping-images`,
