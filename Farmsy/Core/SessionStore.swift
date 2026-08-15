@@ -72,6 +72,18 @@ final class SessionStore {
         return session?.user.email ?? ""
     }
 
+    /// Author name for posts/reviews, composed the way the web does: full name
+    /// from the profile, else the email prefix, else "Someone".
+    var displayName: String {
+        let full = [profile?.firstName, profile?.lastName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        if !full.isEmpty { return full }
+        let prefix = email.components(separatedBy: "@").first ?? ""
+        return prefix.isEmpty ? "Someone" : prefix
+    }
+
     func bootstrap() async {
         session = try? await supabase.auth.session
         if session != nil { await refreshProfile() }

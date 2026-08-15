@@ -414,7 +414,7 @@ private struct ReviewComposer: View {
     private func submit() async {
         guard rating > 0, let uid = session.session?.user.id.uuidString.lowercased() else { return }
         posting = true; defer { posting = false }
-        let name = session.email.components(separatedBy: "@").first ?? "Member"
+        let name = session.displayName
         try? await FarmContentAPI.submitReview(
             osmId: pin.osmId, userId: uid, reviewerName: name,
             rating: rating, body: reviewText.isEmpty ? nil : reviewText)
@@ -491,7 +491,15 @@ private struct PostComposer: View {
             Task {
                 var out: [Data] = []
                 for it in items.prefix(3) {
-                    if let d = try? await it.loadTransferable(type: Data.self), d.count <= 4_000_000 { out.append(d) }
+                    // Transcode to JPEG on device — the picker may hand back HEIC,
+                    // which the bucket rejects; JPEG is always accepted, and we set
+                    // the content-type to match on upload. Cap under the 5 MB bucket
+                    // limit (aim well below with quality 0.8).
+                    if let raw = try? await it.loadTransferable(type: Data.self),
+                       let ui = UIImage(data: raw),
+                       let jpeg = ui.jpegData(compressionQuality: 0.8), jpeg.count <= 4_500_000 {
+                        out.append(jpeg)
+                    }
                 }
                 photos = out
             }
@@ -505,7 +513,7 @@ private struct PostComposer: View {
     private func post() async {
         guard canPost, let uid = session.session?.user.id.uuidString.lowercased() else { return }
         posting = true; defer { posting = false }
-        let name = session.email.components(separatedBy: "@").first ?? "Member"
+        let name = session.displayName
         do {
             try await FarmContentAPI.createPost(
                 osmId: pin.osmId, userId: uid, authorName: name,

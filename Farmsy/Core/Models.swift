@@ -317,6 +317,9 @@ struct Profile: Decodable {
     let role: String?
     /// The 13 who paid during the original paywalled era — also full access.
     let foundingMember: Bool?
+    /// Name for authoring posts/reviews (added to /api/profile/status by Aviah).
+    let firstName: String?
+    let lastName: String?
 
     enum CodingKeys: String, CodingKey {
         case subscriptionStatus = "subscription_status"
@@ -325,6 +328,8 @@ struct Profile: Decodable {
         case subscriptionSource = "subscription_source"
         case role
         case foundingMember = "founding_member"
+        case firstName = "first_name"
+        case lastName = "last_name"
     }
 
     /// Same order as the web's `hasPaidAccess()`: admin → farmer → founding member
