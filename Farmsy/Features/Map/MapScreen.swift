@@ -221,11 +221,15 @@ struct MapScreen: View {
             // The active trip's road line — declared last so it draws above the
             // pins and clusters. A white casing under a light-green line so it
             // stays visible over motorways and field boundaries.
-            if trip.routeLine.count >= 2 {
-                MapPolyline(coordinates: trip.routeLine)
+            if trip.tracedLine.count >= 2 {
+                MapPolyline(coordinates: trip.tracedLine)
                     .stroke(.white, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
-                MapPolyline(coordinates: trip.routeLine)
-                    .stroke(Color.farmGreenMap, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                // Solid green over the road; a thin dashed line for the straight-line
+                // fallback — that's how "this is an estimate" reads without a label.
+                MapPolyline(coordinates: trip.tracedLine)
+                    .stroke(Color.farmGreenMap, style: trip.onRoads
+                            ? StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+                            : StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round, dash: [2, 4]))
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))

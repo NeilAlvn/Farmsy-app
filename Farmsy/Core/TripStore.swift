@@ -130,6 +130,36 @@ final class TripStore {
     private(set) var durationSeconds: Double?
     private(set) var isRouting = false
     private(set) var onRoads = false
+    /// The line as it draws itself, sliced by the trace animation (0→1). The map
+    /// renders this, not `routeLine`, so the route traces along the road.
+    private(set) var traceProgress: Double = 1
+    private var traceTask: Task<Void, Never>?
+
+    /// The visible portion of the route while it traces in.
+    var tracedLine: [CLLocationCoordinate2D] {
+        guard traceProgress < 1, routeLine.count > 2 else { return routeLine }
+        let n = max(2, Int((Double(routeLine.count) * traceProgress).rounded(.up)))
+        return Array(routeLine.prefix(n))
+    }
+
+    /// Draw the road from the start over ~2.2s with a cubic ease-out — restarted
+    /// from zero on every new route (add / reorder / origin change).
+    private func startTrace() {
+        traceTask?.cancel()
+        guard routeLine.count > 2 else { traceProgress = 1; return }
+        traceProgress = 0
+        traceTask = Task { [weak self] in
+            let duration = 2.2
+            let start = Date()
+            while !Task.isCancelled {
+                let t = min(Date().timeIntervalSince(start) / duration, 1)
+                let eased = 1 - pow(1 - t, 3)
+                await MainActor.run { self?.traceProgress = eased }
+                if t >= 1 { break }
+                try? await Task.sleep(nanoseconds: 16_000_000)   // ~60fps
+            }
+        }
+    }
 
     // Saved trips.
     private(set) var savedTrips: [SavedTrip] = []
@@ -244,11 +274,13 @@ final class TripStore {
             distanceMeters = r.distance
             durationSeconds = r.duration
             onRoads = true
+            startTrace()
         } else {
             routeLine = straight
             distanceMeters = TripGeometry.lengthKm(straight) * 1000
             durationSeconds = Double(TripGeometry.roughDriveMinutes(TripGeometry.lengthKm(straight))) * 60
             onRoads = false
+            traceTask?.cancel(); traceProgress = 1   // straight lines draw instantly
         }
     }
 
