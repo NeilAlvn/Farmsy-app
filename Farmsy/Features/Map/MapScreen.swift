@@ -293,16 +293,10 @@ struct MapScreen: View {
                 .background(.white.opacity(0.97), in: RoundedRectangle(cornerRadius: 16))
                 .padding(20)
             } else if farms.pins.isEmpty {
-                // Farms haven't loaded yet — a spinner in the centre of the map.
-                VStack(spacing: 10) {
-                    ProgressView().tint(Color.farmGreenMap).controlSize(.large)
-                    Text("Loading farms…")
-                        .font(.geist(13, .medium))
-                        .foregroundStyle(Color.inkMuted)
-                }
-                .padding(20)
-                .background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
+                // Farms haven't loaded yet — just a spinner in the centre of the map.
+                ProgressView()
+                    .tint(Color.farmGreenMap)
+                    .controlSize(.large)
             }
         }
     }
