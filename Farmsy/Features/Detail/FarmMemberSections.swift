@@ -99,6 +99,17 @@ struct FarmMemberSections: View {
         }
     }
 
+    /// Opening hours, one segment per line — split on `;` or newline (never a
+    /// comma; commas live inside a segment, e.g. "Mo,Su off" or a split shift).
+    /// Trim each and drop empties. Matches the web and FarmFilters.isOpenToday.
+    /// The farm's own dash (– or -) is left as written.
+    static func formatHours(_ raw: String) -> String {
+        raw.components(separatedBy: CharacterSet(charactersIn: ";\n"))
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+    }
+
     private func webURL(_ s: String, base: String = "") -> URL? {
         let v = s.trimmingCharacters(in: .whitespaces)
         if v.hasPrefix("http") { return URL(string: v) }
@@ -109,7 +120,7 @@ struct FarmMemberSections: View {
     private var detailRows: [DetailRow] {
         var out: [DetailRow] = []
         if let hours = detail?.openingHours ?? pin.openingHours {
-            out.append(DetailRow(icon: "clock", label: String(localized: "Hours"), value: hours))
+            out.append(DetailRow(icon: "clock", label: String(localized: "Hours"), value: Self.formatHours(hours)))
         }
         if let address = detail?.address ?? pin.address {
             out.append(DetailRow(icon: "mappin.and.ellipse", label: String(localized: "Address"),
