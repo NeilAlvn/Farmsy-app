@@ -75,7 +75,8 @@ struct PlaceSearchSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Use my location.
+                    // Use my location, or a result. Scrolling drops the keyboard.
+                    EmptyView()
                     Button { onLocate(); dismiss() } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "location.fill").font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
@@ -111,6 +112,7 @@ struct PlaceSearchSheet: View {
                 }
                 .padding(.top, 8)
             }
+            .scrollDismissesKeyboard(.immediately)
         }
         .background(Color.cream.ignoresSafeArea())
         .onAppear { focused = true }

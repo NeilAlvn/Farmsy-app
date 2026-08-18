@@ -31,6 +31,8 @@ struct MapScreen: View {
     /// grouped into one marker — a single pin when a cell holds one farm, a green
     /// count bubble when it holds several. Zooming in splits the clusters apart.
     private static let gridCellsAcross = 6.5
+    /// The trip route colour — a blue that stands apart from the green markers.
+    static let routeColor = Color(hex: 0x2563EB)
 
     private var clusters: [MapCluster] {
         // Trip stops are drawn as their own always-visible numbered markers, so
@@ -119,15 +121,23 @@ struct MapScreen: View {
             Task { await trip.refreshRoute(pins: pinLookup) }
             if new.count > old.count { fitToTrip() }
         }
+        // An explicit fit request — opening a saved trip, or setting the origin.
+        .onChange(of: trip.fitToken) { _, _ in fitToTrip() }
     }
 
     private var pinLookup: [String: FarmPin] {
         Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
     }
 
-    /// Centre on the single stop, or fit the whole trip when there are several.
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    /// Fit the whole trip — origin plus every stop — so the full route is visible
+    /// in the map area not covered by the sheet. A single point just flies to it.
     private func fitToTrip() {
-        let coords = trip.stopIds.compactMap { pinLookup[$0]?.coordinate }
+        var coords = trip.stopIds.compactMap { pinLookup[$0]?.coordinate }
+        if let origin = trip.originCoord { coords.insert(origin, at: 0) }
         guard !coords.isEmpty else { return }
         if coords.count == 1 {
             withAnimation(.easeInOut(duration: 0.5)) {
@@ -137,11 +147,15 @@ struct MapScreen: View {
             return
         }
         let lats = coords.map(\.latitude), lngs = coords.map(\.longitude)
-        let center = CLLocationCoordinate2D(latitude: (lats.min()! + lats.max()!) / 2,
-                                            longitude: (lngs.min()! + lngs.max()!) / 2)
-        let span = MKCoordinateSpan(latitudeDelta: max((lats.max()! - lats.min()!) * 1.4, 0.05),
-                                    longitudeDelta: max((lngs.max()! - lngs.min()!) * 1.4, 0.05))
-        withAnimation(.easeInOut(duration: 0.5)) {
+        // Shift the centre north so the route sits in the upper half — the bottom
+        // is under the trips sheet. Pad generously so the ends clear the edges.
+        let latPad = (lats.max()! - lats.min()!)
+        let center = CLLocationCoordinate2D(
+            latitude: (lats.min()! + lats.max()!) / 2 - latPad * 0.55,
+            longitude: (lngs.min()! + lngs.max()!) / 2)
+        let span = MKCoordinateSpan(latitudeDelta: max(latPad * 2.6, 0.06),
+                                    longitudeDelta: max((lngs.max()! - lngs.min()!) * 1.5, 0.06))
+        withAnimation(.easeInOut(duration: 0.6)) {
             camera = .region(MKCoordinateRegion(center: center, span: span))
         }
     }
@@ -229,18 +243,20 @@ struct MapScreen: View {
                     .annotationTitles(.hidden)
                 }
             }
-            // The active trip's road line — declared last so it draws above the
-            // pins and clusters. A white casing under a light-green line so it
-            // stays visible over motorways and field boundaries.
+            // The active trip's road line, above the map's own labels. A white
+            // casing under a bright-blue line — deliberately a different colour
+            // from the green pins/clusters so it reads as a route, not a marker.
             if trip.tracedLine.count >= 2 {
                 MapPolyline(coordinates: trip.tracedLine)
-                    .stroke(.white, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
-                // Solid green over the road; a thin dashed line for the straight-line
+                    .stroke(.white, style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+                    .mapOverlayLevel(level: .aboveLabels)
+                // Solid over the road; a thin dashed line for the straight-line
                 // fallback — that's how "this is an estimate" reads without a label.
                 MapPolyline(coordinates: trip.tracedLine)
-                    .stroke(Color.farmGreenMap, style: trip.onRoads
-                            ? StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
-                            : StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round, dash: [2, 4]))
+                    .stroke(Self.routeColor, style: trip.onRoads
+                            ? StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round)
+                            : StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [2, 4]))
+                    .mapOverlayLevel(level: .aboveLabels)
             }
             // Numbered trip-stop markers, above the route and always visible.
             ForEach(tripStopPins, id: \.pin.osmId) { item in
@@ -254,6 +270,9 @@ struct MapScreen: View {
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
         .onMapCameraChange(frequency: .onEnd) { context in
             visibleRegion = context.region
+            // Panning the map means the user is done with the search field —
+            // drop the keyboard so the placeholder shows again.
+            dismissKeyboard()
         }
         // Edge to edge: the map runs under the status bar and home indicator;
         // the search row and control bars float on top of it.

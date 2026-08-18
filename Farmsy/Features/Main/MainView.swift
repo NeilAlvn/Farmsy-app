@@ -15,6 +15,7 @@ struct MainView: View {
     @State private var accountRoute: AccountRoute?
     @State private var showWhatsNew = false
     @State private var showTrips = false
+    @State private var tripDetent: PresentationDetent = .fraction(0.92)
     /// The card opens at half and can be dragged to peek or full.
     @State private var farmDetent: PresentationDetent = .fraction(0.55)
     /// A pin the map should fly to (set when opening from the What's New sheet).
@@ -76,9 +77,9 @@ struct MainView: View {
                 .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showTrips) {
-            TripsView(onOpenFarm: { openFarm($0) })
-                .presentationDetents([.fraction(0.55), .fraction(0.92)])
-                .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
+            TripsView(onOpenFarm: { openFarm($0) }, detent: $tripDetent)
+                .presentationDetents([.fraction(0.5), .fraction(0.92)], selection: $tripDetent)
+                .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(28)
         }

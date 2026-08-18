@@ -8,6 +8,9 @@ import MapKit
 /// route is drawn on the map. My Trips is Pro-gated.
 struct TripsView: View {
     var onOpenFarm: (FarmPin) -> Void
+    /// The sheet's height — dropped to half when a saved trip is opened so the
+    /// route is visible on the map above the sheet.
+    @Binding var detent: PresentationDetent
 
     @Environment(\.dismiss) private var dismiss
     @Environment(FarmsStore.self) private var farms
@@ -53,8 +56,9 @@ struct TripsView: View {
         .sheet(isPresented: $showOriginSearch) {
             PlaceSearchSheet(
                 onPick: { coord, label in
-                    trip.setOrigin(coord, label: label)
+                    trip.setOrigin(coord, label: label)   // flies via fitToken
                     Task { await trip.refreshRoute(pins: pinIndex) }
+                    withAnimation { detent = .fraction(0.5) }
                 },
                 onLocate: { Task { await locate() } })
             .presentationDetents([.large])
@@ -302,7 +306,12 @@ struct TripsView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(Rectangle())
-        .onTapGesture { Task { await trip.openTrip(t.id); tab = .plan } }
+        .onTapGesture {
+            Task { await trip.openTrip(t.id) }
+            tab = .plan
+            // Drop the sheet to half so the route shows on the map above it.
+            withAnimation { detent = .fraction(0.5) }
+        }
     }
 
     private func savedEmptyRow(i: Int) -> some View {
@@ -381,6 +390,7 @@ struct TripsView: View {
             ?? String(format: "%.3f, %.3f", loc.coordinate.latitude, loc.coordinate.longitude)
         trip.setOrigin(loc.coordinate, label: label ?? "Here")
         await trip.refreshRoute(pins: pinIndex)
+        withAnimation { detent = .fraction(0.5) }
     }
 
     private func reorder() {

@@ -163,6 +163,10 @@ final class TripStore {
 
     // Saved trips.
     private(set) var savedTrips: [SavedTrip] = []
+    /// Bumped whenever the map should refit to the whole trip (opening a saved
+    /// trip, setting the origin) — the map watches this.
+    private(set) var fitToken = 0
+    func requestFit() { fitToken += 1 }
 
     private let stopsKey = "dlb_pending_trip"
     private let originKey = "dlb_trip_origin"
@@ -201,6 +205,7 @@ final class TripStore {
         originCoord = coord; originLabel = label
         UserDefaults.standard.set([coord.latitude, coord.longitude], forKey: originKey)
         UserDefaults.standard.set(label, forKey: originKey + ".label")
+        requestFit()
     }
 
     func clearOrigin() {
@@ -352,6 +357,7 @@ final class TripStore {
         stopIds = stops.map(\.farm_osm_id)
         editingTripId = id
         persist()
+        requestFit()
     }
 
     func deleteTrip(_ id: String, userId: String) async {
