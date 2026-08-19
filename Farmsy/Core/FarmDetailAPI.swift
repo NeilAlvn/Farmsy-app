@@ -54,4 +54,27 @@ enum FarmDetailAPI {
         else { return nil }
         return teaser
     }
+
+    private struct TeasersResponse: Decodable { let teasers: [String: FarmTeaser] }
+
+    /// Teasers for many farms in one request — for rows/shelves, so a list doesn't
+    /// spend a round trip per tile. POST (osm_ids go in the JSON body, sidestepping
+    /// the `%2F` slash problem); the server caps the batch at 60. Every id sent
+    /// comes back as a key; absent-or-empty both mean "nothing to show", so we drop
+    /// blanks and return only the non-empty ones.
+    static func teasers(osmIds: [String]) async -> [String: String] {
+        guard !osmIds.isEmpty else { return [:] }
+        let url = Backend.webAPI.appending(path: "farms/teasers")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONEncoder().encode(["osmIds": Array(osmIds.prefix(60))])
+
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let decoded = try? JSONDecoder().decode(TeasersResponse.self, from: data)
+        else { return [:] }
+
+        return decoded.teasers.compactMapValues { $0.text.isEmpty ? nil : $0.text }
+    }
 }

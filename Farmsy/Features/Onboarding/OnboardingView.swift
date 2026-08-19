@@ -4,75 +4,122 @@ import UserNotifications
 
 // MARK: - Flow container
 
-/// Question-per-screen onboarding with the progress header, matching the
-/// reference flow but with Farmsy content and real database numbers.
+/// Seven-screen onboarding rebuilt to the app's design system: a full-bleed
+/// welcome photo, a personalization pass, a location pick, optional preferences,
+/// a real "farms near you" shelf (featured-card design, photo'd farms within
+/// 100 km), a notifications ask, and a wrap-up. No "explore as guest" — the two
+/// ways in are logging in or skipping the intro straight to the map.
 struct OnboardingView: View {
     var onComplete: () -> Void
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
 
+    /// Sign-in presented over the onboarding. On success the session becomes
+    /// authenticated and RootView swaps in the map on its own; on cancel the
+    /// user stays right here on the welcome screen.
+    @State private var showLogin = false
+
     enum Step: Int, CaseIterable {
-        case category, location, finding, counts, value, notify, referral
+        case welcome, personalize, location, details, nearby, notify, done
     }
 
-    @State private var step: Step = .category
-    @State private var chosenCategory: FarmCategory?
-    @State private var chosenPlace: OnboardingPlace?
-    @AppStorage("pendingRefCode") private var pendingRefCode = ""
+    @State private var step: Step = .welcome
+    @State private var selectedCats: Set<FarmCategory> = []
+    @State private var prefs = QuickPrefs()
+    @State private var applyPrefs = false
+    @State private var chosenCoord: CLLocationCoordinate2D?
+    @State private var chosenLabel: String?
+    @State private var showPlaceSearch = false
+
+    /// The point we measure "farms near you" from: an explicit pick, or GPS.
+    private var focusCoord: CLLocationCoordinate2D? {
+        chosenCoord ?? locationManager.location?.coordinate
+    }
+
+    private var showsHeader: Bool { step != .welcome && step != .done }
+    private var canGoBack: Bool { step != .welcome && step != .done }
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-
-            // All steps sit side-by-side on one sliding track. The whole page
-            // (chips included) moves as one piece, and going back always
-            // slides the right way — no insert/remove transitions involved.
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    ForEach(Step.allCases, id: \.rawValue) { s in
-                        stepContent(for: s)
-                            .frame(width: geo.size.width, height: geo.size.height)
-                    }
+        ZStack {
+            // Full-bleed background: the welcome photograph, cream everywhere else.
+            Group {
+                if step == .welcome {
+                    Image("WelcomeFarmShop")
+                        .resizable()
+                        .scaledToFill()
+                        .overlay(
+                            LinearGradient(
+                                colors: [.black.opacity(0.72), .black.opacity(0.30), .black.opacity(0.55)],
+                                startPoint: .bottom, endPoint: .top)
+                        )
+                } else {
+                    Color.cream
                 }
-                .offset(x: -CGFloat(step.rawValue) * geo.size.width)
-                .animation(.spring(duration: 0.5, bounce: 0.14), value: step)
             }
-            .clipped()
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.45), value: step == .welcome)
+
+            // Safe-area content: a reserved header slot, then the sliding track.
+            VStack(spacing: 0) {
+                header
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .opacity(showsHeader ? 1 : 0)
+
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        ForEach(Step.allCases, id: \.rawValue) { s in
+                            stepContent(for: s)
+                                .frame(width: geo.size.width, height: geo.size.height)
+                        }
+                    }
+                    .offset(x: -CGFloat(step.rawValue) * geo.size.width)
+                    .animation(.spring(duration: 0.5, bounce: 0.14), value: step)
+                }
+                .clipped()
+            }
         }
-        .background(Color.cream.ignoresSafeArea())
+        .sheet(isPresented: $showLogin) { AuthView() }
+        .sheet(isPresented: $showPlaceSearch) {
+            PlaceSearchSheet(
+                onPick: { coord, label in
+                    chosenCoord = coord
+                    chosenLabel = label
+                },
+                onLocate: { locationManager.request() })
+                .presentationDetents([.large])
+        }
     }
 
     @ViewBuilder
     private func stepContent(for s: Step) -> some View {
         switch s {
-        case .category:
-            CategoryStep(selected: $chosenCategory) { advance() }
+        case .welcome:
+            WelcomeStep(onLogin: { showLogin = true }, onSkip: { advance() })
+        case .personalize:
+            PersonalizeStep(selected: $selectedCats) { advance() }
         case .location:
-            LocationStep(chosen: $chosenPlace) { advance() }
-        case .finding:
-            FindingStep(place: chosenPlace, isActive: step == .finding) { advance() }
-        case .counts:
-            CountsStep(place: chosenPlace, isActive: step == .counts) { advance() }
-        case .value:
-            ValueStep(isActive: step == .value) { advance() }
+            LocationStep(
+                label: chosenLabel,
+                onUseLocation: { locationManager.request() },
+                onSearch: { showPlaceSearch = true },
+                onContinue: { advance() })
+        case .details:
+            DetailsStep(prefs: $prefs,
+                        onShowFarms: { applyPrefs = true; advance() },
+                        onSkip: { applyPrefs = false; advance() })
+        case .nearby:
+            NearbyStep(coord: focusCoord, label: chosenLabel) { advance() }
         case .notify:
             NotifyStep { advance() }
-        case .referral:
-            ReferralStep(refCode: $pendingRefCode) {
-                Haptics.success()
-                onComplete()
-            }
+        case .done:
+            DoneStep { finish() }
         }
     }
 
-    private var canGoBack: Bool { step != .category && step != .finding }
-
     private var header: some View {
         HStack(spacing: 16) {
-            // Slot is always reserved so the progress bar never jumps.
             Button {
                 Haptics.tap()
                 goBack()
@@ -85,15 +132,16 @@ struct OnboardingView: View {
             }
             .opacity(canGoBack ? 1 : 0)
             .disabled(!canGoBack)
-            .animation(.easeInOut(duration: 0.25), value: canGoBack)
 
             ProgressBar(fraction: fraction)
         }
         .frame(height: 48)
     }
 
+    /// Progress across the middle steps (welcome and done sit outside the bar).
     private var fraction: Double {
-        Double(step.rawValue + 1) / Double(Step.allCases.count + 1)
+        let mid = max(1, Step.allCases.count - 2)   // personalize … notify
+        return Double(step.rawValue) / Double(mid)
     }
 
     private func advance() {
@@ -102,9 +150,20 @@ struct OnboardingView: View {
     }
 
     private func goBack() {
-        // Skip back over the auto-advancing "finding" interstitial.
-        let target = step == .counts ? Step.location : Step(rawValue: step.rawValue - 1)
-        if let target { step = target }
+        if let target = Step(rawValue: step.rawValue - 1) { step = target }
+    }
+
+    /// Carry the user's choices into the map, then hand off.
+    private func finish() {
+        Haptics.success()
+        farms.selectedCategories = selectedCats
+        if applyPrefs {
+            farms.filterVerified  = prefs.verified
+            farms.filterOpenToday = prefs.openToday
+            farms.filterHasPhotos = prefs.hasPhotos
+            farms.filterZelfpluk  = prefs.pickYourOwn
+        }
+        onComplete()
     }
 }
 
@@ -124,497 +183,520 @@ struct ProgressBar: View {
     }
 }
 
-// MARK: - Places
-
-struct OnboardingPlace: Equatable {
-    let name: String
-    let latitude: Double
-    let longitude: Double
-
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
-
-    static let presets: [OnboardingPlace] = [
-        .init(name: "Amsterdam", latitude: 52.3676, longitude: 4.9041),
-        .init(name: "Rotterdam", latitude: 51.9244, longitude: 4.4777),
-        .init(name: "Utrecht", latitude: 52.0907, longitude: 5.1214),
-        .init(name: "Den Haag", latitude: 52.0705, longitude: 4.3007),
-        .init(name: "Eindhoven", latitude: 51.4416, longitude: 5.4697),
-        .init(name: "Antwerpen", latitude: 51.2194, longitude: 4.4025),
-        .init(name: "Gent", latitude: 51.0543, longitude: 3.7174),
-        .init(name: "Brussel", latitude: 50.8503, longitude: 4.3517),
-    ]
+/// The optional preferences captured on the "anything else" screen.
+struct QuickPrefs: Equatable {
+    var openToday = false
+    var pickYourOwn = false
+    var verified = false
+    var hasPhotos = false
 }
 
-// MARK: - Step 1: category
+// MARK: - Step 1: welcome
 
-private struct CategoryStep: View {
-    @Binding var selected: FarmCategory?
-    var onContinue: () -> Void
+private struct WelcomeStep: View {
+    var onLogin: () -> Void
+    var onSkip: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
+
+            VStack(spacing: 16) {
+                VStack(spacing: 14) {
+                    Image("FarmsyLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 74, height: 74)
+                        .padding(16)
+                        .background(Color.cream, in: Circle())
+                        .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
+                    Text("Farmsy")
+                        .font(.displayItalic(52, weight: .medium))
+                        .foregroundStyle(.white)
+                }
+                Text("Local food, close to you.")
+                    .font(.display(26, weight: .medium))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                Text("Find farm shops, pick-your-own farms and honest food straight from the people who grow it.")
+                    .font(.geist(16))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+            }
+
+            Spacer()
+
+            VStack(spacing: 11) {
+                Button {
+                    Haptics.tap()
+                    onLogin()
+                } label: {
+                    Text("Log in / Sign up")
+                        .font(.geist(18, .semibold))
+                        .foregroundStyle(Color.farmGreen)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 17)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    Haptics.tap()
+                    onSkip()
+                } label: {
+                    Text("Skip for now")
+                        .font(.geist(17, .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(.white.opacity(0.35), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
+        }
+    }
+}
+
+// MARK: - Step 2: personalize (multi-select categories)
+
+private struct PersonalizeStep: View {
+    @Binding var selected: Set<FarmCategory>
+    var onContinue: () -> Void
+
+    private let options: [FarmCategory] = [.produce, .dairy, .cheese, .eggs, .honey, .meat, .fish, .wine]
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    var body: some View {
+        VStack(spacing: 0) {
             VStack(spacing: 10) {
-                Kicker(text: String(localized: "Personalization"))
+                Kicker(text: String(localized: "Personalize"))
                 DisplayTitle(leading: String(localized: "What are you "),
                              emphasis: String(localized: "looking"),
                              trailing: String(localized: " for?"), size: 32)
+                Text("Pick a few — or none. You can change this anytime.")
+                    .font(.geist(15))
+                    .foregroundStyle(Color.inkMuted)
+                    .multilineTextAlignment(.center)
             }
-            .padding(.bottom, 26)
+            .padding(.top, 22)
+            .padding(.bottom, 22)
+            .padding(.horizontal, 20)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
-                    RadioRow(emoji: "🍽️", label: String(localized: "Everything local"), isSelected: selected == nil) {
-                        selected = nil
-                    }
-                    ForEach([FarmCategory.produce, .dairy, .cheese, .eggs, .honey, .meat]) { cat in
-                        RadioRow(emoji: cat.emoji, label: cat.label, isSelected: selected == cat) {
-                            selected = cat
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(options) { cat in
+                        CategoryTile(cat: cat, isOn: selected.contains(cat)) {
+                            Haptics.tap()
+                            if selected.contains(cat) { selected.remove(cat) } else { selected.insert(cat) }
                         }
                     }
                 }
                 .padding(.horizontal, 20)
+                .padding(.bottom, 8)
             }
 
-            Button("Continue", action: onContinue)
+            Button(selected.isEmpty ? "Skip" : "Continue", action: onContinue)
                 .buttonStyle(PrimaryButtonStyle())
-                .accessibilityIdentifier("continue-category")
+                .accessibilityIdentifier("continue-personalize")
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
         }
     }
 }
 
-struct RadioRow: View {
-    let emoji: String
-    let label: String
-    let isSelected: Bool
+private struct CategoryTile: View {
+    let cat: FarmCategory
+    let isOn: Bool
     var onTap: () -> Void
 
     var body: some View {
-        Button {
-            Haptics.tap()
-            onTap()
-        } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.farmGreen : .clear)
-                        .stroke(isSelected ? Color.farmGreen : Color.inkMuted.opacity(0.4), lineWidth: 1.5)
-                        .frame(width: 26, height: 26)
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
+        Button(action: onTap) {
+            HStack(spacing: 10) {
+                Text(cat.emoji).font(.geist(24))
+                Text(cat.label)
+                    .font(.geist(16, .semibold))
+                    .foregroundStyle(isOn ? Color.farmGreen : Color.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                if isOn {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.farmGreen)
                 }
-                Text(emoji)
-                Text(label)
-                    .font(.geist(18, .semibold))
-                    .foregroundStyle(isSelected ? Color.farmGreen : Color.ink)
-                Spacer()
             }
-            .padding(.vertical, 17)
-            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(isSelected ? Color.farmGreenSoft : Color.creamCard)
-                    .stroke(isSelected ? Color.farmGreen : .clear, lineWidth: 1.5)
-            )
+                    .fill(isOn ? Color.farmGreenSoft : Color.creamCard)
+                    .stroke(isOn ? Color.farmGreen : Color.hairline, lineWidth: isOn ? 1.5 : 1))
         }
         .buttonStyle(.plain)
     }
 }
 
-// MARK: - Step 2: location
+/// A location "radar": static range rings, a sweep of expanding pulses, and a
+/// pin at the centre — the map-ish visual for the location step.
+struct RadarPulse: View {
+    @State private var animate = false
+
+    var body: some View {
+        ZStack {
+            // Fixed range rings.
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .stroke(Color.farmGreen.opacity(0.22), lineWidth: 1.5)
+                    .frame(width: 58 + CGFloat(i) * 44, height: 58 + CGFloat(i) * 44)
+            }
+            // Two staggered pulses rippling outward.
+            ForEach(0..<2, id: \.self) { i in
+                Circle()
+                    .stroke(Color.farmGreenMap.opacity(animate ? 0 : 0.55), lineWidth: 2)
+                    .frame(width: animate ? 150 : 50, height: animate ? 150 : 50)
+                    .animation(
+                        .easeOut(duration: 2.4).repeatForever(autoreverses: false).delay(Double(i) * 1.2),
+                        value: animate)
+            }
+            // Centre pin.
+            Circle()
+                .fill(Color.farmGreenMap)
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundStyle(.white))
+                .shadow(color: Color.farmGreenMap.opacity(0.35), radius: 8, y: 3)
+        }
+        .frame(height: 170)
+        .onAppear { animate = true }
+    }
+}
+
+// MARK: - Step 3: location
 
 private struct LocationStep: View {
-    @Binding var chosen: OnboardingPlace?
+    let label: String?
+    var onUseLocation: () -> Void
+    var onSearch: () -> Void
     var onContinue: () -> Void
 
-    @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
-    @State private var query = ""
+
+    private var resolved: String? {
+        if let label { return label }
+        if locationManager.location != nil { return String(localized: "Your current location") }
+        return nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            VStack(spacing: 10) {
-                Kicker(text: farms.pins.isEmpty
-                       ? String(localized: "Farm shops across NL & BE")
-                       : String(localized: "\(farms.pins.count.formatted())+ farm shops (NL & BE)"))
-                DisplayTitle(leading: String(localized: "Let's find your "),
-                             emphasis: String(localized: "local"),
-                             trailing: String(localized: " farms"), size: 32)
-            }
-            .padding(.bottom, 26)
 
-            HStack(spacing: 12) {
-                TextField("City, e.g. Utrecht", text: $query)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled()
-                    .padding(.vertical, 16)
-                    .padding(.horizontal, 18)
-                    .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .onChange(of: query) { _, text in
-                        matchCity(text)
-                    }
+            VStack(spacing: 10) {
+                Kicker(text: String(localized: "Location"))
+                DisplayTitle(leading: String(localized: "Where are you "),
+                             emphasis: String(localized: "exploring"),
+                             trailing: String(localized: " today?"), size: 30)
+            }
+            .padding(.horizontal, 20)
+
+            Spacer().frame(height: 20)
+
+            RadarPulse()
+
+            Spacer().frame(height: 28)
+
+            VStack(spacing: 14) {
+                Button {
+                    Haptics.tap()
+                    onUseLocation()
+                } label: {
+                    rowLabel(icon: "location.fill",
+                             title: String(localized: "Use my location"),
+                             filled: true)
+                }
+                .buttonStyle(.plain)
 
                 Button {
                     Haptics.tap()
-                    locationManager.request()
+                    onSearch()
                 } label: {
-                    Group {
-                        if locationManager.isRequesting {
-                            ProgressView()
-                        } else {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Color.farmGreen)
-                        }
-                    }
-                    .frame(width: 56, height: 56)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.creamCard)
-                            .stroke(Color.farmGreen, lineWidth: 1.5)
-                    )
+                    rowLabel(icon: "magnifyingglass",
+                             title: String(localized: "Search a town instead"),
+                             filled: false)
                 }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 14)
 
-            FlowChips(places: OnboardingPlace.presets, selected: chosen) { place in
-                Haptics.tap()
-                query = ""
-                chosen = place
+            if let resolved {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.farmGreen)
+                    Text(resolved)
+                        .font(.geist(15, .semibold))
+                        .foregroundStyle(Color.ink)
+                }
+                .padding(.top, 20)
             }
-            .padding(.horizontal, 20)
 
             Spacer()
 
             Button("Continue", action: onContinue)
                 .buttonStyle(PrimaryButtonStyle())
                 .accessibilityIdentifier("continue-location")
-                .disabled(chosen == nil)
-                .opacity(chosen == nil ? 0.55 : 1)
                 .padding(.horizontal, 20)
+                .padding(.top, 8)
                 .padding(.bottom, 12)
         }
-        .onChange(of: locationManager.location) { _, loc in
-            if let loc {
-                query = ""
-                chosen = OnboardingPlace(
-                    name: String(localized: "your location"),
-                    latitude: loc.coordinate.latitude,
-                    longitude: loc.coordinate.longitude
-                )
-            }
-        }
     }
 
-    /// Try to resolve a typed city against real farm data.
-    private func matchCity(_ text: String) {
-        let name = text.trimmingCharacters(in: .whitespaces)
-        guard name.count >= 3 else { return }
-        if let preset = OnboardingPlace.presets.first(where: { $0.name.lowercased() == name.lowercased() }) {
-            chosen = preset
-            return
-        }
-        if let pin = farms.pins.first(where: { ($0.city ?? "").lowercased() == name.lowercased() }) {
-            chosen = OnboardingPlace(name: pin.city ?? name, latitude: pin.lat, longitude: pin.lng)
-        }
-    }
-}
-
-struct FlowChips: View {
-    let places: [OnboardingPlace]
-    let selected: OnboardingPlace?
-    var onTap: (OnboardingPlace) -> Void
-
-    private let columns = [GridItem(.adaptive(minimum: 104), spacing: 10)]
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(places, id: \.name) { place in
-                let isOn = selected == place
-                Button {
-                    onTap(place)
-                } label: {
-                    Text(place.name)
-                        .font(.geist(15, .medium))
-                        .foregroundStyle(isOn ? .white : Color.ink)
-                        .padding(.vertical, 11)
-                        .frame(maxWidth: .infinity)
-                        .background(isOn ? Color.farmGreen : Color.creamCard, in: Capsule())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-}
-
-// MARK: - Step 3: finding interstitial
-
-private struct FindingStep: View {
-    let place: OnboardingPlace?
-    var isActive: Bool
-    var onDone: () -> Void
-
-    @Environment(FarmsStore.self) private var farms
-    @State private var started = false
-
-    var body: some View {
-        VStack(spacing: 12) {
+    private func rowLabel(icon: String, title: String, filled: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(filled ? .white : Color.farmGreen)
+                .frame(width: 44, height: 44)
+                .background(filled ? Color.farmGreenMap : Color.farmGreenSoft, in: Circle())
+            Text(title)
+                .font(.geist(17, .semibold))
+                .foregroundStyle(Color.ink)
             Spacer()
-            Kicker(text: String(localized: "Farms within 50 km of you"))
-            DisplayTitle(leading: String(localized: "Farms "),
-                         emphasis: String(localized: "near"),
-                         trailing: String(localized: " you"), size: 34)
-            Spacer().frame(height: 60)
-            ProgressView()
-                .controlSize(.large)
-                .tint(Color.farmGreen)
-            Text("Finding farms near you…")
-                .font(.geist(18))
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.inkMuted)
-                .padding(.top, 10)
-            Spacer()
-            Spacer()
         }
-        .onChange(of: isActive, initial: true) { _, active in
-            if active { run() }
-        }
-    }
-
-    /// Starts only when this page becomes the visible one — every step is
-    /// mounted on the sliding track from the start.
-    private func run() {
-        guard !started else { return }
-        started = true
-        Task {
-            // Let the real load finish, but always hold a beat for the reveal.
-            try? await Task.sleep(for: .seconds(1.4))
-            while farms.isLoading {
-                try? await Task.sleep(for: .milliseconds(200))
-            }
-            onDone()
-        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.hairline, lineWidth: 1))
     }
 }
 
-/// Number that rolls up from zero when its value animates.
-struct CountUpText: View, Animatable {
-    var value: Double
-    var suffix = ""
+// MARK: - Step 4: optional details
 
-    var animatableData: Double {
-        get { value }
-        set { value = newValue }
-    }
-
-    var body: some View {
-        Text("\(Int(value.rounded()).formatted())\(suffix)")
-            .monospacedDigit()
-    }
-}
-
-// MARK: - Step 4: real category counts
-
-private struct CountsStep: View {
-    let place: OnboardingPlace?
-    var isActive: Bool
-    var onContinue: () -> Void
-
-    @Environment(FarmsStore.self) private var farms
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var revealed = false
-
-    private var counts: [(FarmCategory, Int)] {
-        if let place {
-            let near = farms.categoryCounts(near: place.coordinate, radiusKm: 50)
-            if !near.isEmpty { return near }
-        }
-        // Fallback: whole dataset.
-        var totals: [FarmCategory: Int] = [:]
-        for pin in farms.pins {
-            for cat in pin.categories { totals[cat, default: 0] += 1 }
-        }
-        return totals.map { ($0.key, $0.value) }.sorted { $0.1 > $1.1 }
-    }
-
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+private struct DetailsStep: View {
+    @Binding var prefs: QuickPrefs
+    var onShowFarms: () -> Void
+    var onSkip: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
-                Kicker(text: place.map { String(localized: "Farms within 50 km of \($0.name)") }
-                       ?? String(localized: "Farms across NL & BE"))
-                DisplayTitle(leading: String(localized: "Farms "),
-                             emphasis: String(localized: "near"),
-                             trailing: String(localized: " you"), size: 34)
+                Kicker(text: String(localized: "Optional"))
+                DisplayTitle(leading: String(localized: "Anything else we should "),
+                             emphasis: String(localized: "know?"),
+                             trailing: "", size: 30)
+                Text("Fine-tune what shows up. All optional.")
+                    .font(.geist(15))
+                    .foregroundStyle(Color.inkMuted)
+                    .multilineTextAlignment(.center)
             }
-            .padding(.top, 34)
+            .padding(.top, 22)
             .padding(.bottom, 22)
+            .padding(.horizontal, 20)
 
             ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(Array(counts.prefix(9).enumerated()), id: \.element.0) { i, entry in
-                        let (cat, count) = entry
-                        VStack(spacing: 6) {
-                            Text(cat.emoji).font(.geist(34))
-                            // Numbers roll up from 0 as the tiles pop in.
-                            CountUpText(value: revealed ? Double(count) : 0)
-                                .font(.geist(26, .bold))
-                                .foregroundStyle(Color.farmGreen)
-                            Text(cat.label)
-                                .font(.geist(14))
-                                .foregroundStyle(Color.ink)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .opacity(revealed ? 1 : 0)
-                        .scaleEffect(revealed ? 1 : 0.9)
-                        .animation(
-                            reduceMotion ? nil
-                                : .spring(duration: 0.8, bounce: 0.2).delay(Double(i) * 0.07),
-                            value: revealed
-                        )
-                    }
+                VStack(spacing: 12) {
+                    PrefRow(emoji: "🕒", title: String(localized: "Open today"),
+                            subtitle: String(localized: "Only farms open right now"), isOn: $prefs.openToday)
+                    PrefRow(emoji: "🧺", title: String(localized: "Pick-your-own"),
+                            subtitle: String(localized: "Zelfpluk farms you can visit"), isOn: $prefs.pickYourOwn)
+                    PrefRow(emoji: "✅", title: String(localized: "Verified farms"),
+                            subtitle: String(localized: "Confirmed, up-to-date listings"), isOn: $prefs.verified)
+                    PrefRow(emoji: "📷", title: String(localized: "Has photos"),
+                            subtitle: String(localized: "See the place before you go"), isOn: $prefs.hasPhotos)
                 }
                 .padding(.horizontal, 20)
             }
 
-            Button("Continue", action: onContinue)
-                .buttonStyle(PrimaryButtonStyle())
-                .accessibilityIdentifier("continue-counts")
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-        }
-        .onChange(of: isActive, initial: true) { _, active in
-            if active { revealed = true }
+            VStack(spacing: 16) {
+                Button("Show me farms", action: onShowFarms)
+                    .buttonStyle(PrimaryButtonStyle())
+                Button("I'll explore on my own", action: onSkip)
+                    .font(.geist(16, .semibold))
+                    .foregroundStyle(Color.inkMuted)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 14)
         }
     }
 }
 
-// MARK: - Step 5: value prop
+private struct PrefRow: View {
+    let emoji: String
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
 
-private struct ValueStep: View {
-    var isActive: Bool
+    var body: some View {
+        Button {
+            Haptics.tap()
+            isOn.toggle()
+        } label: {
+            HStack(spacing: 12) {
+                Text(emoji).font(.geist(22))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.geist(16, .semibold)).foregroundStyle(Color.ink)
+                    Text(subtitle).font(.geist(13)).foregroundStyle(Color.inkMuted)
+                }
+                Spacer()
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(isOn ? Color.farmGreenMap : Color(hex: 0xE5E4DF))
+                        .frame(width: 46, height: 28)
+                    Circle().fill(.white).frame(width: 22, height: 22)
+                        .offset(x: isOn ? 9 : -9)
+                        .shadow(color: .black.opacity(0.15), radius: 1, y: 1)
+                }
+                .animation(.spring(duration: 0.25), value: isOn)
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Step 5: farms near you (featured-card shelf)
+
+private struct NearbyStep: View {
+    let coord: CLLocationCoordinate2D?
+    let label: String?
     var onContinue: () -> Void
 
     @Environment(FarmsStore.self) private var farms
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var revealed = false
 
-    private let emojiGrid = ["🥬", "🥛", "🧀", "🥚", "🥩", "🐟",
-                             "🍯", "🍷", "🧺", "🌱", "🍎", "🥔",
-                             "🍓", "🌷", "🍞", "🫐", "🥕", "🌽"]
+    /// The shuffled list actually shown — built once (and rebuilt only when the
+    /// data or location behind it changes) so the order stays put across renders.
+    @State private var shown: [FarmPin] = []
+    @State private var built = false
+    @State private var nearbyCount = 0
+    /// Descriptions fetched for the non-featured nearby farms (featured ones
+    /// already have theirs prefetched on the store).
+    @State private var extraTeasers: [String: String] = [:]
+
+    /// All photo'd farms within 100 km (nearest first), before mixing.
+    private var pool: [FarmPin] {
+        if let coord { return farms.nearbyWithImages(near: coord, radiusKm: 100) }
+        return farms.feedPicks(near: nil, limit: 30)
+    }
+
+    /// Rebuild whenever the pins, the featured galleries, or the location change.
+    private var buildKey: String {
+        "\(farms.pins.count)-\(farms.galleriesLoaded)-\(coord?.latitude ?? 0)-\(coord?.longitude ?? 0)"
+    }
+
+    /// Photos for a card: the featured gallery when we have it, else the cover.
+    private func images(for pin: FarmPin) -> [String] {
+        if let gallery = farms.galleries[pin.osmId], !gallery.isEmpty { return gallery }
+        if let cover = pin.image { return [cover] }
+        return []
+    }
+
+    /// Split the pool into farms that carry a description (featured, with a
+    /// gallery) and the rest, then shuffle them together so the described cards
+    /// land at random positions in the list rather than clustering by distance.
+    private func build() {
+        let base = pool
+        nearbyCount = base.count
+        let described = base.filter { !(farms.galleries[$0.osmId]?.isEmpty ?? true) }
+        let plain = base.filter { farms.galleries[$0.osmId]?.isEmpty ?? true }
+        let picked = Array(described.prefix(6)) + Array(plain.prefix(8))
+        shown = picked.shuffled()
+        built = true
+    }
+
+    /// Fetch descriptions for the shown farms that don't already have one — so
+    /// the cover-only (non-featured) cards also carry their teaser text. One batch
+    /// request (Aviah's `/api/farms/teasers`) rather than a round trip per tile.
+    /// We ask for every shown farm rather than trusting `hasDescription` (which
+    /// `get_farms_pins()` hardcodes to false); farms with genuinely no description
+    /// (≈1 in 5, foursquare imports) come back empty and simply show nothing.
+    private func fetchTeasers() async {
+        let targets = shown.prefix(10)
+            .map(\.osmId)
+            .filter { farms.featuredTeasers[$0] == nil && extraTeasers[$0] == nil }
+        guard !targets.isEmpty else { return }
+        let result = await FarmDetailAPI.teasers(osmIds: targets)
+        guard !result.isEmpty else { return }
+        extraTeasers.merge(result) { _, new in new }
+    }
+
+    private func teaser(for pin: FarmPin) -> String? {
+        farms.featuredTeasers[pin.osmId] ?? extraTeasers[pin.osmId]
+    }
+
+    private var headline: String {
+        guard built else { return String(localized: "Finding farms near you…") }
+        guard coord != nil else { return String(localized: "Popular farm shops") }
+        if let label {
+            return String(localized: "\(nearbyCount) farms within 100 km of \(label)")
+        }
+        return String(localized: "\(nearbyCount) farms within 100 km of you")
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            VStack(spacing: 10) {
+                Kicker(text: String(localized: "Great choice"))
+                DisplayTitle(leading: String(localized: "Here are farms "),
+                             emphasis: String(localized: "near"),
+                             trailing: String(localized: " you"), size: 30)
+                Text(headline)
+                    .font(.geist(15, .semibold))
+                    .foregroundStyle(Color.inkMuted)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 22)
+            .padding(.bottom, 16)
+            .padding(.horizontal, 20)
+
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    VStack(spacing: 10) {
-                        Kicker(text: String(localized: "Why Farmsy"))
-                        DisplayTitle(leading: String(localized: "Real food, straight from the "),
-                                     emphasis: String(localized: "farm"),
-                                     trailing: "", size: 32)
-                    }
-                    .padding(.top, 30)
-
-                    HStack(spacing: 0) {
-                        // The farm-shop total rolls up from zero on arrival.
-                        if farms.pins.isEmpty {
-                            StatTile(value: String(localized: "1000s"), caption: String(localized: "farm shops"))
-                        } else {
-                            VStack(spacing: 3) {
-                                CountUpText(value: revealed ? Double(farms.pins.count) : 0, suffix: "+")
-                                    .font(.geist(22, .bold))
-                                    .foregroundStyle(Color.farmGreen)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.6)
-                                    .animation(reduceMotion ? nil : .easeOut(duration: 1.1), value: revealed)
-                                Text("farm shops")
-                                    .font(.geist(13))
-                                    .foregroundStyle(Color.inkMuted)
-                            }
-                            .frame(maxWidth: .infinity)
+                LazyVStack(spacing: 14) {
+                    if !built {
+                        // Same skeleton the What's New "Featured farms" shelf uses.
+                        ForEach(0..<3, id: \.self) { _ in
+                            SkeletonBox(cornerRadius: 16).frame(height: 180)
                         }
-                        Divider().frame(height: 40)
-                        StatTile(value: "10", caption: String(localized: "categories"))
-                        Divider().frame(height: 40)
-                        StatTile(value: "NL + BE", caption: String(localized: "and growing"))
-                    }
-                    .card(padding: 14)
-
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 16) {
-                        ForEach(Array(emojiGrid.enumerated()), id: \.element) { i, e in
-                            Text(e).font(.geist(30))
-                                .opacity(revealed ? 1 : 0)
-                                .scaleEffect(revealed ? 1 : 0.4)
-                                .animation(
-                                    reduceMotion ? nil
-                                        : .spring(duration: 0.5, bounce: 0.45).delay(0.15 + Double(i) * 0.03),
-                                    value: revealed
-                                )
+                    } else {
+                        ForEach(shown.prefix(10)) { pin in
+                            MultiImageFarmCard(pin: pin,
+                                               images: images(for: pin),
+                                               teaser: teaser(for: pin),
+                                               onOpen: onContinue)
                         }
                     }
-                    .padding(.horizontal, 8)
-
-                    VStack(spacing: 14) {
-                        Text("“Found a cheese farm ten minutes from home. Fresher than the supermarket, and I know exactly who made it.”")
-                            .font(.geist(18, .medium).italic())
-                            .foregroundStyle(Color.ink)
-                            .multilineTextAlignment(.center)
-                        HStack(spacing: 10) {
-                            Circle()
-                                .fill(Color.farmGreenSoft)
-                                .frame(width: 38, height: 38)
-                                .overlay(Text("🧀").font(.geist(18)))
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text("Sanne").font(.geist(15, .semibold)).foregroundStyle(Color.ink)
-                                Text("Utrecht").font(.geist(13)).foregroundStyle(Color.inkMuted)
-                            }
-                        }
-                    }
-                    .card()
                 }
                 .padding(.horizontal, 20)
+                .padding(.bottom, 8)
             }
 
-            Button("Continue", action: onContinue)
+            Button("See all on map", action: onContinue)
                 .buttonStyle(PrimaryButtonStyle())
-                .accessibilityIdentifier("continue-value")
+                .accessibilityIdentifier("continue-nearby")
                 .padding(.horizontal, 20)
+                .padding(.top, 14)
                 .padding(.bottom, 12)
         }
-        .onChange(of: isActive, initial: true) { _, active in
-            if active { revealed = true }
+        .task(id: buildKey) {
+            await farms.loadGalleriesIfNeeded()
+            if !farms.pins.isEmpty {
+                build()
+                await fetchTeasers()
+            }
         }
-    }
-}
-
-struct StatTile: View {
-    let value: String
-    let caption: String
-    var body: some View {
-        VStack(spacing: 3) {
-            Text(value)
-                .font(.geist(22, .bold))
-                .foregroundStyle(Color.farmGreen)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            Text(caption)
-                .font(.geist(13))
-                .foregroundStyle(Color.inkMuted)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -630,16 +712,15 @@ private struct NotifyStep: View {
                 Kicker(text: String(localized: "Stay in the loop"))
                 DisplayTitle(leading: String(localized: "Know when new farms appear "),
                              emphasis: String(localized: "near you"),
-                             trailing: "", size: 30)
+                             trailing: "", size: 28)
             }
-            Spacer().frame(height: 70)
+            .padding(.horizontal, 20)
+            Spacer().frame(height: 60)
             RingingBell(size: 76)
             Spacer()
 
-            HStack(spacing: 14) {
-                Button("No") { onContinue() }
-                    .buttonStyle(SecondaryButtonStyle())
-                Button("Notify Me") {
+            VStack(spacing: 16) {
+                Button("Turn on notifications") {
                     Task {
                         _ = try? await UNUserNotificationCenter.current()
                             .requestAuthorization(options: [.alert, .badge, .sound])
@@ -647,6 +728,10 @@ private struct NotifyStep: View {
                     }
                 }
                 .buttonStyle(PrimaryButtonStyle())
+
+                Button("Maybe later") { onContinue() }
+                    .font(.geist(16, .semibold))
+                    .foregroundStyle(Color.inkMuted)
             }
             .padding(.horizontal, 20)
 
@@ -659,63 +744,66 @@ private struct NotifyStep: View {
     }
 }
 
-// MARK: - Step 7: referral
+// MARK: - Step 7: all set
 
-private struct ReferralStep: View {
-    @Binding var refCode: String
-    var onFinish: () -> Void
+private struct DoneStep: View {
+    var onStart: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            VStack(spacing: 10) {
-                Kicker(text: String(localized: "One last thing"))
-                DisplayTitle(leading: String(localized: "Have a "),
-                             emphasis: String(localized: "referral"),
-                             trailing: String(localized: " code?"), size: 32)
-            }
-            Spacer().frame(height: 40)
-            Image(systemName: "ticket.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(Color.farmGreen)
-                .frame(width: 92, height: 92)
-                .background(Color.farmGreenSoft, in: Circle())
-            Spacer().frame(height: 30)
 
-            TextField("Enter code", text: $refCode)
-                .textInputAutocapitalization(.characters)
-                .autocorrectionDisabled()
-                .multilineTextAlignment(.center)
-                .font(.geist(19, .semibold))
-                .kerning(2)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.creamCard)
-                        .stroke(Color.inkMuted.opacity(0.25), lineWidth: 1)
-                )
-                .padding(.horizontal, 40)
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 68))
+                .foregroundStyle(Color.farmGreen)
+                .padding(.bottom, 22)
+
+            VStack(spacing: 10) {
+                Kicker(text: String(localized: "Ready"))
+                DisplayTitle(leading: String(localized: "You're all "),
+                             emphasis: String(localized: "set"),
+                             trailing: "", size: 34)
+            }
+
+            VStack(alignment: .leading, spacing: 14) {
+                DoneBullet(emoji: "🗺️", text: String(localized: "Browse farm shops on the map"))
+                DoneBullet(emoji: "❤️", text: String(localized: "Save the ones you want to visit"))
+                DoneBullet(emoji: "🧭", text: String(localized: "Plan a trip across several farms"))
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.top, 30)
 
             Spacer()
 
-            Button(refCode.isEmpty ? "Continue" : "Apply Code") { onFinish() }
+            Button("Start exploring", action: onStart)
                 .buttonStyle(PrimaryButtonStyle())
+                .accessibilityIdentifier("start-exploring")
                 .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+        }
+    }
+}
 
-            Button("Skip") {
-                refCode = ""
-                onFinish()
-            }
-            .font(.geist(17))
-            .foregroundStyle(Color.inkMuted)
-            .padding(.top, 14)
-            .padding(.bottom, 12)
+private struct DoneBullet: View {
+    let emoji: String
+    let text: String
+    var body: some View {
+        HStack(spacing: 14) {
+            Text(emoji).font(.geist(22))
+                .frame(width: 44, height: 44)
+                .background(Color.farmGreenSoft, in: Circle())
+            Text(text)
+                .font(.geist(16, .medium))
+                .foregroundStyle(Color.ink)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
 
 #Preview {
-    OnboardingView {}
+    OnboardingView(onComplete: {})
         .environment(FarmsStore())
         .environment(LocationManager())
+        .environment(SessionStore())
+        .environment(FavoritesStore())
 }

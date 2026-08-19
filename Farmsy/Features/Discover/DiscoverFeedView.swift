@@ -49,7 +49,13 @@ struct DiscoverFeedView: View {
             if feed.isEmpty { reshuffle() }
         }
         .task { await loadPings() }
-        .sheet(isPresented: $showAddFarm) { AddFarmView() }
+        // Submissions now happen on the web form (it carries its own sign-in);
+        // the native AddFarmView + /api/farms/submit stay live but unused for now.
+        .sheet(isPresented: $showAddFarm) {
+            if let url = URL(string: "https://www.farmsy.app/farmers/submit") {
+                SafariView(url: url).ignoresSafeArea()
+            }
+        }
     }
 
     private func reshuffle() {
@@ -108,12 +114,8 @@ struct DiscoverFeedView: View {
     private var addFarmBanner: some View {
         Button {
             Haptics.tap()
-            // Submissions carry contact details — needs an account.
-            if session.isAuthenticated {
-                showAddFarm = true
-            } else {
-                requestAuth()
-            }
+            // Opens the web submission form, which handles its own sign-in.
+            showAddFarm = true
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")

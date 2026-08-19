@@ -172,6 +172,26 @@ extension View {
     func card(padding: CGFloat = 16) -> some View { modifier(CardBackground(padding: padding)) }
 }
 
+/// A stat cell: a bold green value over a muted caption. Used in the farm card
+/// header and elsewhere numbers need a compact, centered treatment.
+struct StatTile: View {
+    let value: String
+    let caption: String
+    var body: some View {
+        VStack(spacing: 3) {
+            Text(value)
+                .font(.geist(22, .bold))
+                .foregroundStyle(Color.farmGreen)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(caption)
+                .font(.geist(13))
+                .foregroundStyle(Color.inkMuted)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 /// Small green uppercase kicker line above serif titles ("PERSONALIZATION" style).
 struct Kicker: View {
     let text: String

@@ -12,6 +12,7 @@ struct FarmDetailView: View {
     @Environment(FavoritesStore.self) private var favorites
     @Environment(FarmsStore.self) private var farms
     @Environment(TripStore.self) private var trip
+    @Environment(\.requestAuth) private var requestAuth
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: FarmDetail?
@@ -20,6 +21,7 @@ struct FarmDetailView: View {
     @State private var isLocked = false
     @State private var showClaim = false
     @State private var showPaywall = false
+    @State private var showSignIn = false
     @State private var lightbox: LightboxSource?
     /// Public gallery photos, so multiple images show even for non-members (the
     /// members' `detail.images` needs a subscription).
@@ -56,7 +58,12 @@ struct FarmDetailView: View {
             footer
         }
         .background(Color.cream.ignoresSafeArea())
-        .sheet(isPresented: $showClaim) { ClaimFarmView(pin: pin) }
+        // Claiming now happens on the web (`/claim/<osm_id>`, no account needed);
+        // the native ClaimFarmView + /api/farms/claim stay live but unused for now.
+        .sheet(isPresented: $showClaim) {
+            if let url = claimURL { SafariView(url: url).ignoresSafeArea() }
+        }
+        .sheet(isPresented: $showSignIn) { AuthView() }
         .sheet(isPresented: $showPaywall) {
             LockedAccessView(pin: pin, onClaim: { showPaywall = false; showClaim = true }) {
                 await reload()
@@ -271,7 +278,7 @@ struct FarmDetailView: View {
             // Non-member: the locked, dashed prompt.
             Button {
                 Haptics.tap()
-                showPaywall = true
+                gateLocked()
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.fill").font(.system(size: 13, weight: .semibold))
@@ -413,7 +420,7 @@ struct FarmDetailView: View {
         HStack(spacing: 8) {
             footerButton(icon: isLocked ? "lock.fill" : "location.fill",
                          label: String(localized: "Directions"), filled: false) {
-                if isLocked { showPaywall = true } else { openDirections() }
+                if isLocked { gateLocked() } else { openDirections() }
             }
             if let phone = detail?.phone,
                let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
@@ -477,6 +484,22 @@ struct FarmDetailView: View {
         Task { await favorites.toggle(pin.osmId, userId: userId) }
     }
 
+    private var isSignedIn: Bool { session.session?.user.id != nil }
+
+    /// A members-only action was tapped: present sign-in first if the user is
+    /// signed out, otherwise show the membership paywall. Both sheets are
+    /// presented from within this view so they show over the open farm card.
+    private func gateLocked() {
+        if isSignedIn { showPaywall = true } else { showSignIn = true }
+    }
+
+    /// The web claim page for this farm. The route is a catch-all, so the osm_id
+    /// works raw or percent-encoded — encoding keeps the URL string valid.
+    private var claimURL: URL? {
+        let encoded = pin.osmId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? pin.osmId
+        return URL(string: "https://www.farmsy.app/claim/\(encoded)")
+    }
+
     private func openDirections() {
         let item = MKMapItem(placemark: MKPlacemark(coordinate: pin.coordinate))
         item.name = pin.name
@@ -512,7 +535,7 @@ struct FarmDetailView: View {
                     if teaser.truncated {
                         Button {
                             Haptics.tap()
-                            showPaywall = true
+                            gateLocked()
                         } label: {
                             Text("View more")
                                 .font(.geist(14, .semibold))
@@ -554,7 +577,7 @@ struct FarmDetailView: View {
                     .lineSpacing(2)
                 Button {
                     Haptics.tap()
-                    showPaywall = true
+                    gateLocked()
                 } label: {
                     HStack(spacing: 8) {
                         Text("See full details")

@@ -182,4 +182,16 @@ final class FarmsStore {
         }
         return Array((nearby.shuffled() + rest.shuffled()).prefix(limit))
     }
+
+    /// Farms within `radiusKm` that have at least one photo, nearest first.
+    /// Powers the onboarding "farms near you" shelf (featured-card design).
+    func nearbyWithImages(near coordinate: CLLocationCoordinate2D, radiusKm: Double = 100) -> [FarmPin] {
+        let center = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        return pins
+            .filter { $0.image != nil }
+            .compactMap { pin in pin.distance(from: center).map { (pin, $0) } }
+            .filter { $0.1 <= radiusKm * 1000 }
+            .sorted { $0.1 < $1.1 }
+            .map { $0.0 }
+    }
 }
