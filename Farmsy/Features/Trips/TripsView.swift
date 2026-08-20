@@ -161,7 +161,10 @@ struct TripsView: View {
                         }
                     }
                 }
-                .frame(height: ROW_HEIGHT * CGFloat(PLAN_SLOTS))
+                // maxHeight (not a fixed height) so the box collapses when the
+                // sheet is dragged small — the actions below stay visible instead
+                // of being pushed off — and caps at ~5 rows when there's room.
+                .frame(maxHeight: ROW_HEIGHT * CGFloat(PLAN_SLOTS))
             }
             .background(.white, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
@@ -328,7 +331,7 @@ struct TripsView: View {
                             }
                         }
                     }
-                    .frame(height: ROW_HEIGHT * CGFloat(MINE_SLOTS))
+                    .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
                 }
                 .background(.white, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))

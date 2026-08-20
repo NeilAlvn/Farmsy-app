@@ -179,12 +179,45 @@ final class TripStore {
     /// renders this, not `routeLine`, so the route traces along the road.
     private(set) var traceProgress: Double = 1
     private var traceTask: Task<Void, Never>?
+    /// Cumulative along-route distance to each vertex, and the total — so the
+    /// trace advances at a constant speed by *distance* rather than by vertex
+    /// count (vertices bunch up on bends, which made the tip lurch).
+    private var cumLen: [Double] = []
+    private var totalLen: Double = 0
 
-    /// The visible portion of the route while it traces in.
+    /// The visible portion of the route while it traces in — cut at the exact
+    /// distance the progress represents, with an interpolated tip so the line
+    /// grows smoothly along a segment instead of snapping vertex to vertex.
     var tracedLine: [CLLocationCoordinate2D] {
-        guard traceProgress < 1, routeLine.count > 2 else { return routeLine }
-        let n = max(2, Int((Double(routeLine.count) * traceProgress).rounded(.up)))
-        return Array(routeLine.prefix(n))
+        guard traceProgress < 1, routeLine.count > 2, totalLen > 0 else { return routeLine }
+        let target = totalLen * traceProgress
+        var i = 0
+        while i + 1 < cumLen.count && cumLen[i + 1] < target { i += 1 }
+        var out = Array(routeLine.prefix(i + 1))
+        if i + 1 < routeLine.count {
+            let seg = cumLen[i + 1] - cumLen[i]
+            let frac = seg > 0 ? (target - cumLen[i]) / seg : 0
+            let a = routeLine[i], b = routeLine[i + 1]
+            out.append(CLLocationCoordinate2D(
+                latitude: a.latitude + (b.latitude - a.latitude) * frac,
+                longitude: a.longitude + (b.longitude - a.longitude) * frac))
+        }
+        return out.count >= 2 ? out : Array(routeLine.prefix(2))
+    }
+
+    /// Set the drawn route and precompute its cumulative distances for the trace.
+    private func setRouteLine(_ line: [CLLocationCoordinate2D]) {
+        routeLine = line
+        cumLen = []; totalLen = 0
+        guard line.count > 1 else { return }
+        cumLen.reserveCapacity(line.count)
+        cumLen.append(0)
+        var acc = 0.0
+        for i in 1..<line.count {
+            acc += TripGeometry.haversineKm(line[i - 1], line[i])
+            cumLen.append(acc)
+        }
+        totalLen = acc
     }
 
     /// Draw the road from the start over ~2.2s with a cubic ease-out — restarted
@@ -252,7 +285,7 @@ final class TripStore {
     /// someone re-enter their front door for the next trip).
     func clear() {
         stopIds = []; editingTripId = nil
-        routeLine = []; distanceMeters = nil; durationSeconds = nil; onRoads = false
+        setRouteLine([]); distanceMeters = nil; durationSeconds = nil; onRoads = false
         persist()
     }
 
@@ -276,7 +309,7 @@ final class TripStore {
         let stored = UserDefaults.standard.string(forKey: ownerKey)
         if let stored, stored != owner {
             stopIds = []; editingTripId = nil
-            routeLine = []; distanceMeters = nil; durationSeconds = nil
+            setRouteLine([]); distanceMeters = nil; durationSeconds = nil
             persist()
         }
         UserDefaults.standard.set(owner, forKey: ownerKey)
@@ -322,7 +355,7 @@ final class TripStore {
     func refreshRoute(pins: [String: FarmPin]) async {
         let coords = legs(pins: pins)
         guard coords.count >= 2 else {
-            routeLine = []; distanceMeters = nil; durationSeconds = nil; onRoads = false; return
+            setRouteLine([]); distanceMeters = nil; durationSeconds = nil; onRoads = false; return
         }
         let key = keyOf(coords)
         if let cached = routeCache[key] {
@@ -336,7 +369,7 @@ final class TripStore {
 
     private func apply(_ r: RouteAPI.Response?, straight: [CLLocationCoordinate2D]) {
         if let r, let line = r.coordinates, line.count >= 2 {
-            routeLine = line.map { CLLocationCoordinate2D(latitude: $0[1], longitude: $0[0]) }
+            setRouteLine(line.map { CLLocationCoordinate2D(latitude: $0[1], longitude: $0[0]) })
             distanceMeters = r.distance
             // ORS only routes driving-car, so trust its duration for driving and
             // re-derive from the road distance at bike/walk speed otherwise.
@@ -350,7 +383,7 @@ final class TripStore {
             onRoads = true
             startTrace()
         } else {
-            routeLine = straight
+            setRouteLine(straight)
             let km = TripGeometry.lengthKm(straight)
             distanceMeters = km * 1000
             durationSeconds = Double(mode.minutes(km: km)) * 60

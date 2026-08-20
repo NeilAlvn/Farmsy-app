@@ -43,6 +43,11 @@ struct ImageLightbox: View {
                     .background(.ultraThinMaterial)
                     .ignoresSafeArea()
                     .opacity(shown ? 1 : 0)
+                    // contentShape makes the whole veil a solid hit target so no
+                    // touch leaks through the clear presentation background to the
+                    // feed underneath — that leak is what let a single post photo's
+                    // full-width tap area swallow the close button's tap.
+                    .contentShape(Rectangle())
                     .onTapGesture { close() }
 
                 // Bounded to the safe area so the frame never runs off the screen:
