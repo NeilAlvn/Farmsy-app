@@ -35,17 +35,20 @@ struct TripsView: View {
         Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
     }
     private let SLOTS = 8
+    /// Visible rows before the list box scrolls internally.
+    private let PLAN_SLOTS = 5
+    private let MINE_SLOTS = 8
+    private let ROW_HEIGHT: CGFloat = 52
 
     var body: some View {
         VStack(spacing: 0) {
             header
             tabs.padding(.horizontal, 14).padding(.top, 4)
-            ScrollView(showsIndicators: false) {
-                if tab == .plan { planTab } else { mineTab }
-            }
-            // The Plan actions are pinned below the scroll so a long stop list can
-            // never push Save / Show route / Google Maps off-screen or under the
-            // sheet's bottom edge.
+            // Only the stop / saved list scrolls (inside its own fixed-height box);
+            // everything else on the screen stays put, so the actions never get
+            // pushed off and the layout doesn't waste space.
+            if tab == .plan { planTab } else { mineTab }
+            Spacer(minLength: 0)
             if tab == .plan {
                 planActions
                     .padding(.horizontal, 14)
@@ -97,7 +100,7 @@ struct TripsView: View {
         }
     }
 
-    private func tabButton(_ title: String, _ t: Tab) -> some View {
+    private func tabButton(_ title: LocalizedStringKey, _ t: Tab) -> some View {
         Button { Haptics.tap(); tab = t } label: {
             Text(title).font(.geist(15, .bold))
                 .foregroundStyle(tab == t ? .white : Color.ink)
@@ -142,18 +145,23 @@ struct TripsView: View {
             }
             .buttonStyle(.plain)
 
-            // Trip overview. Only the stops plus one trailing "add" prompt are
-            // shown (capped at SLOTS) — the old fixed eight empty rows made the
-            // list needlessly tall and pushed the actions off-screen.
-            let rows = min(max(stops.count + 1, 1), SLOTS)
+            // Trip overview — a fixed-height box whose list is the only thing that
+            // scrolls. It always shows a few slots (stops first, then placeholders),
+            // and scrolls internally once the stops outgrow the visible rows.
+            let rows = max(stops.count, PLAN_SLOTS)
             VStack(alignment: .leading, spacing: 0) {
                 Text("Trip overview").font(.geist(16, .bold)).foregroundStyle(Color.ink)
                     .padding(14)
                 Divider()
-                ForEach(0..<rows, id: \.self) { i in
-                    if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
-                    if i < rows - 1 { Divider().padding(.leading, 60) }
+                ScrollView(showsIndicators: true) {
+                    VStack(spacing: 0) {
+                        ForEach(0..<rows, id: \.self) { i in
+                            if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
+                            if i < rows - 1 { Divider().padding(.leading, 60) }
+                        }
+                    }
                 }
+                .frame(height: ROW_HEIGHT * CGFloat(PLAN_SLOTS))
             }
             .background(.white, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
@@ -168,8 +176,6 @@ struct TripsView: View {
                     Text("Best order").font(.geist(14, .semibold)).foregroundStyle(Color.farmGreen)
                 }.buttonStyle(.plain)
             }
-
-            tipNote
         }
         .padding(14)
     }
@@ -303,6 +309,9 @@ struct TripsView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
+                // The saved-trip list is the only thing that scrolls — a fixed box
+                // showing up to eight rows, scrolling internally past that.
+                let rows = max(trip.savedTrips.count, MINE_SLOTS)
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
@@ -310,16 +319,19 @@ struct TripsView: View {
                         Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
                     }.padding(14)
                     Divider()
-                    ForEach(Array(0..<max(SLOTS, trip.savedTrips.count)), id: \.self) { i in
-                        if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
-                        else { savedEmptyRow(i: i) }
-                        if i < max(SLOTS, trip.savedTrips.count) - 1 { Divider().padding(.leading, 60) }
+                    ScrollView(showsIndicators: true) {
+                        VStack(spacing: 0) {
+                            ForEach(0..<rows, id: \.self) { i in
+                                if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
+                                else { savedEmptyRow(i: i) }
+                                if i < rows - 1 { Divider().padding(.leading, 60) }
+                            }
+                        }
                     }
+                    .frame(height: ROW_HEIGHT * CGFloat(MINE_SLOTS))
                 }
                 .background(.white, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
-
-                tipNote
             }
             .padding(14)
         }
@@ -386,18 +398,7 @@ struct TripsView: View {
 
     // MARK: - Shared
 
-    private var tipNote: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "lightbulb").font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
-            Text("Farms that are open today are more likely to be worth the drive.")
-                .font(.geist(13)).foregroundStyle(Color.inkMuted)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: 0xF3F6F2), in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func outlineButton(_ title: String, icon: String, _ action: @escaping () -> Void) -> some View {
+    private func outlineButton(_ title: LocalizedStringKey, icon: String, _ action: @escaping () -> Void) -> some View {
         Button { Haptics.tap(); action() } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold))
@@ -409,7 +410,7 @@ struct TripsView: View {
         }.buttonStyle(.plain)
     }
 
-    private func filledButton(_ title: String, icon: String, _ action: @escaping () -> Void) -> some View {
+    private func filledButton(_ title: LocalizedStringKey, icon: String, _ action: @escaping () -> Void) -> some View {
         Button { Haptics.tap(); action() } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold))

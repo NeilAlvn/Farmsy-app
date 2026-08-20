@@ -4636,6 +4636,34 @@
         }
       }
     },
+    "My trips": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "My trips"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mijn routes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mes trajets"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Touren"
+          }
+        }
+      }
+    },
     "My weekend trip": {
       "localizations": {
         "en": {
@@ -5278,6 +5306,34 @@
         }
       }
     },
+    "Open in Google Maps": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Open in Google Maps"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Openen in Google Maps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir dans Google Maps"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Google Maps öffnen"
+          }
+        }
+      }
+    },
     "Open my account page": {
       "localizations": {
         "en": {
@@ -5822,6 +5878,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Markierung gesetzt. Tippen Sie erneut, um anzupassen."
+          }
+        }
+      }
+    },
+    "Plan a trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Plan a trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route plannen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifier un trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tour planen"
           }
         }
       }
@@ -6833,6 +6917,34 @@
         }
       }
     },
+    "Save trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Save trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route opslaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer le trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tour speichern"
+          }
+        }
+      }
+    },
     "Saved": {
       "localizations": {
         "en": {
@@ -7209,6 +7321,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zeig mir Höfe"
+          }
+        }
+      }
+    },
+    "Show route": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Show route"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route tonen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher l'itinéraire"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route anzeigen"
           }
         }
       }

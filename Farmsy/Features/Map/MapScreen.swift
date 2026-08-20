@@ -81,13 +81,16 @@ struct MapScreen: View {
             let col = Int((pin.lng / cellLng).rounded(.down))
             buckets["\(row)_\(col)", default: []].append(pin)
         }
-        return buckets.map { key, group in
-            if group.count == 1 {
-                return MapCluster(id: group[0].osmId, coordinate: group[0].coordinate, pins: group)
+        return buckets.flatMap { key, group -> [MapCluster] in
+            // Only make a count bubble for double digits. A "2"–"9" bubble is just
+            // a handful of pins a tap away from being useful, so draw them as
+            // individual farm pins instead — no bubble a user has to zoom past.
+            if group.count < 10 {
+                return group.map { MapCluster(id: $0.osmId, coordinate: $0.coordinate, pins: [$0]) }
             }
             let lat = group.reduce(0.0) { $0 + $1.lat } / Double(group.count)
             let lng = group.reduce(0.0) { $0 + $1.lng } / Double(group.count)
-            return MapCluster(id: key, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), pins: group)
+            return [MapCluster(id: key, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), pins: group)]
         }
     }
 

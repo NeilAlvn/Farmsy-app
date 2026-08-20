@@ -54,6 +54,9 @@ struct ImageLightbox: View {
                     .opacity(shown ? 1 : 0)
                     .scaleEffect(shown ? 1 : 0.94)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Sit unambiguously above the tap-to-dismiss veil so the close
+                    // button and arrows always win the touch.
+                    .zIndex(1)
             }
         }
         .onAppear { withAnimation(.easeOut(duration: 0.22)) { shown = true } }
@@ -122,6 +125,7 @@ struct ImageLightbox: View {
                         .foregroundStyle(Color(hex: 0x6B7280))
                         .frame(width: 36, height: 36)
                         .background(Color(hex: 0xF3F4F6), in: Circle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
             }

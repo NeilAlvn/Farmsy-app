@@ -232,6 +232,7 @@ struct AuthView: View {
                     .foregroundStyle(Color.inkMuted)
                     .frame(width: 32, height: 32)
                     .background(.white.opacity(0.9), in: Circle())
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .padding(.top, 14)
