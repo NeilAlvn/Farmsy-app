@@ -1,30 +1,97 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "“Found a cheese farm ten minutes from home. Fresher than the supermarket, and I know exactly who made it.”": {
+    "": {
+      "shouldTranslate": false,
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "“Found a cheese farm ten minutes from home. Fresher than the supermarket, and I know exactly who made it.”"
+            "value": ""
+          }
+        }
+      }
+    },
+    "  … View more": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "  … View more"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "“Een kaasboerderij gevonden op tien minuten van huis. Varser dan de supermarkt, en ik weet precies wie het gemaakt heeft.”"
+            "value": "  … Meer"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "J'ai trouvé une fromagerie à dix minutes de chez moi. Plus frais qu'au supermarché, et je sais exactement qui l'a fabriqué."
+            "value": "  … Voir plus"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Einen Käsehof zehn Minuten von zu Hause gefunden. Frischer als im Supermarkt, und ich weiß genau, wer ihn gemacht hat."
+            "value": "  … Mehr"
+          }
+        }
+      }
+    },
+    " yours?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": " yours?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " van jou?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " est à vous ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Ihnen?"
+          }
+        }
+      }
+    },
+    " …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": " …"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " …"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " …"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " …"
           }
         }
       }
@@ -53,6 +120,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ %@"
+          }
+        }
+      }
+    },
+    "%@ / year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ / year"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / jaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / an"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / Jahr"
+          }
+        }
+      }
+    },
+    "%@ farms": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ farms"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Höfe"
+          }
+        }
+      }
+    },
+    "%@ plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ plan"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@-abonnement"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formule %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@-Abo"
           }
         }
       }
@@ -113,86 +264,268 @@
         }
       }
     },
-    "🍽️ All Categories": {
+    "%lld": {
+      "shouldTranslate": false,
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "🍽️ All Categories"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🍽️ Alle categorieën"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🍽️ Alle Kategorien"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🍽️ Toutes les catégories"
+            "value": "%lld"
           }
         }
       }
     },
-    "📬 We've sent a verification link to your email — you can keep exploring in the meantime.": {
+    "%lld %@%@": {
+      "shouldTranslate": false,
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "📬 We've sent a verification link to your email — you can keep exploring in the meantime."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "📬 We hebben een verificatielink naar je e-mail gestuurd — in de tussentijd kun je blijven rondkijken."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "📬 Wir haben einen Bestätigungslink an Ihre E-Mail gesendet — Sie können in der Zwischenzeit weiter erkunden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "📬 Nous avons envoyé un lien de vérification à votre e-mail — vous pouvez continuer à explorer en attendant."
+            "value": "%lld %@%@"
           }
         }
       }
     },
-    "🧺": {
+    "%lld / %lld": {
+      "shouldTranslate": false,
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "🧺"
+            "value": "%lld / %lld"
           }
-        },
-        "fr": {
+        }
+      }
+    },
+    "%lld days free": {
+      "localizations": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "🧺"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🧺"
+            "state": "new",
+            "value": "%lld days free"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "🧺"
+            "value": "%lld dagen gratis"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld jours gratuits"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tage gratis"
+          }
+        }
+      }
+    },
+    "%lld farms within 100 km of %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld farms within 100 km of %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld boerderijen binnen 100 km van %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld fermes à moins de 100 km de %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Höfe im Umkreis von 100 km um %@"
+          }
+        }
+      }
+    },
+    "%lld farms within 100 km of you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld farms within 100 km of you"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld boerderijen binnen 100 km van jou"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld fermes à moins de 100 km de vous"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Höfe im Umkreis von 100 km um dich"
+          }
+        }
+      }
+    },
+    "%lld saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld saved"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bewaard"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld enregistré(s)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld gespeichert"
+          }
+        }
+      }
+    },
+    "%lldd": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lldd"
+          }
+        }
+      }
+    },
+    "%lldh": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lldh"
+          }
+        }
+      }
+    },
+    "%lldm": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lldm"
+          }
+        }
+      }
+    },
+    "(%lld)": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "(%lld)"
+          }
+        }
+      }
+    },
+    "+%lld": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "+%lld"
+          }
+        }
+      }
+    },
+    "+31 …": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "+31 …"
+          }
+        }
+      }
+    },
+    "1000s": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tausende"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des milliers"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duizenden"
+          }
+        }
+      }
+    },
+    "1234 AB": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "1234 AB"
+          }
+        }
+      }
+    },
+    "12345678": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "12345678"
+          }
+        }
+      }
+    },
+    "999+": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "999+"
           }
         }
       }
@@ -225,6 +558,34 @@
         }
       }
     },
+    "A draft with %lld stops is waiting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "A draft with %lld stops is waiting"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Er staat een concept met %lld stops klaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un brouillon avec %lld arrêts vous attend"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Entwurf mit %lld Stopps wartet"
+          }
+        }
+      }
+    },
     "Add a farm shop": {
       "localizations": {
         "en": {
@@ -253,6 +614,34 @@
         }
       }
     },
+    "Add farms to see time and distance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Add farms to see time and distance"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voeg boerderijen toe om tijd en afstand te zien"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajoutez des fermes pour voir le temps et la distance"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Füge Höfe hinzu, um Zeit und Entfernung zu sehen"
+          }
+        }
+      }
+    },
     "Add it to the map for everyone": {
       "localizations": {
         "en": {
@@ -277,6 +666,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fügen Sie es für alle zur Karte hinzu"
+          }
+        }
+      }
+    },
+    "Add to trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Add to trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aan route toevoegen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter au trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zur Tour hinzufügen"
           }
         }
       }
@@ -337,6 +754,28 @@
         }
       }
     },
+    "Address, phone, website and what this farm sells.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse, Telefon, Website und was dieser Hof verkauft."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse, téléphone, site web et ce que vend cette ferme."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adres, telefoon, website en wat deze boerderij verkoopt."
+          }
+        }
+      }
+    },
     "All Categories": {
       "localizations": {
         "en": {
@@ -361,6 +800,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alle Kategorien"
+          }
+        }
+      }
+    },
+    "All categories": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Kategorien"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les catégories"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle categorieën"
           }
         }
       }
@@ -393,6 +854,34 @@
         }
       }
     },
+    "Already the shortest order": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Already the shortest order"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al de kortste volgorde"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déjà l'ordre le plus court"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereits die kürzeste Reihenfolge"
+          }
+        }
+      }
+    },
     "An account with this email already exists.": {
       "localizations": {
         "en": {
@@ -417,6 +906,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ein Konto mit dieser E-Mail existiert bereits."
+          }
+        }
+      }
+    },
+    "Anything else we should *know*?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Anything else we should *know*?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog iets dat we moeten *weten*?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autre chose à *savoir* ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sollen wir noch etwas *wissen*?"
           }
         }
       }
@@ -505,6 +1022,84 @@
         }
       }
     },
+    "Back": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Back"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terug"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurück"
+          }
+        }
+      }
+    },
+    "Be the first to review this farm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Be the first to review this farm."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wees de eerste die deze boerderij beoordeelt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soyez le premier à évaluer cette ferme."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewerte diesen Hof als Erster."
+          }
+        }
+      }
+    },
+    "Become a member": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglied werden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devenir membre"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word lid"
+          }
+        }
+      }
+    },
     "Belgium": {
       "localizations": {
         "en": {
@@ -529,6 +1124,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Belgien"
+          }
+        }
+      }
+    },
+    "Best order": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Best order"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste volgorde"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meilleur ordre"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste Reihenfolge"
+          }
+        }
+      }
+    },
+    "Bike": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Bike"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fiets"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vélo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fahrrad"
+          }
+        }
+      }
+    },
+    "Browse farm shops on the map": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Browse farm shops on the map"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blader door boerderijwinkels op de kaart"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parcourez les boutiques de ferme sur la carte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hofläden auf der Karte entdecken"
           }
         }
       }
@@ -645,6 +1324,62 @@
         }
       }
     },
+    "Cancelled · won't renew": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Cancelled · won't renew"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geannuleerd · wordt niet verlengd"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulé · ne sera pas renouvelé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gekündigt · wird nicht verlängert"
+          }
+        }
+      }
+    },
+    "Cancelled · you keep access until %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Cancelled · you keep access until %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geannuleerd · je houdt toegang tot %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulé · accès conservé jusqu'au %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gekündigt · Zugang bis %@"
+          }
+        }
+      }
+    },
     "Change photos": {
       "localizations": {
         "en": {
@@ -669,6 +1404,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fotos ändern"
+          }
+        }
+      }
+    },
+    "Check your inbox": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Check your inbox"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controleer je inbox"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifiez votre boîte mail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sieh in deinem Postfach nach"
           }
         }
       }
@@ -701,6 +1464,34 @@
         }
       }
     },
+    "Choose a starting point": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Choose a starting point"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies een vertrekpunt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un point de départ"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle einen Ausgangspunkt"
+          }
+        }
+      }
+    },
     "Choose photos": {
       "localizations": {
         "en": {
@@ -725,6 +1516,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fotos auswählen"
+          }
+        }
+      }
+    },
+    "City (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "City (optional)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plaats (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ville (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ort (optional)"
           }
         }
       }
@@ -781,6 +1600,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stadt, z.B. Utrecht"
+          }
+        }
+      }
+    },
+    "Claim *sent*": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Claim *sent*"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aanvraag *verzonden*"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande *envoyée*"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anfrage *gesendet*"
+          }
+        }
+      }
+    },
+    "Claim it to keep its details, photos and opening hours up to date. We check every claim by hand.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Claim it to keep its details, photos and opening hours up to date. We check every claim by hand."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claim de boerderij om details, foto's en openingstijden actueel te houden. We controleren elke claim handmatig."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revendiquez-la pour tenir à jour ses détails, photos et horaires. Nous vérifions chaque demande à la main."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beanspruche ihn, um Details, Fotos und Öffnungszeiten aktuell zu halten. Wir prüfen jede Anfrage von Hand."
           }
         }
       }
@@ -897,6 +1772,34 @@
         }
       }
     },
+    "Confirmed, up-to-date listings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Confirmed, up-to-date listings"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevestigde, actuele vermeldingen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fiches confirmées et à jour"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestätigte, aktuelle Einträge"
+          }
+        }
+      }
+    },
     "Contact us": {
       "localizations": {
         "en": {
@@ -949,6 +1852,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fortfahren"
+          }
+        }
+      }
+    },
+    "Couldn't delete account": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Couldn't delete account"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account verwijderen mislukt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de supprimer le compte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto konnte nicht gelöscht werden"
           }
         }
       }
@@ -1121,6 +2052,34 @@
         }
       }
     },
+    "Date of birth (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Date of birth (optional)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geboortedatum (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date de naissance (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geburtsdatum (optional)"
+          }
+        }
+      }
+    },
     "Delete account": {
       "localizations": {
         "en": {
@@ -1201,6 +2160,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Beschreibung"
+          }
+        }
+      }
+    },
+    "Details": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Details"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Détails"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
           }
         }
       }
@@ -1289,6 +2276,34 @@
         }
       }
     },
+    "Drive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Drive"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voiture"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        }
+      }
+    },
     "Eggs": {
       "localizations": {
         "en": {
@@ -1373,6 +2388,34 @@
         }
       }
     },
+    "Enter a valid date of birth. You must be at least 16.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Enter a valid date of birth. You must be at least 16."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voer een geldige geboortedatum in. Je moet minstens 16 zijn."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez une date de naissance valide. Vous devez avoir au moins 16 ans."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gib ein gültiges Geburtsdatum ein. Du musst mindestens 16 sein."
+          }
+        }
+      }
+    },
     "Enter code": {
       "localizations": {
         "en": {
@@ -1429,30 +2472,74 @@
         }
       }
     },
-    "Farm name *": {
+    "Expired": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Farm name *"
+            "value": "Expired"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Boerderijnaam *"
+            "value": "Verlopen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nom de la ferme *"
+            "value": "Expiré"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hofname *"
+            "value": "Abgelaufen"
+          }
+        }
+      }
+    },
+    "FEATURED FARMS": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EMPFOHLENE HÖFE"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FERMES EN VEDETTE"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UITGELICHTE BOERDERIJEN"
+          }
+        }
+      }
+    },
+    "FRESH FROM THE FARM": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FRISCH VOM HOF"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FRAÎCHEUR DE LA FERME"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VERS VAN DE BOERDERIJ"
           }
         }
       }
@@ -1485,30 +2572,74 @@
         }
       }
     },
-    "farm shops": {
+    "Farm details are for members": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "farm shops"
-          }
-        },
-        "nl": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "boerderijwinkels"
+            "value": "Hofdetails sind für Mitglieder"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "fermes de producteurs"
+            "value": "Les détails de la ferme sont réservés aux membres"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijdetails zijn voor leden"
+          }
+        }
+      }
+    },
+    "Farm name *": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Farm name *"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijnaam *"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom de la ferme *"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hofläden"
+            "value": "Hofname *"
+          }
+        }
+      }
+    },
+    "Farm photo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoffoto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo de la ferme"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijfoto"
           }
         }
       }
@@ -1569,6 +2700,34 @@
         }
       }
     },
+    "Farms that are open today are more likely to be worth the drive.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Farms that are open today are more likely to be worth the drive."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijen die vandaag open zijn, zijn de rit vaak waard."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les fermes ouvertes aujourd'hui valent plus souvent le déplacement."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe, die heute geöffnet sind, lohnen die Fahrt eher."
+          }
+        }
+      }
+    },
     "Farms within 50 km of %@": {
       "localizations": {
         "en": {
@@ -1621,6 +2780,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Höfe innerhalb von 50 km von Ihnen"
+          }
+        }
+      }
+    },
+    "Farms worth a *detour*": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Farms worth a *detour*"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijen die een *omweg* waard zijn"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des fermes qui valent le *détour*"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe, die einen *Umweg* wert sind"
           }
         }
       }
@@ -1709,6 +2896,56 @@
         }
       }
     },
+    "Filters": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtres"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filters"
+          }
+        }
+      }
+    },
+    "Find farm shops, pick-your-own farms and honest food straight from the people who grow it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Find farm shops, pick-your-own farms and honest food straight from the people who grow it."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vind boerderijwinkels, zelfplukboerderijen en eerlijk eten rechtstreeks van de mensen die het verbouwen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trouvez des boutiques de ferme, des fermes en libre cueillette et une nourriture honnête directement de ceux qui la cultivent."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finde Hofläden, Selbstpflück-Höfe und ehrliche Lebensmittel direkt von den Menschen, die sie anbauen."
+          }
+        }
+      }
+    },
     "Finding farms near you…": {
       "localizations": {
         "en": {
@@ -1737,6 +2974,62 @@
         }
       }
     },
+    "Finding the road…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Finding the road…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route zoeken…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche de l'itinéraire…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route wird gesucht…"
+          }
+        }
+      }
+    },
+    "Fine-tune what shows up. All optional.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Fine-tune what shows up. All optional."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stel af wat je te zien krijgt. Allemaal optioneel."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Affinez ce qui s'affiche. Tout est facultatif."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feinjustiere, was angezeigt wird. Alles optional."
+          }
+        }
+      }
+    },
     "First and last name": {
       "localizations": {
         "en": {
@@ -1761,6 +3054,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vor- und Nachname"
+          }
+        }
+      }
+    },
+    "First name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "First name"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voornaam"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prénom"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorname"
           }
         }
       }
@@ -1849,6 +3170,118 @@
         }
       }
     },
+    "Free for %lld days, then %@ per year. Cancel anytime in Settings.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Free for %lld days, then %@ per year. Cancel anytime in Settings."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dagen gratis, daarna %@ per jaar. Opzeggen kan altijd in Instellingen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratuit pendant %lld jours, puis %@ par an. Annulable à tout moment dans les Réglages."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tage gratis, danach %@ pro Jahr. Jederzeit in den Einstellungen kündbar."
+          }
+        }
+      }
+    },
+    "Free trial · renews automatically after it ends": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Free trial · renews automatically after it ends"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratis proefperiode · verlengt automatisch daarna"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit · renouvellement automatique à la fin"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenlose Testphase · verlängert sich danach automatisch"
+          }
+        }
+      }
+    },
+    "Free trial · you'll be charged on %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Free trial · you'll be charged on %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratis proefperiode · je wordt op %@ gefactureerd"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit · vous serez facturé le %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenlose Testphase · Abbuchung am %@"
+          }
+        }
+      }
+    },
+    "From a post": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "From a post"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uit een bericht"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "D'une publication"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus einem Beitrag"
+          }
+        }
+      }
+    },
     "Full access — opening hours, contact details, photos and more for %@ and every other farm — is managed from your Farmsy account on the web.": {
       "localizations": {
         "en": {
@@ -1877,30 +3310,108 @@
         }
       }
     },
-    "full story": {
+    "Google Play": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "full story"
+            "value": "Google Play"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "hele verhaal"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ganze Geschichte"
+            "value": "Google Play"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "histoire complète"
+            "value": "Google Play"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Play"
+          }
+        }
+      }
+    },
+    "Great choice": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Great choice"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goede keuze"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bon choix"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gute Wahl"
+          }
+        }
+      }
+    },
+    "Has photos": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Fotos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avec photos"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Met foto’s"
+          }
+        }
+      }
+    },
+    "Here are farms *near* you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Here are farms *near* you"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijen bij jou in de *buurt*"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voici des fermes *près* de chez vous"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier sind Höfe in deiner *Nähe*"
           }
         }
       }
@@ -1933,6 +3444,34 @@
         }
       }
     },
+    "Hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Hours"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Openingstijden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horaires"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnungszeiten"
+          }
+        }
+      }
+    },
     "How should we verify you?": {
       "localizations": {
         "en": {
@@ -1957,6 +3496,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wie sollen wir Sie verifizieren?"
+          }
+        }
+      }
+    },
+    "I subscribed on the web": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I subscribed on the web"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ik heb me op de website geabonneerd"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je me suis abonné sur le web"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich habe im Web abonniert"
+          }
+        }
+      }
+    },
+    "I'll explore on my own": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I'll explore on my own"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ik kijk zelf rond"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je vais explorer par moi-même"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich schaue mich selbst um"
           }
         }
       }
@@ -1989,30 +3584,30 @@
         }
       }
     },
-    "in review": {
+    "In your trip": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "in review"
+            "value": "In your trip"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "in beoordeling"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in Prüfung"
+            "value": "In je route"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "en cours d'examen"
+            "value": "Dans votre trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In deiner Tour"
           }
         }
       }
@@ -2045,6 +3640,34 @@
         }
       }
     },
+    "Is ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Is "
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Is "
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Est-ce que "
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gehört "
+          }
+        }
+      }
+    },
     "Is %@ yours? Claim it": {
       "localizations": {
         "en": {
@@ -2073,6 +3696,34 @@
         }
       }
     },
+    "Is this your farm?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Is this your farm?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Is dit jouw boerderij?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Est-ce votre ferme ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ist das dein Hof?"
+          }
+        }
+      }
+    },
     "Is this your farm? Claim it": {
       "localizations": {
         "en": {
@@ -2097,6 +3748,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ist das Ihr Hof? Beanspruchen Sie ihn"
+          }
+        }
+      }
+    },
+    "KVK number": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "KVK number"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVK-nummer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numéro KVK"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVK-Nummer"
+          }
+        }
+      }
+    },
+    "KVK number *": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "KVK number *"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVK-nummer *"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numéro KVK *"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVK-Nummer *"
           }
         }
       }
@@ -2213,58 +3920,192 @@
         }
       }
     },
-    "KVK number": {
+    "Know when new farms appear *near you*": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "KVK number"
+            "value": "Know when new farms appear *near you*"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVK-nummer"
+            "value": "Weet wanneer er nieuwe boerderijen *bij jou* verschijnen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Numéro KVK"
+            "value": "Soyez informé des nouvelles fermes *près de chez vous*"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVK-Nummer"
+            "value": "Erfahre, wenn neue Höfe *in deiner Nähe* erscheinen"
           }
         }
       }
     },
-    "KVK number *": {
+    "LANGUAGE": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "KVK number *"
+            "value": "LANGUAGE"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVK-nummer *"
+            "value": "TAAL"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Numéro KVK *"
+            "value": "LANGUE"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVK-Nummer *"
+            "value": "SPRACHE"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Language"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taal"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprache"
+          }
+        }
+      }
+    },
+    "Last name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Last name"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achternaam"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachname"
+          }
+        }
+      }
+    },
+    "Leave a review": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Leave a review"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrijf een beoordeling"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laisser un avis"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewertung schreiben"
+          }
+        }
+      }
+    },
+    "Lifetime": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lebenslang"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À vie"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levenslang"
+          }
+        }
+      }
+    },
+    "Lifetime — %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Lifetime — %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levenslang — %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À vie — %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lebenslang — %@"
           }
         }
       }
@@ -2353,6 +4194,62 @@
         }
       }
     },
+    "Local food, close to you.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Local food, close to you."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokaal eten, dicht bij jou."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des produits locaux, près de chez vous."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lokale Lebensmittel, ganz in deiner Nähe."
+          }
+        }
+      }
+    },
+    "Location": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Location"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locatie"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Localisation"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standort"
+          }
+        }
+      }
+    },
     "Log in": {
       "localizations": {
         "en": {
@@ -2381,6 +4278,34 @@
         }
       }
     },
+    "Log in / Sign up": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Log in / Sign up"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inloggen / Registreren"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter / S'inscrire"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anmelden / Registrieren"
+          }
+        }
+      }
+    },
     "Log in to pick up where you left off.": {
       "localizations": {
         "en": {
@@ -2405,6 +4330,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Melden Sie sich an, um dort weiterzumachen, wo Sie aufgehört haben."
+          }
+        }
+      }
+    },
+    "Manage subscription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Manage subscription"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement beheren"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer l'abonnement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abo verwalten"
           }
         }
       }
@@ -2461,6 +4414,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Märkte"
+          }
+        }
+      }
+    },
+    "Maybe later": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Maybe later"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Misschien later"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peut-être plus tard"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vielleicht später"
           }
         }
       }
@@ -2549,30 +4530,186 @@
         }
       }
     },
-    "near you": {
+    "Membership": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "near you"
+            "value": "Membership"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "bij jou in de buurt"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "in Ihrer Nähe"
+            "value": "Lidmaatschap"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "près de chez vous"
+            "value": "Abonnement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitgliedschaft"
+          }
+        }
+      }
+    },
+    "Membership isn't available right now. Please try again later.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Membership isn't available right now. Please try again later."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lidmaatschap is momenteel niet beschikbaar. Probeer het later opnieuw."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'abonnement n'est pas disponible pour le moment. Réessayez plus tard."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Mitgliedschaft ist derzeit nicht verfügbar. Bitte versuche es später erneut."
+          }
+        }
+      }
+    },
+    "Memberships can't be loaded right now.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitgliedschaften können gerade nicht geladen werden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les abonnements ne peuvent pas être chargés pour le moment."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lidmaatschappen kunnen nu niet worden geladen."
+          }
+        }
+      }
+    },
+    "My Trips": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "My Trips"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mijn routes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mes trajets"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Touren"
+          }
+        }
+      }
+    },
+    "My weekend trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "My weekend trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mijn weekendroute"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mon trajet du week-end"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Wochenendtour"
+          }
+        }
+      }
+    },
+    "Name your trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Name your trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geef je route een naam"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nommez votre trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benenne deine Tour"
+          }
+        }
+      }
+    },
+    "Near me": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In der Nähe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Près de moi"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichtbij"
           }
         }
       }
@@ -2717,6 +4854,78 @@
         }
       }
     },
+    "No posts yet — check back soon.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Beiträge – schau bald wieder vorbei."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de publications — revenez bientôt."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog geen berichten — kom snel terug."
+          }
+        }
+      }
+    },
+    "No reviews yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Bewertungen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore d’avis"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog geen reviews"
+          }
+        }
+      }
+    },
+    "No reviews yet. Be the first!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No reviews yet. Be the first!"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog geen beoordelingen. Wees de eerste!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun avis pour l'instant. Soyez le premier !"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Bewertungen. Sei der Erste!"
+          }
+        }
+      }
+    },
     "No saved farms yet": {
       "localizations": {
         "en": {
@@ -2741,6 +4950,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Noch keine gespeicherten Höfe"
+          }
+        }
+      }
+    },
+    "No trip in progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No trip in progress"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen route in behandeling"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun trajet en cours"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Tour in Arbeit"
+          }
+        }
+      }
+    },
+    "Nothing posted here today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Nothing posted here today."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vandaag nog niets geplaatst."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien de publié ici aujourd'hui."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute noch nichts gepostet."
           }
         }
       }
@@ -2829,6 +5094,34 @@
         }
       }
     },
+    "OK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "OK"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
     "One last thing": {
       "localizations": {
         "en": {
@@ -2853,6 +5146,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Noch eine letzte Sache"
+          }
+        }
+      }
+    },
+    "One payment, never expires. Nothing to manage.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "One payment, never expires. Nothing to manage."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eén betaling, verloopt nooit. Niets te beheren."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un seul paiement, sans expiration. Rien à gérer."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Zahlung, läuft nie ab. Nichts zu verwalten."
+          }
+        }
+      }
+    },
+    "One payment, yours forever": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einmalzahlung, für immer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un seul paiement, à vie"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eén betaling, voor altijd"
+          }
+        }
+      }
+    },
+    "Only farms open right now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Only farms open right now"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alleen boerderijen die nu open zijn"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seulement les fermes ouvertes maintenant"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Höfe, die gerade geöffnet sind"
+          }
+        }
+      }
+    },
+    "Open 24/7": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24/7 geöffnet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert 24/7"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24/7 open"
+          }
+        }
+      }
+    },
+    "Open 24/7 (automaat)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Open 24/7 (automaat)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24/7 open (automaat)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert 24h/24 (automate)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rund um die Uhr (Automat)"
           }
         }
       }
@@ -2885,6 +5306,56 @@
         }
       }
     },
+    "Open now": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt geöffnet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nu open"
+          }
+        }
+      }
+    },
+    "Open today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Open today"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vandaag open"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert aujourd'hui"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute geöffnet"
+          }
+        }
+      }
+    },
     "Opening hours": {
       "localizations": {
         "en": {
@@ -2909,6 +5380,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Öffnungszeiten"
+          }
+        }
+      }
+    },
+    "Opening hours, contact details, photos and more — for %@ and every other farm on the map.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Opening hours, contact details, photos and more — for %@ and every other farm on the map."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Openingstijden, contactgegevens, foto's en meer — voor %@ en elke andere boerderij op de kaart."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horaires, coordonnées, photos et plus — pour %@ et toutes les autres fermes sur la carte."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnungszeiten, Kontaktdaten, Fotos und mehr — für %@ und jeden anderen Hof auf der Karte."
+          }
+        }
+      }
+    },
+    "Optional": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Optional"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optioneel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Facultatif"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
           }
         }
       }
@@ -3025,6 +5552,34 @@
         }
       }
     },
+    "Personalize": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Personalize"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personaliseren"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personnaliser"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalisieren"
+          }
+        }
+      }
+    },
     "Phone": {
       "localizations": {
         "en": {
@@ -3081,6 +5636,34 @@
         }
       }
     },
+    "Photo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Photo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto"
+          }
+        }
+      }
+    },
     "Photos (up to 5)": {
       "localizations": {
         "en": {
@@ -3105,6 +5688,112 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fotos (bis zu 5)"
+          }
+        }
+      }
+    },
+    "Pick a farm on the map": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pick a farm on the map"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies een boerderij op de kaart"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez une ferme sur la carte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle einen Hof auf der Karte"
+          }
+        }
+      }
+    },
+    "Pick a few — or none. You can change this anytime.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pick a few — or none. You can change this anytime."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies er een paar — of geen. Je kunt dit altijd wijzigen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez-en quelques-uns — ou aucun. Modifiable à tout moment."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle ein paar — oder keine. Jederzeit änderbar."
+          }
+        }
+      }
+    },
+    "Pick your own": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selbstpflücken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cueillette"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelfpluk"
+          }
+        }
+      }
+    },
+    "Pick-your-own": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pick-your-own"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelfpluk"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Libre cueillette"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selbstpflücken"
           }
         }
       }
@@ -3137,6 +5826,224 @@
         }
       }
     },
+    "Plan a trip across several farms": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Plan a trip across several farms"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan een route langs meerdere boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifiez un trajet entre plusieurs fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plane eine Tour über mehrere Höfe"
+          }
+        }
+      }
+    },
+    "Plan a trip to fill this": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Plan a trip to fill this"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan een route om dit te vullen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifiez un trajet pour remplir ceci"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plane eine Tour, um das zu füllen"
+          }
+        }
+      }
+    },
+    "Plan a trip with Farmsy Pro": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route planen mit Farmsy Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifier un trajet avec Farmsy Pro"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan een route met Farmsy Pro"
+          }
+        }
+      }
+    },
+    "Please check your connection and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Please check your connection and try again."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controleer je verbinding en probeer het opnieuw."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifiez votre connexion et réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüfe deine Verbindung und versuch es erneut."
+          }
+        }
+      }
+    },
+    "Please fill in all fields.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Please fill in all fields."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vul alle velden in."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veuillez remplir tous les champs."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitte fülle alle Felder aus."
+          }
+        }
+      }
+    },
+    "Please verify your email first — check your inbox for the link.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Please verify your email first — check your inbox for the link."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifieer eerst je e-mail — check je inbox voor de link."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifiez d'abord votre e-mail — le lien est dans votre boîte mail."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestätige zuerst deine E-Mail — der Link ist in deinem Postfach."
+          }
+        }
+      }
+    },
+    "Popular farm shops": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Popular farm shops"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Populaire boerderijwinkels"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutiques de ferme populaires"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beliebte Hofläden"
+          }
+        }
+      }
+    },
+    "Post": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Post"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plaatsen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Publier"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posten"
+          }
+        }
+      }
+    },
     "Postal code": {
       "localizations": {
         "en": {
@@ -3161,6 +6068,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Postleitzahl"
+          }
+        }
+      }
+    },
+    "Postal code (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Postal code (optional)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postcode (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code postal (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postleitzahl (optional)"
+          }
+        }
+      }
+    },
+    "Posted to your farm on the map.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Posted to your farm on the map."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geplaatst bij jouw boerderij op de kaart."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Publié sur votre ferme sur la carte."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf deinem Hof auf der Karte gepostet."
           }
         }
       }
@@ -3221,6 +6184,252 @@
         }
       }
     },
+    "Put a farm *on the map*": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Put a farm *on the map*"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zet een boerderij *op de kaart*"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placez une ferme *sur la carte*"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setz einen Hof *auf die Karte*"
+          }
+        }
+      }
+    },
+    "Read more": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehr lesen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire la suite"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lees meer"
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Ready"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prêt"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        }
+      }
+    },
+    "Refer friends": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Refer friends"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vrienden uitnodigen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parrainer des amis"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Freunde einladen"
+          }
+        }
+      }
+    },
+    "Referral code (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Referral code (optional)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwijzingscode (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code de parrainage (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empfehlungscode (optional)"
+          }
+        }
+      }
+    },
+    "Renew to unlock full details for every farm again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Renew to unlock full details for every farm again."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verleng om weer alle details van elke boerderij te ontgrendelen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renouvelez pour débloquer à nouveau tous les détails de chaque ferme."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlängere, um wieder alle Details jedes Hofs freizuschalten."
+          }
+        }
+      }
+    },
+    "Renews yearly · manage where you subscribed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Renews yearly · manage where you subscribed"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlengt jaarlijks · beheer waar je je hebt aangemeld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renouvellement annuel · gérez là où vous vous êtes abonné"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlängert sich jährlich · dort verwalten, wo du abgeschlossen hast"
+          }
+        }
+      }
+    },
+    "Reopen Farmsy to finish switching language.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Reopen Farmsy to finish switching language."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heropen Farmsy om de taalwissel te voltooien."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rouvrez Farmsy pour terminer le changement de langue."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffne Farmsy neu, um den Sprachwechsel abzuschließen."
+          }
+        }
+      }
+    },
+    "Reordered · about %lld km shorter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Reordered · about %lld km shorter"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opnieuw geordend · ongeveer %lld km korter"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réordonné · environ %lld km de moins"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu geordnet · etwa %lld km kürzer"
+          }
+        }
+      }
+    },
     "Repeat password": {
       "localizations": {
         "en": {
@@ -3245,6 +6454,146 @@
           "stringUnit": {
             "state": "translated",
             "value": "Passwort wiederholen"
+          }
+        }
+      }
+    },
+    "Report": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Report"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaler"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melden"
+          }
+        }
+      }
+    },
+    "Report incorrect info": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Report incorrect info"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onjuiste informatie melden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaler une information incorrecte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falsche Angaben melden"
+          }
+        }
+      }
+    },
+    "Reported": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Reported"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemeld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signalé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemeldet"
+          }
+        }
+      }
+    },
+    "Restore purchases": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Restore purchases"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aankopen herstellen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer les achats"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käufe wiederherstellen"
+          }
+        }
+      }
+    },
+    "Resubscribe to reopen opening hours, contact details, photos and more — for %@ and every other farm on the map.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Resubscribe to reopen opening hours, contact details, photos and more — for %@ and every other farm on the map."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word opnieuw lid om openingstijden, contactgegevens, foto's en meer te bekijken — voor %@ en elke andere boerderij op de kaart."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réabonnez-vous pour retrouver horaires, coordonnées, photos et plus — pour %@ et toutes les autres fermes sur la carte."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließe erneut ab, um Öffnungszeiten, Kontaktdaten, Fotos und mehr zu sehen — für %@ und jeden anderen Hof auf der Karte."
           }
         }
       }
@@ -3277,6 +6626,34 @@
         }
       }
     },
+    "Reviews": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Reviews"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beoordelingen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avis"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewertungen"
+          }
+        }
+      }
+    },
     "Run by": {
       "localizations": {
         "en": {
@@ -3301,6 +6678,157 @@
           "stringUnit": {
             "state": "translated",
             "value": "Geführt von"
+          }
+        }
+      }
+    },
+    "SAVED FARMS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "SAVED FARMS"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OPGESLAGEN BOERDERIJEN"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FERMES ENREGISTRÉES"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GESPEICHERTE HÖFE"
+          }
+        }
+      }
+    },
+    "SETTINGS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "SETTINGS"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "INSTELLINGEN"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RÉGLAGES"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EINSTELLUNGEN"
+          }
+        }
+      }
+    },
+    "STARTING POINT": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "STARTING POINT"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VERTREKPUNT"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "POINT DE DÉPART"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AUSGANGSPUNKT"
+          }
+        }
+      }
+    },
+    "Sanne": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Sanne"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Save"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opslaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern"
+          }
+        }
+      }
+    },
+    "Save the ones you want to visit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Save the ones you want to visit"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewaar de boerderijen die je wilt bezoeken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrez celles que vous voulez visiter"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichere die, die du besuchen willst"
           }
         }
       }
@@ -3333,6 +6861,90 @@
         }
       }
     },
+    "Saved trips are a Farmsy Pro feature.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Saved trips are a Farmsy Pro feature."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opgeslagen routes zijn een Farmsy Pro-functie."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les trajets enregistrés sont une fonction Farmsy Pro."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeicherte Touren sind eine Farmsy-Pro-Funktion."
+          }
+        }
+      }
+    },
+    "Search a town instead": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Search a town instead"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoek liever een plaats"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chercher une ville à la place"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stattdessen einen Ort suchen"
+          }
+        }
+      }
+    },
+    "Search a town, address or postcode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Search a town, address or postcode"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoek een plaats, adres of postcode"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherchez une ville, une adresse ou un code postal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ort, Adresse oder PLZ suchen"
+          }
+        }
+      }
+    },
     "Search by farm, city or postcode": {
       "localizations": {
         "en": {
@@ -3361,6 +6973,34 @@
         }
       }
     },
+    "See all on map": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "See all on map"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles op de kaart bekijken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir tout sur la carte"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle auf der Karte ansehen"
+          }
+        }
+      }
+    },
     "See every farm on the map in seconds.": {
       "localizations": {
         "en": {
@@ -3385,6 +7025,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sehen Sie jeden Hof in Sekundenschnelle auf der Karte."
+          }
+        }
+      }
+    },
+    "See full details": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Details ansehen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir tous les détails"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijk alle details"
+          }
+        }
+      }
+    },
+    "See more": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehr ansehen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir plus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meer bekijken"
+          }
+        }
+      }
+    },
+    "See the place before you go": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "See the place before you go"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijk de plek voordat je gaat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voyez l'endroit avant d'y aller"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sieh dir den Ort an, bevor du hinfährst"
           }
         }
       }
@@ -3441,6 +7153,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Einstellungen"
+          }
+        }
+      }
+    },
+    "Share your experience… (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Share your experience… (optional)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deel je ervaring… (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partagez votre expérience… (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teile deine Erfahrung… (optional)"
+          }
+        }
+      }
+    },
+    "Show me farms": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Show me farms"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toon me boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Montrez-moi les fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeig mir Höfe"
           }
         }
       }
@@ -3525,6 +7293,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anmelden, um Höfe zu speichern und Details zu sehen"
+          }
+        }
+      }
+    },
+    "Sign in to view your trips": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Sign in to view your trips"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log in om je routes te bekijken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connectez-vous pour voir vos trajets"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melde dich an, um deine Touren zu sehen"
           }
         }
       }
@@ -3641,6 +7437,34 @@
         }
       }
     },
+    "Skip for now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Skip for now"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nu overslaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer pour l'instant"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorerst überspringen"
+          }
+        }
+      }
+    },
     "Something went wrong. Please try again.": {
       "localizations": {
         "en": {
@@ -3665,6 +7489,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+          }
+        }
+      }
+    },
+    "Start exploring": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Start exploring"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begin met ontdekken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commencer à explorer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loslegen"
           }
         }
       }
@@ -3753,6 +7605,62 @@
         }
       }
     },
+    "Street address (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Street address (optional)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Straat en huisnummer (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Straße und Hausnummer (optional)"
+          }
+        }
+      }
+    },
+    "Submit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Submit"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versturen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absenden"
+          }
+        }
+      }
+    },
     "Submit farm shop": {
       "localizations": {
         "en": {
@@ -3777,6 +7685,140 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hofladen einreichen"
+          }
+        }
+      }
+    },
+    "System": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "System"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systeem"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Système"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "System default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "System default"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systeemstandaard"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglage du système"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemstandard"
+          }
+        }
+      }
+    },
+    "TOP PICK": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TOP-TIPP"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "COUP DE CŒUR"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TOPKEUZE"
+          }
+        }
+      }
+    },
+    "TRIP PLANNER": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "TRIP PLANNER"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ROUTEPLANNER"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLANIFICATEUR DE TRAJET"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ROUTENPLANER"
+          }
+        }
+      }
+    },
+    "Tap a heart to save a farm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Tap a heart to save a farm"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tik op een hartje om een boerderij op te slaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touchez un cœur pour enregistrer une ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippe auf ein Herz, um einen Hof zu speichern"
           }
         }
       }
@@ -3921,6 +7963,34 @@
         }
       }
     },
+    "Thanks — it's *in review*": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Thanks — it's *in review*"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedankt — het wordt *beoordeeld*"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci — c'est *en cours d'examen*"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danke — es wird *geprüft*"
+          }
+        }
+      }
+    },
     "The essentials": {
       "localizations": {
         "en": {
@@ -3945,6 +8015,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Das Wesentliche"
+          }
+        }
+      }
+    },
+    "This is usually temporary — tap to try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ist meist vorübergehend – tippe, um es erneut zu versuchen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C’est généralement temporaire — appuyez pour réessayer."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit is meestal tijdelijk — tik om opnieuw te proberen."
+          }
+        }
+      }
+    },
+    "This permanently removes your profile, saved farms and subscription data. This can't be undone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This permanently removes your profile, saved farms and subscription data. This can't be undone."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit verwijdert je profiel, bewaarde boerderijen en abonnementsgegevens permanent. Dit kan niet ongedaan worden gemaakt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela supprime définitivement votre profil, vos fermes enregistrées et vos données d'abonnement. Action irréversible."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das entfernt dein Profil, gespeicherte Höfe und Abodaten dauerhaft. Das kann nicht rückgängig gemacht werden."
           }
         }
       }
@@ -4005,6 +8125,146 @@
         }
       }
     },
+    "Trip overview": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Trip overview"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route-overzicht"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aperçu du trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tourenübersicht"
+          }
+        }
+      }
+    },
+    "Trips": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Trips"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trajets"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touren"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Try again"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opnieuw proberen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        }
+      }
+    },
+    "Turn on notifications": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Turn on notifications"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meldingen inschakelen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer les notifications"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitteilungen aktivieren"
+          }
+        }
+      }
+    },
+    "Unlock every farm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Unlock every farm"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontgrendel elke boerderij"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Débloquez toutes les fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Höfe freischalten"
+          }
+        }
+      }
+    },
     "Unlock every farm's ": {
       "localizations": {
         "en": {
@@ -4029,6 +8289,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ontgrendel elke boerderij "
+          }
+        }
+      }
+    },
+    "Unlock every farm's *full story*": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Unlock every farm's *full story*"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontgrendel het *volledige verhaal* van elke boerderij"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvrez *toute l'histoire* de chaque ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entdecke die *ganze Geschichte* jedes Hofs"
+          }
+        }
+      }
+    },
+    "Unlock full details for every farm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Unlock full details for every farm."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontgrendel alle details van elke boerderij."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Débloquez tous les détails de chaque ferme."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schalte alle Details jedes Hofs frei."
           }
         }
       }
@@ -4089,6 +8405,17 @@
         }
       }
     },
+    "Utrecht": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Utrecht"
+          }
+        }
+      }
+    },
     "Verification": {
       "localizations": {
         "en": {
@@ -4113,6 +8440,84 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verifizierung"
+          }
+        }
+      }
+    },
+    "Verified": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifiziert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifié"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geverifieerd"
+          }
+        }
+      }
+    },
+    "Verified farm shops": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Verified farm shops"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geverifieerde boerderijwinkels"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutiques de ferme vérifiées"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifizierte Hofläden"
+          }
+        }
+      }
+    },
+    "Verified farms": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Verified farms"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geverifieerde boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermes vérifiées"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifizierte Höfe"
           }
         }
       }
@@ -4145,6 +8550,78 @@
         }
       }
     },
+    "View more": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehr anzeigen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir plus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meer weergeven"
+          }
+        }
+      }
+    },
+    "WHAT'S NEW": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEUIGKEITEN"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ACTUALITÉS"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NIEUW"
+          }
+        }
+      }
+    },
+    "Walk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Walk"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lopen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À pied"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu Fuß"
+          }
+        }
+      }
+    },
     "We'll be in touch at %@ once the team has verified your claim.": {
       "localizations": {
         "en": {
@@ -4169,6 +8646,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wir melden uns bei %@, sobald das Team Ihren Anspruch bestätigt hat."
+          }
+        }
+      }
+    },
+    "We've sent a verification link to %@. Click it to activate your account, then log in.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "We've sent a verification link to %@. Click it to activate your account, then log in."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We hebben een verificatielink naar %@ gestuurd. Klik erop om je account te activeren en log daarna in."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous avons envoyé un lien de vérification à %@. Cliquez dessus pour activer votre compte, puis connectez-vous."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir haben einen Bestätigungslink an %@ gesendet. Klicke darauf, um dein Konto zu aktivieren, und melde dich dann an."
           }
         }
       }
@@ -4257,6 +8762,34 @@
         }
       }
     },
+    "What are you *looking* for?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What are you *looking* for?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waar ben je naar op *zoek*?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Que *recherchez*-vous ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wonach *suchst* du?"
+          }
+        }
+      }
+    },
     "What do they sell?": {
       "localizations": {
         "en": {
@@ -4281,6 +8814,118 @@
           "stringUnit": {
             "state": "translated",
             "value": "Was verkaufen sie?"
+          }
+        }
+      }
+    },
+    "What people are saying": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What people are saying"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat mensen zeggen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que les gens en disent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was andere sagen"
+          }
+        }
+      }
+    },
+    "What's new": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What's new"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat is er nieuw"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quoi de neuf"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was gibt's Neues"
+          }
+        }
+      }
+    },
+    "What's new at %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What's new at %@?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat is er nieuw bij %@?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quoi de neuf chez %@ ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was gibt's Neues bei %@?"
+          }
+        }
+      }
+    },
+    "Where are you *exploring* today?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Where are you *exploring* today?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waar ga je vandaag op *ontdekking*?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Où *explorez*-vous aujourd'hui ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wo gehst du heute auf *Entdeckung*?"
           }
         }
       }
@@ -4369,6 +9014,56 @@
         }
       }
     },
+    "Yearly": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jährlich"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuel"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaarlijks"
+          }
+        }
+      }
+    },
+    "Yearly — %@/year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Yearly — %@/year"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaarlijks — %@/jaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuel — %@/an"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jährlich — %@/Jahr"
+          }
+        }
+      }
+    },
     "Yes 🌱": {
       "localizations": {
         "en": {
@@ -4393,6 +9088,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ja 🌱"
+          }
+        }
+      }
+    },
+    "You don't have a membership yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "You don't have a membership yet"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt nog geen lidmaatschap"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous n'avez pas encore d'abonnement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast noch keine Mitgliedschaft"
+          }
+        }
+      }
+    },
+    "You have Lifetime access": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "You have Lifetime access"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt levenslange toegang"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez un accès à vie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast lebenslangen Zugang"
+          }
+        }
+      }
+    },
+    "You're all *set*": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "You're all *set*"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je bent er *klaar* voor"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout est *prêt*"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles *bereit*"
           }
         }
       }
@@ -4425,6 +9204,34 @@
         }
       }
     },
+    "You're on the Yearly plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "You're on the Yearly plan"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt het jaarabonnement"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous êtes sur la formule annuelle"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast das Jahresabo"
+          }
+        }
+      }
+    },
     "Your account doesn't have full access yet": {
       "localizations": {
         "en": {
@@ -4449,6 +9256,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ihr Konto hat noch keinen vollständigen Zugriff"
+          }
+        }
+      }
+    },
+    "Your account was deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your account was deleted"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je account is verwijderd"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte a été supprimé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Konto wurde gelöscht"
+          }
+        }
+      }
+    },
+    "Your current location": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your current location"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je huidige locatie"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre position actuelle"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein aktueller Standort"
           }
         }
       }
@@ -4481,30 +9344,114 @@
         }
       }
     },
-    "your location": {
+    "Your membership has expired": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "your location"
+            "value": "Your membership has expired"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "jouw locatie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ihr Standort"
+            "value": "Je lidmaatschap is verlopen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "votre position"
+            "value": "Votre abonnement a expiré"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Mitgliedschaft ist abgelaufen"
+          }
+        }
+      }
+    },
+    "Your membership is ending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your membership is ending"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je lidmaatschap loopt af"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre abonnement se termine"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Mitgliedschaft endet"
+          }
+        }
+      }
+    },
+    "Your membership was bought through %@. Cancel it there so you aren't charged again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your membership was bought through %@. Cancel it there so you aren't charged again."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je lidmaatschap is via %@ gekocht. Zeg het daar op zodat je niet opnieuw wordt gefactureerd."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre abonnement a été acheté via %@. Annulez-le là-bas pour ne plus être facturé."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Mitgliedschaft wurde über %@ gekauft. Kündige sie dort, damit dir nichts erneut berechnet wird."
+          }
+        }
+      }
+    },
+    "Your profile, saved farms and subscription data have been removed. Thanks for trying Farmsy.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your profile, saved farms and subscription data have been removed. Thanks for trying Farmsy."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je profiel, bewaarde boerderijen en abonnementsgegevens zijn verwijderd. Bedankt dat je Farmsy hebt geprobeerd."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre profil, vos fermes enregistrées et vos données d'abonnement ont été supprimés. Merci d'avoir essayé Farmsy."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Profil, gespeicherte Höfe und Abodaten wurden entfernt. Danke, dass du Farmsy ausprobiert hast."
           }
         }
       }
@@ -4537,552 +9484,58 @@
         }
       }
     },
-    "Verified": {
+    "Your trial is active": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Verifiziert"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vérifié"
+            "state": "new",
+            "value": "Your trial is active"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geverifieerd"
+            "value": "Je proefperiode is actief"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre essai est actif"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Testphase ist aktiv"
           }
         }
       }
     },
-    "Open now": {
+    "Zelfpluk farms you can visit": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Jetzt geöffnet"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ouvert"
+            "state": "new",
+            "value": "Zelfpluk farms you can visit"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nu open"
-          }
-        }
-      }
-    },
-    "Open 24/7": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "24/7 geöffnet"
+            "value": "Zelfplukboerderijen die je kunt bezoeken"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ouvert 24/7"
+            "value": "Fermes en libre cueillette à visiter"
           }
         },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "24/7 open"
-          }
-        }
-      }
-    },
-    "Pick your own": {
-      "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Selbstpflücken"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cueillette"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zelfpluk"
-          }
-        }
-      }
-    },
-    "Has photos": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mit Fotos"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avec photos"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Met foto’s"
-          }
-        }
-      }
-    },
-    "Near me": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In der Nähe"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Près de moi"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dichtbij"
-          }
-        }
-      }
-    },
-    "No reviews yet": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Bewertungen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore d’avis"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nog geen reviews"
-          }
-        }
-      }
-    },
-    "Farm photo": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hoffoto"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Photo de la ferme"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Boerderijfoto"
-          }
-        }
-      }
-    },
-    "See full details": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Details ansehen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voir tous les détails"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bekijk alle details"
-          }
-        }
-      }
-    },
-    "View more": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mehr anzeigen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voir plus"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meer weergeven"
-          }
-        }
-      }
-    },
-    "Farm details are for members": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hofdetails sind für Mitglieder"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les détails de la ferme sont réservés aux membres"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Boerderijdetails zijn voor leden"
-          }
-        }
-      }
-    },
-    "Address, phone, website and what this farm sells.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse, Telefon, Website und was dieser Hof verkauft."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse, téléphone, site web et ce que vend cette ferme."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adres, telefoon, website en wat deze boerderij verkoopt."
-          }
-        }
-      }
-    },
-    "WHAT'S NEW": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "NEUIGKEITEN"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ACTUALITÉS"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "NIEUW"
-          }
-        }
-      }
-    },
-    "FRESH FROM THE FARM": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FRISCH VOM HOF"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FRAÎCHEUR DE LA FERME"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "VERS VAN DE BOERDERIJ"
-          }
-        }
-      }
-    },
-    "TOP PICK": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "TOP-TIPP"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "COUP DE CŒUR"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "TOPKEUZE"
-          }
-        }
-      }
-    },
-    "No posts yet — check back soon.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Beiträge – schau bald wieder vorbei."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore de publications — revenez bientôt."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nog geen berichten — kom snel terug."
-          }
-        }
-      }
-    },
-    "just now": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "gerade eben"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "à l’instant"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "zojuist"
-          }
-        }
-      }
-    },
-    "🍽️ Categories": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🍽️ Kategorien"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🍽️ Catégories"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🍽️ Categorieën"
-          }
-        }
-      }
-    },
-    "Become a member": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mitglied werden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Devenir membre"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Word lid"
-          }
-        }
-      }
-    },
-    "Yearly": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jährlich"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Annuel"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jaarlijks"
-          }
-        }
-      }
-    },
-    "Lifetime": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lebenslang"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "À vie"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Levenslang"
-          }
-        }
-      }
-    },
-    "One payment, yours forever": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Einmalzahlung, für immer"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un seul paiement, à vie"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eén betaling, voor altijd"
-          }
-        }
-      }
-    },
-    "Memberships can't be loaded right now.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mitgliedschaften können gerade nicht geladen werden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les abonnements ne peuvent pas être chargés pour le moment."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lidmaatschappen kunnen nu niet worden geladen."
-          }
-        }
-      }
-    },
-    "This is usually temporary — tap to try again.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das ist meist vorübergehend – tippe, um es erneut zu versuchen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "C’est généralement temporaire — appuyez pour réessayer."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dit is meestal tijdelijk — tik om opnieuw te proberen."
-          }
-        }
-      }
-    },
-    "1000s": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tausende"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Des milliers"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Duizenden"
+            "value": "Selbstpflück-Höfe zum Besuchen"
           }
         }
       }
@@ -5131,134 +9584,677 @@
         }
       }
     },
-    "Plan a trip with Farmsy Pro": {
+    "e.g. Boerderij De Groene Weide": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Route planen mit Farmsy Pro"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Planifier un trajet avec Farmsy Pro"
+            "state": "new",
+            "value": "e.g. Boerderij De Groene Weide"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plan een route met Farmsy Pro"
+            "value": "bijv. Boerderij De Groene Weide"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "p. ex. Boerderij De Groene Weide"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "z. B. Boerderij De Groene Weide"
           }
         }
       }
     },
-    "Filters": {
+    "e.g. Mo–Sa 9:00–17:00": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Filter"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtres"
+            "state": "new",
+            "value": "e.g. Mo–Sa 9:00–17:00"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filters"
+            "value": "bijv. ma–za 9:00–17:00"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "p. ex. lun–sam 9:00–17:00"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "z. B. Mo–Sa 9:00–17:00"
           }
         }
       }
     },
-    "All categories": {
+    "e.g. Utrecht": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Alle Kategorien"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toutes les catégories"
+            "state": "new",
+            "value": "e.g. Utrecht"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle categorieën"
+            "value": "bijv. Utrecht"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "p. ex. Utrecht"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "z. B. Utrecht"
           }
         }
       }
     },
-    "Read more": {
+    "farm": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Mehr lesen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lire la suite"
+            "state": "new",
+            "value": "farm"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lees meer"
+            "value": "boerderij"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hof"
           }
         }
       }
     },
-    "See more": {
+    "farm shops": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "Mehr ansehen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voir plus"
+            "state": "new",
+            "value": "farm shops"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Meer bekijken"
+            "value": "boerderijwinkels"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fermes de producteurs"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hofläden"
           }
         }
       }
     },
-    "FEATURED FARMS": {
+    "farms": {
       "localizations": {
-        "de": {
+        "en": {
           "stringUnit": {
-            "state": "translated",
-            "value": "EMPFOHLENE HÖFE"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FERMES EN VEDETTE"
+            "state": "new",
+            "value": "farms"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "UITGELICHTE BOERDERIJEN"
+            "value": "boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe"
+          }
+        }
+      }
+    },
+    "full story": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "full story"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hele verhaal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ganze Geschichte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "histoire complète"
+          }
+        }
+      }
+    },
+    "https://…": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "https://…"
+          }
+        }
+      }
+    },
+    "in review": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "in review"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in beoordeling"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in Prüfung"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en cours d'examen"
+          }
+        }
+      }
+    },
+    "info@…": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "info@…"
+          }
+        }
+      }
+    },
+    "just now": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gerade eben"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "à l’instant"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "zojuist"
+          }
+        }
+      }
+    },
+    "near you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "near you"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bij jou in de buurt"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in Ihrer Nähe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "près de chez vous"
+          }
+        }
+      }
+    },
+    "our website": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "our website"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "onze website"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "notre site web"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unsere Website"
+          }
+        }
+      }
+    },
+    "the App Store": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "the App Store"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de App Store"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "l'App Store"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "den App Store"
+          }
+        }
+      }
+    },
+    "then %@ / year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "then %@ / year"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "daarna %@ / jaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "puis %@ / an"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "danach %@ / Jahr"
+          }
+        }
+      }
+    },
+    "you@email.com": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "you@email.com"
+          }
+        }
+      }
+    },
+    "you@yourfarm.nl": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "you@yourfarm.nl"
+          }
+        }
+      }
+    },
+    "your location": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "your location"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jouw locatie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ihr Standort"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "votre position"
+          }
+        }
+      }
+    },
+    "·": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "·"
+          }
+        }
+      }
+    },
+    "· %lld %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "· %lld %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %lld %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %lld %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %lld %@"
+          }
+        }
+      }
+    },
+    "—": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "—"
+          }
+        }
+      }
+    },
+    "“Found a cheese farm ten minutes from home. Fresher than the supermarket, and I know exactly who made it.”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "“Found a cheese farm ten minutes from home. Fresher than the supermarket, and I know exactly who made it.”"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Een kaasboerderij gevonden op tien minuten van huis. Varser dan de supermarkt, en ik weet precies wie het gemaakt heeft.”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J'ai trouvé une fromagerie à dix minutes de chez moi. Plus frais qu'au supermarché, et je sais exactement qui l'a fabriqué."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einen Käsehof zehn Minuten von zu Hause gefunden. Frischer als im Supermarkt, und ich weiß genau, wer ihn gemacht hat."
+          }
+        }
+      }
+    },
+    "… View more": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "… View more"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "… Meer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "… Voir plus"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "… Mehr"
+          }
+        }
+      }
+    },
+    "🍽️ All Categories": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "🍽️ All Categories"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🍽️ Alle categorieën"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🍽️ Alle Kategorien"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🍽️ Toutes les catégories"
+          }
+        }
+      }
+    },
+    "🍽️ Categories": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🍽️ Kategorien"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🍽️ Catégories"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🍽️ Categorieën"
+          }
+        }
+      }
+    },
+    "📬": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "📬"
+          }
+        }
+      }
+    },
+    "📬 We've sent a verification link to your email — you can keep exploring in the meantime.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "📬 We've sent a verification link to your email — you can keep exploring in the meantime."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "📬 We hebben een verificatielink naar je e-mail gestuurd — in de tussentijd kun je blijven rondkijken."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "📬 Wir haben einen Bestätigungslink an Ihre E-Mail gesendet — Sie können in der Zwischenzeit weiter erkunden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "📬 Nous avons envoyé un lien de vérification à votre e-mail — vous pouvez continuer à explorer en attendant."
+          }
+        }
+      }
+    },
+    "🤍": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "🤍"
+          }
+        }
+      }
+    },
+    "🧀": {
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "🧀"
+          }
+        }
+      }
+    },
+    "🧺": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "🧺"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🧺"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🧺"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🧺"
           }
         }
       }

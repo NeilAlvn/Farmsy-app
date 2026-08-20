@@ -43,6 +43,16 @@ struct TripsView: View {
             ScrollView(showsIndicators: false) {
                 if tab == .plan { planTab } else { mineTab }
             }
+            // The Plan actions are pinned below the scroll so a long stop list can
+            // never push Save / Show route / Google Maps off-screen or under the
+            // sheet's bottom edge.
+            if tab == .plan {
+                planActions
+                    .padding(.horizontal, 14)
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
+                    .background(Color.cream)
+            }
         }
         .background(Color.cream.ignoresSafeArea())
         .task { await trip.refreshRoute(pins: pinIndex) }
@@ -132,14 +142,17 @@ struct TripsView: View {
             }
             .buttonStyle(.plain)
 
-            // Trip overview.
+            // Trip overview. Only the stops plus one trailing "add" prompt are
+            // shown (capped at SLOTS) — the old fixed eight empty rows made the
+            // list needlessly tall and pushed the actions off-screen.
+            let rows = min(max(stops.count + 1, 1), SLOTS)
             VStack(alignment: .leading, spacing: 0) {
                 Text("Trip overview").font(.geist(16, .bold)).foregroundStyle(Color.ink)
                     .padding(14)
                 Divider()
-                ForEach(0..<max(SLOTS, stops.count), id: \.self) { i in
+                ForEach(0..<rows, id: \.self) { i in
                     if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
-                    if i < max(SLOTS, stops.count) - 1 { Divider().padding(.leading, 60) }
+                    if i < rows - 1 { Divider().padding(.leading, 60) }
                 }
             }
             .background(.white, in: RoundedRectangle(cornerRadius: 16))
@@ -150,23 +163,6 @@ struct TripsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            // Time + distance.
-            totalsBar
-
-            // Save + Show route.
-            HStack(spacing: 10) {
-                outlineButton("Save trip", icon: "bookmark") { naming = true; tripName = "" }
-                    .disabled(stops.isEmpty)
-                filledButton("Show route", icon: "location.north.fill") {
-                    Task { await trip.refreshRoute(pins: pinIndex) }
-                    dismiss()
-                }
-                .disabled(!canRoute)
-            }
-
-            outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") { openGoogleMaps() }
-                .disabled(stops.isEmpty)
-
             if stops.count >= 3 {
                 Button { reorder() } label: {
                     Text("Best order").font(.geist(14, .semibold)).foregroundStyle(Color.farmGreen)
@@ -176,6 +172,50 @@ struct TripsView: View {
             tipNote
         }
         .padding(14)
+    }
+
+    /// Pinned below the scroll: travel mode, the live totals, and the trip
+    /// actions — the controls Luuk flagged as getting buried under the stop list.
+    private var planActions: some View {
+        VStack(spacing: 10) {
+            modeSelector
+            totalsBar
+            HStack(spacing: 10) {
+                outlineButton("Save trip", icon: "bookmark") { naming = true; tripName = "" }
+                    .disabled(stops.isEmpty)
+                filledButton("Show route", icon: "location.north.fill") {
+                    Task { await trip.refreshRoute(pins: pinIndex) }
+                    dismiss()
+                }
+                .disabled(!canRoute)
+            }
+            outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") { openGoogleMaps() }
+                .disabled(stops.isEmpty)
+        }
+    }
+
+    private var modeSelector: some View {
+        HStack(spacing: 8) {
+            ForEach(TravelMode.allCases, id: \.self) { m in
+                Button {
+                    Haptics.tap()
+                    trip.setMode(m)
+                    Task { await trip.refreshRoute(pins: pinIndex) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: m.icon).font(.system(size: 13, weight: .semibold))
+                        Text(m.label).font(.geist(13, .semibold))
+                    }
+                    .foregroundStyle(trip.mode == m ? .white : Color.ink)
+                    .frame(maxWidth: .infinity).padding(.vertical, 9)
+                    .background(trip.mode == m ? Color.farmGreenMap : .white,
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12)
+                        .stroke(trip.mode == m ? Color.clear : Color.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private func filledRow(i: Int, pin: FarmPin) -> some View {
@@ -222,7 +262,7 @@ struct TripsView: View {
                 Text(totalsText).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
             }
             Spacer()
-            Image(systemName: "car").font(.system(size: 15)).foregroundStyle(Color.inkMuted.opacity(0.5))
+            Image(systemName: trip.mode.icon).font(.system(size: 15)).foregroundStyle(Color.inkMuted.opacity(0.5))
         }
         .padding(14)
         .background(Color(hex: 0xF3F6F2), in: RoundedRectangle(cornerRadius: 16))
@@ -241,7 +281,7 @@ struct TripsView: View {
         let idx = trip.originCoord != nil ? i + 1 : i
         guard idx >= 1, idx < coords.count else { return "Start" }
         let km = TripGeometry.haversineKm(coords[idx - 1], coords[idx])
-        return String(format: "~%.0f km · %d min", km, TripGeometry.roughDriveMinutes(km))
+        return String(format: "~%.0f km · %d min", km, trip.mode.minutes(km: km))
     }
 
     // MARK: - My trips tab
@@ -291,7 +331,7 @@ struct TripsView: View {
                 .frame(width: 28, height: 28).background(Color.farmGreenMap, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
                 Text(t.name).font(.geist(15, .bold)).foregroundStyle(Color.ink).lineLimit(1)
-                Text("\(t.stopCount) farm\(t.stopCount == 1 ? "" : "s")\(dateLabel(t.updatedAt))")
+                Text("\(t.stopCount) \(t.stopCount == 1 ? String(localized: "farm") : String(localized: "farms"))\(dateLabel(t.updatedAt))")
                     .font(.geist(12)).foregroundStyle(Color.inkMuted)
             }
             Spacer()
@@ -419,7 +459,7 @@ struct TripsView: View {
         let origin = "\(coords.first!.latitude),\(coords.first!.longitude)"
         let dest = "\(coords.last!.latitude),\(coords.last!.longitude)"
         let mid = coords.dropFirst().dropLast().map { "\($0.latitude),\($0.longitude)" }.joined(separator: "|")
-        var s = "https://www.google.com/maps/dir/?api=1&origin=\(origin)&destination=\(dest)"
+        var s = "https://www.google.com/maps/dir/?api=1&origin=\(origin)&destination=\(dest)&travelmode=\(trip.mode.googleMode)"
         if !mid.isEmpty { s += "&waypoints=\(mid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? mid)" }
         if let url = URL(string: s) { UIApplication.shared.open(url) }
     }

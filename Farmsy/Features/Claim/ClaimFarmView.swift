@@ -175,9 +175,7 @@ struct ClaimFarmView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56))
                 .foregroundStyle(Color.farmGreen)
-            DisplayTitle(leading: String(localized: "Claim "),
-                         emphasis: String(localized: "sent"),
-                         trailing: "", size: 30)
+            DisplayTitle(String(localized: "Claim *sent*"), size: 30)
             Text("We'll be in touch at \(email) once the team has verified your claim.")
                 .font(.geist(15))
                 .foregroundStyle(Color.inkMuted)

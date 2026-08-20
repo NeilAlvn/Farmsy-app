@@ -32,6 +32,49 @@ enum RouteAPI {
     }
 }
 
+// MARK: - Travel mode
+
+/// How the trip is travelled. The web's road proxy only routes `driving-car`, so
+/// the drawn road line is the same for every mode for now — but the time
+/// estimate and the Google Maps hand-off both honour the choice, and the drive
+/// distance is a fair stand-in for the bike/walk path over the same roads.
+enum TravelMode: String, CaseIterable {
+    case car, bike, walk
+
+    var label: String {
+        switch self {
+        case .car:  return String(localized: "Drive")
+        case .bike: return String(localized: "Bike")
+        case .walk: return String(localized: "Walk")
+        }
+    }
+    var icon: String {
+        switch self {
+        case .car:  return "car.fill"
+        case .bike: return "bicycle"
+        case .walk: return "figure.walk"
+        }
+    }
+    /// Google Maps deep-link `travelmode`.
+    var googleMode: String {
+        switch self {
+        case .car:  return "driving"
+        case .bike: return "bicycling"
+        case .walk: return "walking"
+        }
+    }
+    /// Rough average speed for the time estimate. Deliberately conservative;
+    /// presented as "about", never as an arrival time.
+    var kmh: Double {
+        switch self {
+        case .car:  return 55
+        case .bike: return 15
+        case .walk: return 4.8
+        }
+    }
+    func minutes(km: Double) -> Int { Int((km / kmh * 60).rounded()) }
+}
+
 // MARK: - Geometry (straight-line, no network)
 
 enum TripGeometry {
@@ -130,6 +173,8 @@ final class TripStore {
     private(set) var durationSeconds: Double?
     private(set) var isRouting = false
     private(set) var onRoads = false
+    /// Chosen travel mode — affects the time estimate and the Google Maps link.
+    private(set) var mode: TravelMode = .car
     /// The line as it draws itself, sliced by the trace animation (0→1). The map
     /// renders this, not `routeLine`, so the route traces along the road.
     private(set) var traceProgress: Double = 1
@@ -171,6 +216,7 @@ final class TripStore {
     private let stopsKey = "dlb_pending_trip"
     private let originKey = "dlb_trip_origin"
     private let ownerKey = "dlb_trip_owner"
+    private let modeKey = "dlb_trip_mode"
     /// Route answers keyed by the stops they belong to (failures cached too).
     private var routeCache: [String: RouteAPI.Response?] = [:]
 
@@ -180,6 +226,15 @@ final class TripStore {
             originCoord = CLLocationCoordinate2D(latitude: o[0], longitude: o[1])
             originLabel = o.count >= 2 ? UserDefaults.standard.string(forKey: originKey + ".label") : nil
         }
+        if let m = UserDefaults.standard.string(forKey: modeKey).flatMap(TravelMode.init) { mode = m }
+    }
+
+    /// Switch travel mode. The road geometry is cached by stops and unchanged by
+    /// mode, so the caller just re-runs `refreshRoute` to re-derive the estimate.
+    func setMode(_ m: TravelMode) {
+        guard m != mode else { return }
+        mode = m
+        UserDefaults.standard.set(m.rawValue, forKey: modeKey)
     }
 
     // MARK: Draft
@@ -283,13 +338,22 @@ final class TripStore {
         if let r, let line = r.coordinates, line.count >= 2 {
             routeLine = line.map { CLLocationCoordinate2D(latitude: $0[1], longitude: $0[0]) }
             distanceMeters = r.distance
-            durationSeconds = r.duration
+            // ORS only routes driving-car, so trust its duration for driving and
+            // re-derive from the road distance at bike/walk speed otherwise.
+            if mode == .car {
+                durationSeconds = r.duration
+            } else if let d = r.distance {
+                durationSeconds = Double(mode.minutes(km: d / 1000)) * 60
+            } else {
+                durationSeconds = r.duration
+            }
             onRoads = true
             startTrace()
         } else {
             routeLine = straight
-            distanceMeters = TripGeometry.lengthKm(straight) * 1000
-            durationSeconds = Double(TripGeometry.roughDriveMinutes(TripGeometry.lengthKm(straight))) * 60
+            let km = TripGeometry.lengthKm(straight)
+            distanceMeters = km * 1000
+            durationSeconds = Double(mode.minutes(km: km)) * 60
             onRoads = false
             traceTask?.cancel(); traceProgress = 1   // straight lines draw instantly
         }

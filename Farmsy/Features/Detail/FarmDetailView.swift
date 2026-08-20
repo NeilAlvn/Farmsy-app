@@ -757,9 +757,7 @@ struct LockedAccessView: View {
                 VStack(spacing: 10) {
                     Kicker(text: isExpired ? String(localized: "Welcome back")
                                            : String(localized: "Members only"))
-                    DisplayTitle(leading: String(localized: "Unlock every farm's "),
-                                 emphasis: String(localized: "full story"),
-                                 trailing: "", size: 32)
+                    DisplayTitle(String(localized: "Unlock every farm's *full story*"), size: 32)
                 }
                 .padding(.top, 30)
 

@@ -72,19 +72,42 @@ struct DisplayTitle: View {
     let trailing: String
     var size: CGFloat = 32
 
+    /// Legacy three-part form, for titles whose emphasis is *dynamic* (a farm
+    /// name). Each part renders exactly as given, so callers — and translations —
+    /// own their own spacing.
+    init(leading: String, emphasis: String, trailing: String, size: CGFloat = 32) {
+        self.leading = leading
+        self.emphasis = emphasis
+        self.trailing = trailing
+        self.size = size
+    }
+
+    /// Preferred form: one localized sentence with the emphasised span wrapped in
+    /// *asterisks*, e.g. `"What are you *looking* for?"`. Each language can put the
+    /// italic word wherever it grammatically belongs, with exact spacing and
+    /// punctuation — so the two-colour headline reads naturally in every locale
+    /// instead of being stitched from fragments that only line up in English.
+    init(_ marked: String, size: CGFloat = 32) {
+        if let open = marked.firstIndex(of: "*"),
+           let close = marked[marked.index(after: open)...].firstIndex(of: "*") {
+            leading  = String(marked[..<open])
+            emphasis = String(marked[marked.index(after: open)..<close])
+            trailing = String(marked[marked.index(after: close)...])
+        } else {
+            leading = marked
+            emphasis = ""
+            trailing = ""
+        }
+        self.size = size
+    }
+
     var body: some View {
-        // Own the spacing between the parts rather than relying on every caller
-        // remembering a trailing space in its string. It survives here only because
-        // Swift literals keep their whitespace — the same code on Android read the
-        // strings from XML, which strips it, and shipped "farm'sfull story".
-        let lead = leading.trimmingCharacters(in: .whitespaces)
-        let emph = emphasis.trimmingCharacters(in: .whitespaces)
-        let trail = trailing.trimmingCharacters(in: .whitespaces)
-        return (Text(lead.isEmpty || emph.isEmpty ? lead : lead + " ")
-            .font(.display(size, weight: .medium))
-            + Text(emph).font(.displayItalic(size, weight: .medium))
-            + Text(trail.isEmpty ? "" : (emph.isEmpty ? trail : " " + trail))
-                .font(.display(size, weight: .medium)))
+        // Exact concatenation — no trimming or space-insertion. Whatever spacing a
+        // (translated) string carries is what shows, which is the only way the
+        // italic word can sit correctly across languages.
+        (Text(leading).font(.display(size, weight: .medium))
+            + Text(emphasis).font(.displayItalic(size, weight: .medium))
+            + Text(trailing).font(.display(size, weight: .medium)))
             .foregroundStyle(Color.ink)
             .multilineTextAlignment(.center)
     }

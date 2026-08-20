@@ -30,7 +30,11 @@ struct MapScreen: View {
     /// Instead the viewport is divided into a grid and the pins in each cell are
     /// grouped into one marker — a single pin when a cell holds one farm, a green
     /// count bubble when it holds several. Zooming in splits the clusters apart.
-    private static let gridCellsAcross = 6.5
+    private static let gridCellsAcross = 10.0
+    /// Below this span (roughly neighbourhood zoom) stop clustering entirely and
+    /// draw every farm as its own pin — otherwise a dense area stays hidden behind
+    /// a count bubble even after the user has zoomed right onto it.
+    private static let declusterSpan = 0.06
     /// The trip route colour — a blue that stands apart from the green markers.
     static let routeColor = Color(hex: 0x2563EB)
 
@@ -64,6 +68,11 @@ struct MapScreen: View {
     /// when zoomed in. The bucket's own centre positions the marker, so it does
     /// not jitter as pins come and go from the viewport.
     private static func cluster(_ pins: [FarmPin], span: MKCoordinateSpan) -> [MapCluster] {
+        // Zoomed in far enough to read as a neighbourhood: skip grouping and draw
+        // every farm individually, so nothing stays buried in a bubble up close.
+        if span.latitudeDelta < declusterSpan {
+            return pins.map { MapCluster(id: $0.osmId, coordinate: $0.coordinate, pins: [$0]) }
+        }
         let cellLat = max(span.latitudeDelta / gridCellsAcross, 0.0001)
         let cellLng = max(span.longitudeDelta / gridCellsAcross, 0.0001)
         var buckets: [String: [FarmPin]] = [:]
@@ -268,6 +277,11 @@ struct MapScreen: View {
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
+        // A plain tap anywhere on the map dismisses the search keyboard. onEnd
+        // camera changes only fire when the map actually moves, so a tap that
+        // doesn't pan wouldn't drop it — this covers that. Simultaneous so it
+        // runs alongside the map's own panning and the pin/cluster taps.
+        .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
         .onMapCameraChange(frequency: .onEnd) { context in
             visibleRegion = context.region
             // Panning the map means the user is done with the search field —

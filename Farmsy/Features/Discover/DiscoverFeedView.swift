@@ -103,9 +103,7 @@ struct DiscoverFeedView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Kicker(text: String(localized: "Discover"))
-            DisplayTitle(leading: String(localized: "Farms worth a "),
-                         emphasis: String(localized: "detour"),
-                         trailing: "", size: 30)
+            DisplayTitle(String(localized: "Farms worth a *detour*"), size: 30)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 6)

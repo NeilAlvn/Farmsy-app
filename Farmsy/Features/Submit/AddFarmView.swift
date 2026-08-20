@@ -57,9 +57,7 @@ struct AddFarmView: View {
     private var formBody: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
-                DisplayTitle(leading: String(localized: "Put a farm "),
-                             emphasis: String(localized: "on the map"),
-                             trailing: "", size: 28)
+                DisplayTitle(String(localized: "Put a farm *on the map*"), size: 28)
                     .padding(.top, 8)
 
                 Text("Know a farm shop that isn't on Farmsy yet? Fill in what you know — our team checks every submission before it goes live.")
@@ -297,9 +295,7 @@ struct AddFarmView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 56))
                 .foregroundStyle(Color.farmGreen)
-            DisplayTitle(leading: String(localized: "Thanks — it's "),
-                         emphasis: String(localized: "in review"),
-                         trailing: "", size: 28)
+            DisplayTitle(String(localized: "Thanks — it's *in review*"), size: 28)
             Text("Our team looks at every submission. Once approved, the farm appears on the map for everyone.")
                 .font(.geist(15))
                 .foregroundStyle(Color.inkMuted)

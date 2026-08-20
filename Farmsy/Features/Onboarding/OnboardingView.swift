@@ -276,9 +276,7 @@ private struct PersonalizeStep: View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
                 Kicker(text: String(localized: "Personalize"))
-                DisplayTitle(leading: String(localized: "What are you "),
-                             emphasis: String(localized: "looking"),
-                             trailing: String(localized: " for?"), size: 32)
+                DisplayTitle(String(localized: "What are you *looking* for?"), size: 32)
                 Text("Pick a few — or none. You can change this anytime.")
                     .font(.geist(15))
                     .foregroundStyle(Color.inkMuted)
@@ -402,9 +400,7 @@ private struct LocationStep: View {
 
             VStack(spacing: 10) {
                 Kicker(text: String(localized: "Location"))
-                DisplayTitle(leading: String(localized: "Where are you "),
-                             emphasis: String(localized: "exploring"),
-                             trailing: String(localized: " today?"), size: 30)
+                DisplayTitle(String(localized: "Where are you *exploring* today?"), size: 30)
             }
             .padding(.horizontal, 20)
 
@@ -492,9 +488,7 @@ private struct DetailsStep: View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
                 Kicker(text: String(localized: "Optional"))
-                DisplayTitle(leading: String(localized: "Anything else we should "),
-                             emphasis: String(localized: "know?"),
-                             trailing: "", size: 30)
+                DisplayTitle(String(localized: "Anything else we should *know*?"), size: 30)
                 Text("Fine-tune what shows up. All optional.")
                     .font(.geist(15))
                     .foregroundStyle(Color.inkMuted)
@@ -651,9 +645,7 @@ private struct NearbyStep: View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
                 Kicker(text: String(localized: "Great choice"))
-                DisplayTitle(leading: String(localized: "Here are farms "),
-                             emphasis: String(localized: "near"),
-                             trailing: String(localized: " you"), size: 30)
+                DisplayTitle(String(localized: "Here are farms *near* you"), size: 30)
                 Text(headline)
                     .font(.geist(15, .semibold))
                     .foregroundStyle(Color.inkMuted)
@@ -710,9 +702,7 @@ private struct NotifyStep: View {
             Spacer()
             VStack(spacing: 10) {
                 Kicker(text: String(localized: "Stay in the loop"))
-                DisplayTitle(leading: String(localized: "Know when new farms appear "),
-                             emphasis: String(localized: "near you"),
-                             trailing: "", size: 28)
+                DisplayTitle(String(localized: "Know when new farms appear *near you*"), size: 28)
             }
             .padding(.horizontal, 20)
             Spacer().frame(height: 60)
@@ -760,9 +750,7 @@ private struct DoneStep: View {
 
             VStack(spacing: 10) {
                 Kicker(text: String(localized: "Ready"))
-                DisplayTitle(leading: String(localized: "You're all "),
-                             emphasis: String(localized: "set"),
-                             trailing: "", size: 34)
+                DisplayTitle(String(localized: "You're all *set*"), size: 34)
             }
 
             VStack(alignment: .leading, spacing: 14) {

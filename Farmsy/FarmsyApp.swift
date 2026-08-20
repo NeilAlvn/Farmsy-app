@@ -16,6 +16,7 @@ struct FarmsyApp: App {
     @State private var locationManager = LocationManager()
     @State private var purchases = PurchaseStore()
     @State private var trip = TripStore()
+    @State private var language = LanguageManager.shared
 
     init() {
         #if DEBUG
@@ -45,6 +46,8 @@ struct FarmsyApp: App {
                 .environment(locationManager)
                 .environment(purchases)
                 .environment(trip)
+                .environment(language)
+                .environment(\.locale, language.launchLocale)
                 .tint(.farmGreen)
                 .preferredColorScheme(.light)
                 .onOpenURL { captureReferral($0) }

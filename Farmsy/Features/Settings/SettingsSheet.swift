@@ -2,9 +2,11 @@ import SwiftUI
 
 struct SettingsSheet: View {
     @Environment(SessionStore.self) private var session
+    @Environment(LanguageManager.self) private var language
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestAuth) private var requestAuth
 
+    @State private var showLanguage = false
     @State private var showSignOutConfirm = false
     @State private var showDeleteInfo = false
     @State private var isDeleting = false
@@ -129,6 +131,15 @@ struct SettingsSheet: View {
                     }
 
                     VStack(spacing: 0) {
+                        // Language chooser — lets a user on an English phone run
+                        // Farmsy in Dutch (or vice versa) without changing their
+                        // whole device.
+                        SettingsRow(icon: "globe", tintBg: 0x3F5E3A, label: "Language",
+                                    value: language.current == .system
+                                        ? String(localized: "System") : language.current.name) {
+                            showLanguage = true
+                        }
+                        Divider().padding(.leading, 62)
                         SettingsRow(icon: "bell.fill", tintBg: 0xF5B301, label: "Notifications") {
                             if let url = URL(string: UIApplication.openSettingsURLString) {
                                 UIApplication.shared.open(url)
@@ -195,6 +206,11 @@ struct SettingsSheet: View {
         }
         .background(Color.cream.ignoresSafeArea())
         .task { await session.refreshProfile() }
+        .sheet(isPresented: $showLanguage) {
+            LanguagePickerSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
         .confirmationDialog("Sign out of Farmsy?", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
             Button("Sign out", role: .destructive) {
                 Task {
@@ -312,6 +328,8 @@ struct SettingsRow: View {
     let tintBg: UInt32
     let label: LocalizedStringKey
     var tint: Color = .ink
+    /// Optional trailing value shown before the chevron (e.g. the current language).
+    var value: String? = nil
     var action: () -> Void
 
     var body: some View {
@@ -329,6 +347,12 @@ struct SettingsRow: View {
                     .font(.geist(16, .medium))
                     .foregroundStyle(tint)
                 Spacer()
+                if let value {
+                    Text(value)
+                        .font(.geist(14, .medium))
+                        .foregroundStyle(Color.inkMuted)
+                        .lineLimit(1)
+                }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.inkMuted.opacity(0.5))
@@ -337,6 +361,88 @@ struct SettingsRow: View {
             .padding(.horizontal, 14)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// The in-app language chooser. Lists every language Farmsy is translated into,
+/// each named in itself, with the active one ticked. Picking one applies at once.
+struct LanguagePickerSheet: View {
+    @Environment(LanguageManager.self) private var language
+    @Environment(\.dismiss) private var dismiss
+    @State private var changed = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("LANGUAGE")
+                    .font(.geist(11, .semibold))
+                    .kerning(1.2)
+                    .foregroundStyle(Color.inkMuted)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x6B7280))
+                        .frame(width: 32, height: 32)
+                        .background(Color(hex: 0xF3F4F6), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    ForEach(Array(LanguageManager.Lang.allCases.enumerated()), id: \.element.id) { i, lang in
+                        Button {
+                            language.set(lang)
+                            changed = true
+                        } label: {
+                            HStack(spacing: 14) {
+                                Text(lang.flag).font(.system(size: 22))
+                                Text(lang.name)
+                                    .font(.geist(16, .medium))
+                                    .foregroundStyle(Color.ink)
+                                Spacer()
+                                if language.current == lang {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(Color.farmGreen)
+                                }
+                            }
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 14)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        if i < LanguageManager.Lang.allCases.count - 1 {
+                            Divider().padding(.leading, 50)
+                        }
+                    }
+                }
+                .card(padding: 4)
+                .padding(.horizontal, 20)
+
+                // The switch only fully lands on relaunch (see LanguageManager),
+                // so say so plainly rather than leave half the screen untranslated.
+                if changed {
+                    HStack(spacing: 10) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
+                        Text("Reopen Farmsy to finish switching language.")
+                            .font(.geist(13)).foregroundStyle(Color.inkMuted)
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(hex: 0xF3F6F2), in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                }
+                Spacer(minLength: 24)
+            }
+        }
+        .background(Color.cream.ignoresSafeArea())
     }
 }
 
