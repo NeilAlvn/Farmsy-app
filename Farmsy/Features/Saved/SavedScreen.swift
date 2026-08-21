@@ -73,16 +73,17 @@ struct SavedScreen: View {
             } else {
                 // A numbered list, like the web: filled green circle + number for a
                 // saved farm (with an X to remove), dashed circle + "Tap a heart to
-                // save a farm" for the empty slots up to ten.
+                // save a farm" for the empty slots up to eight.
+                let slots = max(8, savedPins.count)
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        ForEach(0..<max(10, savedPins.count), id: \.self) { i in
+                        ForEach(0..<slots, id: \.self) { i in
                             if i < savedPins.count {
                                 savedRow(index: i, pin: savedPins[i])
                             } else {
                                 emptyRow(index: i)
                             }
-                            if i < max(10, savedPins.count) - 1 {
+                            if i < slots - 1 {
                                 Divider().padding(.leading, 62)
                             }
                         }
@@ -91,7 +92,12 @@ struct SavedScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.hairline, lineWidth: 1))
                     .padding(.horizontal, 14)
                     .padding(.top, 4)
-                    .padding(.bottom, 16)
+
+                    // Discovery carousel — more farms worth saving.
+                    TripRecommendations(onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+                        .padding(.horizontal, 14)
+                        .padding(.top, 6)
+                        .padding(.bottom, 16)
                 }
             }
         }

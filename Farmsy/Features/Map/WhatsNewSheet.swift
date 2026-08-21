@@ -84,6 +84,9 @@ struct WhatsNewSheet: View {
                                                onOpen: { onOpenFarm(pin) })
                         }
                     }
+
+                    // Discovery carousel — farms near you worth a visit.
+                    TripRecommendations(onOpenFarm: onOpenFarm)
                 }
                 .padding(.horizontal, 14)
                 .padding(.bottom, 24)

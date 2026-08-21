@@ -38,7 +38,7 @@ struct TripsView: View {
     /// Visible rows before the plan list scrolls internally.
     private let PLAN_SLOTS = 5
     private let ROW_HEIGHT: CGFloat = 52
-    private let MINE_SLOTS = 7
+    private let MINE_SLOTS = 6
     /// Recommendation carousel: two cover-photo cards per page.
     private let REC_CARD_HEIGHT: CGFloat = 156
 
@@ -328,51 +328,49 @@ struct TripsView: View {
         } else if session.profile?.hasFullAccess != true {
             gate(String(localized: "Saved trips are a Farmsy Pro feature."))
         } else {
-            // The whole tab scrolls as one page so the recommendations below the
-            // list are always reachable; the numbered list is its own fixed box.
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 14) {
-                    // Draft banner.
-                    Text(trip.stopIds.isEmpty ? String(localized: "No trip in progress")
-                         : String(localized: "A draft with \(trip.stopIds.count) stops is waiting"))
-                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
-                        .contentShape(Rectangle())
-                        .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
+            // Only the numbered list scrolls (inside its own fixed box); the draft
+            // banner and the recommendations below it stay put.
+            VStack(spacing: 14) {
+                // Draft banner.
+                Text(trip.stopIds.isEmpty ? String(localized: "No trip in progress")
+                     : String(localized: "A draft with \(trip.stopIds.count) stops is waiting"))
+                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
+                    .contentShape(Rectangle())
+                    .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
-                    // The saved-trip list — a numbered fixed box showing up to eight
-                    // rows, scrolling internally past that.
-                    let rows = max(trip.savedTrips.count, MINE_SLOTS)
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
-                            Spacer()
-                            Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
-                        }.padding(14)
-                        Divider()
-                        ScrollView(showsIndicators: true) {
-                            VStack(spacing: 0) {
-                                ForEach(0..<rows, id: \.self) { i in
-                                    if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
-                                    else { savedEmptyRow(i: i) }
-                                    if i < rows - 1 { Divider().padding(.leading, 60) }
-                                }
+                // The saved-trip list — a numbered fixed box showing up to six rows,
+                // scrolling internally past that. The only scrollable element here.
+                let rows = max(trip.savedTrips.count, MINE_SLOTS)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                        Spacer()
+                        Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                    }.padding(14)
+                    Divider()
+                    ScrollView(showsIndicators: true) {
+                        VStack(spacing: 0) {
+                            ForEach(0..<rows, id: \.self) { i in
+                                if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
+                                else { savedEmptyRow(i: i) }
+                                if i < rows - 1 { Divider().padding(.leading, 60) }
                             }
                         }
-                        .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
                     }
-                    .background(.white, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
-
-                    // Discovery: farms near you worth planning next, as the
-                    // two-column "fresh from the farm" grid. Renders nothing when
-                    // there's nothing sensible to show.
-                    TripRecommendations(cardHeight: REC_CARD_HEIGHT,
-                                        onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+                    .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
                 }
-                .padding(14)
+                .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
+
+                // Discovery carousel, pinned below (not part of the list's scroll).
+                TripRecommendations(cardHeight: REC_CARD_HEIGHT,
+                                    onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+
+                Spacer(minLength: 0)
             }
+            .padding(14)
         }
     }
 
@@ -512,7 +510,7 @@ struct TripsView: View {
 /// touching the view. Anchors on the user's location, falling back to a trip they
 /// care about; excludes anything already planned or hearted; renders nothing when
 /// there is nothing sensible nearby.
-private struct TripRecommendations: View {
+struct TripRecommendations: View {
     var cardHeight: CGFloat = 150
     var onOpenFarm: (FarmPin) -> Void
 
