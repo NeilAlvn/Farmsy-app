@@ -77,7 +77,7 @@ struct MainView: View {
                 .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showTrips) {
-            TripsView(onOpenFarm: { openFarm($0) }, detent: $tripDetent)
+            TripsView(onOpenFarm: { openFarm($0) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
                 .presentationDetents([.fraction(0.5), .fraction(0.92)], selection: $tripDetent)
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
                 .presentationDragIndicator(.visible)

@@ -8,6 +8,8 @@ import MapKit
 /// route is drawn on the map. My Trips is Pro-gated.
 struct TripsView: View {
     var onOpenFarm: (FarmPin) -> Void
+    /// The farm currently selected/open on the map — its stop row is marked.
+    var selectedOsmId: String? = nil
     /// The sheet's height — dropped to half when a saved trip is opened so the
     /// route is visible on the map above the sheet.
     @Binding var detent: PresentationDetent
@@ -88,6 +90,16 @@ struct TripsView: View {
     /// (TRIP PLANNER + close) and the actions stay on screen.
     private var collapsed: Bool { detent == .fraction(0.5) }
 
+    /// A "drag up to show the list" cue for the collapsed state. Used as an overlay
+    /// so it never takes layout height (which would push the header off).
+    private var dragUpHint: some View {
+        VStack(spacing: 3) {
+            Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold))
+            Text("Drag up to show the list").font(.geist(12, .medium))
+        }
+        .foregroundStyle(Color.inkMuted.opacity(0.8))
+    }
+
     // MARK: - Header + tabs
 
     private var header: some View {
@@ -154,9 +166,9 @@ struct TripsView: View {
 
             if collapsed {
                 // On the small detent the list is tucked away entirely to keep the
-                // header (TRIP PLANNER + close) and the actions on screen. The
-                // spacer pins the actions to the bottom.
-                Spacer(minLength: 0)
+                // header (TRIP PLANNER + close) and the actions on screen. The hint
+                // is an overlay, so it cues "drag up" without taking layout height.
+                Spacer(minLength: 0).overlay { dragUpHint }
             } else {
                 // Trip overview — grows to fill so its bottom sits one 14pt margin
                 // above the mode line; its list scrolls internally when the stops
@@ -210,7 +222,12 @@ struct TripsView: View {
                 outlineButton("Save trip", icon: "bookmark") { naming = true; tripName = "" }
                     .disabled(stops.isEmpty)
                 filledButton("Show route", icon: "location.north.fill") {
-                    Task { await trip.refreshRoute(pins: pinIndex) }
+                    Task {
+                        await trip.refreshRoute(pins: pinIndex)
+                        // Fly the map to frame the whole route once it's computed,
+                        // so the user sees where the trip actually goes.
+                        trip.requestFit()
+                    }
                     dismiss()
                 }
                 .disabled(!canRoute)
@@ -245,7 +262,8 @@ struct TripsView: View {
     }
 
     private func filledRow(i: Int, pin: FarmPin) -> some View {
-        HStack(spacing: 12) {
+        let selected = pin.osmId == selectedOsmId
+        return HStack(spacing: 12) {
             Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(.white)
                 .frame(width: 28, height: 28).background(Color.farmGreenMap, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
@@ -253,11 +271,17 @@ struct TripsView: View {
                 Text(legLabel(i)).font(.geist(12)).foregroundStyle(Color.inkMuted)
             }
             Spacer()
+            // A check marks the farm currently selected/open on the map.
+            if selected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
+            }
             Button { Haptics.tap(); trip.remove(pin.osmId) } label: {
                 Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.inkMuted)
             }.buttonStyle(.plain)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
+        .background(selected ? Color.farmGreenMap.opacity(0.08) : .clear)
         .contentShape(Rectangle())
         .onTapGesture { dismiss(); onOpenFarm(pin) }
     }
@@ -333,9 +357,12 @@ struct TripsView: View {
                     .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
                 if collapsed {
-                    // Small detent: hide the list so the header stays visible; the
-                    // spacer pushes the carousel to the bottom.
-                    Spacer(minLength: 0)
+                    // Small detent: hide the list so the header stays visible. The
+                    // carousel sits right under the draft (no gap); the drag-up hint
+                    // is overlaid on the spacer that pins to the bottom.
+                    TripRecommendations(cardHeight: REC_CARD_HEIGHT,
+                                        onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+                    Spacer(minLength: 0).overlay { dragUpHint }
                 } else {
                     let rows = max(trip.savedTrips.count, MINE_SLOTS)
                     VStack(alignment: .leading, spacing: 0) {
@@ -359,11 +386,11 @@ struct TripsView: View {
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
                     // Grow to fill so the carousel below lands at the frame's end.
                     .frame(maxHeight: .infinity)
-                }
 
-                // Discovery carousel, pinned at the bottom.
-                TripRecommendations(cardHeight: REC_CARD_HEIGHT,
-                                    onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+                    // Discovery carousel, pinned at the bottom.
+                    TripRecommendations(cardHeight: REC_CARD_HEIGHT,
+                                        onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+                }
             }
             .padding(14)
         }
@@ -478,6 +505,10 @@ struct TripsView: View {
         guard let uid, !tripName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         await trip.save(name: tripName.trimmingCharacters(in: .whitespaces), userId: uid, pins: pinIndex)
         Haptics.success()
+        // Start fresh: wipe the draft stops and the starting point so the Plan tab
+        // is empty for the next trip.
+        trip.clear()
+        trip.clearOrigin()
         tab = .mine
     }
 

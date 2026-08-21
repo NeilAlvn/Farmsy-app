@@ -148,8 +148,15 @@ struct MapScreen: View {
     /// Fit the whole trip — origin plus every stop — so the full route is visible
     /// in the map area not covered by the sheet. A single point just flies to it.
     private func fitToTrip() {
-        var coords = trip.stopIds.compactMap { pinLookup[$0]?.coordinate }
-        if let origin = trip.originCoord { coords.insert(origin, at: 0) }
+        // Prefer the actual road line so the whole traced route is framed (it curves
+        // beyond the stops); fall back to origin + stops before the route arrives.
+        var coords: [CLLocationCoordinate2D]
+        if trip.routeLine.count >= 2 {
+            coords = trip.routeLine
+        } else {
+            coords = trip.stopIds.compactMap { pinLookup[$0]?.coordinate }
+            if let origin = trip.originCoord { coords.insert(origin, at: 0) }
+        }
         guard !coords.isEmpty else { return }
         if coords.count == 1 {
             withAnimation(.easeInOut(duration: 0.5)) {
@@ -203,10 +210,22 @@ struct MapScreen: View {
 
     private func flyToFocus() {
         guard let pin = focusPin else { return }
-        withAnimation(.easeInOut(duration: 0.6)) {
+        // Recenter on the farm but keep the user's current zoom when they're already
+        // zoomed in — forcing a fixed span zoomed the map out and dissolved the
+        // clusters around the pin. Only zoom in if they were further out than this.
+        let cap = 0.15
+        let current = visibleRegion?.span.latitudeDelta ?? cap
+        let delta = min(current, cap)
+        // Shift the map centre south of the pin so the pin sits in the upper part
+        // of the map — the detail sheet covers the lower ~55%, so centring exactly
+        // would hide it. ~0.28·span lands it around the top quarter of the screen,
+        // i.e. the middle of the still-visible strip.
+        let center = CLLocationCoordinate2D(latitude: pin.coordinate.latitude - delta * 0.28,
+                                            longitude: pin.coordinate.longitude)
+        withAnimation(.easeInOut(duration: 0.5)) {
             camera = .region(MKCoordinateRegion(
-                center: pin.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+                center: center,
+                span: MKCoordinateSpan(latitudeDelta: delta, longitudeDelta: delta)
             ))
         }
     }
@@ -246,7 +265,8 @@ struct MapScreen: View {
                     .annotationTitles(.hidden)
                 } else {
                     Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .bottom) {
-                        FarmPinView(category: cluster.representative.primaryCategory)
+                        FarmPinView(category: cluster.representative.primaryCategory,
+                                    isHighlighted: cluster.representative.osmId == focusPin?.osmId)
                             .onTapGesture {
                                 Haptics.tap()
                                 onOpenFarm(cluster.representative)

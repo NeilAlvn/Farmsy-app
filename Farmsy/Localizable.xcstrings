@@ -2444,6 +2444,34 @@
         }
       }
     },
+    "Drag up to show the list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Drag up to show the list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep omhoog om de lijst te tonen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glissez vers le haut pour afficher la liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach oben ziehen, um die Liste anzuzeigen"
+          }
+        }
+      }
+    },
     "Drive": {
       "localizations": {
         "en": {
