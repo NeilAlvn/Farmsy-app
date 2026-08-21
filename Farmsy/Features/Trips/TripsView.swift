@@ -38,8 +38,9 @@ struct TripsView: View {
     /// Visible rows before the plan list scrolls internally.
     private let PLAN_SLOTS = 5
     private let ROW_HEIGHT: CGFloat = 52
-    /// My Trips grid: two columns of cover-photo cards.
-    private let TRIP_CARD_HEIGHT: CGFloat = 132
+    private let MINE_SLOTS = 8
+    /// Recommendation grid: two columns of cover-photo cards.
+    private let REC_CARD_HEIGHT: CGFloat = 150
 
     var body: some View {
         VStack(spacing: 0) {
@@ -85,6 +86,12 @@ struct TripsView: View {
     /// The sheet dragged down to its small detent — collapse the overview (drop
     /// its title, shrink the list) so the header/close and the actions stay on screen.
     private var collapsed: Bool { detent == .fraction(0.5) }
+
+    private var collapsedHint: LocalizedStringKey {
+        if stops.isEmpty { return "Drag up to plan your trip" }
+        return stops.count == 1 ? "Drag up to see your \(stops.count) stop"
+                                : "Drag up to see your \(stops.count) stops"
+    }
 
     // MARK: - Header + tabs
 
@@ -150,33 +157,38 @@ struct TripsView: View {
             }
             .buttonStyle(.plain)
 
-            // Trip overview — a fixed-height box whose list is the only thing that
-            // scrolls. It always shows a few slots (stops first, then placeholders),
-            // and scrolls internally once the stops outgrow the visible rows.
-            let rows = max(stops.count, PLAN_SLOTS)
-            VStack(alignment: .leading, spacing: 0) {
-                // Title only when there's room — hidden on the small detent so the
-                // header (TRIP PLANNER + close) and the actions both stay visible.
-                if !collapsed {
+            if collapsed {
+                // On the small detent the list is tucked away to keep the map and
+                // the actions visible — a quiet hint tells the user where it went.
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.up").font(.system(size: 11, weight: .bold))
+                    Text(collapsedHint).font(.geist(12, .medium))
+                }
+                .foregroundStyle(Color.inkMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+            } else {
+                // Trip overview — a fixed-height box whose list is the only thing
+                // that scrolls; it scrolls internally once the stops outgrow the
+                // visible rows.
+                let rows = max(stops.count, PLAN_SLOTS)
+                VStack(alignment: .leading, spacing: 0) {
                     Text("Trip overview").font(.geist(16, .bold)).foregroundStyle(Color.ink)
                         .padding(14)
                     Divider()
-                }
-                ScrollView(showsIndicators: true) {
-                    VStack(spacing: 0) {
-                        ForEach(0..<rows, id: \.self) { i in
-                            if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
-                            if i < rows - 1 { Divider().padding(.leading, 60) }
+                    ScrollView(showsIndicators: true) {
+                        VStack(spacing: 0) {
+                            ForEach(0..<rows, id: \.self) { i in
+                                if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
+                                if i < rows - 1 { Divider().padding(.leading, 60) }
+                            }
                         }
                     }
+                    .frame(maxHeight: ROW_HEIGHT * CGFloat(PLAN_SLOTS))
                 }
-                // maxHeight (not a fixed height) so the box collapses when the sheet
-                // is dragged small — fewer rows visible, actions stay put — and caps
-                // at ~5 rows when there's room.
-                .frame(maxHeight: ROW_HEIGHT * CGFloat(collapsed ? 2 : PLAN_SLOTS))
+                .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
             }
-            .background(.white, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
 
             if let reorderNote {
                 Text(reorderNote).font(.geist(12)).foregroundStyle(Color.farmGreenMap)
@@ -311,8 +323,8 @@ struct TripsView: View {
         } else if session.profile?.hasFullAccess != true {
             gate(String(localized: "Saved trips are a Farmsy Pro feature."))
         } else {
-            // The whole tab scrolls as one page (no pinned buttons here, unlike
-            // Plan) so the recommendations below the grid are always reachable.
+            // The whole tab scrolls as one page so the recommendations below the
+            // list are always reachable; the numbered list is its own fixed box.
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
                     // Draft banner.
@@ -324,102 +336,87 @@ struct TripsView: View {
                         .contentShape(Rectangle())
                         .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
-                    HStack {
-                        Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
-                        Spacer()
-                        Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
-                    }
-
-                    if trip.savedTrips.isEmpty {
-                        savedEmptyState
-                    } else {
-                        // Two-column grid of trip cards, each a cover photo of the
-                        // trip's first farm.
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12),
-                                            GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                            ForEach(trip.savedTrips) { t in savedCard(t) }
+                    // The saved-trip list — a numbered fixed box showing up to eight
+                    // rows, scrolling internally past that.
+                    let rows = max(trip.savedTrips.count, MINE_SLOTS)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                            Spacer()
+                            Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                        }.padding(14)
+                        Divider()
+                        ScrollView(showsIndicators: true) {
+                            VStack(spacing: 0) {
+                                ForEach(0..<rows, id: \.self) { i in
+                                    if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
+                                    else { savedEmptyRow(i: i) }
+                                    if i < rows - 1 { Divider().padding(.leading, 60) }
+                                }
+                            }
                         }
+                        .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
                     }
+                    .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
 
-                    // Discovery: farms near you worth planning next. Renders nothing
-                    // when there's nothing sensible to show.
-                    TripRecommendations(onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
+                    // Discovery: farms near you worth planning next, as the
+                    // two-column "fresh from the farm" grid. Renders nothing when
+                    // there's nothing sensible to show.
+                    TripRecommendations(cardHeight: REC_CARD_HEIGHT,
+                                        onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
                 }
                 .padding(14)
             }
         }
     }
 
-    /// A trip as a photo card — the "fresh from the farm" cover design. Tapping
-    /// opens it on the plan tab; the corner control removes it (two-tap arm).
-    private func savedCard(_ t: SavedTrip) -> some View {
-        let arming = armedDelete == t.id
-        return ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(hex: 0xEDE7DD))
-                .overlay {
-                    if let img = t.coverImage, let url = URL(string: img) {
-                        AsyncImage(url: url) { phase in
-                            if case .success(let image) = phase {
-                                image.resizable().scaledToFill()
-                            } else { SkeletonBox(cornerRadius: 16) }
-                        }
-                    } else {
-                        Image(systemName: "map").font(.system(size: 30)).foregroundStyle(Color.inkMuted.opacity(0.5))
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-            // Legibility scrim under the text.
-            LinearGradient(colors: [.black.opacity(0.0), .black.opacity(0.55)],
-                           startPoint: .center, endPoint: .bottom)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(t.name).font(.geist(15, .bold)).foregroundStyle(.white).lineLimit(2)
-                Text("\(t.stopCount) \(t.stopCount == 1 ? String(localized: "farm") : String(localized: "farms"))")
-                    .font(.geist(12, .medium)).foregroundStyle(.white.opacity(0.85))
+    private func savedRow(i: Int, t: SavedTrip) -> some View {
+        HStack(spacing: 12) {
+            Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(.white)
+                .frame(width: 28, height: 28).background(Color.farmGreenMap, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(t.name).font(.geist(15, .bold)).foregroundStyle(Color.ink).lineLimit(1)
+                Text("\(t.stopCount) \(t.stopCount == 1 ? String(localized: "farm") : String(localized: "farms"))\(dateLabel(t.updatedAt))")
+                    .font(.geist(12)).foregroundStyle(Color.inkMuted)
             }
-            .padding(12)
-        }
-        .frame(height: TRIP_CARD_HEIGHT)
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.hairline, lineWidth: 1))
-        // Remove control, top-trailing.
-        .overlay(alignment: .topTrailing) {
+            Spacer()
             Button {
-                if arming { Task { if let uid { await trip.deleteTrip(t.id, userId: uid) } } }
+                if armedDelete == t.id { Task { if let uid { await trip.deleteTrip(t.id, userId: uid) } } }
                 else { armedDelete = t.id }
             } label: {
-                Image(systemName: arming ? "trash.fill" : "xmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(arming ? .white : Color.ink)
-                    .frame(width: 30, height: 30)
-                    .background(arming ? Color.warnRed : .white.opacity(0.9), in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .padding(8)
+                Image(systemName: armedDelete == t.id ? "trash.fill" : "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(armedDelete == t.id ? Color.warnRed : Color.inkMuted)
+            }.buttonStyle(.plain)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .tapCard(excludeTopTrailing: 44) {
+        .padding(.horizontal, 14).padding(.vertical, 11)
+        .contentShape(Rectangle())
+        .onTapGesture {
             Task { await trip.openTrip(t.id) }
             tab = .plan
             withAnimation { detent = .fraction(0.5) }
         }
     }
 
-    private var savedEmptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "map").font(.system(size: 30)).foregroundStyle(Color.farmGreenMap)
-            Text("Plan a trip to fill this")
-                .font(.geist(15)).foregroundStyle(Color.inkMuted)
+    private func savedEmptyRow(i: Int) -> some View {
+        HStack(spacing: 12) {
+            Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(Color.inkMuted.opacity(0.6))
+                .frame(width: 28, height: 28)
+                .overlay(Circle().strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1.5, dash: [3])))
+            Text("Plan a trip to fill this").font(.geist(15)).foregroundStyle(Color.inkMuted)
+            Spacer()
+            Image(systemName: "plus").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.farmGreenMap)
         }
-        .frame(maxWidth: .infinity).padding(.vertical, 40)
-        .background(.white, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
+        .padding(.horizontal, 14).padding(.vertical, 11)
         .contentShape(Rectangle())
         .onTapGesture { tab = .plan }
+    }
+
+    private func dateLabel(_ iso: String?) -> String {
+        guard let iso, let d = ISO8601DateFormatter().date(from: iso) else { return "" }
+        let f = DateFormatter(); f.dateFormat = "MMM d"
+        return " · " + f.string(from: d)
     }
 
     private func gate(_ text: String) -> some View {
@@ -511,16 +508,17 @@ struct TripsView: View {
 /// care about; excludes anything already planned or hearted; renders nothing when
 /// there is nothing sensible nearby.
 private struct TripRecommendations: View {
+    var cardHeight: CGFloat = 150
     var onOpenFarm: (FarmPin) -> Void
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
     @Environment(FavoritesStore.self) private var favorites
+    @Environment(SessionStore.self) private var session
     @Environment(TripStore.self) private var trip
 
     @State private var shown: [FarmPin] = []
     @State private var built = false
-    @State private var extraTeasers: [String: String] = [:]
 
     /// User's location first; then a trip they care about — the draft's origin,
     /// its stops, or (for someone with saved trips but no draft and no location)
@@ -562,9 +560,6 @@ private struct TripRecommendations: View {
         if let cover = pin.image { return [cover] }
         return []
     }
-    private func teaser(for pin: FarmPin) -> String? {
-        farms.featuredTeasers[pin.osmId] ?? extraTeasers[pin.osmId]
-    }
 
     private var buildKey: String {
         "\(farms.pins.count)-\(farms.galleriesLoaded)-\(trip.plannedFarmIds.count)-\(anchor?.latitude ?? 0)-\(anchor?.longitude ?? 0)"
@@ -575,12 +570,9 @@ private struct TripRecommendations: View {
         guard !farms.pins.isEmpty else { return }
         shown = select()
         built = true
-        let targets = shown.map(\.osmId)
-            .filter { farms.featuredTeasers[$0] == nil && extraTeasers[$0] == nil }
-        guard !targets.isEmpty else { return }
-        let result = await FarmDetailAPI.teasers(osmIds: targets)
-        if !result.isEmpty { extraTeasers.merge(result) { _, new in new } }
     }
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
         Group {
@@ -594,21 +586,71 @@ private struct TripRecommendations: View {
                         .foregroundStyle(Color.inkMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 6)
-                    if !built {
-                        ForEach(0..<2, id: \.self) { _ in
-                            SkeletonBox(cornerRadius: 16).frame(height: 180)
-                        }
-                    } else {
-                        ForEach(shown) { pin in
-                            MultiImageFarmCard(pin: pin,
-                                               images: images(for: pin),
-                                               teaser: teaser(for: pin),
-                                               onOpen: { onOpenFarm(pin) })
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        if !built {
+                            ForEach(0..<2, id: \.self) { _ in
+                                SkeletonBox(cornerRadius: 16).frame(height: cardHeight)
+                            }
+                        } else {
+                            ForEach(shown) { pin in recCard(pin) }
                         }
                     }
                 }
             }
         }
         .task(id: buildKey) { await load() }
+    }
+
+    /// A recommended farm as a cover-photo card — the "fresh from the farm" look:
+    /// full-bleed photo, a save heart, and the name + city over a legibility scrim.
+    private func recCard(_ pin: FarmPin) -> some View {
+        let saved = favorites.isSaved(pin.osmId)
+        return ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(hex: 0xEDE7DD))
+                .overlay {
+                    if let img = images(for: pin).first, let url = URL(string: img) {
+                        AsyncImage(url: url) { phase in
+                            if case .success(let image) = phase {
+                                image.resizable().scaledToFill()
+                            } else { SkeletonBox(cornerRadius: 16) }
+                        }
+                    } else {
+                        Image(systemName: "leaf").font(.system(size: 28)).foregroundStyle(Color.inkMuted.opacity(0.5))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            LinearGradient(colors: [.black.opacity(0.0), .black.opacity(0.6)],
+                           startPoint: .center, endPoint: .bottom)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(pin.name).font(.geist(14, .bold)).foregroundStyle(.white).lineLimit(2)
+                if let city = pin.city {
+                    Text(city).font(.geist(12, .medium)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+                }
+            }
+            .padding(12)
+        }
+        .frame(height: cardHeight)
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.hairline, lineWidth: 1))
+        .overlay(alignment: .topTrailing) {
+            Button {
+                guard let uid = session.session?.user.id else { return }
+                Task { await favorites.toggle(pin.osmId, userId: uid) }
+            } label: {
+                Image(systemName: saved ? "heart.fill" : "heart")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(saved ? Color.warnRed : Color.ink)
+                    .frame(width: 30, height: 30)
+                    .background(.white.opacity(0.9), in: Circle())
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(8)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .tapCard(excludeTopTrailing: 44) { onOpenFarm(pin) }
     }
 }

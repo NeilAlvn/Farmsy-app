@@ -398,15 +398,15 @@ struct FixedImageRow: View {
     var onTap: ((Int) -> Void)? = nil
 
     var body: some View {
-        // A single photo is shown as a square; two or three fill the row as equal
-        // tiles of the given height.
-        let single = urls.count == 1
+        // Every photo is an equal tile of the given height. A single photo takes
+        // one tile's width (half the row) rather than blowing up to a full-width
+        // square — a lone image and one of two should read the same size.
         HStack(spacing: 6) {
             ForEach(Array(urls.enumerated()), id: \.element) { i, url in
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color(hex: 0xF3F4F6))
                     .frame(maxWidth: .infinity)
-                    .modifier(SquareOrHeight(single: single, height: height))
+                    .frame(height: height)
                     .overlay(
                         AsyncImage(url: URL(string: url)) { phase in
                             if case .success(let img) = phase {
@@ -417,19 +417,12 @@ struct FixedImageRow: View {
                         }
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .modifier(OptionalTap(onTap: onTap.map { cb in { cb(i) } }))
             }
+            // Pad a single photo out to one tile so it stays half-width.
+            if urls.count == 1 { Color.clear.frame(maxWidth: .infinity).frame(height: height) }
         }
-    }
-}
-
-/// One image → square (1:1); several → the fixed row height.
-private struct SquareOrHeight: ViewModifier {
-    let single: Bool
-    let height: CGFloat
-    func body(content: Content) -> some View {
-        if single { content.aspectRatio(1, contentMode: .fit) }
-        else { content.frame(height: height) }
     }
 }
 

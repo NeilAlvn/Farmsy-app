@@ -138,32 +138,19 @@ struct SavedTrip: Decodable, Identifiable {
     let name: String
     let updatedAt: String?
     let stopCount: Int
-    /// The first stop's cached photo + city — the card's cover in the grid.
-    let coverImage: String?
-    let coverCity: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, updatedAt = "updated_at", tripFarms = "trip_farms"
     }
-    private struct Stop: Decodable {
-        let farm_image: String?
-        let farm_city: String?
-        let sort_order: Int?
-    }
+    private struct Count: Decodable { let count: Int }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
         name = (try? c.decode(String.self, forKey: .name)) ?? "Trip"
         updatedAt = try? c.decodeIfPresent(String.self, forKey: .updatedAt)
-        let stops = (try? c.decodeIfPresent([Stop].self, forKey: .tripFarms)) ?? []
-        stopCount = stops.count
-        // Cover = the earliest stop that actually has a photo.
-        let cover = stops
-            .sorted { ($0.sort_order ?? 0) < ($1.sort_order ?? 0) }
-            .first { $0.farm_image?.isEmpty == false }
-        coverImage = cover?.farm_image
-        coverCity = cover?.farm_city
+        let counts = (try? c.decodeIfPresent([Count].self, forKey: .tripFarms)) ?? []
+        stopCount = counts.first?.count ?? 0
     }
 }
 
@@ -413,7 +400,7 @@ final class TripStore {
     func loadTrips(userId: String) async {
         savedTrips = (try? await supabase
             .from("trips")
-            .select("id, name, updated_at, trip_farms(farm_image, farm_city, sort_order)")
+            .select("id, name, updated_at, trip_farms(count)")
             .eq("user_id", value: userId)
             .order("updated_at", ascending: false)
             .limit(20)
