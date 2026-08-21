@@ -50,7 +50,7 @@ struct TripsView: View {
             // off the top or the actions off the bottom when the sheet is short;
             // the actions stay pinned below it.
             if tab == .plan {
-                ScrollView(showsIndicators: false) { planTab }
+                planTab
                 planActions
                     .padding(.horizontal, 14)
                     .padding(.top, 14)
@@ -84,15 +84,9 @@ struct TripsView: View {
 
     private var uid: String? { session.session?.user.id.uuidString.lowercased() }
 
-    /// The sheet dragged down to its small detent — collapse the overview (drop
-    /// its title, shrink the list) so the header/close and the actions stay on screen.
+    /// The sheet dragged down to its small detent — hide the list so the header
+    /// (TRIP PLANNER + close) and the actions stay on screen.
     private var collapsed: Bool { detent == .fraction(0.5) }
-
-    private var collapsedHint: LocalizedStringKey {
-        if stops.isEmpty { return "Drag up to plan your trip" }
-        return stops.count == 1 ? "Drag up to see your \(stops.count) stop"
-                                : "Drag up to see your \(stops.count) stops"
-    }
 
     // MARK: - Header + tabs
 
@@ -159,19 +153,14 @@ struct TripsView: View {
             .buttonStyle(.plain)
 
             if collapsed {
-                // On the small detent the list is tucked away to keep the header,
-                // map and actions visible — a compact one-line hint stands in.
-                HStack(spacing: 5) {
-                    Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold))
-                    Text(collapsedHint).font(.geist(12, .medium))
-                }
-                .foregroundStyle(Color.inkMuted)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 2)
+                // On the small detent the list is tucked away entirely to keep the
+                // header (TRIP PLANNER + close) and the actions on screen. The
+                // spacer pins the actions to the bottom.
+                Spacer(minLength: 0)
             } else {
-                // Trip overview — a fixed-height box whose list is the only thing
-                // that scrolls; it scrolls internally once the stops outgrow the
-                // visible rows.
+                // Trip overview — grows to fill so its bottom sits one 14pt margin
+                // above the mode line; its list scrolls internally when the stops
+                // outgrow the box.
                 let rows = max(stops.count, PLAN_SLOTS)
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Trip overview").font(.geist(16, .bold)).foregroundStyle(Color.ink)
@@ -185,8 +174,8 @@ struct TripsView: View {
                             }
                         }
                     }
-                    .frame(maxHeight: ROW_HEIGHT * CGFloat(PLAN_SLOTS))
                 }
+                .frame(maxHeight: .infinity)
                 .background(.white, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
             }
@@ -344,13 +333,8 @@ struct TripsView: View {
                     .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
                 if collapsed {
-                    HStack(spacing: 5) {
-                        Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold))
-                        Text(myTripsHint).font(.geist(12, .medium))
-                    }
-                    .foregroundStyle(Color.inkMuted)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 2)
+                    // Small detent: hide the list so the header stays visible; the
+                    // spacer pushes the carousel to the bottom.
                     Spacer(minLength: 0)
                 } else {
                     let rows = max(trip.savedTrips.count, MINE_SLOTS)
@@ -385,11 +369,6 @@ struct TripsView: View {
         }
     }
 
-    private var myTripsHint: LocalizedStringKey {
-        let n = trip.savedTrips.count
-        if n == 0 { return "Drag up to see your trips" }
-        return n == 1 ? "Drag up to see your \(n) trip" : "Drag up to see your \(n) trips"
-    }
 
     private func savedRow(i: Int, t: SavedTrip) -> some View {
         HStack(spacing: 12) {
