@@ -358,11 +358,13 @@ struct TripsView: View {
 
                 if collapsed {
                     // Small detent: hide the list so the header stays visible. The
-                    // carousel sits right under the draft (no gap); the drag-up hint
-                    // is overlaid on the spacer that pins to the bottom.
+                    // drag-up hint sits between the draft and the carousel as a fixed
+                    // element (not a flexing spacer) so it stays put during the drag.
+                    dragUpHint
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
                     TripRecommendations(cardHeight: REC_CARD_HEIGHT,
                                         onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
-                    Spacer(minLength: 0).overlay { dragUpHint }
                 } else {
                     let rows = max(trip.savedTrips.count, MINE_SLOTS)
                     VStack(alignment: .leading, spacing: 0) {
