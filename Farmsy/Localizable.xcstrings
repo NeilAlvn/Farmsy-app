@@ -6380,6 +6380,34 @@
         }
       }
     },
+    "RECOMMENDATION": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "RECOMMENDATION"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AANBEVELING"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECOMMANDATION"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EMPFEHLUNG"
+          }
+        }
+      }
+    },
     "RECOMMENDATIONS NEAR YOU": {
       "localizations": {
         "en": {

@@ -38,25 +38,26 @@ struct TripsView: View {
     /// Visible rows before the plan list scrolls internally.
     private let PLAN_SLOTS = 5
     private let ROW_HEIGHT: CGFloat = 52
-    private let MINE_SLOTS = 8
-    /// Recommendation grid: two columns of cover-photo cards.
-    private let REC_CARD_HEIGHT: CGFloat = 150
+    private let MINE_SLOTS = 7
+    /// Recommendation carousel: two cover-photo cards per page.
+    private let REC_CARD_HEIGHT: CGFloat = 156
 
     var body: some View {
         VStack(spacing: 0) {
             header
             tabs.padding(.horizontal, 14).padding(.top, 4)
-            // Only the stop / saved list scrolls (inside its own fixed-height box);
-            // everything else on the screen stays put, so the actions never get
-            // pushed off and the layout doesn't waste space.
-            if tab == .plan { planTab } else { mineTab }
-            Spacer(minLength: 0)
+            // The middle flexes inside a ScrollView so it can never push the header
+            // off the top or the actions off the bottom when the sheet is short;
+            // the actions stay pinned below it.
             if tab == .plan {
+                ScrollView(showsIndicators: false) { planTab }
                 planActions
                     .padding(.horizontal, 14)
                     .padding(.top, 10)
                     .padding(.bottom, 12)
                     .background(Color.cream)
+            } else {
+                mineTab
             }
         }
         .background(Color.cream.ignoresSafeArea())
@@ -158,15 +159,15 @@ struct TripsView: View {
             .buttonStyle(.plain)
 
             if collapsed {
-                // On the small detent the list is tucked away to keep the map and
-                // the actions visible — a quiet hint tells the user where it went.
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.up").font(.system(size: 11, weight: .bold))
+                // On the small detent the list is tucked away to keep the header,
+                // map and actions visible — a compact one-line hint stands in.
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold))
                     Text(collapsedHint).font(.geist(12, .medium))
                 }
                 .foregroundStyle(Color.inkMuted)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
+                .padding(.vertical, 2)
             } else {
                 // Trip overview — a fixed-height box whose list is the only thing
                 // that scrolls; it scrolls internally once the stops outgrow the
@@ -190,18 +191,22 @@ struct TripsView: View {
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
             }
 
-            if let reorderNote {
+            if !collapsed, let reorderNote {
                 Text(reorderNote).font(.geist(12)).foregroundStyle(Color.farmGreenMap)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            if stops.count >= 3 {
+            // "Best order" only when expanded — at the small detent every point of
+            // height matters for keeping the header and actions on screen.
+            if !collapsed, stops.count >= 3 {
                 Button { reorder() } label: {
                     Text("Best order").font(.geist(14, .semibold)).foregroundStyle(Color.farmGreen)
                 }.buttonStyle(.plain)
             }
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.top, 14)
+        .padding(.bottom, collapsed ? 0 : 14)
     }
 
     /// Pinned below the scroll: travel mode, the live totals, and the trip
@@ -519,6 +524,7 @@ private struct TripRecommendations: View {
 
     @State private var shown: [FarmPin] = []
     @State private var built = false
+    @State private var page = 0
 
     /// User's location first; then a trip they care about — the draft's origin,
     /// its stops, or (for someone with saved trips but no draft and no location)
@@ -539,16 +545,28 @@ private struct TripRecommendations: View {
         return CLLocationCoordinate2D(latitude: lat, longitude: lng)
     }
 
-    /// The one place "which farms are recommended" lives. Today: nearby photo'd
-    /// farms, minus anything already planned or hearted, described ones mixed
-    /// among the rest, six of them. Swap this body when a real source exists.
+    /// Whether we have a real location/trip anchor. Drives the header wording
+    /// ("near you" vs a plain "recommendation") and which pool we pick from.
+    private var hasAnchor: Bool { anchor != nil }
+
+    /// The one place "which farms are recommended" lives. With an anchor: nearby
+    /// photo'd farms. Without one (no location, no trip yet): random photo'd farms
+    /// so the shelf still has something. Either way, minus anything already planned
+    /// or hearted, described ones mixed among the rest. Swap this when a real
+    /// recommendation source exists.
     private func select() -> [FarmPin] {
-        guard let anchor else { return [] }
         let excluded = trip.plannedFarmIds
             .union(trip.stopIds)
             .union(favorites.osmIds)
-        let pool = farms.nearbyWithImages(near: anchor, radiusKm: 100)
-            .filter { !excluded.contains($0.osmId) }
+        let pool: [FarmPin]
+        if let anchor {
+            pool = farms.nearbyWithImages(near: anchor, radiusKm: 100)
+                .filter { !excluded.contains($0.osmId) }
+        } else {
+            pool = farms.pins
+                .filter { $0.image != nil && !excluded.contains($0.osmId) }
+                .shuffled()
+        }
         let described = pool.filter { !(farms.galleries[$0.osmId]?.isEmpty ?? true) }
         let plain = pool.filter { farms.galleries[$0.osmId]?.isEmpty ?? true }
         let picked = Array(described.prefix(6)) + Array(plain.prefix(6))
@@ -569,31 +587,52 @@ private struct TripRecommendations: View {
         await farms.loadGalleriesIfNeeded()
         guard !farms.pins.isEmpty else { return }
         shown = select()
+        page = 0
         built = true
     }
 
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    /// The recommendations split into pages of two — the carousel shows one page
+    /// (two cards side by side) at a time.
+    private var pages: [[FarmPin]] {
+        stride(from: 0, to: shown.count, by: 2).map {
+            Array(shown[$0..<min($0 + 2, shown.count)])
+        }
+    }
 
     var body: some View {
         Group {
-            // Nothing sensible nearby → render nothing (no empty state).
+            // Nothing sensible to show → render nothing (no empty state).
             if built && shown.isEmpty {
                 EmptyView()
             } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("RECOMMENDATIONS NEAR YOU")
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(hasAnchor ? "RECOMMENDATIONS NEAR YOU" : "RECOMMENDATION")
                         .font(.geist(11, .semibold)).kerning(1.2)
                         .foregroundStyle(Color.inkMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 6)
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        if !built {
-                            ForEach(0..<2, id: \.self) { _ in
-                                SkeletonBox(cornerRadius: 16).frame(height: cardHeight)
-                            }
-                        } else {
-                            ForEach(shown) { pin in recCard(pin) }
+
+                    if !built {
+                        HStack(spacing: 12) {
+                            SkeletonBox(cornerRadius: 16).frame(height: cardHeight)
+                            SkeletonBox(cornerRadius: 16).frame(height: cardHeight)
                         }
+                    } else {
+                        // A horizontal pager: two cards per page, no vertical scroll.
+                        TabView(selection: $page) {
+                            ForEach(Array(pages.enumerated()), id: \.offset) { idx, pair in
+                                HStack(spacing: 12) {
+                                    ForEach(pair) { pin in recCard(pin) }
+                                    if pair.count == 1 { Color.clear.frame(maxWidth: .infinity) }
+                                }
+                                .padding(.horizontal, 1)
+                                .tag(idx)
+                            }
+                        }
+                        .tabViewStyle(.page(indexDisplayMode: .never))
+                        .frame(height: cardHeight)
+
+                        if pages.count > 1 { pager }
                     }
                 }
             }
@@ -601,10 +640,37 @@ private struct TripRecommendations: View {
         .task(id: buildKey) { await load() }
     }
 
+    /// `< • • • >` — arrows step a page, dots mark the current one.
+    private var pager: some View {
+        HStack(spacing: 14) {
+            Button { withAnimation { page = max(0, page - 1) } } label: {
+                Image(systemName: "chevron.left").font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(page == 0 ? Color.inkMuted.opacity(0.35) : Color.ink)
+            }.buttonStyle(.plain).disabled(page == 0)
+
+            HStack(spacing: 6) {
+                ForEach(0..<pages.count, id: \.self) { i in
+                    Circle()
+                        .fill(i == page ? Color.farmGreenMap : Color.inkMuted.opacity(0.3))
+                        .frame(width: 7, height: 7)
+                }
+            }
+
+            Button { withAnimation { page = min(pages.count - 1, page + 1) } } label: {
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(page >= pages.count - 1 ? Color.inkMuted.opacity(0.35) : Color.ink)
+            }.buttonStyle(.plain).disabled(page >= pages.count - 1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 2)
+    }
+
     /// A recommended farm as a cover-photo card — the "fresh from the farm" look:
-    /// full-bleed photo, a save heart, and the name + city over a legibility scrim.
+    /// full-bleed photo, a save heart, category tags, and the name + city over a
+    /// legibility scrim.
     private func recCard(_ pin: FarmPin) -> some View {
         let saved = favorites.isSaved(pin.osmId)
+        let tags = Array(pin.categories.prefix(2))
         return ZStack(alignment: .bottomLeading) {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(hex: 0xEDE7DD))
@@ -621,14 +687,25 @@ private struct TripRecommendations: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-            LinearGradient(colors: [.black.opacity(0.0), .black.opacity(0.6)],
+            LinearGradient(colors: [.black.opacity(0.0), .black.opacity(0.65)],
                            startPoint: .center, endPoint: .bottom)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(pin.name).font(.geist(14, .bold)).foregroundStyle(.white).lineLimit(2)
                 if let city = pin.city {
                     Text(city).font(.geist(12, .medium)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+                }
+                if !tags.isEmpty {
+                    HStack(spacing: 5) {
+                        ForEach(tags) { cat in
+                            Text(cat.label.uppercased())
+                                .font(.geist(9, .bold)).kerning(0.4)
+                                .foregroundStyle(.white)
+                                .padding(.vertical, 3).padding(.horizontal, 7)
+                                .background(.white.opacity(0.22), in: Capsule())
+                        }
+                    }
                 }
             }
             .padding(12)
