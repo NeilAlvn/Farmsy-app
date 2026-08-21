@@ -241,6 +241,9 @@ final class TripStore {
 
     // Saved trips.
     private(set) var savedTrips: [SavedTrip] = []
+    /// Every farm the user has already planned to visit, across all saved trips —
+    /// so "recommendations near you" never suggests one of them.
+    private(set) var plannedFarmIds: Set<String> = []
     /// Bumped whenever the map should refit to the whole trip (opening a saved
     /// trip, setting the origin) — the map watches this.
     private(set) var fitToken = 0
@@ -403,6 +406,22 @@ final class TripStore {
             .limit(20)
             .execute()
             .value) ?? []
+        await loadPlannedFarmIds()
+    }
+
+    /// Every farm across the user's saved trips, in one query — for excluding
+    /// already-planned farms from the recommendations shelf.
+    private func loadPlannedFarmIds() async {
+        let ids = savedTrips.map(\.id)
+        guard !ids.isEmpty else { plannedFarmIds = []; return }
+        struct Row: Decodable { let farm_osm_id: String }
+        let rows: [Row] = (try? await supabase
+            .from("trip_farms")
+            .select("farm_osm_id")
+            .in("trip_id", values: ids)
+            .execute()
+            .value) ?? []
+        plannedFarmIds = Set(rows.map(\.farm_osm_id))
     }
 
     /// Save the current draft as a trip (insert, or update when editing). Caches

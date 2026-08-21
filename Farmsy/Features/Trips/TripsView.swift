@@ -302,41 +302,47 @@ struct TripsView: View {
         } else if session.profile?.hasFullAccess != true {
             gate(String(localized: "Saved trips are a Farmsy Pro feature."))
         } else {
-            VStack(spacing: 14) {
-                // Draft banner.
-                Text(trip.stopIds.isEmpty ? String(localized: "No trip in progress")
-                     : String(localized: "A draft with \(trip.stopIds.count) stops is waiting"))
-                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
-                    .contentShape(Rectangle())
-                    .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 14) {
+                    // Draft banner.
+                    Text(trip.stopIds.isEmpty ? String(localized: "No trip in progress")
+                         : String(localized: "A draft with \(trip.stopIds.count) stops is waiting"))
+                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                        .frame(maxWidth: .infinity).padding(.vertical, 14)
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
+                        .contentShape(Rectangle())
+                        .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
-                // The saved-trip list is the only thing that scrolls — a fixed box
-                // showing up to eight rows, scrolling internally past that.
-                let rows = max(trip.savedTrips.count, MINE_SLOTS)
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
-                        Spacer()
-                        Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
-                    }.padding(14)
-                    Divider()
-                    ScrollView(showsIndicators: true) {
-                        VStack(spacing: 0) {
-                            ForEach(0..<rows, id: \.self) { i in
-                                if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
-                                else { savedEmptyRow(i: i) }
-                                if i < rows - 1 { Divider().padding(.leading, 60) }
+                    // The saved-trip list — a fixed box showing up to eight rows,
+                    // scrolling internally past that.
+                    let rows = max(trip.savedTrips.count, MINE_SLOTS)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                            Spacer()
+                            Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                        }.padding(14)
+                        Divider()
+                        ScrollView(showsIndicators: true) {
+                            VStack(spacing: 0) {
+                                ForEach(0..<rows, id: \.self) { i in
+                                    if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
+                                    else { savedEmptyRow(i: i) }
+                                    if i < rows - 1 { Divider().padding(.leading, 60) }
+                                }
                             }
                         }
+                        .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
                     }
-                    .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
+                    .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
+
+                    // Discovery at the bottom: farms near you worth planning next.
+                    // Renders nothing when there's nothing sensible to show.
+                    TripRecommendations(onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
                 }
-                .background(.white, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
+                .padding(14)
             }
-            .padding(14)
         }
     }
 
@@ -466,5 +472,110 @@ struct TripsView: View {
         var s = "https://www.google.com/maps/dir/?api=1&origin=\(origin)&destination=\(dest)&travelmode=\(trip.mode.googleMode)"
         if !mid.isEmpty { s += "&waypoints=\(mid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? mid)" }
         if let url = URL(string: s) { UIApplication.shared.open(url) }
+    }
+}
+
+// MARK: - Recommendations near you (bottom of My Trips)
+
+/// "Recommendations near you" — Aviah's spec. Built off the same inputs as the
+/// onboarding shelf (nearby photo'd farms + batch teasers), with the *selection*
+/// isolated in `select()` so a real recommendation source can replace it without
+/// touching the view. Anchors on the user's location, falling back to a trip they
+/// care about; excludes anything already planned or hearted; renders nothing when
+/// there is nothing sensible nearby.
+private struct TripRecommendations: View {
+    var onOpenFarm: (FarmPin) -> Void
+
+    @Environment(FarmsStore.self) private var farms
+    @Environment(LocationManager.self) private var locationManager
+    @Environment(FavoritesStore.self) private var favorites
+    @Environment(TripStore.self) private var trip
+
+    @State private var shown: [FarmPin] = []
+    @State private var built = false
+    @State private var extraTeasers: [String: String] = [:]
+
+    /// User's location first; then a trip they care about (the draft's origin, or
+    /// the centroid of its stops) so a denied-location user still gets something
+    /// local rather than an empty section.
+    private var anchor: CLLocationCoordinate2D? {
+        if let loc = locationManager.location { return loc.coordinate }
+        if let origin = trip.originCoord { return origin }
+        let coords = trip.stopIds.compactMap { farms.pin(forOsmId: $0)?.coordinate }
+        guard !coords.isEmpty else { return nil }
+        let lat = coords.map(\.latitude).reduce(0, +) / Double(coords.count)
+        let lng = coords.map(\.longitude).reduce(0, +) / Double(coords.count)
+        return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+    }
+
+    /// The one place "which farms are recommended" lives. Today: nearby photo'd
+    /// farms, minus anything already planned or hearted, described ones mixed
+    /// among the rest, six of them. Swap this body when a real source exists.
+    private func select() -> [FarmPin] {
+        guard let anchor else { return [] }
+        let excluded = trip.plannedFarmIds
+            .union(trip.stopIds)
+            .union(favorites.osmIds)
+        let pool = farms.nearbyWithImages(near: anchor, radiusKm: 100)
+            .filter { !excluded.contains($0.osmId) }
+        let described = pool.filter { !(farms.galleries[$0.osmId]?.isEmpty ?? true) }
+        let plain = pool.filter { farms.galleries[$0.osmId]?.isEmpty ?? true }
+        let picked = Array(described.prefix(6)) + Array(plain.prefix(6))
+        return Array(picked.shuffled().prefix(6))
+    }
+
+    private func images(for pin: FarmPin) -> [String] {
+        if let gallery = farms.galleries[pin.osmId], !gallery.isEmpty { return gallery }
+        if let cover = pin.image { return [cover] }
+        return []
+    }
+    private func teaser(for pin: FarmPin) -> String? {
+        farms.featuredTeasers[pin.osmId] ?? extraTeasers[pin.osmId]
+    }
+
+    private var buildKey: String {
+        "\(farms.pins.count)-\(farms.galleriesLoaded)-\(trip.plannedFarmIds.count)-\(anchor?.latitude ?? 0)-\(anchor?.longitude ?? 0)"
+    }
+
+    private func load() async {
+        await farms.loadGalleriesIfNeeded()
+        guard !farms.pins.isEmpty else { return }
+        shown = select()
+        built = true
+        let targets = shown.map(\.osmId)
+            .filter { farms.featuredTeasers[$0] == nil && extraTeasers[$0] == nil }
+        guard !targets.isEmpty else { return }
+        let result = await FarmDetailAPI.teasers(osmIds: targets)
+        if !result.isEmpty { extraTeasers.merge(result) { _, new in new } }
+    }
+
+    var body: some View {
+        Group {
+            // Nothing sensible nearby → render nothing (no empty state).
+            if built && shown.isEmpty {
+                EmptyView()
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("RECOMMENDATIONS NEAR YOU")
+                        .font(.geist(11, .semibold)).kerning(1.2)
+                        .foregroundStyle(Color.inkMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 6)
+                    if !built {
+                        ForEach(0..<2, id: \.self) { _ in
+                            SkeletonBox(cornerRadius: 16).frame(height: 180)
+                        }
+                    } else {
+                        ForEach(shown) { pin in
+                            MultiImageFarmCard(pin: pin,
+                                               images: images(for: pin),
+                                               teaser: teaser(for: pin),
+                                               onOpen: { onOpenFarm(pin) })
+                        }
+                    }
+                }
+            }
+        }
+        .task(id: buildKey) { await load() }
     }
 }

@@ -6296,6 +6296,34 @@
         }
       }
     },
+    "RECOMMENDATIONS NEAR YOU": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "RECOMMENDATIONS NEAR YOU"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AANBEVELINGEN BIJ JOU IN DE BUURT"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECOMMANDATIONS PRÈS DE VOUS"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EMPFEHLUNGEN IN DEINER NÄHE"
+          }
+        }
+      }
+    },
     "Read more": {
       "localizations": {
         "de": {
