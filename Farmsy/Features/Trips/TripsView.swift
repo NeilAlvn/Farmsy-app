@@ -90,14 +90,11 @@ struct TripsView: View {
     /// (TRIP PLANNER + close) and the actions stay on screen.
     private var collapsed: Bool { detent == .fraction(0.5) }
 
-    /// A "drag up to show the list" cue for the collapsed state. Used as an overlay
-    /// so it never takes layout height (which would push the header off).
+    /// A quiet "drag up" cue (arrow only) for the collapsed state.
     private var dragUpHint: some View {
-        VStack(spacing: 3) {
-            Image(systemName: "chevron.up").font(.system(size: 12, weight: .bold))
-            Text("Drag up to show the list").font(.geist(12, .medium))
-        }
-        .foregroundStyle(Color.inkMuted.opacity(0.8))
+        Image(systemName: "chevron.up")
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.inkMuted.opacity(0.8))
     }
 
     // MARK: - Header + tabs
