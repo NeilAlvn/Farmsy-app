@@ -65,6 +65,18 @@ final class LanguageManager {
         launchLocale = lang == .system ? .autoupdatingCurrent : Locale(identifier: lang.rawValue)
     }
 
+    /// A string looked up straight from a specific language's compiled bundle —
+    /// so the restart prompt can be shown in the language the user *just chose*,
+    /// which `String(localized:)` can't do until the app relaunches.
+    func localized(_ key: String, in lang: Lang) -> String {
+        guard lang != .system,
+              let path = Bundle.main.path(forResource: lang.rawValue, ofType: "lproj"),
+              let b = Bundle(path: path) else {
+            return Bundle.main.localizedString(forKey: key, value: key, table: nil)
+        }
+        return b.localizedString(forKey: key, value: key, table: nil)
+    }
+
     func set(_ lang: Lang) {
         guard lang != current else { return }
         current = lang

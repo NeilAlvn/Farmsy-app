@@ -164,6 +164,13 @@ struct ImageLightbox: View {
                 }
             )
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            // clipShape clips the *drawing* but not hit-testing: a single portrait
+            // photo under scaledToFill is larger than its frame and its overflow
+            // reaches up over the header, silently eating the close button's tap.
+            // contentShape pins the hit region to the container, freeing the X.
+            // (Multi-image tiles are small and never overflowed, which is why only
+            // single-image posts were affected.)
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(alignment: .leading) {
                 if hasMany { arrow("chevron.left") { step(-1) }.padding(.leading, 8) }
             }

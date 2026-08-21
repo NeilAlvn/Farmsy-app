@@ -424,17 +424,34 @@ struct LanguagePickerSheet: View {
                 .card(padding: 4)
                 .padding(.horizontal, 20)
 
-                // The switch only fully lands on relaunch (see LanguageManager),
-                // so say so plainly rather than leave half the screen untranslated.
+                // The switch only fully lands on relaunch (see LanguageManager), so
+                // offer a restart — with the prompt and button already in the
+                // language the user just picked, not the one they're leaving.
                 if changed {
-                    HStack(spacing: 10) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
-                        Text("Reopen Farmsy to finish switching language.")
+                    VStack(spacing: 12) {
+                        Text(language.localized("Restart Farmsy to apply your new language.", in: language.current))
                             .font(.geist(13)).foregroundStyle(Color.inkMuted)
+                            .multilineTextAlignment(.center)
+                        Button {
+                            // No API relaunches an iOS app; terminating drops the user
+                            // to the home screen and reopening comes up in the new
+                            // language (persisted via AppleLanguages).
+                            exit(0)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "arrow.clockwise")
+                                Text(language.localized("Restart now", in: language.current))
+                            }
+                            .font(.geist(16, .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
                     .background(Color(hex: 0xF3F6F2), in: RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
