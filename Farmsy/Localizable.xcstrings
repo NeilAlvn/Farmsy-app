@@ -2360,6 +2360,90 @@
         }
       }
     },
+    "Drag up to see your %lld trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Drag up to see your %lld trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep omhoog voor je %lld route"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glissez vers le haut pour votre %lld trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach oben ziehen für deine %lld Tour"
+          }
+        }
+      }
+    },
+    "Drag up to see your %lld trips": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Drag up to see your %lld trips"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep omhoog voor je %lld routes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glissez vers le haut pour vos %lld trajets"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach oben ziehen für deine %lld Touren"
+          }
+        }
+      }
+    },
+    "Drag up to see your trips": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Drag up to see your trips"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep omhoog voor je routes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glissez vers le haut pour vos trajets"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach oben ziehen für deine Touren"
+          }
+        }
+      }
+    },
     "Drive": {
       "localizations": {
         "en": {

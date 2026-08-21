@@ -53,7 +53,7 @@ struct TripsView: View {
                 ScrollView(showsIndicators: false) { planTab }
                 planActions
                     .padding(.horizontal, 14)
-                    .padding(.top, 10)
+                    .padding(.top, 14)
                     .padding(.bottom, 12)
                     .background(Color.cream)
             } else {
@@ -206,7 +206,9 @@ struct TripsView: View {
         }
         .padding(.horizontal, 14)
         .padding(.top, 14)
-        .padding(.bottom, collapsed ? 0 : 14)
+        // No bottom padding here — the gap to the mode line is owned entirely by
+        // planActions' top padding so it matches the 14pt rhythm everywhere else.
+        .padding(.bottom, 0)
     }
 
     /// Pinned below the scroll: travel mode, the live totals, and the trip
@@ -328,8 +330,9 @@ struct TripsView: View {
         } else if session.profile?.hasFullAccess != true {
             gate(String(localized: "Saved trips are a Farmsy Pro feature."))
         } else {
-            // Only the numbered list scrolls (inside its own fixed box); the draft
-            // banner and the recommendations below it stay put.
+            // Only the numbered list scrolls (its own box). On the small detent the
+            // list is tucked away behind a hint (like the trip overview); fully open,
+            // the box grows to fill so the recommendations sit at the frame's end.
             VStack(spacing: 14) {
                 // Draft banner.
                 Text(trip.stopIds.isEmpty ? String(localized: "No trip in progress")
@@ -340,38 +343,52 @@ struct TripsView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { if !trip.stopIds.isEmpty { tab = .plan } }
 
-                // The saved-trip list — a numbered fixed box showing up to six rows,
-                // scrolling internally past that. The only scrollable element here.
-                let rows = max(trip.savedTrips.count, MINE_SLOTS)
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
-                        Spacer()
-                        Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
-                    }.padding(14)
-                    Divider()
-                    ScrollView(showsIndicators: true) {
-                        VStack(spacing: 0) {
-                            ForEach(0..<rows, id: \.self) { i in
-                                if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
-                                else { savedEmptyRow(i: i) }
-                                if i < rows - 1 { Divider().padding(.leading, 60) }
+                if collapsed {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.up").font(.system(size: 10, weight: .bold))
+                        Text(myTripsHint).font(.geist(12, .medium))
+                    }
+                    .foregroundStyle(Color.inkMuted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 2)
+                    Spacer(minLength: 0)
+                } else {
+                    let rows = max(trip.savedTrips.count, MINE_SLOTS)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                            Spacer()
+                            Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                        }.padding(14)
+                        Divider()
+                        ScrollView(showsIndicators: true) {
+                            VStack(spacing: 0) {
+                                ForEach(0..<rows, id: \.self) { i in
+                                    if i < trip.savedTrips.count { savedRow(i: i, t: trip.savedTrips[i]) }
+                                    else { savedEmptyRow(i: i) }
+                                    if i < rows - 1 { Divider().padding(.leading, 60) }
+                                }
                             }
                         }
                     }
-                    .frame(maxHeight: ROW_HEIGHT * CGFloat(MINE_SLOTS))
+                    .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
+                    // Grow to fill so the carousel below lands at the frame's end.
+                    .frame(maxHeight: .infinity)
                 }
-                .background(.white, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
 
-                // Discovery carousel, pinned below (not part of the list's scroll).
+                // Discovery carousel, pinned at the bottom.
                 TripRecommendations(cardHeight: REC_CARD_HEIGHT,
                                     onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
-
-                Spacer(minLength: 0)
             }
             .padding(14)
         }
+    }
+
+    private var myTripsHint: LocalizedStringKey {
+        let n = trip.savedTrips.count
+        if n == 0 { return "Drag up to see your trips" }
+        return n == 1 ? "Drag up to see your \(n) trip" : "Drag up to see your \(n) trips"
     }
 
     private func savedRow(i: Int, t: SavedTrip) -> some View {
