@@ -18,18 +18,26 @@ import Foundation
 struct SmartSearchIntent: Decodable, Equatable {
     var products: [String] = []
     var categories: [String] = []
+    var locationTypes: [String] = []    // Type-of-place axis (l)
+    var methods: [String] = []          // How-it's-grown axis (m)
     var openNow: Bool = false
     var automaat: Bool = false
     var zelfpluk: Bool = false
     var verified: Bool = false
     var place: String? = nil
+    var center: Center? = nil           // server-resolved coords — fly here
+    var nearMe: Bool = false
+    var radiusKm: Double? = nil
     var summary: String? = nil
+
+    struct Center: Decodable, Equatable { let lat: Double; let lng: Double }
 
     /// True when the parse found nothing to act on — treat as "no intent".
     var isEmpty: Bool {
         products.isEmpty && categories.isEmpty
+            && locationTypes.isEmpty && methods.isEmpty
             && !openNow && !automaat && !zelfpluk && !verified
-            && (place?.isEmpty ?? true)
+            && !nearMe && center == nil && (place?.isEmpty ?? true)
     }
 }
 

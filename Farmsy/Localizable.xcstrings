@@ -5078,6 +5078,34 @@
         }
       }
     },
+    "Near you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Near you"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bij jou"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Près de vous"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In deiner Nähe"
+          }
+        }
+      }
+    },
     "Netherlands": {
       "localizations": {
         "en": {

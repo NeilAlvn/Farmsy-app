@@ -47,9 +47,14 @@ final class FarmsStore {
     /// Lowercase `produce` text per farm (the `p` flag), for matching AI product
     /// terms — loaded from the flags endpoint alongside the galleries.
     private(set) var produceByOsm: [String: String] = [:]
-    /// Bumped when an AI search names a place, so the map can fly to it.
+    /// Bumped when an AI search resolves a centre (server `center`, or the user's
+    /// own location for a nearMe query), so the map can fly to it.
     private(set) var aiPlaceToken = 0
-    private(set) var aiPlace: String?
+    /// The coordinate an AI search wants the map centred on, if any.
+    private(set) var aiCenter: CLLocationCoordinate2D?
+    /// Radius defaults when the query states no distance (Aviah's contract).
+    private static let radiusNearMe = 15.0
+    private static let radiusNamedPlace = 25.0
 
     // Featured farms (What's New shelf): a farm's gallery photos from the public
     // flags endpoint, plus a *cached, once-shuffled* order so the shelf doesn't
@@ -139,23 +144,36 @@ final class FarmsStore {
     }
 
     /// Apply a parsed AI intent — it takes over filtering and clears any manual
-    /// filters so the two don't silently compound. Needs the produce map for
-    /// product matching, so it makes sure the flags are loaded first.
-    func applyAISearch(_ intent: SmartSearchIntent) async {
+    /// filters so the two don't silently compound. Resolves the search centre:
+    /// the server's `center` for a named place, or the user's own location for a
+    /// nearMe query. Needs the flags maps for product/axis matching.
+    func applyAISearch(_ intent: SmartSearchIntent, userLocation: CLLocation?) async {
         await loadFlagsIfNeeded()
         clearAllFilters()
         aiIntent = intent
-        if let place = intent.place, !place.isEmpty {
-            aiPlace = place
+        // Centre: prefer the server-resolved place centre; else the user's own
+        // location when they meant "near me". Nil → no distance narrowing.
+        if let c = intent.center {
+            aiCenter = CLLocationCoordinate2D(latitude: c.lat, longitude: c.lng)
+            aiPlaceToken += 1
+        } else if intent.nearMe, let loc = userLocation {
+            aiCenter = loc.coordinate
             aiPlaceToken += 1
         } else {
-            aiPlace = nil
+            aiCenter = nil
         }
+    }
+
+    /// The radius (metres) an active AI intent narrows to, or nil for no limit.
+    private var aiRadiusMeters: Double? {
+        guard let ai = aiIntent, aiCenter != nil else { return nil }
+        let km = ai.radiusKm ?? (ai.nearMe ? Self.radiusNearMe : Self.radiusNamedPlace)
+        return km * 1000
     }
 
     func clearAISearch() {
         aiIntent = nil
-        aiPlace = nil
+        aiCenter = nil
         searchText = ""
     }
 
@@ -204,11 +222,27 @@ final class FarmsStore {
                     return catMatch || prodMatch
                 }
             }
+            // The two new axes — any within an axis, both axes AND (same as chips).
+            if !ai.locationTypes.isEmpty {
+                let want = Set(ai.locationTypes)
+                result = result.filter { (locationTypesByOsm[$0.osmId] ?? []).contains { want.contains($0) } }
+            }
+            if !ai.methods.isEmpty {
+                let want = Set(ai.methods)
+                result = result.filter { (methodsByOsm[$0.osmId] ?? []).contains { want.contains($0) } }
+            }
             if ai.openNow  { result = result.filter { FarmFilters.isOpenToday($0.openingHours) } }
             if ai.verified { result = result.filter { $0.isVerified } }
             if ai.automaat { result = result.filter { FarmFilters.looksLikeAutomaat($0.name, openingHours: $0.openingHours) } }
             if ai.zelfpluk { result = result.filter { FarmFilters.looksLikeZelfpluk($0.name) } }
-            return result
+            // A place NARROWS: keep only farms within the radius of the centre.
+            if let center = aiCenter, let radius = aiRadiusMeters {
+                let origin = CLLocation(latitude: center.latitude, longitude: center.longitude)
+                result = result.filter { ($0.distance(from: origin) ?? .infinity) <= radius }
+            }
+            // Rank once an intent is present — filtering says which qualify, ranking
+            // says which to go to. Distance dominates when there's an origin.
+            return rankForIntent(result, origin: aiCenter)
         }
 
         var result = pins
@@ -242,6 +276,29 @@ final class FarmsStore {
             }
         }
         return result
+    }
+
+    /// Rank AI-search results by usefulness — the web's signals: distance
+    /// (dominant when there's an origin), then open today, verified, has a photo,
+    /// rating, review count. One function so it can be swapped for a server-side
+    /// order if the endpoint ever returns one (asked Aviah; matches her signal
+    /// list until then). Higher score first.
+    private func rankForIntent(_ list: [FarmPin], origin: CLLocationCoordinate2D?) -> [FarmPin] {
+        let originLoc = origin.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
+        func score(_ p: FarmPin) -> Double {
+            var s = 0.0
+            if let originLoc, let d = p.distance(from: originLoc) {
+                // Distance dominates: full marks at the origin, fading to 0 at 100 km.
+                s += max(0, 1 - d / 100_000) * 100
+            }
+            if FarmFilters.isOpenToday(p.openingHours) { s += 20 }
+            if p.isVerified { s += 15 }
+            if p.image != nil { s += 10 }
+            s += (p.avgRating ?? 0) * 2          // 0–10
+            s += min(Double(p.reviewCount), 20) * 0.25   // 0–5, capped
+            return s
+        }
+        return list.sorted { score($0) > score($1) }
     }
 
     func sortedByDistance(_ list: [FarmPin], from location: CLLocation?) -> [FarmPin] {

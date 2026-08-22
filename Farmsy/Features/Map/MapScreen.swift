@@ -273,7 +273,17 @@ struct MapScreen: View {
         var out: [String] = []
         out += ai.categories.compactMap { FarmCategory.from($0)?.label }
         out += ai.products.map { $0.capitalized }
-        if let place = ai.place, !place.isEmpty { out.append("📍 " + place) }
+        // The two new axes, using the same client labels as the filter groups.
+        out += ai.locationTypes.compactMap { id in FarmAxis.placeTypes.first { $0.id == id }?.label }
+        out += ai.methods.compactMap { id in FarmAxis.methods.first { $0.id == id }?.label }
+        // Place, with the radius when one came back (or a nearMe default).
+        if ai.nearMe {
+            let km = Int(ai.radiusKm ?? 15)
+            out.append("📍 " + String(localized: "Near you") + " · \(km) km")
+        } else if let place = ai.place, !place.isEmpty {
+            let km = Int(ai.radiusKm ?? 25)
+            out.append("📍 \(place) · \(km) km")
+        }
         if ai.openNow  { out.append(String(localized: "Open today")) }
         if ai.zelfpluk { out.append(String(localized: "Pick-your-own")) }
         if ai.automaat { out.append(String(localized: "Open 24/7 (automaat)")) }
@@ -294,21 +304,23 @@ struct MapScreen: View {
             // Empty/parse-failure → leave the live keyword filter in place.
             if let intent, !intent.isEmpty {
                 Haptics.tap()
-                await farms.applyAISearch(intent)
+                await farms.applyAISearch(intent, userLocation: locationManager.location)
             }
         }
     }
 
-    /// Geocode the place the AI extracted and fly the map to it.
+    /// Fly the map to the AI-resolved centre (server `center`, or the user's own
+    /// location for a nearMe query) — no client geocode any more; span sized to
+    /// the search radius so the matching farms all sit in frame.
     private func flyToAIPlace() {
-        guard let place = farms.aiPlace, !place.isEmpty else { return }
-        CLGeocoder().geocodeAddressString(place + ", Netherlands") { marks, _ in
-            guard let loc = marks?.first?.location else { return }
-            withAnimation(.easeInOut(duration: 0.6)) {
-                camera = .region(MKCoordinateRegion(
-                    center: loc.coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)))
-            }
+        guard let center = farms.aiCenter else { return }
+        // ~1° lat ≈ 111 km; frame a bit wider than the radius so pins clear the edge.
+        let km = farms.aiIntent?.radiusKm ?? (farms.aiIntent?.nearMe == true ? 15 : 25)
+        let span = max(0.08, (km / 111) * 2.4)
+        withAnimation(.easeInOut(duration: 0.6)) {
+            camera = .region(MKCoordinateRegion(
+                center: center,
+                span: MKCoordinateSpan(latitudeDelta: span, longitudeDelta: span)))
         }
     }
 
