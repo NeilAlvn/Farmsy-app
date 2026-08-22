@@ -1184,6 +1184,34 @@
         }
       }
     },
+    "Biodynamic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Biodynamic"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biodynamisch"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biodynamique"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biodynamisch"
+          }
+        }
+      }
+    },
     "Browse farm shops on the map": {
       "localizations": {
         "en": {
@@ -2840,6 +2868,34 @@
         }
       }
     },
+    "Farm shop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Farm shop"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijwinkel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutique de ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hofladen"
+          }
+        }
+      }
+    },
     "Farm shops across NL & BE": {
       "localizations": {
         "en": {
@@ -3534,6 +3590,34 @@
         }
       }
     },
+    "Grass-fed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Grass-fed"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grasgevoerd"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nourri à l'herbe"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grasgefüttert"
+          }
+        }
+      }
+    },
     "Great choice": {
       "localizations": {
         "en": {
@@ -3664,6 +3748,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Öffnungszeiten"
+          }
+        }
+      }
+    },
+    "How it's grown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "How it's grown"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoe het wordt geteeld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode de production"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anbauweise"
           }
         }
       }
@@ -4800,6 +4912,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lidmaatschappen kunnen nu niet worden geladen."
+          }
+        }
+      }
+    },
+    "Milk tap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Milk tap"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melktap"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distributeur de lait"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Milchzapfstelle"
           }
         }
       }
@@ -6654,6 +6794,34 @@
         }
       }
     },
+    "Regenerative": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Regenerative"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regeneratief"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Régénérative"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerativ"
+          }
+        }
+      }
+    },
     "Renew to unlock full details for every farm again.": {
       "localizations": {
         "en": {
@@ -7042,6 +7210,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bewertungen"
+          }
+        }
+      }
+    },
+    "Roadside stall": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Roadside stall"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kraam langs de weg"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Étal en bord de route"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verkaufsstand am Straßenrand"
           }
         }
       }
@@ -7545,6 +7741,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sieh dir den Ort an, bevor du hinfährst"
+          }
+        }
+      }
+    },
+    "Self-picking": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Self-picking"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelfpluk"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-cueillette"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selbstpflücken"
+          }
+        }
+      }
+    },
+    "Self-picking (unstaffed)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Self-picking (unstaffed)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zelfpluk (onbemand)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-cueillette (sans personnel)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selbstpflücken (unbesetzt)"
           }
         }
       }
@@ -8165,6 +8417,34 @@
         }
       }
     },
+    "Sustainable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Sustainable"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duurzaam"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durable"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachhaltig"
+          }
+        }
+      }
+    },
     "System": {
       "localizations": {
         "en": {
@@ -8713,6 +8993,34 @@
         }
       }
     },
+    "Type of place": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Type of place"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soort locatie"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type de lieu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Art des Ortes"
+          }
+        }
+      }
+    },
     "Unlock every farm": {
       "localizations": {
         "en": {
@@ -8888,6 +9196,34 @@
           "stringUnit": {
             "state": "new",
             "value": "Utrecht"
+          }
+        }
+      }
+    },
+    "Vending machine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Vending machine"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distributeur"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automat"
           }
         }
       }

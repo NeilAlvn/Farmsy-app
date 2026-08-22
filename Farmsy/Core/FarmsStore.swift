@@ -24,11 +24,21 @@ final class FarmsStore {
     var filterZelfpluk = false
     var filterHasPhotos = false
 
+    // The two new axes from Aviah's taxonomy (multi-select, combine with the
+    // categories rather than replacing them). Values are language-neutral ids; the
+    // labels live client-side in FarmAxis. `organic` deliberately stays a category,
+    // not a method, until its dual-coverage is resolved server-side.
+    var selectedPlaceTypes: Set<String> = []
+    var selectedMethods: Set<String> = []
+
     var anyQuickFilterOn: Bool {
         filterVerified || filterOpenToday || filterAutomaat || filterZelfpluk || filterHasPhotos
     }
 
-    var anyFilterOn: Bool { anyQuickFilterOn || !selectedCategories.isEmpty }
+    var anyFilterOn: Bool {
+        anyQuickFilterOn || !selectedCategories.isEmpty
+            || !selectedPlaceTypes.isEmpty || !selectedMethods.isEmpty
+    }
 
     // AI search — the parsed intent currently in effect. When set, it drives the
     // filtering (products + categories + flags) and the summary bar shows what was
@@ -51,13 +61,22 @@ final class FarmsStore {
     /// instantly and the shelf can put farms *with* a description first.
     private(set) var featuredTeasers: [String: String] = [:]
 
-    private struct FarmFlag: Decodable { let o: String; let g: [String]?; let p: String? }
+    private struct FarmFlag: Decodable {
+        let o: String; let g: [String]?; let p: String?
+        let l: [String]?   // location_types (Type of place)
+        let m: [String]?   // methods (How it is grown)
+    }
 
-    /// Fetch the galleries once, keep only farms with 2+ photos, prefetch their
-    /// teasers, and freeze an order — farms that have a description first (so the
-    /// top of the shelf always has one), shuffled within each group.
-    func loadGalleriesIfNeeded() async {
-        guard !galleriesLoaded else { return }
+    /// The flags endpoint decoded into the per-farm lookups the map needs
+    /// (galleries, produce text, place-types, methods). One fetch, cached — the
+    /// filters and product-matching read these without a second round trip. The
+    /// heavier teaser prefetch stays in `loadGalleriesIfNeeded`.
+    private(set) var flagsLoaded = false
+    private(set) var locationTypesByOsm: [String: [String]] = [:]
+    private(set) var methodsByOsm: [String: [String]] = [:]
+
+    func loadFlagsIfNeeded() async {
+        guard !flagsLoaded else { return }
         let url = Backend.webAPI.appending(path: "farms").appending(path: "flags")
         guard let (data, resp) = try? await URLSession.shared.data(from: url),
               (resp as? HTTPURLResponse)?.statusCode == 200,
@@ -65,12 +84,28 @@ final class FarmsStore {
         else { return }
         var map: [String: [String]] = [:]
         var produce: [String: String] = [:]
+        var locs: [String: [String]] = [:]
+        var meths: [String: [String]] = [:]
         for r in rows {
             if (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
             if let p = r.p, !p.isEmpty { produce[r.o] = p.lowercased() }
+            if let l = r.l, !l.isEmpty { locs[r.o] = l }
+            if let m = r.m, !m.isEmpty { meths[r.o] = m }
         }
         galleries = map
         produceByOsm = produce
+        locationTypesByOsm = locs
+        methodsByOsm = meths
+        flagsLoaded = true
+    }
+
+    /// Fetch the galleries once, keep only farms with 2+ photos, prefetch their
+    /// teasers, and freeze an order — farms that have a description first (so the
+    /// top of the shelf always has one), shuffled within each group.
+    func loadGalleriesIfNeeded() async {
+        await loadFlagsIfNeeded()
+        guard !galleriesLoaded else { return }
+        let map = galleries
 
         // Prefetch teasers concurrently so the shelf can rank by "has description".
         let ids = Array(map.keys)
@@ -100,13 +135,14 @@ final class FarmsStore {
         selectedCategories = []
         filterVerified = false; filterOpenToday = false
         filterAutomaat = false; filterZelfpluk = false; filterHasPhotos = false
+        selectedPlaceTypes = []; selectedMethods = []
     }
 
     /// Apply a parsed AI intent — it takes over filtering and clears any manual
     /// filters so the two don't silently compound. Needs the produce map for
     /// product matching, so it makes sure the flags are loaded first.
     func applyAISearch(_ intent: SmartSearchIntent) async {
-        if produceByOsm.isEmpty { await loadGalleriesIfNeeded() }
+        await loadFlagsIfNeeded()
         clearAllFilters()
         aiIntent = intent
         if let place = intent.place, !place.isEmpty {
@@ -185,6 +221,17 @@ final class FarmsStore {
         if filterHasPhotos { result = result.filter { $0.image != nil } }
         if filterAutomaat  { result = result.filter { FarmFilters.looksLikeAutomaat($0.name, openingHours: $0.openingHours) } }
         if filterZelfpluk  { result = result.filter { FarmFilters.looksLikeZelfpluk($0.name) } }
+        // The two new axes — a farm matches if any of its values is selected.
+        if !selectedPlaceTypes.isEmpty {
+            result = result.filter { pin in
+                (locationTypesByOsm[pin.osmId] ?? []).contains { selectedPlaceTypes.contains($0) }
+            }
+        }
+        if !selectedMethods.isEmpty {
+            result = result.filter { pin in
+                (methodsByOsm[pin.osmId] ?? []).contains { selectedMethods.contains($0) }
+            }
+        }
 
         let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
         if !query.isEmpty {

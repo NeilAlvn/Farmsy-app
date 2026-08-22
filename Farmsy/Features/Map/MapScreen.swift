@@ -735,15 +735,50 @@ struct FilterSheet: View {
                     row(icon: "camera", emoji: nil, tint: Color.inkMuted,
                         label: String(localized: "Has photos"), trailing: nil,
                         isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
+
+                    // The two new axes — combine with the categories, don't replace
+                    // them. Introduced by a heading, otherwise the same row styling.
+                    divider
+                    sectionHeader(String(localized: "Type of place"))
+                    ForEach(FarmAxis.placeTypes) { v in
+                        row(icon: v.icon, emoji: nil, tint: Color.inkMuted,
+                            label: v.label, trailing: nil,
+                            isOn: farms.selectedPlaceTypes.contains(v.id)) {
+                            if farms.selectedPlaceTypes.contains(v.id) { farms.selectedPlaceTypes.remove(v.id) }
+                            else { farms.selectedPlaceTypes.insert(v.id) }
+                        }
+                    }
+
+                    divider
+                    sectionHeader(String(localized: "How it's grown"))
+                    ForEach(FarmAxis.methods) { v in
+                        row(icon: v.icon, emoji: nil, tint: Color.inkMuted,
+                            label: v.label, trailing: nil,
+                            isOn: farms.selectedMethods.contains(v.id)) {
+                            if farms.selectedMethods.contains(v.id) { farms.selectedMethods.remove(v.id) }
+                            else { farms.selectedMethods.insert(v.id) }
+                        }
+                    }
                 }
                 .padding(.bottom, 24)
             }
         }
         .background(Color.cream.ignoresSafeArea())
+        // The two new axes read from the flags maps — make sure they're loaded.
+        .task { await farms.loadFlagsIfNeeded() }
     }
 
     private var divider: some View {
         Rectangle().fill(Color.hairline).frame(height: 1).padding(.vertical, 4)
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.geist(11, .semibold)).kerning(1.1)
+            .foregroundStyle(Color.inkMuted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 6).padding(.bottom, 2)
     }
 
     private func row(icon: String?, emoji: String?, tint: Color, label: String,
