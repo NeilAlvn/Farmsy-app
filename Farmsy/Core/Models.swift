@@ -66,6 +66,25 @@ enum FarmCategory: String, CaseIterable, Identifiable {
         "shop=butcher (direct_sale)": .meat, "shop=poultry": .meat, "vending=meat": .meat,
         "vending=sausage": .meat, "shop=fish": .fish, "craft=fish_farm": .fish,
     ]
+
+    /// `farm_type` values that aren't one of our ten canonical cases but map onto
+    /// one — OSM imports carry a few (`beef`, `poultry`) that would otherwise
+    /// render as nothing. The column has no constraint, so this is the client-side
+    /// safety net until the taxonomy is pinned down (Aviah's audit).
+    static let valueAlias: [String: FarmCategory] = [
+        "beef": .meat, "poultry": .meat, "chicken": .meat, "pork": .meat,
+        "vegetables": .produce, "fruit": .produce, "vegetable": .produce,
+        "wine_cellar": .wine, "winery": .wine, "vineyard": .wine,
+        "milk": .dairy, "eggs ": .eggs, "market": .markets,
+    ]
+
+    /// Resolve a raw `farm_type` string to a category — a direct case, then an
+    /// alias. Returns nil for genuinely unknown values so they're dropped, not
+    /// rendered blank.
+    static func from(_ raw: String) -> FarmCategory? {
+        let key = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        return FarmCategory(rawValue: key) ?? valueAlias[key]
+    }
 }
 
 // MARK: - Farm pin (public shape returned by the get_farms_pins RPC)
@@ -96,7 +115,10 @@ struct FarmPin: Identifiable, Hashable {
     }
 
     var categories: [FarmCategory] {
-        var cats = farmType.compactMap { FarmCategory(rawValue: $0.lowercased()) }
+        // Resolve each value (case or alias), drop unknowns, and de-duplicate so a
+        // farm tagged ["meat","beef"] shows Meat once rather than twice.
+        var seen = Set<FarmCategory>()
+        var cats = farmType.compactMap { FarmCategory.from($0) }.filter { seen.insert($0).inserted }
         if cats.isEmpty, let tag = primaryTag, let mapped = FarmCategory.tagToCategory[tag] {
             cats = [mapped]
         }
