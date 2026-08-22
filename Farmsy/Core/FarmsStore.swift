@@ -30,6 +30,17 @@ final class FarmsStore {
 
     var anyFilterOn: Bool { anyQuickFilterOn || !selectedCategories.isEmpty }
 
+    // AI search — the parsed intent currently in effect. When set, it drives the
+    // filtering (products + categories + flags) and the summary bar shows what was
+    // understood. Cleared by the bar's × or by any manual filter change.
+    var aiIntent: SmartSearchIntent?
+    /// Lowercase `produce` text per farm (the `p` flag), for matching AI product
+    /// terms — loaded from the flags endpoint alongside the galleries.
+    private(set) var produceByOsm: [String: String] = [:]
+    /// Bumped when an AI search names a place, so the map can fly to it.
+    private(set) var aiPlaceToken = 0
+    private(set) var aiPlace: String?
+
     // Featured farms (What's New shelf): a farm's gallery photos from the public
     // flags endpoint, plus a *cached, once-shuffled* order so the shelf doesn't
     // reshuffle every time the sheet is opened. Both persist for the session.
@@ -40,7 +51,7 @@ final class FarmsStore {
     /// instantly and the shelf can put farms *with* a description first.
     private(set) var featuredTeasers: [String: String] = [:]
 
-    private struct FarmFlag: Decodable { let o: String; let g: [String]? }
+    private struct FarmFlag: Decodable { let o: String; let g: [String]?; let p: String? }
 
     /// Fetch the galleries once, keep only farms with 2+ photos, prefetch their
     /// teasers, and freeze an order — farms that have a description first (so the
@@ -53,8 +64,13 @@ final class FarmsStore {
               let rows = try? JSONDecoder().decode([FarmFlag].self, from: data)
         else { return }
         var map: [String: [String]] = [:]
-        for r in rows where (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
+        var produce: [String: String] = [:]
+        for r in rows {
+            if (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
+            if let p = r.p, !p.isEmpty { produce[r.o] = p.lowercased() }
+        }
         galleries = map
+        produceByOsm = produce
 
         // Prefetch teasers concurrently so the shelf can rank by "has description".
         let ids = Array(map.keys)
@@ -86,6 +102,27 @@ final class FarmsStore {
         filterAutomaat = false; filterZelfpluk = false; filterHasPhotos = false
     }
 
+    /// Apply a parsed AI intent — it takes over filtering and clears any manual
+    /// filters so the two don't silently compound. Needs the produce map for
+    /// product matching, so it makes sure the flags are loaded first.
+    func applyAISearch(_ intent: SmartSearchIntent) async {
+        if produceByOsm.isEmpty { await loadGalleriesIfNeeded() }
+        clearAllFilters()
+        aiIntent = intent
+        if let place = intent.place, !place.isEmpty {
+            aiPlace = place
+            aiPlaceToken += 1
+        } else {
+            aiPlace = nil
+        }
+    }
+
+    func clearAISearch() {
+        aiIntent = nil
+        aiPlace = nil
+        searchText = ""
+    }
+
     private static let pageSize = 1000
 
     func loadIfNeeded() async {
@@ -115,6 +152,29 @@ final class FarmsStore {
 
     /// Pins matching the current search + category + quick filters.
     var filtered: [FarmPin] {
+        // AI search takes over when active — the parsed intent drives everything.
+        if let ai = aiIntent {
+            var result = pins
+            let cats = Set(ai.categories.compactMap { FarmCategory.from($0) })
+            let prods = ai.products.map { $0.lowercased() }
+            // "What they sell": a farm matches its category OR its produce text —
+            // OR'd so thin produce-field coverage doesn't drop farms the category
+            // already accounts for.
+            if !cats.isEmpty || !prods.isEmpty {
+                result = result.filter { pin in
+                    let catMatch = !cats.isEmpty && pin.categories.contains { cats.contains($0) }
+                    let prodMatch = !prods.isEmpty
+                        && (produceByOsm[pin.osmId].map { txt in prods.contains { txt.contains($0) } } ?? false)
+                    return catMatch || prodMatch
+                }
+            }
+            if ai.openNow  { result = result.filter { FarmFilters.isOpenToday($0.openingHours) } }
+            if ai.verified { result = result.filter { $0.isVerified } }
+            if ai.automaat { result = result.filter { FarmFilters.looksLikeAutomaat($0.name, openingHours: $0.openingHours) } }
+            if ai.zelfpluk { result = result.filter { FarmFilters.looksLikeZelfpluk($0.name) } }
+            return result
+        }
+
         var result = pins
         if !selectedCategories.isEmpty {
             result = result.filter { pin in pin.categories.contains { selectedCategories.contains($0) } }

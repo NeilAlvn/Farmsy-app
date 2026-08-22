@@ -7393,6 +7393,34 @@
         }
       }
     },
+    "Search or ask — e.g. cheese near you": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Search or ask — e.g. cheese near you"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoek of vraag — bijv. kaas bij jou"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherchez ou demandez — p. ex. fromage près de vous"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suchen oder fragen — z. B. Käse in deiner Nähe"
+          }
+        }
+      }
+    },
     "See all on map": {
       "localizations": {
         "en": {

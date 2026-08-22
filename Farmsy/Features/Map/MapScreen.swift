@@ -13,6 +13,8 @@ struct MapScreen: View {
     @Environment(TripStore.self) private var trip
 
     @State private var showFilters = false
+    /// True while an AI-search parse is in flight (spinner in the bar).
+    @State private var aiSearching = false
 
     /// A pin the parent asked us to fly to (e.g. tapped in the What's New sheet).
     var focusPin: FarmPin?
@@ -113,12 +115,23 @@ struct MapScreen: View {
         // Search sits at the top with the locate button beside it — the wordmark,
         // What's New and account controls moved to the bottom panel.
         .overlay(alignment: .top) {
-            HStack(spacing: 10) {
-                searchRow
-                CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    searchRow
+                    CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
+                }
+                if farms.aiIntent != nil { aiSummaryBar }
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
+        }
+        // An AI search that named a place flies the map there (the web doesn't yet).
+        .onChange(of: farms.aiPlaceToken) { _, _ in flyToAIPlace() }
+        // Emptying the search bar drops the AI intent so the map returns to all farms.
+        .onChange(of: farms.searchText) { _, text in
+            if text.trimmingCharacters(in: .whitespaces).isEmpty, farms.aiIntent != nil {
+                farms.clearAISearch()
+            }
         }
         .sheet(isPresented: $showFilters) {
             FilterSheet()
@@ -183,13 +196,21 @@ struct MapScreen: View {
 
     private var searchRow: some View {
         @Bindable var farms = farms
-        let filtersActive = farms.anyFilterOn
+        let filtersActive = farms.anyFilterOn || farms.aiIntent != nil
         return HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15))
-                .foregroundStyle(Color.inkMuted)
-            TextField("Search by farm, city or postcode", text: $farms.searchText)
+            if aiSearching {
+                ProgressView().controlSize(.small)
+            } else {
+                Image(systemName: farms.aiIntent != nil ? "sparkles" : "magnifyingglass")
+                    .font(.system(size: 15))
+                    .foregroundStyle(farms.aiIntent != nil ? Color.farmGreenMap : Color.inkMuted)
+            }
+            // Return key runs the AI parse ("cheese near Utrecht", "waar kan ik
+            // aardbeien plukken"); plain typing still filters by name/city live.
+            TextField("Search or ask — e.g. cheese near you", text: $farms.searchText)
                 .autocorrectionDisabled()
+                .submitLabel(.search)
+                .onSubmit { runSmartSearch() }
             // Filters live on the search bar, web-style: tapping slides a sheet up.
             Button {
                 Haptics.tap()
@@ -206,6 +227,89 @@ struct MapScreen: View {
         .padding(.horizontal, 18)
         .background(.white, in: Capsule())
         .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+    }
+
+    /// Shows what the AI understood — the summary sentence (in the query's own
+    /// language) plus the parsed values as chips, and an × to clear.
+    private var aiSummaryBar: some View {
+        let ai = farms.aiIntent
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "sparkles").font(.system(size: 13)).foregroundStyle(Color.farmGreenMap)
+                Text(ai?.summary ?? "").font(.geist(13)).foregroundStyle(Color.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 4)
+                Button {
+                    Haptics.tap()
+                    farms.clearAISearch()
+                } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Color.inkMuted)
+                }.buttonStyle(.plain)
+            }
+            let chips = aiChips
+            if !chips.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(chips, id: \.self) { chip in
+                            Text(chip)
+                                .font(.geist(11, .semibold))
+                                .foregroundStyle(Color.farmGreenDeep)
+                                .padding(.vertical, 4).padding(.horizontal, 9)
+                                .background(Color.farmGreenMap.opacity(0.12), in: Capsule())
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 11)
+        .padding(.horizontal, 16)
+        .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+    }
+
+    /// The parsed values as short chip labels.
+    private var aiChips: [String] {
+        guard let ai = farms.aiIntent else { return [] }
+        var out: [String] = []
+        out += ai.categories.compactMap { FarmCategory.from($0)?.label }
+        out += ai.products.map { $0.capitalized }
+        if let place = ai.place, !place.isEmpty { out.append("📍 " + place) }
+        if ai.openNow  { out.append(String(localized: "Open today")) }
+        if ai.zelfpluk { out.append(String(localized: "Pick-your-own")) }
+        if ai.automaat { out.append(String(localized: "Open 24/7 (automaat)")) }
+        if ai.verified { out.append(String(localized: "Verified farms")) }
+        // De-dup while preserving order (category + product can repeat, e.g. cheese).
+        var seen = Set<String>()
+        return out.filter { seen.insert($0.lowercased()).inserted }
+    }
+
+    private func runSmartSearch() {
+        let q = farms.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard q.count >= 2 else { return }
+        dismissKeyboard()
+        aiSearching = true
+        Task {
+            let intent = await SmartSearchAPI.parse(q)
+            aiSearching = false
+            // Empty/parse-failure → leave the live keyword filter in place.
+            if let intent, !intent.isEmpty {
+                Haptics.tap()
+                await farms.applyAISearch(intent)
+            }
+        }
+    }
+
+    /// Geocode the place the AI extracted and fly the map to it.
+    private func flyToAIPlace() {
+        guard let place = farms.aiPlace, !place.isEmpty else { return }
+        CLGeocoder().geocodeAddressString(place + ", Netherlands") { marks, _ in
+            guard let loc = marks?.first?.location else { return }
+            withAnimation(.easeInOut(duration: 0.6)) {
+                camera = .region(MKCoordinateRegion(
+                    center: loc.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)))
+            }
+        }
     }
 
     private func flyToFocus() {
