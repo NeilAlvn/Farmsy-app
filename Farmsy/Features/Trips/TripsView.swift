@@ -357,11 +357,13 @@ struct TripsView: View {
                     // Small detent: hide the list so the header stays visible. The
                     // drag-up hint sits between the draft and the carousel as a fixed
                     // element (not a flexing spacer) so it stays put during the drag.
-                    // Negative padding trims the parent VStack's 14pt spacing so the
-                    // arrow sits snug between the draft and the carousel.
+                    // Negative padding trims the parent VStack's 14pt spacing; the
+                    // bottom is pulled in further so the arrow sits close to the
+                    // carousel below it.
                     dragUpHint
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, -8)
+                        .padding(.top, -6)
+                        .padding(.bottom, -12)
                     TripRecommendations(cardHeight: REC_CARD_HEIGHT,
                                         onOpenFarm: { pin in dismiss(); onOpenFarm(pin) })
                 } else {
