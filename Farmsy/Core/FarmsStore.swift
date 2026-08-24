@@ -284,18 +284,23 @@ final class FarmsStore {
     /// order if the endpoint ever returns one (asked Aviah; matches her signal
     /// list until then). Higher score first.
     private func rankForIntent(_ list: [FarmPin], origin: CLLocationCoordinate2D?) -> [FarmPin] {
+        // Weights come from the server (`ranking` on the response) so every client
+        // ranks identically; fall back to the defaults if the field is absent or a
+        // future `version` we don't recognise. Distance never leaves the device.
+        let r = aiIntent?.ranking ?? .default
+        let w = (r.version == SearchRanking.default.version) ? r : .default
+        let zeroM = max(1, w.distanceZeroKm * 1000)
         let originLoc = origin.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
         func score(_ p: FarmPin) -> Double {
             var s = 0.0
             if let originLoc, let d = p.distance(from: originLoc) {
-                // Distance dominates: full marks at the origin, fading to 0 at 100 km.
-                s += max(0, 1 - d / 100_000) * 100
+                s += max(0, 1 - d / zeroM) * w.distanceWeight
             }
-            if FarmFilters.isOpenToday(p.openingHours) { s += 20 }
-            if p.isVerified { s += 15 }
-            if p.image != nil { s += 10 }
-            s += (p.avgRating ?? 0) * 2          // 0–10
-            s += min(Double(p.reviewCount), 20) * 0.25   // 0–5, capped
+            if FarmFilters.isOpenToday(p.openingHours) { s += w.openToday }
+            if p.isVerified { s += w.verified }
+            if p.image != nil { s += w.hasPhoto }
+            s += (p.avgRating ?? 0) * w.ratingFactor
+            s += min(Double(p.reviewCount), w.reviewCap) * w.reviewEach
             return s
         }
         return list.sorted { score($0) > score($1) }

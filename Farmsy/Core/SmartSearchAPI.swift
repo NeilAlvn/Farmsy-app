@@ -29,6 +29,10 @@ struct SmartSearchIntent: Decodable, Equatable {
     var nearMe: Bool = false
     var radiusKm: Double? = nil
     var summary: String? = nil
+    /// Server-supplied ranking weights — one source of truth, no coordinates on
+    /// the wire, cache preserved. We score locally with these. Missing → fall back
+    /// to `SearchRanking.default`; an unrecognised `version` is ignored the same way.
+    var ranking: SearchRanking? = nil
 
     struct Center: Decodable, Equatable { let lat: Double; let lng: Double }
 
@@ -39,6 +43,23 @@ struct SmartSearchIntent: Decodable, Equatable {
             && !openNow && !automaat && !zelfpluk && !verified
             && !nearMe && center == nil && (place?.isEmpty ?? true)
     }
+}
+
+/// The result-ranking weights. Sent on the search response so all clients rank
+/// identically without shipping releases; the defaults mirror v1 and are the
+/// fallback when the field is absent.
+struct SearchRanking: Decodable, Equatable {
+    var version: Int = 1
+    var distanceZeroKm: Double = 100
+    var distanceWeight: Double = 100
+    var openToday: Double = 20
+    var verified: Double = 15
+    var hasPhoto: Double = 10
+    var ratingFactor: Double = 2
+    var reviewEach: Double = 0.25
+    var reviewCap: Double = 20
+
+    static let `default` = SearchRanking()
 }
 
 enum SmartSearchAPI {
