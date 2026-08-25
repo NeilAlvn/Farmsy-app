@@ -1,45 +1,44 @@
 package app.farmsy.android.features.main
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.farmsy.android.LocalSession
 import app.farmsy.android.R
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.features.discover.DiscoverFeedScreen
@@ -48,128 +47,85 @@ import app.farmsy.android.features.saved.SavedScreen
 import app.farmsy.android.features.settings.SettingsScreen
 import app.farmsy.android.features.trips.TripsScreen
 import app.farmsy.android.ui.theme.FarmsyColors
-import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onGloballyPositioned
 
-/// Main shell — mirrors iOS MainView: brand header up top (hidden on the
-/// full-bleed Map tab), content in the middle, floating pill tab bar.
-enum class Tab(val labelRes: Int, val icon: ImageVector) {
-    MAP(R.string.map, Icons.Filled.Map),
-    DISCOVER(R.string.discover, Icons.Filled.AutoAwesome),
-    TRIPS(R.string.trips, Icons.Filled.Route),
-    SAVED(R.string.saved, Icons.Filled.Favorite),
-    SETTINGS(R.string.settings, Icons.Filled.Settings),
-}
+/// Map-first shell — a 1:1 port of iOS MainView: "the map is the app". There is no
+/// tab bar; the map is always the base, and Discover / Saved / Trips / Settings
+/// open as bottom sheets over it from a floating white pill. Saved / Trips /
+/// Settings ask for an account first; Discover and farm cards are open to everyone.
+private enum class PanelRoute { DISCOVER, SAVED, TRIPS, SETTINGS }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(onOpenFarm: (FarmPin) -> Unit) {
-    var tab by rememberSaveable { mutableStateOf(Tab.MAP) }
+    val session = LocalSession.current
+    var route by remember { mutableStateOf<PanelRoute?>(null) }
+    var showAuthForRoute by remember { mutableStateOf(false) }
 
-    if (tab == Tab.MAP) {
-        // Map is the hero: full-bleed edge to edge, tab bar floating on top.
-        //
-        // The map's own controls have to sit directly above the tab bar, so we
-        // measure it rather than hardcoding a gap — the bar grows with the system
-        // font scale, and a fixed offset drifts away from it (or under it).
-        val density = LocalDensity.current
-        var tabBarHeight by remember { mutableStateOf(0.dp) }
-        Box(Modifier.fillMaxSize()) {
-            MapScreen(
-                onOpenFarm = onOpenFarm,
-                bottomInset = if (tabBarHeight > 0.dp) tabBarHeight + 12.dp else 96.dp,
-            )
-            TabBar(
-                selected = tab,
-                onSelect = { tab = it },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 4.dp)
-                    .onGloballyPositioned {
-                        tabBarHeight = with(density) { it.size.height.toDp() }
-                    }
-            )
-        }
-    } else {
-        Column(
-            Modifier.fillMaxSize().background(FarmsyColors.cream).statusBarsPadding()
+    fun requireAuth(then: PanelRoute) {
+        if (session.isAuthenticated) route = then else showAuthForRoute = true
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        MapScreen(onOpenFarm = onOpenFarm, bottomInset = 104.dp)
+
+        // Floating bottom pill: Discover / Saved / Trips / Settings.
+        Surface(
+            Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            shape = CircleShape, color = Color.White, shadowElevation = 12.dp,
         ) {
-            // Brand header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
-            ) {
-                Image(
-                    painterResource(R.drawable.farmsy_logo),
-                    contentDescription = null,
-                    modifier = Modifier.height(34.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Farmsy", style = display(22.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
+            Row(Modifier.padding(6.dp)) {
+                PanelItem(Icons.Filled.Newspaper, stringResource(R.string.discover), Modifier.weight(1f)) { route = PanelRoute.DISCOVER }
+                PanelItem(Icons.Filled.Favorite, stringResource(R.string.saved), Modifier.weight(1f)) { requireAuth(PanelRoute.SAVED) }
+                PanelItem(Icons.Filled.Map, stringResource(R.string.trips), Modifier.weight(1f)) { requireAuth(PanelRoute.TRIPS) }
+                PanelItem(Icons.Filled.Settings, stringResource(R.string.settings), Modifier.weight(1f)) { requireAuth(PanelRoute.SETTINGS) }
             }
+        }
+    }
 
-            Box(Modifier.weight(1f)) {
-                when (tab) {
-                    Tab.MAP -> Unit
-                    Tab.DISCOVER -> DiscoverFeedScreen(onOpenFarm = onOpenFarm)
-                    Tab.TRIPS -> TripsScreen(onOpenFarm = onOpenFarm)
-                    Tab.SAVED -> SavedScreen(onOpenFarm = onOpenFarm)
-                    Tab.SETTINGS -> SettingsScreen()
+    // The secondary surfaces, as bottom sheets over the map — matching iOS's
+    // sheet presentation (partial + full detents).
+    route?.let { r ->
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        ModalBottomSheet(
+            onDismissRequest = { route = null },
+            sheetState = sheetState,
+            containerColor = FarmsyColors.cream,
+        ) {
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.92f)) {
+                when (r) {
+                    PanelRoute.DISCOVER -> DiscoverFeedScreen(onOpenFarm = { route = null; onOpenFarm(it) })
+                    PanelRoute.SAVED -> SavedScreen(onOpenFarm = { route = null; onOpenFarm(it) })
+                    PanelRoute.TRIPS -> TripsScreen(onOpenFarm = { route = null; onOpenFarm(it) })
+                    PanelRoute.SETTINGS -> SettingsScreen()
                 }
             }
+        }
+    }
 
-            TabBar(
-                selected = tab,
-                onSelect = { tab = it },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 4.dp)
-            )
+    if (showAuthForRoute) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showAuthForRoute = false },
+            sheetState = sheetState,
+            containerColor = FarmsyColors.cream,
+        ) {
+            app.farmsy.android.features.auth.AuthSheet(onDone = { showAuthForRoute = false })
         }
     }
 }
 
 @Composable
-private fun TabBar(selected: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(21.dp),
-        color = Color.White,
-        shadowElevation = 8.dp
+private fun PanelItem(icon: ImageVector, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Column(
+        modifier
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onClick() }
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Row(Modifier.padding(5.dp)) {
-            Tab.entries.forEach { t ->
-                val isOn = t == selected
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(
-                            if (isOn) FarmsyColors.farmGreen else Color.Transparent,
-                            RoundedCornerShape(16.dp)
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onSelect(t) }
-                        .padding(vertical = 9.dp)
-                ) {
-                    Icon(
-                        t.icon,
-                        contentDescription = stringResource(t.labelRes),
-                        tint = if (isOn) Color.White else FarmsyColors.inkMuted,
-                        modifier = Modifier.height(20.dp)
-                    )
-                    Text(
-                        stringResource(t.labelRes),
-                        style = geist(11.sp, FontWeight.SemiBold),
-                        color = if (isOn) Color.White else FarmsyColors.inkMuted
-                    )
-                }
-            }
-        }
+        Icon(icon, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.padding(0.dp))
+        Text(label, style = geist(10.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap)
     }
 }

@@ -80,12 +80,10 @@ fun RootNav() {
                     didFinishOnboarding = true
                 }
                 Screen.Main -> MainScreen(
-                    onOpenFarm = { pin ->
-                        // Guests can browse freely; opening details asks for an
-                        // account first. The detail screen's own subscription
-                        // gate takes over after login.
-                        if (session.isAuthenticated) openPin = pin else showAuth = true
-                    }
+                    // Farm cards open for everyone, signed out included (iOS MainView
+                    // §0) — the card shows the free content and locks the paid fields
+                    // inside. Save/subscribe prompt for an account from within the card.
+                    onOpenFarm = { pin -> openPin = pin }
                 )
             }
         }
