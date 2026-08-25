@@ -10,20 +10,30 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 
-// Farmsy design tokens — mirrors iOS Theme.swift (same hex values):
-// warm cream background, forest-green primary, serif display type.
+// Farmsy design tokens — the exact iOS Theme.swift hex values (measured out of the
+// web app's DESIGN-SYSTEM.md, oklch→sRGB, not eyeballed): warm cream background,
+// deep forest-green primary, warm near-black ink, serif display type.
+//
+// Two greens on purpose (same as iOS): `farmGreen` is the deep brand green for
+// surfaces away from the map; `farmGreenMap` is lighter, for controls sitting *on*
+// the map where the dark green reads as a heavy block.
 object FarmsyColors {
-    val farmGreen = Color(0xFF3F5E3A)
-    val farmGreenDeep = Color(0xFF2E4A2B)
-    val farmGreenSoft = Color(0x243F5E3A) // green at 14% opacity
-    val cream = Color(0xFFF8F6F0)
-    val creamCard = Color(0xFFF1EEE5)
-    val ink = Color(0xFF16211B)
-    val inkMuted = Color(0xFF6B7280)
-    val warnRed = Color(0xFFDC2626)
+    val farmGreen = Color(0xFF234725)      // --primary
+    val farmGreenDeep = Color(0xFF18321A)  // darker, for gradients
+    val farmGreenMap = Color(0xFF4E7F54)   // --primary-soft (on-map controls)
+    val farmGreenSoft = Color(0x1A234725)  // primary at 10%, no new swatch
+    val cream = Color(0xFFFCFAF6)          // --background, warm off-white
+    val creamCard = Color(0xFFFDFCF9)      // --card, a hair lighter than ground
+    val creamFill = Color(0xFFF3EAD9)      // --cream, marketing blocks only
+    val ink = Color(0xFF15110D)            // --foreground, warm near-black
+    val inkMuted = Color(0xFF68625E)       // --muted-foreground, warm grey
+    val hairline = Color(0xFFE1DDD8)       // --border
+    val star = Color(0xFFFBBF24)           // amber — ratings read as stars, not brand
+    val warnRed = Color(0xFFBA2B28)        // --destructive
 }
 
-val CardShape = RoundedCornerShape(18.dp)
+// iOS cards/buttons use a 16pt continuous radius; pills are capsules.
+val CardShape = RoundedCornerShape(16.dp)
 val PillShape = RoundedCornerShape(50)
 
 private val LightColors = lightColorScheme(

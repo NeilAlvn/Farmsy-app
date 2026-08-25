@@ -353,7 +353,7 @@ private fun TripMap(
             properties = MapProperties(),
         ) {
             if (traced.size >= 2) {
-                Polyline(points = traced, color = FarmsyColors.farmGreen, width = 12f)
+                Polyline(points = traced, color = FarmsyColors.farmGreenMap, width = 12f)
             }
             originCoord?.let {
                 Marker(state = MarkerState(it), icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
@@ -379,7 +379,7 @@ private fun numberedPin(n: Int): BitmapDescriptor = numberedPinCache.getOrPut(n)
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
     p.color = 0x33000000
     c.drawCircle(s / 2f, s / 2f + 2f, s / 2f - 6f, p)
-    p.color = 0xFF2E7D46.toInt()
+    p.color = 0xFF4E7F54.toInt()
     c.drawCircle(s / 2f, s / 2f, s / 2f - 6f, p)
     p.color = android.graphics.Color.WHITE
     p.textSize = 34f

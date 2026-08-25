@@ -195,7 +195,7 @@ private fun clusterBubbleBitmap(count: Int): BitmapDescriptor = bubbleIcons.getO
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
     p.color = 0x33000000
     c.drawCircle(s / 2f, s / 2f + 2f, s / 2f - 8f, p)
-    p.color = 0xFF2E7D46.toInt()
+    p.color = 0xFF4E7F54.toInt()
     c.drawCircle(s / 2f, s / 2f, s / 2f - 8f, p)
     val t = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
@@ -388,12 +388,12 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                         },
                         leadingIcon = {
                             if (aiSearching) {
-                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreen)
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreenMap)
                             } else {
                                 Icon(
                                     if (aiIntent != null) Icons.Filled.AutoAwesome else Icons.Filled.Search,
                                     null,
-                                    tint = if (aiIntent != null) FarmsyColors.farmGreen else FarmsyColors.inkMuted,
+                                    tint = if (aiIntent != null) FarmsyColors.farmGreenMap else FarmsyColors.inkMuted,
                                 )
                             }
                         },
@@ -414,12 +414,12 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     shape = RoundedCornerShape(15.dp), color = Color.White, shadowElevation = 6.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.Tune, null, tint = FarmsyColors.farmGreen)
+                        Icon(Icons.Filled.Tune, null, tint = FarmsyColors.farmGreenMap)
                         // A small dot marks that filters are narrowing the map.
                         if (filtersOn) {
                             Box(
                                 Modifier.align(Alignment.TopEnd).padding(10.dp)
-                                    .size(8.dp).background(FarmsyColors.farmGreen, CircleShape)
+                                    .size(8.dp).background(FarmsyColors.farmGreenMap, CircleShape)
                             )
                         }
                     }
@@ -432,7 +432,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     shape = RoundedCornerShape(15.dp), color = Color.White, shadowElevation = 6.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreen)
+                        Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap)
                     }
                 }
             }
@@ -443,7 +443,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                 Surface(shape = RoundedCornerShape(18.dp), color = Color.White, shadowElevation = 6.dp) {
                     Column(Modifier.padding(vertical = 11.dp, horizontal = 14.dp)) {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Filled.AutoAwesome, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.AutoAwesome, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(16.dp))
                             Text(ai.summary ?: "", style = geist(13.sp), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
                             Icon(
                                 Icons.Filled.Close, null, tint = FarmsyColors.inkMuted,
@@ -458,10 +458,10 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 chips.forEach { chip ->
-                                    Surface(shape = CircleShape, color = FarmsyColors.farmGreen.copy(alpha = 0.12f)) {
+                                    Surface(shape = CircleShape, color = FarmsyColors.farmGreenMap.copy(alpha = 0.12f)) {
                                         Text(
                                             chip, style = geist(11.sp, FontWeight.SemiBold),
-                                            color = FarmsyColors.farmGreen,
+                                            color = FarmsyColors.farmGreenMap,
                                             modifier = Modifier.padding(vertical = 4.dp, horizontal = 9.dp)
                                         )
                                     }
@@ -479,7 +479,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreen)
+                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreenMap)
                         Spacer(Modifier.size(8.dp))
                         Text(stringResource(R.string.loading_farms), style = geist(13.sp, FontWeight.Medium))
                     } else {
@@ -502,7 +502,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                 Spacer(Modifier.height(10.dp))
                 Text(
                     stringResource(R.string.retry),
-                    style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
+                    style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap,
                     modifier = Modifier.clickable { farms.loadIfNeeded() }
                 )
             }
@@ -557,7 +557,7 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
                 if (farms.anyFilterOn()) {
                     Text(
                         stringResource(R.string.clear_all),
-                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
+                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap,
                         modifier = Modifier.clickable { farms.clearAllFilters() },
                     )
                 }
@@ -661,10 +661,10 @@ private fun CategoryMenu(
                 Text(
                     selected?.let { "${it.emoji} ${stringResource(it.labelRes)}" }
                         ?: "🍽️ ${stringResource(R.string.categories_short)}",
-                    style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen, maxLines = 1
+                    style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap, maxLines = 1
                 )
                 Spacer(Modifier.size(6.dp))
-                Icon(Icons.Filled.KeyboardArrowUp, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.KeyboardArrowUp, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(14.dp))
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
