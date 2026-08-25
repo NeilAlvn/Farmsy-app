@@ -2,6 +2,8 @@ package app.farmsy.android.core
 
 import android.location.Location
 import io.github.jan.supabase.postgrest.postgrest
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +11,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlin.math.max
+import kotlin.math.min
+
+/// One row of `/api/farms/flags`: galleries (g), produce text (p), place-types
+/// (l) and methods (m). Null when empty.
+@Serializable
+private data class FarmFlag(
+    val o: String,
+    val g: List<String>? = null,
+    val p: String? = null,
+    val l: List<String>? = null,
+    val m: List<String>? = null,
+)
 
 /// All public farm pins, loaded once via the get_farms_pins RPC (paginated
 /// the same way the web map does) and filtered in memory. Mirrors
@@ -27,7 +43,73 @@ class FarmsStore(private val scope: CoroutineScope) {
     val searchText = MutableStateFlow("")
     val selectedCategory = MutableStateFlow<FarmCategory?>(null)
 
+    // AI search — the parsed intent in effect. When set it drives filtering +
+    // ranking; the summary bar shows what was understood. Mirrors iOS.
+    val aiIntent = MutableStateFlow<SmartSearchIntent?>(null)
+    private val _aiCenter = MutableStateFlow<Pair<Double, Double>?>(null)
+    val aiCenter: StateFlow<Pair<Double, Double>?> = _aiCenter.asStateFlow()
+    private val _aiPlaceToken = MutableStateFlow(0)
+    val aiPlaceToken: StateFlow<Int> = _aiPlaceToken.asStateFlow()
+
+    // Flags maps (loaded once from /api/farms/flags).
+    private var flagsLoaded = false
+    private var produceByOsm: Map<String, String> = emptyMap()
+    private var locationTypesByOsm: Map<String, List<String>> = emptyMap()
+    private var methodsByOsm: Map<String, List<String>> = emptyMap()
+
+    private val radiusNearMe = 15.0
+    private val radiusNamedPlace = 25.0
+
     private val pageSize = 1000
+
+    /// Fetch the flags endpoint once → produce/place-type/method lookups for
+    /// AI-search matching (and, later, the filter groups).
+    suspend fun loadFlagsIfNeeded() {
+        if (flagsLoaded) return
+        try {
+            val rows = withContext(Dispatchers.IO) {
+                val resp = httpClient.get("${Backend.WEB_API}/farms/flags")
+                if (resp.status.value != 200) return@withContext emptyList()
+                lenientJson.decodeFromString<List<FarmFlag>>(resp.bodyAsText())
+            }
+            if (rows.isEmpty()) return
+            produceByOsm = rows.mapNotNull { r -> r.p?.takeIf { it.isNotEmpty() }?.let { r.o to it.lowercase() } }.toMap()
+            locationTypesByOsm = rows.mapNotNull { r -> r.l?.takeIf { it.isNotEmpty() }?.let { r.o to it } }.toMap()
+            methodsByOsm = rows.mapNotNull { r -> r.m?.takeIf { it.isNotEmpty() }?.let { r.o to it } }.toMap()
+            flagsLoaded = true
+        } catch (e: Exception) { /* leave maps empty; AI still filters on categories */ }
+    }
+
+    /// Apply a parsed AI intent — takes over filtering and resolves the centre
+    /// (server `center`, or the user's own location for a nearMe query).
+    suspend fun applyAISearch(intent: SmartSearchIntent, userLocation: Location?) {
+        loadFlagsIfNeeded()
+        selectedCategory.value = null
+        aiIntent.value = intent
+        when {
+            intent.center != null -> {
+                _aiCenter.value = intent.center.lat to intent.center.lng
+                _aiPlaceToken.value += 1
+            }
+            intent.nearMe && userLocation != null -> {
+                _aiCenter.value = userLocation.latitude to userLocation.longitude
+                _aiPlaceToken.value += 1
+            }
+            else -> _aiCenter.value = null
+        }
+    }
+
+    fun clearAISearch() {
+        aiIntent.value = null
+        _aiCenter.value = null
+        searchText.value = ""
+    }
+
+    private fun aiRadiusMeters(intent: SmartSearchIntent): Double? {
+        if (_aiCenter.value == null) return null
+        val km = intent.radiusKm ?: if (intent.nearMe) radiusNearMe else radiusNamedPlace
+        return km * 1000
+    }
 
     fun loadIfNeeded() {
         if (_pins.value.isNotEmpty() || _isLoading.value) return
@@ -59,8 +141,11 @@ class FarmsStore(private val scope: CoroutineScope) {
         }
     }
 
-    /// Pins matching the current search + category filter.
+    /// Pins matching the current search + category filter, or the AI intent when
+    /// one is active (which takes over and ranks the result).
     fun filtered(): List<FarmPin> {
+        aiIntent.value?.let { return filteredForAI(it) }
+
         var result = _pins.value
         selectedCategory.value?.let { cat ->
             result = result.filter { it.categories.contains(cat) }
@@ -74,6 +159,66 @@ class FarmsStore(private val scope: CoroutineScope) {
             }
         }
         return result
+    }
+
+    private fun filteredForAI(ai: SmartSearchIntent): List<FarmPin> {
+        var result = _pins.value
+        val cats = ai.categories.mapNotNull { FarmCategory.from(it) }.toSet()
+        val prods = ai.products.map { it.lowercase() }
+        // What they sell: category OR produce text (OR'd — thin produce coverage
+        // must not drop farms the category already accounts for).
+        if (cats.isNotEmpty() || prods.isNotEmpty()) {
+            result = result.filter { pin ->
+                val catMatch = cats.isNotEmpty() && pin.categories.any { it in cats }
+                val prodMatch = prods.isNotEmpty() &&
+                    (produceByOsm[pin.osmId]?.let { txt -> prods.any { txt.contains(it) } } ?: false)
+                catMatch || prodMatch
+            }
+        }
+        if (ai.locationTypes.isNotEmpty()) {
+            val want = ai.locationTypes.toSet()
+            result = result.filter { (locationTypesByOsm[it.osmId] ?: emptyList()).any { v -> v in want } }
+        }
+        if (ai.methods.isNotEmpty()) {
+            val want = ai.methods.toSet()
+            result = result.filter { (methodsByOsm[it.osmId] ?: emptyList()).any { v -> v in want } }
+        }
+        if (ai.openNow) result = result.filter { FarmFilters.isOpenToday(it.openingHours) }
+        if (ai.verified) result = result.filter { it.isVerified }
+        if (ai.automaat) result = result.filter { FarmFilters.looksLikeAutomaat(it.name, it.openingHours) }
+        if (ai.zelfpluk) result = result.filter { FarmFilters.looksLikeZelfpluk(it.name) }
+        // A place NARROWS: keep only farms within the radius of the centre.
+        val center = _aiCenter.value
+        val radius = aiRadiusMeters(ai)
+        if (center != null && radius != null) {
+            result = result.filter { it.distanceMeters(center.first, center.second) <= radius }
+        }
+        return rankForIntent(result, center, ai.ranking ?: SearchRanking.DEFAULT)
+    }
+
+    /// Rank AI results with server-supplied weights (fall back to defaults; ignore
+    /// an unrecognised version). Distance never leaves the device.
+    private fun rankForIntent(
+        list: List<FarmPin>,
+        origin: Pair<Double, Double>?,
+        ranking: SearchRanking,
+    ): List<FarmPin> {
+        val w = if (ranking.version == SearchRanking.DEFAULT.version) ranking else SearchRanking.DEFAULT
+        val zeroM = max(1.0, w.distanceZeroKm * 1000)
+        fun score(p: FarmPin): Double {
+            var s = 0.0
+            if (origin != null) {
+                val d = p.distanceMeters(origin.first, origin.second)
+                s += max(0.0, 1 - d / zeroM) * w.distanceWeight
+            }
+            if (FarmFilters.isOpenToday(p.openingHours)) s += w.openToday
+            if (p.isVerified) s += w.verified
+            if (p.image != null) s += w.hasPhoto
+            s += (p.avgRating ?: 0.0) * w.ratingFactor
+            s += min(p.reviewCount.toDouble(), w.reviewCap) * w.reviewEach
+            return s
+        }
+        return list.sortedByDescending { score(it) }
     }
 
     fun sortedByDistance(list: List<FarmPin>, location: Location?): List<FarmPin> {

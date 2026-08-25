@@ -112,6 +112,7 @@
     <string name="run_by">Run by</string>
     <string name="saved">Saved</string>
     <string name="search_by_farm_city_or_postcode">Search by farm, city or postcode</string>
+    <string name="search_or_ask">Search or ask — e.g. cheese near you</string>
     <string name="see_every_farm_on_the_map_in_seconds">See every farm on the map in seconds.</string>
     <string name="send_claim">Send claim</string>
     <string name="settings">Settings</string>

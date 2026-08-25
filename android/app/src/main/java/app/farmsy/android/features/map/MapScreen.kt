@@ -25,11 +25,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.google.android.gms.maps.CameraUpdateFactory
+import kotlinx.coroutines.launch
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -57,6 +67,8 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.R
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.core.SmartSearchApi
+import app.farmsy.android.core.SmartSearchIntent
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -145,6 +157,25 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     val searchText by farms.searchText.collectAsState()
     val selectedCategory by farms.selectedCategory.collectAsState()
     val userLocation by locationHelper.location.collectAsState()
+    val aiIntent by farms.aiIntent.collectAsState()
+    val aiPlaceToken by farms.aiPlaceToken.collectAsState()
+    val scope = rememberCoroutineScope()
+    val keyboard = LocalSoftwareKeyboardController.current
+    var aiSearching by remember { mutableStateOf(false) }
+
+    fun runSmartSearch() {
+        val q = searchText.trim()
+        if (q.length < 2) return
+        keyboard?.hide()
+        aiSearching = true
+        scope.launch {
+            val intent = SmartSearchApi.parse(q)
+            aiSearching = false
+            if (intent != null && !intent.isEmpty) {
+                farms.applyAISearch(intent, userLocation)
+            }
+        }
+    }
 
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -159,7 +190,18 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     // Maps slow down past a few hundred markers, so draw only the pins inside
     // the current viewport, capped — same rule as iOS MapScreen.visiblePins.
     // Zooming in therefore reveals the farms in that area.
-    val filtered = remember(pins, searchText, selectedCategory) { farms.filtered() }
+    val filtered = remember(pins, searchText, selectedCategory, aiIntent) { farms.filtered() }
+
+    // An AI search that resolved a centre flies the map there (server `center`, or
+    // the user's location for a nearMe query).
+    LaunchedEffect(aiPlaceToken) {
+        val c = farms.aiCenter.value ?: return@LaunchedEffect
+        val km = aiIntent?.radiusKm ?: (if (aiIntent?.nearMe == true) 15.0 else 25.0)
+        val zoom = (11.5 - kotlin.math.log2(km / 5.0)).coerceIn(7.0, 13.0).toFloat()
+        cameraPositionState.animate(
+            CameraUpdateFactory.newLatLngZoom(LatLng(c.first, c.second), zoom)
+        )
+    }
 
     // Snapshot the viewport only once the camera settles. Reading the camera
     // during composition makes every recomposition observe it, which nudges
@@ -228,20 +270,33 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                 ) {
                     TextField(
                         value = searchText,
-                        onValueChange = { farms.searchText.value = it },
-                        // The field is single-line, but the *placeholder* is its own Text
-                        // and will happily wrap — which pushes the whole search pill to
-                        // two rows at a large system font scale. Pin it to one line.
+                        onValueChange = {
+                            farms.searchText.value = it
+                            // Emptying the field drops the AI intent.
+                            if (it.isBlank() && aiIntent != null) farms.clearAISearch()
+                        },
                         placeholder = {
                             Text(
-                                stringResource(R.string.search_by_farm_city_or_postcode),
+                                stringResource(R.string.search_or_ask),
                                 style = geist(15.sp),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         },
-                        leadingIcon = { Icon(Icons.Filled.Search, null, tint = FarmsyColors.inkMuted) },
+                        leadingIcon = {
+                            if (aiSearching) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreen)
+                            } else {
+                                Icon(
+                                    if (aiIntent != null) Icons.Filled.AutoAwesome else Icons.Filled.Search,
+                                    null,
+                                    tint = if (aiIntent != null) FarmsyColors.farmGreen else FarmsyColors.inkMuted,
+                                )
+                            }
+                        },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { runSmartSearch() }),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
@@ -262,6 +317,42 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     }
                 }
             }
+
+            // AI summary bar — the parsed summary + values as chips, an × to clear.
+            aiIntent?.let { ai ->
+                Spacer(Modifier.height(8.dp))
+                Surface(shape = RoundedCornerShape(18.dp), color = Color.White, shadowElevation = 6.dp) {
+                    Column(Modifier.padding(vertical = 11.dp, horizontal = 14.dp)) {
+                        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Filled.AutoAwesome, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(16.dp))
+                            Text(ai.summary ?: "", style = geist(13.sp), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
+                            Icon(
+                                Icons.Filled.Close, null, tint = FarmsyColors.inkMuted,
+                                modifier = Modifier.size(18.dp).clickable { farms.clearAISearch() }
+                            )
+                        }
+                        val chips = aiChips(ai)
+                        if (chips.isNotEmpty()) {
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                chips.forEach { chip ->
+                                    Surface(shape = CircleShape, color = FarmsyColors.farmGreen.copy(alpha = 0.12f)) {
+                                        Text(
+                                            chip, style = geist(11.sp, FontWeight.SemiBold),
+                                            color = FarmsyColors.farmGreen,
+                                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 9.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(10.dp))
             Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.95f), shadowElevation = 4.dp) {
                 Row(
@@ -313,6 +404,24 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
             )
         }
     }
+}
+
+/// The parsed AI values as short chip labels — categories and axes localised the
+/// same way as elsewhere, place carrying its radius.
+@Composable
+private fun aiChips(ai: SmartSearchIntent): List<String> {
+    val out = mutableListOf<String>()
+    ai.categories.mapNotNull { FarmCategory.from(it) }.forEach { out += stringResource(it.labelRes) }
+    ai.products.forEach { p -> out += p.replaceFirstChar { it.uppercase() } }
+    (ai.locationTypes + ai.methods).forEach { id ->
+        out += id.split('-').joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } }
+    }
+    if (ai.nearMe) {
+        out += "📍 ${stringResource(R.string.near_you)} · ${(ai.radiusKm ?: 15.0).toInt()} km"
+    } else if (!ai.place.isNullOrEmpty()) {
+        out += "📍 ${ai.place} · ${(ai.radiusKm ?: 25.0).toInt()} km"
+    }
+    return out.distinct()
 }
 
 @Composable

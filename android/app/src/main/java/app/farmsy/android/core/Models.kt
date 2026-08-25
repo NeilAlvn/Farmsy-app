@@ -51,6 +51,23 @@ enum class FarmCategory(@StringRes val labelRes: Int, val emoji: String, val col
         fun fromRaw(value: String): FarmCategory? =
             entries.firstOrNull { it.raw == value.lowercase() }
 
+        /// farm_type values that aren't one of the ten canonical cases but map
+        /// onto one — OSM imports carry a few (beef, poultry) that would otherwise
+        /// render as nothing. Client-side safety net (mirrors iOS FarmCategory.valueAlias).
+        private val valueAlias: Map<String, FarmCategory> = mapOf(
+            "beef" to MEAT, "poultry" to MEAT, "chicken" to MEAT, "pork" to MEAT,
+            "vegetables" to PRODUCE, "fruit" to PRODUCE, "vegetable" to PRODUCE,
+            "wine_cellar" to WINE, "winery" to WINE, "vineyard" to WINE,
+            "milk" to DAIRY, "market" to MARKETS,
+        )
+
+        /// Resolve a raw farm_type string: direct case, then alias. Null for
+        /// genuinely unknown values so they drop rather than render blank.
+        fun from(value: String): FarmCategory? {
+            val key = value.lowercase().trim()
+            return fromRaw(key) ?: valueAlias[key]
+        }
+
         /// Same OSM-tag fallback mapping the web map applies when farm_type is empty.
         val tagToCategory: Map<String, FarmCategory> = mapOf(
             "shop=farm" to PRODUCE, "shop=dairy" to DAIRY, "shop=cheese" to CHEESE,
@@ -138,10 +155,12 @@ data class FarmPin(
     @SerialName("avg_rating") val avgRating: Double? = null,
     @SerialName("review_count") val reviewCount: Int = 0,
     @SerialName("has_description") val hasDescription: Boolean = false,
+    @SerialName("is_verified") val isVerified: Boolean = false,
 ) {
     val categories: List<FarmCategory>
         get() {
-            val cats = farmType.mapNotNull { FarmCategory.fromRaw(it) }
+            // De-dupe: a farm tagged ["meat","beef"] resolves both to MEAT.
+            val cats = farmType.mapNotNull { FarmCategory.from(it) }.distinct()
             if (cats.isNotEmpty()) return cats
             return primaryTag?.let { FarmCategory.tagToCategory[it] }?.let { listOf(it) } ?: emptyList()
         }

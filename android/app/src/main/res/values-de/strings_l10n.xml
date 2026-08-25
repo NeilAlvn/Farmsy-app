@@ -112,6 +112,7 @@
     <string name="run_by">Geführt von</string>
     <string name="saved">Gespeichert</string>
     <string name="search_by_farm_city_or_postcode">Suche nach Hof, Stadt oder PLZ</string>
+    <string name="search_or_ask">Suchen oder fragen — z. B. Käse in deiner Nähe</string>
     <string name="see_every_farm_on_the_map_in_seconds">Sehen Sie jeden Hof in Sekundenschnelle auf der Karte.</string>
     <string name="send_claim">Anspruch einreichen</string>
     <string name="settings">Einstellungen</string>

@@ -112,6 +112,7 @@
     <string name="run_by">Géré par</string>
     <string name="saved">Enregistrés</string>
     <string name="search_by_farm_city_or_postcode">Rechercher par ferme, ville ou code postal</string>
+    <string name="search_or_ask">Cherchez ou demandez — p. ex. fromage près de vous</string>
     <string name="see_every_farm_on_the_map_in_seconds">Voyez chaque ferme sur la carte en quelques secondes.</string>
     <string name="send_claim">Envoyer la réclamation</string>
     <string name="settings">Réglages</string>
