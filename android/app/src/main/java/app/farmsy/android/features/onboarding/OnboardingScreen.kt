@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateDpAsState
@@ -173,35 +174,39 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 ProgressBar(fraction.coerceIn(0f, 1f), Modifier.weight(1f))
             }
 
-            // Sliding track — all steps side by side, offset by -index*width with a
-            // spring, exactly like the iOS HStack track.
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val w = maxWidth
-                val offsetX by animateDpAsState(-w * index, spring(dampingRatio = 0.85f, stiffness = 380f), label = "slide")
-                Row(Modifier.fillMaxSize().offset(x = offsetX)) {
-                    steps.forEach { s ->
-                        Box(Modifier.width(w).fillMaxHeight()) {
-                            when (s) {
-                                Step.WELCOME -> WelcomeStep(onLogin = { showLogin = true }, onSkip = { advance() })
-                                Step.PERSONALIZE -> PersonalizeStep(selectedCats, { selectedCats = it }) { advance() }
-                                Step.LOCATION -> LocationStep(
-                                    resolvedLabel = chosenLabel ?: loc?.let { stringResource(R.string.your_current_location) },
-                                    onUseLocation = {
-                                        if (locationHelper.hasPermission()) locationHelper.request()
-                                    },
-                                    onPickTown = { chosenLabel = it },
-                                    onContinue = { advance() },
-                                )
-                                Step.DETAILS -> DetailsStep(
-                                    prefs = prefs, onChange = { prefs = it },
-                                    onShowFarms = { applyPrefs = true; advance() },
-                                    onSkip = { applyPrefs = false; advance() },
-                                )
-                                Step.NEARBY -> NearbyStep(label = chosenLabel, onContinue = { advance() })
-                                Step.NOTIFY -> NotifyStep(onContinue = { advance() })
-                                Step.DONE -> DoneStep(onStart = { finish() })
-                            }
-                        }
+            // Sliding track — one step at a time, sliding horizontally like the iOS
+            // HStack track (forward slides in from the right, back from the left).
+            androidx.compose.animation.AnimatedContent(
+                targetState = step,
+                modifier = Modifier.fillMaxSize(),
+                transitionSpec = {
+                    val forward = steps.indexOf(targetState) >= steps.indexOf(initialState)
+                    val dir = if (forward) 1 else -1
+                    (androidx.compose.animation.slideInHorizontally(spring(dampingRatio = 0.9f, stiffness = 320f)) { it * dir } +
+                        androidx.compose.animation.fadeIn(tween(200))) togetherWith
+                        (androidx.compose.animation.slideOutHorizontally(spring(dampingRatio = 0.9f, stiffness = 320f)) { -it * dir } +
+                            androidx.compose.animation.fadeOut(tween(200)))
+                },
+                label = "onboarding-slide",
+            ) { s ->
+                Box(Modifier.fillMaxSize()) {
+                    when (s) {
+                        Step.WELCOME -> WelcomeStep(onLogin = { showLogin = true }, onSkip = { advance() })
+                        Step.PERSONALIZE -> PersonalizeStep(selectedCats, { selectedCats = it }) { advance() }
+                        Step.LOCATION -> LocationStep(
+                            resolvedLabel = chosenLabel ?: loc?.let { stringResource(R.string.your_current_location) },
+                            onUseLocation = { if (locationHelper.hasPermission()) locationHelper.request() },
+                            onPickTown = { chosenLabel = it },
+                            onContinue = { advance() },
+                        )
+                        Step.DETAILS -> DetailsStep(
+                            prefs = prefs, onChange = { prefs = it },
+                            onShowFarms = { applyPrefs = true; advance() },
+                            onSkip = { applyPrefs = false; advance() },
+                        )
+                        Step.NEARBY -> NearbyStep(label = chosenLabel, onContinue = { advance() })
+                        Step.NOTIFY -> NotifyStep(onContinue = { advance() })
+                        Step.DONE -> DoneStep(onStart = { finish() })
                     }
                 }
             }
