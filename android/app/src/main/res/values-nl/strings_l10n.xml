@@ -258,4 +258,6 @@
     <string name="done_bullet_save">Bewaar degene die je wilt bezoeken</string>
     <string name="done_bullet_trip">Plan een route langs meerdere boerderijen</string>
     <string name="start_exploring">Begin met ontdekken</string>
+    <string name="saved_farms">Bewaarde boerderijen</string>
+    <string name="tap_a_heart_to_save_a_farm">Tik op een hartje om een boerderij te bewaren</string>
 </resources>

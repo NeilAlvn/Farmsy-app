@@ -258,4 +258,6 @@
     <string name="done_bullet_save">Save the ones you want to visit</string>
     <string name="done_bullet_trip">Plan a trip across several farms</string>
     <string name="start_exploring">Start exploring</string>
+    <string name="saved_farms">Saved farms</string>
+    <string name="tap_a_heart_to_save_a_farm">Tap a heart to save a farm</string>
 </resources>
