@@ -214,4 +214,6 @@
     <string name="farms_plural">Höfe</string>
     <string name="add_to_trip">Zur Tour hinzufügen</string>
     <string name="in_trip">In Tour</string>
+    <string name="language">Sprache</string>
+    <string name="system_default">Systemstandard</string>
 </resources>

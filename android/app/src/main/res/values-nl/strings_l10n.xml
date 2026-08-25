@@ -214,4 +214,6 @@
     <string name="farms_plural">boerderijen</string>
     <string name="add_to_trip">Toevoegen aan route</string>
     <string name="in_trip">In route</string>
+    <string name="language">Taal</string>
+    <string name="system_default">Systeemstandaard</string>
 </resources>

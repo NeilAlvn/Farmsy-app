@@ -214,4 +214,6 @@
     <string name="farms_plural">fermes</string>
     <string name="add_to_trip">Ajouter au trajet</string>
     <string name="in_trip">Dans le trajet</string>
+    <string name="language">Langue</string>
+    <string name="system_default">Par défaut du système</string>
 </resources>

@@ -214,4 +214,6 @@
     <string name="farms_plural">farms</string>
     <string name="add_to_trip">Add to trip</string>
     <string name="in_trip">In trip</string>
+    <string name="language">Language</string>
+    <string name="system_default">System default</string>
 </resources>

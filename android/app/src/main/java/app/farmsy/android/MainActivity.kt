@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import app.farmsy.android.core.LanguageStore
 import app.farmsy.android.ui.theme.FarmsyTheme
 import kotlinx.coroutines.launch
 
@@ -19,6 +20,11 @@ private val REF_CODE = Regex("^[A-Z0-9]{6,12}$")
 private const val REF_TTL_MS = 7L * 24 * 60 * 60 * 1000
 
 class MainActivity : ComponentActivity() {
+    /// Apply the in-app language override before any resource is resolved.
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguageStore.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

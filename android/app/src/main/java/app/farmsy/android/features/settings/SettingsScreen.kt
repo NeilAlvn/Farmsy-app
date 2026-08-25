@@ -67,6 +67,8 @@ import app.farmsy.android.ui.theme.PlanCard
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Language
+import app.farmsy.android.core.LanguageStore
 
 /// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
 /// sign out + delete account, version footer).
@@ -83,6 +85,7 @@ fun SettingsScreen() {
 
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showDeleteInfo by remember { mutableStateOf(false) }
+    var showLanguage by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
     var deleteFailed by remember { mutableStateOf(false) }
     // After the server confirms the erase we replace the whole screen with a plain
@@ -226,6 +229,19 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(14.dp))
 
+        // Language — lets a user on a differently-set phone run the app in one of
+        // the languages Farmsy is translated into (or back to the system default).
+        val currentLang = LanguageStore.current(context)
+        SettingsCard {
+            SettingsRow(
+                Icons.Filled.Language, Color(0xFF3F5E3A), stringResource(R.string.language),
+                trailing = if (currentLang == LanguageStore.Lang.SYSTEM)
+                    stringResource(R.string.system_default) else currentLang.displayName,
+            ) { showLanguage = true }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
         // Legal
         SettingsCard {
             SettingsRow(Icons.Filled.PrivacyTip, Color(0xFF8B5CF6), stringResource(R.string.privacy_policy)) {
@@ -257,6 +273,41 @@ fun SettingsScreen() {
             "Farmsy for Android ${BuildConfig.VERSION_NAME}",
             style = geist(12.sp), color = FarmsyColors.inkMuted.copy(alpha = 0.7f),
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
+        )
+    }
+
+    if (showLanguage) {
+        AlertDialog(
+            onDismissRequest = { showLanguage = false },
+            title = { Text(stringResource(R.string.language)) },
+            text = {
+                Column {
+                    LanguageStore.Lang.entries.forEach { lang ->
+                        val selected = LanguageStore.current(context) == lang
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                LanguageStore.set(context, lang)
+                                showLanguage = false
+                                // recreate() re-runs attachBaseContext with the new locale.
+                                (context as? android.app.Activity)?.recreate()
+                            }.padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(lang.flag, style = geist(18.sp))
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                if (lang == LanguageStore.Lang.SYSTEM) stringResource(R.string.system_default) else lang.displayName,
+                                style = geist(16.sp, if (selected) FontWeight.Bold else FontWeight.Medium),
+                                color = FarmsyColors.ink, modifier = Modifier.weight(1f),
+                            )
+                            if (selected) Icon(Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguage = false }) { Text(stringResource(R.string.cancel)) }
+            },
         )
     }
 
@@ -399,6 +450,7 @@ private fun SettingsRow(
     iconTint: Color,
     label: String,
     tint: Color = FarmsyColors.ink,
+    trailing: String? = null,
     onClick: () -> Unit,
 ) {
     Row(
@@ -413,6 +465,10 @@ private fun SettingsRow(
         }
         Spacer(Modifier.width(14.dp))
         Text(label, style = geist(16.sp, FontWeight.Medium), color = tint)
+        if (trailing != null) {
+            Spacer(Modifier.weight(1f))
+            Text(trailing, style = geist(14.sp), color = FarmsyColors.inkMuted)
+        }
     }
 }
 
