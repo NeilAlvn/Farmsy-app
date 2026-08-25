@@ -163,4 +163,23 @@
     <string name="all_categories_2">🍽️ Alle Kategorien</string>
     <string name="we_ve_sent_a_verification_link_to_your_email_you_can_keep_ex">📬 Wir haben einen Bestätigungslink an Ihre E-Mail gesendet — Sie können in der Zwischenzeit weiter erkunden.</string>
     <string name="s_6d31474e">🧺</string>
+    <string name="filters_title">Filter</string>
+    <string name="filter_verified">Verifizierte Hofläden</string>
+    <string name="filter_open_today">Heute geöffnet</string>
+    <string name="filter_automaat">Rund um die Uhr (Automat)</string>
+    <string name="filter_zelfpluk">Selbstpflücken</string>
+    <string name="filter_has_photos">Mit Fotos</string>
+    <string name="filter_type_of_place">Art des Ortes</string>
+    <string name="filter_how_grown">Anbauweise</string>
+    <string name="axis_shop">Hofladen</string>
+    <string name="axis_vending_machine">Automat</string>
+    <string name="axis_stall">Verkaufsstand am Straßenrand</string>
+    <string name="axis_milk_tap">Milchzapfstelle</string>
+    <string name="axis_self_picking">Selbstpflücken</string>
+    <string name="axis_self_picking_unstaffed">Selbstpflücken (unbesetzt)</string>
+    <string name="axis_biodynamic">Biodynamisch</string>
+    <string name="axis_regenerative">Regenerativ</string>
+    <string name="axis_grass_fed">Grasgefüttert</string>
+    <string name="axis_sustainable">Nachhaltig</string>
+    <string name="clear_all">Alle löschen</string>
 </resources>

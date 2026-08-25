@@ -163,4 +163,23 @@
     <string name="all_categories_2">🍽️ All Categories</string>
     <string name="we_ve_sent_a_verification_link_to_your_email_you_can_keep_ex">📬 We\'ve sent a verification link to your email — you can keep exploring in the meantime.</string>
     <string name="s_6d31474e">🧺</string>
+    <string name="filters_title">Filters</string>
+    <string name="filter_verified">Verified farm shops</string>
+    <string name="filter_open_today">Open today</string>
+    <string name="filter_automaat">Open 24/7 (automaat)</string>
+    <string name="filter_zelfpluk">Pick your own</string>
+    <string name="filter_has_photos">Has photos</string>
+    <string name="filter_type_of_place">Type of place</string>
+    <string name="filter_how_grown">How it\'s grown</string>
+    <string name="axis_shop">Farm shop</string>
+    <string name="axis_vending_machine">Vending machine</string>
+    <string name="axis_stall">Roadside stall</string>
+    <string name="axis_milk_tap">Milk tap</string>
+    <string name="axis_self_picking">Self-picking</string>
+    <string name="axis_self_picking_unstaffed">Self-picking (unstaffed)</string>
+    <string name="axis_biodynamic">Biodynamic</string>
+    <string name="axis_regenerative">Regenerative</string>
+    <string name="axis_grass_fed">Grass-fed</string>
+    <string name="axis_sustainable">Sustainable</string>
+    <string name="clear_all">Clear all</string>
 </resources>

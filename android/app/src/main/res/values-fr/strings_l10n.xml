@@ -163,4 +163,23 @@
     <string name="all_categories_2">🍽️ Toutes les catégories</string>
     <string name="we_ve_sent_a_verification_link_to_your_email_you_can_keep_ex">📬 Nous avons envoyé un lien de vérification à votre e-mail — vous pouvez continuer à explorer en attendant.</string>
     <string name="s_6d31474e">🧺</string>
+    <string name="filters_title">Filtres</string>
+    <string name="filter_verified">Boutiques de ferme vérifiées</string>
+    <string name="filter_open_today">Ouvert aujourd\'hui</string>
+    <string name="filter_automaat">Ouvert 24h/24 (automate)</string>
+    <string name="filter_zelfpluk">Libre cueillette</string>
+    <string name="filter_has_photos">Avec photos</string>
+    <string name="filter_type_of_place">Type de lieu</string>
+    <string name="filter_how_grown">Mode de production</string>
+    <string name="axis_shop">Boutique de ferme</string>
+    <string name="axis_vending_machine">Distributeur</string>
+    <string name="axis_stall">Étal en bord de route</string>
+    <string name="axis_milk_tap">Distributeur de lait</string>
+    <string name="axis_self_picking">Auto-cueillette</string>
+    <string name="axis_self_picking_unstaffed">Auto-cueillette (sans personnel)</string>
+    <string name="axis_biodynamic">Biodynamique</string>
+    <string name="axis_regenerative">Régénérative</string>
+    <string name="axis_grass_fed">Nourri à l\'herbe</string>
+    <string name="axis_sustainable">Durable</string>
+    <string name="clear_all">Tout effacer</string>
 </resources>

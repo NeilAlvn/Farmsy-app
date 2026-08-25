@@ -9,7 +9,9 @@ import android.graphics.Paint
 import android.graphics.Canvas
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,13 +30,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -65,8 +74,10 @@ import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.R
+import app.farmsy.android.core.FarmAxis
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.core.FarmsStore
 import app.farmsy.android.core.SmartSearchApi
 import app.farmsy.android.core.SmartSearchIntent
 import app.farmsy.android.ui.theme.FarmsyColors
@@ -159,6 +170,16 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     val userLocation by locationHelper.location.collectAsState()
     val aiIntent by farms.aiIntent.collectAsState()
     val aiPlaceToken by farms.aiPlaceToken.collectAsState()
+    // The manual filters (quick toggles + the two axes) so the map recomposes as
+    // they change, and so the count badge / filter dot stay in sync.
+    val fVerified by farms.filterVerified.collectAsState()
+    val fOpen by farms.filterOpenToday.collectAsState()
+    val fAutomaat by farms.filterAutomaat.collectAsState()
+    val fZelfpluk by farms.filterZelfpluk.collectAsState()
+    val fPhotos by farms.filterHasPhotos.collectAsState()
+    val placeTypes by farms.selectedPlaceTypes.collectAsState()
+    val methods by farms.selectedMethods.collectAsState()
+    var showFilters by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     var aiSearching by remember { mutableStateOf(false) }
@@ -190,7 +211,14 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     // Maps slow down past a few hundred markers, so draw only the pins inside
     // the current viewport, capped — same rule as iOS MapScreen.visiblePins.
     // Zooming in therefore reveals the farms in that area.
-    val filtered = remember(pins, searchText, selectedCategory, aiIntent) { farms.filtered() }
+    val filtered = remember(
+        pins, searchText, selectedCategory, aiIntent,
+        fVerified, fOpen, fAutomaat, fZelfpluk, fPhotos, placeTypes, methods,
+    ) { farms.filtered() }
+
+    // The two axes filter against the flags feed (location_types / methods); pull
+    // it lazily the first time the sheet opens, same as the AI path does.
+    LaunchedEffect(showFilters) { if (showFilters) farms.loadFlagsIfNeeded() }
 
     // An AI search that resolved a centre flies the map there (server `center`, or
     // the user's location for a nearMe query).
@@ -305,6 +333,22 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                         )
                     )
                 }
+                val filtersOn = farms.anyFilterOn()
+                Surface(
+                    Modifier.size(48.dp).clickable { showFilters = true },
+                    shape = RoundedCornerShape(15.dp), color = Color.White, shadowElevation = 6.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.Tune, null, tint = FarmsyColors.farmGreen)
+                        // A small dot marks that filters are narrowing the map.
+                        if (filtersOn) {
+                            Box(
+                                Modifier.align(Alignment.TopEnd).padding(10.dp)
+                                    .size(8.dp).background(FarmsyColors.farmGreen, CircleShape)
+                            )
+                        }
+                    }
+                }
                 Surface(
                     Modifier.size(48.dp).clickable {
                         if (locationHelper.hasPermission()) locationHelper.request()
@@ -403,6 +447,102 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                 onSelect = { farms.selectedCategory.value = it },
             )
         }
+
+        if (showFilters) {
+            FilterSheet(farms = farms, onDismiss = { showFilters = false })
+        }
+    }
+}
+
+/// The filter groups Aviah split out — quick toggles plus "Type of place" and
+/// "How it's grown" (location_types / methods). Mirrors the iOS FilterSheet: the
+/// selections combine (AND) with each other and with the category pill, and
+/// "organic" deliberately stays a category, not a method. Values write straight
+/// to the store, so the map behind the sheet updates live as you tap.
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val fVerified by farms.filterVerified.collectAsState()
+    val fOpen by farms.filterOpenToday.collectAsState()
+    val fAutomaat by farms.filterAutomaat.collectAsState()
+    val fZelfpluk by farms.filterZelfpluk.collectAsState()
+    val fPhotos by farms.filterHasPhotos.collectAsState()
+    val placeTypes by farms.selectedPlaceTypes.collectAsState()
+    val methods by farms.selectedMethods.collectAsState()
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = FarmsyColors.cream) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp).padding(bottom = 28.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.filters_title), style = geist(20.sp, FontWeight.Bold), color = FarmsyColors.ink)
+                Spacer(Modifier.weight(1f))
+                if (farms.anyFilterOn()) {
+                    Text(
+                        stringResource(R.string.clear_all),
+                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
+                        modifier = Modifier.clickable { farms.clearAllFilters() },
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(stringResource(R.string.filter_verified), fVerified) { farms.filterVerified.value = !fVerified }
+                FilterChip(stringResource(R.string.filter_open_today), fOpen) { farms.filterOpenToday.value = !fOpen }
+                FilterChip(stringResource(R.string.filter_automaat), fAutomaat) { farms.filterAutomaat.value = !fAutomaat }
+                FilterChip(stringResource(R.string.filter_zelfpluk), fZelfpluk) { farms.filterZelfpluk.value = !fZelfpluk }
+                FilterChip(stringResource(R.string.filter_has_photos), fPhotos) { farms.filterHasPhotos.value = !fPhotos }
+            }
+
+            FilterGroupHeader(stringResource(R.string.filter_type_of_place))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FarmAxis.placeTypes.forEach { v ->
+                    val on = v.id in placeTypes
+                    FilterChip(stringResource(v.labelRes), on) {
+                        farms.selectedPlaceTypes.value =
+                            placeTypes.toMutableSet().apply { if (on) remove(v.id) else add(v.id) }
+                    }
+                }
+            }
+
+            FilterGroupHeader(stringResource(R.string.filter_how_grown))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FarmAxis.methods.forEach { v ->
+                    val on = v.id in methods
+                    FilterChip(stringResource(v.labelRes), on) {
+                        farms.selectedMethods.value =
+                            methods.toMutableSet().apply { if (on) remove(v.id) else add(v.id) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterGroupHeader(text: String) {
+    Spacer(Modifier.height(20.dp))
+    Text(text, style = geist(13.sp, FontWeight.Bold), color = FarmsyColors.inkMuted)
+    Spacer(Modifier.height(10.dp))
+}
+
+@Composable
+private fun FilterChip(label: String, selected: Boolean, onToggle: () -> Unit) {
+    Surface(
+        shape = CircleShape,
+        color = if (selected) FarmsyColors.farmGreen else Color.White,
+        modifier = Modifier
+            .then(if (selected) Modifier else Modifier.border(BorderStroke(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.25f)), CircleShape))
+            .clickable { onToggle() },
+    ) {
+        Text(
+            label, style = geist(13.sp, FontWeight.Medium),
+            color = if (selected) Color.White else FarmsyColors.ink,
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 14.dp),
+        )
     }
 }
 

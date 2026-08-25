@@ -163,4 +163,23 @@
     <string name="all_categories_2">🍽️ Alle categorieën</string>
     <string name="we_ve_sent_a_verification_link_to_your_email_you_can_keep_ex">📬 We hebben een verificatielink naar je e-mail gestuurd — in de tussentijd kun je blijven rondkijken.</string>
     <string name="s_6d31474e">🧺</string>
+    <string name="filters_title">Filters</string>
+    <string name="filter_verified">Geverifieerde boerderijwinkels</string>
+    <string name="filter_open_today">Vandaag open</string>
+    <string name="filter_automaat">24/7 open (automaat)</string>
+    <string name="filter_zelfpluk">Zelfpluk</string>
+    <string name="filter_has_photos">Met foto\'s</string>
+    <string name="filter_type_of_place">Soort locatie</string>
+    <string name="filter_how_grown">Hoe het wordt geteeld</string>
+    <string name="axis_shop">Boerderijwinkel</string>
+    <string name="axis_vending_machine">Automaat</string>
+    <string name="axis_stall">Kraam langs de weg</string>
+    <string name="axis_milk_tap">Melktap</string>
+    <string name="axis_self_picking">Zelfpluk</string>
+    <string name="axis_self_picking_unstaffed">Zelfpluk (onbemand)</string>
+    <string name="axis_biodynamic">Biodynamisch</string>
+    <string name="axis_regenerative">Regeneratief</string>
+    <string name="axis_grass_fed">Grasgevoerd</string>
+    <string name="axis_sustainable">Duurzaam</string>
+    <string name="clear_all">Alles wissen</string>
 </resources>

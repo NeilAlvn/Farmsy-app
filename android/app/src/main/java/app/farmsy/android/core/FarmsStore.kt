@@ -43,6 +43,29 @@ class FarmsStore(private val scope: CoroutineScope) {
     val searchText = MutableStateFlow("")
     val selectedCategory = MutableStateFlow<FarmCategory?>(null)
 
+    // Quick filters + the two new axes (Aviah's taxonomy) — mirror iOS. They
+    // combine with the category selection rather than replacing it.
+    val filterVerified = MutableStateFlow(false)
+    val filterOpenToday = MutableStateFlow(false)
+    val filterAutomaat = MutableStateFlow(false)
+    val filterZelfpluk = MutableStateFlow(false)
+    val filterHasPhotos = MutableStateFlow(false)
+    val selectedPlaceTypes = MutableStateFlow<Set<String>>(emptySet())
+    val selectedMethods = MutableStateFlow<Set<String>>(emptySet())
+
+    fun anyFilterOn(): Boolean =
+        selectedCategory.value != null ||
+            filterVerified.value || filterOpenToday.value || filterAutomaat.value ||
+            filterZelfpluk.value || filterHasPhotos.value ||
+            selectedPlaceTypes.value.isNotEmpty() || selectedMethods.value.isNotEmpty()
+
+    fun clearAllFilters() {
+        selectedCategory.value = null
+        filterVerified.value = false; filterOpenToday.value = false
+        filterAutomaat.value = false; filterZelfpluk.value = false; filterHasPhotos.value = false
+        selectedPlaceTypes.value = emptySet(); selectedMethods.value = emptySet()
+    }
+
     // AI search — the parsed intent in effect. When set it drives filtering +
     // ranking; the summary bar shows what was understood. Mirrors iOS.
     val aiIntent = MutableStateFlow<SmartSearchIntent?>(null)
@@ -149,6 +172,17 @@ class FarmsStore(private val scope: CoroutineScope) {
         var result = _pins.value
         selectedCategory.value?.let { cat ->
             result = result.filter { it.categories.contains(cat) }
+        }
+        if (filterVerified.value) result = result.filter { it.isVerified }
+        if (filterOpenToday.value) result = result.filter { FarmFilters.isOpenToday(it.openingHours) }
+        if (filterHasPhotos.value) result = result.filter { it.image != null }
+        if (filterAutomaat.value) result = result.filter { FarmFilters.looksLikeAutomaat(it.name, it.openingHours) }
+        if (filterZelfpluk.value) result = result.filter { FarmFilters.looksLikeZelfpluk(it.name) }
+        selectedPlaceTypes.value.takeIf { it.isNotEmpty() }?.let { want ->
+            result = result.filter { (locationTypesByOsm[it.osmId] ?: emptyList()).any { v -> v in want } }
+        }
+        selectedMethods.value.takeIf { it.isNotEmpty() }?.let { want ->
+            result = result.filter { (methodsByOsm[it.osmId] ?: emptyList()).any { v -> v in want } }
         }
         val query = searchText.value.trim().lowercase()
         if (query.isNotEmpty()) {
