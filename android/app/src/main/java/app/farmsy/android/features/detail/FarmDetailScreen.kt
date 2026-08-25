@@ -49,6 +49,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFavorites
+import app.farmsy.android.LocalTrip
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
 import app.farmsy.android.core.FarmDetail
@@ -83,8 +86,11 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     val context = LocalContext.current
     val session = LocalSession.current
     val favorites = LocalFavorites.current
+    val trip = LocalTrip.current
     val scope = rememberCoroutineScope()
     val savedIds by favorites.osmIds.collectAsState()
+    val tripStops by trip.stopIds.collectAsState()
+    val inTrip = tripStops.contains(pin.osmId)
 
     var detail by remember { mutableStateOf<FarmDetail?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -231,6 +237,29 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                                 Intent(Intent.ACTION_VIEW, Uri.parse("geo:${pin.lat},${pin.lng}?q=${pin.lat},${pin.lng}(${pin.name})"))
                             )
                         }
+                    }
+                    Spacer(Modifier.height(10.dp))
+
+                    // Add-to-trip — the one entry point into the trip planner: filled
+                    // green to add, soft green with a check once it's a stop.
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .background(if (inTrip) FarmsyColors.farmGreenSoft else FarmsyColors.farmGreen, RoundedCornerShape(14.dp))
+                            .clickable { trip.toggle(pin.osmId) }
+                            .padding(vertical = 13.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            if (inTrip) Icons.Filled.Check else Icons.Filled.Add, null,
+                            tint = if (inTrip) FarmsyColors.farmGreen else Color.White, modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            stringResource(if (inTrip) R.string.in_trip else R.string.add_to_trip),
+                            style = geist(14.sp, FontWeight.Bold),
+                            color = if (inTrip) FarmsyColors.farmGreen else Color.White,
+                        )
                     }
                     Spacer(Modifier.height(16.dp))
 

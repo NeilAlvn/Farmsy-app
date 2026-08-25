@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -45,6 +46,7 @@ import app.farmsy.android.features.discover.DiscoverFeedScreen
 import app.farmsy.android.features.map.MapScreen
 import app.farmsy.android.features.saved.SavedScreen
 import app.farmsy.android.features.settings.SettingsScreen
+import app.farmsy.android.features.trips.TripsScreen
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
@@ -56,6 +58,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 enum class Tab(val labelRes: Int, val icon: ImageVector) {
     MAP(R.string.map, Icons.Filled.Map),
     DISCOVER(R.string.discover, Icons.Filled.AutoAwesome),
+    TRIPS(R.string.trips, Icons.Filled.Route),
     SAVED(R.string.saved, Icons.Filled.Favorite),
     SETTINGS(R.string.settings, Icons.Filled.Settings),
 }
@@ -111,6 +114,7 @@ fun MainScreen(onOpenFarm: (FarmPin) -> Unit) {
                 when (tab) {
                     Tab.MAP -> Unit
                     Tab.DISCOVER -> DiscoverFeedScreen(onOpenFarm = onOpenFarm)
+                    Tab.TRIPS -> TripsScreen(onOpenFarm = onOpenFarm)
                     Tab.SAVED -> SavedScreen(onOpenFarm = onOpenFarm)
                     Tab.SETTINGS -> SettingsScreen()
                 }
