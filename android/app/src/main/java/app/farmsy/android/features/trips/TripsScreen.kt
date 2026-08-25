@@ -182,7 +182,7 @@ fun TripsScreen(onOpenFarm: (FarmPin) -> Unit) {
                 Column(
                     Modifier.fillMaxWidth()
                         .background(Color.White, RoundedCornerShape(16.dp))
-                        .border(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.12f), RoundedCornerShape(16.dp)),
+                        .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp)),
                 ) {
                     Text(
                         stringResource(R.string.trip_overview), style = geist(16.sp, FontWeight.Bold),
@@ -397,7 +397,7 @@ private fun TabButton(title: String, selected: Boolean, modifier: Modifier = Mod
         modifier.clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
         color = if (selected) FarmsyColors.farmGreen else Color.White,
-        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.15f)),
+        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.hairline),
     ) {
         Text(
             title, style = geist(15.sp, FontWeight.Bold),
@@ -413,7 +413,7 @@ private fun OriginRow(label: String?, onLocate: () -> Unit, onClear: () -> Unit)
     Surface(
         Modifier.fillMaxWidth().clickable { if (label.isNullOrEmpty()) onLocate() },
         shape = CircleShape, color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.15f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.hairline),
     ) {
         Row(
             Modifier.padding(vertical = 14.dp, horizontal = 16.dp),
@@ -480,7 +480,7 @@ private fun ModeButton(m: TravelMode, icon: ImageVector, labelRes: Int, current:
         modifier.clickable { onSelect(m) },
         shape = RoundedCornerShape(12.dp),
         color = if (selected) FarmsyColors.farmGreen else Color.White,
-        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.15f)),
+        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.hairline),
     ) {
         Row(
             Modifier.padding(vertical = 9.dp), horizontalArrangement = Arrangement.Center,
@@ -499,7 +499,7 @@ private fun OutlineAction(title: String, icon: ImageVector, modifier: Modifier, 
         modifier.clickable(enabled = enabled) { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White.copy(alpha = if (enabled) 1f else 0.5f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.15f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.hairline),
     ) {
         Row(
             Modifier.padding(vertical = 14.dp), horizontalArrangement = Arrangement.Center,
@@ -548,7 +548,7 @@ private fun MyTripsTab(
     Column(
         Modifier.fillMaxWidth()
             .background(Color.White, RoundedCornerShape(16.dp))
-            .border(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.12f), RoundedCornerShape(16.dp)),
+            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp)),
     ) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.my_trips), style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink)

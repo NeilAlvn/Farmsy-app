@@ -210,7 +210,7 @@ private fun DiscoverCard(pin: FarmPin, onOpen: () -> Unit) {
                 }
                 pin.avgRating?.let { r ->
                     Text("·", color = FarmsyColors.inkMuted)
-                    Icon(Icons.Filled.Star, null, tint = Color(0xFFEAB308), modifier = Modifier.size(11.dp))
+                    Icon(Icons.Filled.Star, null, tint = FarmsyColors.star, modifier = Modifier.size(11.dp))
                     Text(String.format("%.1f (%d)", r, pin.reviewCount), style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
                 }
             }
