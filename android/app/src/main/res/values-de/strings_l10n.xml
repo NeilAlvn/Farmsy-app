@@ -182,4 +182,6 @@
     <string name="axis_grass_fed">Grasgefüttert</string>
     <string name="axis_sustainable">Nachhaltig</string>
     <string name="clear_all">Alle löschen</string>
+    <string name="rec_header_near_you">EMPFEHLUNGEN IN DER NÄHE</string>
+    <string name="rec_header">EMPFEHLUNG</string>
 </resources>

@@ -93,6 +93,7 @@ fun DiscoverFeedScreen(onOpenFarm: (FarmPin) -> Unit) {
                 )
             }
         }
+        item { RecommendationCarousel(onOpenFarm = onOpenFarm) }
         item { AddFarmBanner { showAddFarm = true } }
         items(feed) { pin -> DiscoverCard(pin = pin, onOpen = { onOpenFarm(pin) }) }
     }

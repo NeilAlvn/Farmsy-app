@@ -182,4 +182,6 @@
     <string name="axis_grass_fed">Grasgevoerd</string>
     <string name="axis_sustainable">Duurzaam</string>
     <string name="clear_all">Alles wissen</string>
+    <string name="rec_header_near_you">AANBEVELINGEN BIJ JOU</string>
+    <string name="rec_header">AANBEVELING</string>
 </resources>

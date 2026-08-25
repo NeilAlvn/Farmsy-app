@@ -283,4 +283,15 @@ class FarmsStore(private val scope: CoroutineScope) {
         }
         return (nearby.shuffled() + rest.shuffled()).take(limit)
     }
+
+    /// The recommendation-shelf source — photo'd farms, nearby first, minus
+    /// anything already hearted. Mirrors iOS TripRecommendations.select() without
+    /// the Trips coupling (no planned/stop exclusions yet); swap this the day a
+    /// real recommendation source exists, same as the iOS note says.
+    fun recommendations(
+        location: Location?,
+        excluding: Set<String> = emptySet(),
+        limit: Int = 6,
+    ): List<FarmPin> =
+        feedPicks(location, limit = 40).filter { it.osmId !in excluding }.take(limit)
 }
