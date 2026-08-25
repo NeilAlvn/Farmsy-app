@@ -1,0 +1,530 @@
+package app.farmsy.android.core
+
+import android.content.Context
+import com.google.android.gms.maps.model.LatLng
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+// MARK: - Route API (POST /api/route)
+
+/// Road routing through the web's proxy (no key in the app). Returns the road
+/// line plus per-leg distance/duration. Non-200 → caller falls back to straight
+/// lines. Mirrors iOS RouteAPI.
+object RouteAPI {
+    @Serializable
+    data class Response(
+        val coordinates: List<List<Double>>? = null,
+        val distance: Double? = null,
+        val duration: Double? = null,
+        val segments: List<Segment>? = null,
+    ) {
+        @Serializable
+        data class Segment(val distance: Double? = null, val duration: Double? = null)
+    }
+
+    @Serializable
+    private data class Request(val coordinates: List<List<Double>>)
+
+    /// Stops are (lat, lng) on our side; the API wants [lng, lat] — swap here.
+    suspend fun route(stops: List<LatLng>): Response? {
+        if (stops.size < 2 || stops.size > 50) return null
+        return try {
+            val coords = stops.map { listOf(it.longitude, it.latitude) }
+            val resp = httpClient.post("${Backend.WEB_API}/route") {
+                header(HttpHeaders.ContentType, "application/json")
+                setBody(lenientJson.encodeToString(Request(coords)))
+            }
+            if (resp.status.value != 200) return null
+            lenientJson.decodeFromString<Response>(resp.bodyAsText())
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+// MARK: - Travel mode
+
+/// How the trip is travelled. The web's road proxy only routes `driving-car`, so
+/// the drawn road line is the same for every mode — but the time estimate and the
+/// Google Maps hand-off honour the choice. Mirrors iOS TravelMode.
+enum class TravelMode(val kmh: Double, val googleMode: String) {
+    CAR(55.0, "driving"),
+    BIKE(15.0, "bicycling"),
+    WALK(4.8, "walking");
+
+    fun minutes(km: Double): Int = Math.round(km / kmh * 60).toInt()
+
+    companion object {
+        fun fromRaw(s: String?): TravelMode? = entries.firstOrNull { it.name.equals(s, ignoreCase = true) }
+    }
+}
+
+// MARK: - Geometry (straight-line, no network)
+
+object TripGeometry {
+    fun haversineKm(a: LatLng, b: LatLng): Double {
+        val r = 6371.0
+        val dLat = (b.latitude - a.latitude) * Math.PI / 180
+        val dLng = (b.longitude - a.longitude) * Math.PI / 180
+        val la1 = a.latitude * Math.PI / 180
+        val la2 = b.latitude * Math.PI / 180
+        val h = sin(dLat / 2) * sin(dLat / 2) + sin(dLng / 2) * sin(dLng / 2) * cos(la1) * cos(la2)
+        return 2 * r * asin(min(1.0, sqrt(h)))
+    }
+
+    fun lengthKm(stops: List<LatLng>): Double {
+        if (stops.size < 2) return 0.0
+        return stops.zipWithNext().sumOf { haversineKm(it.first, it.second) }
+    }
+
+    /// Nearest-neighbour + 2-opt on straight-line distance. Returns the stop
+    /// indices reordered; index 0 is pinned (people start from the farm they care
+    /// about). Mirrors iOS TripGeometry.optimise.
+    fun optimise(stops: List<LatLng>): List<Int> {
+        val n = stops.size
+        if (n <= 2) return (0 until n).toList()
+        val d = Array(n) { i -> DoubleArray(n) { j -> haversineKm(stops[i], stops[j]) } }
+
+        val order = mutableListOf(0)
+        val used = mutableSetOf(0)
+        while (order.size < n) {
+            val last = order.last()
+            val next = (0 until n).filter { it !in used }.minByOrNull { d[last][it] }!!
+            order.add(next); used.add(next)
+        }
+        var improved = true
+        var passes = 0
+        while (improved && passes < 50) {
+            improved = false; passes++
+            for (i in 1 until n - 1) {
+                for (k in i + 1 until n) {
+                    val a = order[i - 1]; val b = order[i]; val c = order[k]
+                    val e = if (k + 1 < n) order[k + 1] else -1
+                    val before = d[a][b] + (if (e >= 0) d[c][e] else 0.0)
+                    val after = d[a][c] + (if (e >= 0) d[b][e] else 0.0)
+                    if (after + 1e-9 < before) {
+                        order.subList(i, k + 1).reverse(); improved = true
+                    }
+                }
+            }
+        }
+        return order
+    }
+}
+
+// MARK: - Saved trip (DB: trips + trip_farms)
+
+data class SavedTrip(val id: String, val name: String, val updatedAt: String?, val stopCount: Int)
+
+@Serializable
+private data class SavedTripRow(
+    val id: String,
+    val name: String = "Trip",
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("trip_farms") val tripFarms: List<CountRow> = emptyList(),
+) {
+    @Serializable data class CountRow(val count: Int = 0)
+}
+
+// MARK: - Trip store
+
+/// The trip planner's engine — the Android twin of iOS TripStore. The draft
+/// (stops, origin, mode) is local (SharedPreferences); named trips persist to the
+/// same `trips` / `trip_farms` tables the web uses. The route line comes from
+/// POST /api/route and traces itself in.
+class TripStore(context: Context, private val scope: CoroutineScope) {
+
+    private val prefs = context.getSharedPreferences("farmsy_trip", Context.MODE_PRIVATE)
+    private val stopsKey = "dlb_pending_trip"
+    private val originKey = "dlb_trip_origin"
+    private val originLabelKey = "dlb_trip_origin_label"
+    private val ownerKey = "dlb_trip_owner"
+    private val modeKey = "dlb_trip_mode"
+
+    // Draft (local).
+    private val _stopIds = MutableStateFlow<List<String>>(emptyList())
+    val stopIds: StateFlow<List<String>> = _stopIds.asStateFlow()
+
+    private val _originCoord = MutableStateFlow<LatLng?>(null)
+    val originCoord: StateFlow<LatLng?> = _originCoord.asStateFlow()
+    private val _originLabel = MutableStateFlow<String?>(null)
+    val originLabel: StateFlow<String?> = _originLabel.asStateFlow()
+
+    private val _mode = MutableStateFlow(TravelMode.CAR)
+    val mode: StateFlow<TravelMode> = _mode.asStateFlow()
+
+    var editingTripId: String? = null
+        private set
+
+    // Route.
+    private val _routeLine = MutableStateFlow<List<LatLng>>(emptyList())
+    val routeLine: StateFlow<List<LatLng>> = _routeLine.asStateFlow()
+    private val _distanceMeters = MutableStateFlow<Double?>(null)
+    val distanceMeters: StateFlow<Double?> = _distanceMeters.asStateFlow()
+    private val _durationSeconds = MutableStateFlow<Double?>(null)
+    val durationSeconds: StateFlow<Double?> = _durationSeconds.asStateFlow()
+    private val _isRouting = MutableStateFlow(false)
+    val isRouting: StateFlow<Boolean> = _isRouting.asStateFlow()
+    private val _onRoads = MutableStateFlow(false)
+    val onRoads: StateFlow<Boolean> = _onRoads.asStateFlow()
+    private val _traceProgress = MutableStateFlow(1.0)
+    val traceProgress: StateFlow<Double> = _traceProgress.asStateFlow()
+
+    private var traceJob: Job? = null
+    private var cumLen: List<Double> = emptyList()
+    private var totalLen: Double = 0.0
+
+    // Saved trips.
+    private val _savedTrips = MutableStateFlow<List<SavedTrip>>(emptyList())
+    val savedTrips: StateFlow<List<SavedTrip>> = _savedTrips.asStateFlow()
+    private val _plannedFarmIds = MutableStateFlow<Set<String>>(emptySet())
+    val plannedFarmIds: StateFlow<Set<String>> = _plannedFarmIds.asStateFlow()
+
+    /// Bumped whenever the map should refit to the whole trip (opening a saved
+    /// trip, setting the origin).
+    private val _fitToken = MutableStateFlow(0)
+    val fitToken: StateFlow<Int> = _fitToken.asStateFlow()
+    fun requestFit() { _fitToken.value += 1 }
+
+    /// Route answers keyed by the stops they belong to (failures cached as null too).
+    private val routeCache = HashMap<String, RouteAPI.Response?>()
+
+    init {
+        _stopIds.value = readStops()
+        val o = prefs.getString(originKey, null)?.split(",")?.mapNotNull { it.toDoubleOrNull() }
+        if (o != null && o.size >= 2) {
+            _originCoord.value = LatLng(o[0], o[1])
+            _originLabel.value = prefs.getString(originLabelKey, null)
+        }
+        TravelMode.fromRaw(prefs.getString(modeKey, null))?.let { _mode.value = it }
+    }
+
+    /// The visible portion of the route while it traces in — cut at the exact
+    /// distance the progress represents, with an interpolated tip. Read reactively
+    /// via routeLine + traceProgress. Mirrors iOS tracedLine.
+    fun tracedLine(): List<LatLng> {
+        val line = _routeLine.value
+        val progress = _traceProgress.value
+        if (progress >= 1 || line.size <= 2 || totalLen <= 0) return line
+        val target = totalLen * progress
+        var i = 0
+        while (i + 1 < cumLen.size && cumLen[i + 1] < target) i++
+        val out = line.take(i + 1).toMutableList()
+        if (i + 1 < line.size) {
+            val seg = cumLen[i + 1] - cumLen[i]
+            val frac = if (seg > 0) (target - cumLen[i]) / seg else 0.0
+            val a = line[i]; val b = line[i + 1]
+            out.add(LatLng(a.latitude + (b.latitude - a.latitude) * frac, a.longitude + (b.longitude - a.longitude) * frac))
+        }
+        return if (out.size >= 2) out else line.take(2)
+    }
+
+    private fun setRouteLine(line: List<LatLng>) {
+        _routeLine.value = line
+        if (line.size < 2) { cumLen = emptyList(); totalLen = 0.0; return }
+        val cum = ArrayList<Double>(line.size)
+        cum.add(0.0)
+        var acc = 0.0
+        for (i in 1 until line.size) {
+            acc += TripGeometry.haversineKm(line[i - 1], line[i])
+            cum.add(acc)
+        }
+        cumLen = cum; totalLen = acc
+    }
+
+    /// Draw the road from the start over ~2.2s with a cubic ease-out, restarted
+    /// from zero on every new route.
+    private fun startTrace() {
+        traceJob?.cancel()
+        if (_routeLine.value.size <= 2) { _traceProgress.value = 1.0; return }
+        _traceProgress.value = 0.0
+        traceJob = scope.launch {
+            val duration = 2.2
+            val start = System.currentTimeMillis()
+            while (isActive) {
+                val t = min((System.currentTimeMillis() - start) / 1000.0 / duration, 1.0)
+                _traceProgress.value = 1 - (1 - t).pow(3)
+                if (t >= 1) break
+                delay(16)
+            }
+        }
+    }
+
+    fun setMode(m: TravelMode) {
+        if (m == _mode.value) return
+        _mode.value = m
+        prefs.edit().putString(modeKey, m.name).apply()
+    }
+
+    // MARK: Draft
+
+    fun contains(osmId: String): Boolean = _stopIds.value.contains(osmId)
+
+    fun toggle(osmId: String) {
+        _stopIds.value = if (osmId in _stopIds.value) _stopIds.value - osmId else _stopIds.value + osmId
+        persist()
+    }
+
+    fun remove(osmId: String) { _stopIds.value = _stopIds.value - osmId; persist() }
+
+    fun move(from: Int, to: Int) {
+        val list = _stopIds.value.toMutableList()
+        if (from !in list.indices || to !in list.indices) return
+        list.add(to, list.removeAt(from))
+        _stopIds.value = list; persist()
+    }
+
+    /// Clears the stops and editing state — but keeps the origin.
+    fun clear() {
+        _stopIds.value = emptyList(); editingTripId = null
+        setRouteLine(emptyList()); _distanceMeters.value = null; _durationSeconds.value = null; _onRoads.value = false
+        persist()
+    }
+
+    fun setOrigin(coord: LatLng, label: String) {
+        _originCoord.value = coord; _originLabel.value = label
+        prefs.edit()
+            .putString(originKey, "${coord.latitude},${coord.longitude}")
+            .putString(originLabelKey, label)
+            .apply()
+        requestFit()
+    }
+
+    fun clearOrigin() {
+        _originCoord.value = null; _originLabel.value = null
+        prefs.edit().remove(originKey).remove(originLabelKey).apply()
+    }
+
+    /// Wipe the draft if the account changed. Signed-out counts as owner "anon".
+    fun reconcileOwner(userId: String?) {
+        val owner = userId ?: "anon"
+        val stored = prefs.getString(ownerKey, null)
+        if (stored != null && stored != owner) {
+            _stopIds.value = emptyList(); editingTripId = null
+            setRouteLine(emptyList()); _distanceMeters.value = null; _durationSeconds.value = null
+            persist()
+        }
+        prefs.edit().putString(ownerKey, owner).apply()
+    }
+
+    // MARK: Ordering
+
+    /// The full leg list: origin then farms (or farms alone).
+    private fun legs(pins: Map<String, FarmPin>): List<LatLng> {
+        val out = ArrayList<LatLng>()
+        _originCoord.value?.let { out.add(it) }
+        out.addAll(_stopIds.value.mapNotNull { pins[it]?.let { p -> LatLng(p.lat, p.lng) } })
+        return out
+    }
+
+    /// "Best order" — reorders the farms (origin pinned as leg zero). Returns km saved.
+    fun optimise(pins: Map<String, FarmPin>): Double {
+        val farms = _stopIds.value.mapNotNull { pins[it] }
+        if (farms.size <= 2) return 0.0
+        val coords = legs(pins)
+        val before = TripGeometry.lengthKm(coords)
+        val order = TripGeometry.optimise(coords)
+        val hasOrigin = _originCoord.value != null
+        val farmOrder = order.mapNotNull { idx ->
+            val f = if (hasOrigin) idx - 1 else idx
+            if (f in farms.indices) farms[f].osmId else null
+        }
+        _stopIds.value = farmOrder
+        persist()
+        val after = TripGeometry.lengthKm(legs(pins))
+        return before - after
+    }
+
+    // MARK: Route
+
+    private fun keyOf(coords: List<LatLng>): String =
+        coords.joinToString(";") { "%.5f,%.5f".format(it.latitude, it.longitude) }
+
+    suspend fun refreshRoute(pins: Map<String, FarmPin>) {
+        val coords = legs(pins)
+        if (coords.size < 2) {
+            setRouteLine(emptyList()); _distanceMeters.value = null; _durationSeconds.value = null; _onRoads.value = false
+            return
+        }
+        val key = keyOf(coords)
+        if (routeCache.containsKey(key)) { apply(routeCache[key], coords); return }
+        _isRouting.value = true
+        try {
+            val r = RouteAPI.route(coords)
+            routeCache[key] = r
+            apply(r, coords)
+        } finally {
+            _isRouting.value = false
+        }
+    }
+
+    private fun apply(r: RouteAPI.Response?, straight: List<LatLng>) {
+        val line = r?.coordinates
+        if (r != null && line != null && line.size >= 2) {
+            setRouteLine(line.map { LatLng(it[1], it[0]) })
+            _distanceMeters.value = r.distance
+            // ORS only routes driving-car, so trust its duration for driving and
+            // re-derive from the road distance at bike/walk speed otherwise.
+            _durationSeconds.value = when {
+                _mode.value == TravelMode.CAR -> r.duration
+                r.distance != null -> _mode.value.minutes(r.distance / 1000).toDouble() * 60
+                else -> r.duration
+            }
+            _onRoads.value = true
+            startTrace()
+        } else {
+            setRouteLine(straight)
+            val km = TripGeometry.lengthKm(straight)
+            _distanceMeters.value = km * 1000
+            _durationSeconds.value = _mode.value.minutes(km).toDouble() * 60
+            _onRoads.value = false
+            traceJob?.cancel(); _traceProgress.value = 1.0   // straight lines draw instantly
+        }
+    }
+
+    // MARK: Saved trips (DB)
+
+    suspend fun loadTrips(userId: String) {
+        val rows = runCatching {
+            supabase.from("trips")
+                .select(Columns.raw("id, name, updated_at, trip_farms(count)")) {
+                    filter { eq("user_id", userId) }
+                    order("updated_at", Order.DESCENDING)
+                    limit(20)
+                }
+                .decodeList<SavedTripRow>()
+        }.getOrDefault(emptyList())
+        _savedTrips.value = rows.map { SavedTrip(it.id, it.name, it.updatedAt, it.tripFarms.firstOrNull()?.count ?: 0) }
+        loadPlannedFarmIds()
+    }
+
+    private suspend fun loadPlannedFarmIds() {
+        val ids = _savedTrips.value.map { it.id }
+        if (ids.isEmpty()) { _plannedFarmIds.value = emptySet(); return }
+        val rows = runCatching {
+            supabase.from("trip_farms")
+                .select(Columns.list("farm_osm_id")) {
+                    filter { isIn("trip_id", ids) }
+                }
+                .decodeList<PlannedRow>()
+        }.getOrDefault(emptyList())
+        _plannedFarmIds.value = rows.map { it.farmOsmId }.toSet()
+    }
+
+    @Serializable
+    private data class PlannedRow(@SerialName("farm_osm_id") val farmOsmId: String)
+
+    /// Save the current draft as a trip (insert, or update when editing). Caches
+    /// the farm details on each stop row so a share link survives.
+    suspend fun save(name: String, userId: String, pins: Map<String, FarmPin>) {
+        val tripId: String = if (editingTripId != null) {
+            val id = editingTripId!!
+            runCatching {
+                supabase.from("trips").update(
+                    buildJsonObject { put("name", JsonPrimitive(name)); put("updated_at", JsonPrimitive(nowIso())) }
+                ) { filter { eq("id", id) } }
+                supabase.from("trip_farms").delete { filter { eq("trip_id", id) } }
+            }
+            id
+        } else {
+            val inserted = runCatching {
+                supabase.from("trips").insert(
+                    buildJsonObject { put("user_id", JsonPrimitive(userId)); put("name", JsonPrimitive(name)) }
+                ) { select() }.decodeList<InsertedId>()
+            }.getOrNull()
+            inserted?.firstOrNull()?.id ?: return
+        }
+
+        val stopRows = _stopIds.value.mapIndexedNotNull { i, osmId ->
+            val p = pins[osmId] ?: return@mapIndexedNotNull null
+            buildJsonObject {
+                put("trip_id", JsonPrimitive(tripId))
+                put("farm_osm_id", JsonPrimitive(osmId))
+                put("farm_name", JsonPrimitive(p.name))
+                put("farm_lat", JsonPrimitive(p.lat))
+                put("farm_lng", JsonPrimitive(p.lng))
+                put("farm_city", p.city?.let { JsonPrimitive(it) } ?: JsonPrimitive(null as String?))
+                put("farm_image", p.image?.let { JsonPrimitive(it) } ?: JsonPrimitive(null as String?))
+                put("sort_order", JsonPrimitive(i))
+            }
+        }
+        runCatching {
+            supabase.from("trip_farms").insert(stopRows)
+            editingTripId = tripId
+            loadTrips(userId)
+        }.onFailure {
+            // A trip without its farms is worse than none — roll a fresh trip back.
+            if (editingTripId == null) runCatching { supabase.from("trips").delete { filter { eq("id", tripId) } } }
+        }
+    }
+
+    suspend fun openTrip(id: String) {
+        val stops = runCatching {
+            supabase.from("trip_farms")
+                .select(Columns.list("farm_osm_id, sort_order")) {
+                    filter { eq("trip_id", id) }
+                    order("sort_order", Order.ASCENDING)
+                }
+                .decodeList<StopRow>()
+        }.getOrDefault(emptyList())
+        _stopIds.value = stops.map { it.farmOsmId }
+        editingTripId = id
+        persist()
+        requestFit()
+    }
+
+    suspend fun deleteTrip(id: String) {
+        _savedTrips.value = _savedTrips.value.filterNot { it.id == id }   // optimistic
+        runCatching { supabase.from("trips").delete { filter { eq("id", id) } } }
+    }
+
+    @Serializable
+    private data class StopRow(
+        @SerialName("farm_osm_id") val farmOsmId: String,
+        @SerialName("sort_order") val sortOrder: Int = 0,
+    )
+
+    @Serializable
+    private data class InsertedId(val id: String)
+
+    // MARK: Persistence
+
+    private fun persist() {
+        prefs.edit().putString(stopsKey, lenientJson.encodeToString(_stopIds.value)).apply()
+    }
+
+    private fun readStops(): List<String> =
+        prefs.getString(stopsKey, null)?.let {
+            runCatching { lenientJson.decodeFromString<List<String>>(it) }.getOrNull()
+        } ?: emptyList()
+
+    private fun nowIso(): String =
+        java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC)
+            .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+}

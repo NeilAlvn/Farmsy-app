@@ -7,6 +7,7 @@ import app.farmsy.android.core.FavoritesStore
 import app.farmsy.android.core.LocationHelper
 import app.farmsy.android.core.PurchaseStore
 import app.farmsy.android.core.SessionStore
+import app.farmsy.android.core.TripStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +31,8 @@ class FarmsyApp : Application() {
         private set
     lateinit var purchases: PurchaseStore
         private set
+    lateinit var trip: TripStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -40,6 +43,7 @@ class FarmsyApp : Application() {
         favorites = FavoritesStore()
         locationHelper = LocationHelper(this)
         purchases = PurchaseStore()
+        trip = TripStore(this, appScope)
         session.bootstrap()
         farms.loadIfNeeded()
         // Warm the store prices now, in the background, so the paywall has them
