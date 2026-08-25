@@ -142,16 +142,21 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     BackHandler(enabled = canGoBack) { goBack() }
 
     Box(Modifier.fillMaxSize()) {
-        // Full-bleed background: a deep-green hero on welcome, cream elsewhere. (iOS
-        // uses a farm photograph here; the Android bundle has no such asset, so the
-        // brand gradient stands in — same dark ground for the white wordmark.)
-        Box(
-            Modifier.fillMaxSize().background(
-                if (step == Step.WELCOME)
-                    Brush.verticalGradient(listOf(FarmsyColors.farmGreenDeep, FarmsyColors.farmGreen, FarmsyColors.farmGreenDeep))
-                else Brush.verticalGradient(listOf(FarmsyColors.cream, FarmsyColors.cream))
+        // Full-bleed background: the welcome farm photograph (dark gradient overlay
+        // for legibility) on welcome, cream elsewhere — 1:1 with iOS.
+        if (step == Step.WELCOME) {
+            Image(
+                painterResource(R.drawable.welcome_farm_shop), null,
+                modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
             )
-        )
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.30f), Color.Black.copy(alpha = 0.72f)))
+                )
+            )
+        } else {
+            Box(Modifier.fillMaxSize().background(FarmsyColors.cream))
+        }
 
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             // Header: back chevron in a cream circle + progress bar. Hidden (but

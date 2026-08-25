@@ -27,9 +27,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
@@ -361,78 +364,75 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
             }
         }
 
-        // Floating search row + farms-count badge
+        // Floating search row — 1:1 with iOS: a white Capsule holding the search
+        // icon, the field, and the filter control INSIDE it, with only the circular
+        // locate button beside. No category pill, no farms-count chip (both gone on
+        // iOS — the map is just the map).
         Column(
-            Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(horizontal = 14.dp),
+            Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(horizontal = 14.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.End
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                val filtersOn = farms.anyFilterOn() || aiIntent != null
                 Surface(
-                    Modifier.weight(1f), shape = RoundedCornerShape(15.dp),
-                    color = Color.White, shadowElevation = 6.dp
+                    Modifier.weight(1f), shape = CircleShape,
+                    color = Color.White, shadowElevation = 8.dp
                 ) {
-                    TextField(
-                        value = searchText,
-                        onValueChange = {
-                            farms.searchText.value = it
-                            // Emptying the field drops the AI intent.
-                            if (it.isBlank() && aiIntent != null) farms.clearAISearch()
-                        },
-                        placeholder = {
-                            Text(
-                                stringResource(R.string.search_or_ask),
-                                style = geist(15.sp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                    Row(
+                        Modifier.padding(vertical = 13.dp, horizontal = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (aiSearching) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreenMap)
+                        } else {
+                            Icon(
+                                if (aiIntent != null) Icons.Filled.AutoAwesome else Icons.Filled.Search, null,
+                                tint = if (aiIntent != null) FarmsyColors.farmGreenMap else FarmsyColors.inkMuted,
+                                modifier = Modifier.size(18.dp),
                             )
-                        },
-                        leadingIcon = {
-                            if (aiSearching) {
-                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreenMap)
-                            } else {
-                                Icon(
-                                    if (aiIntent != null) Icons.Filled.AutoAwesome else Icons.Filled.Search,
-                                    null,
-                                    tint = if (aiIntent != null) FarmsyColors.farmGreenMap else FarmsyColors.inkMuted,
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { runSmartSearch() }),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
+                        }
+                        BasicTextField(
+                            value = searchText,
+                            onValueChange = {
+                                farms.searchText.value = it
+                                if (it.isBlank() && aiIntent != null) farms.clearAISearch()
+                            },
+                            singleLine = true,
+                            textStyle = geist(15.sp).copy(color = FarmsyColors.ink),
+                            cursorBrush = SolidColor(FarmsyColors.farmGreenMap),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { runSmartSearch() }),
+                            modifier = Modifier.weight(1f),
+                            decorationBox = { inner ->
+                                if (searchText.isEmpty()) {
+                                    Text(
+                                        stringResource(R.string.search_or_ask), style = geist(15.sp),
+                                        color = FarmsyColors.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                inner()
+                            },
                         )
-                    )
-                }
-                val filtersOn = farms.anyFilterOn()
-                Surface(
-                    Modifier.size(48.dp).clickable { showFilters = true },
-                    shape = RoundedCornerShape(15.dp), color = Color.White, shadowElevation = 6.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.Tune, null, tint = FarmsyColors.farmGreenMap)
-                        // A small dot marks that filters are narrowing the map.
+                        // Filter lives on the search bar, web-style — tap slides the sheet up.
+                        Icon(
+                            Icons.Filled.FilterList, null, tint = FarmsyColors.farmGreenMap,
+                            modifier = Modifier.size(22.dp).clickable { showFilters = true },
+                        )
                         if (filtersOn) {
-                            Box(
-                                Modifier.align(Alignment.TopEnd).padding(10.dp)
-                                    .size(8.dp).background(FarmsyColors.farmGreenMap, CircleShape)
-                            )
+                            Box(Modifier.size(7.dp).background(FarmsyColors.farmGreenMap, CircleShape))
                         }
                     }
                 }
                 Surface(
-                    Modifier.size(48.dp).clickable {
+                    Modifier.size(44.dp).clickable {
                         if (locationHelper.hasPermission()) locationHelper.request()
                         else permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                     },
-                    shape = RoundedCornerShape(15.dp), color = Color.White, shadowElevation = 6.dp
+                    shape = CircleShape, color = Color.White, shadowElevation = 8.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap)
+                        Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
                     }
                 }
             }
@@ -471,25 +471,6 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     }
                 }
             }
-
-            Spacer(Modifier.height(10.dp))
-            Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.95f), shadowElevation = 4.dp) {
-                Row(
-                    Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = FarmsyColors.farmGreenMap)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.loading_farms), style = geist(13.sp, FontWeight.Medium))
-                    } else {
-                        Text(
-                            stringResource(R.string.arg_farms, filtered.size.toString()),
-                            style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted
-                        )
-                    }
-                }
-            }
         }
 
         // Error state
@@ -508,20 +489,8 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
             }
         }
 
-        // Category filter, bottom-left and compact. The list toggle that used to sit
-        // beside it is gone — it duplicated the Discover tab, which already offers a
-        // browsable list of farms — so the map is just the map now. The pill sizes to
-        // its own label rather than stretching across, so it reads as a control, not
-        // a banner.
-        Box(
-            Modifier.align(Alignment.BottomStart).navigationBarsPadding()
-                .padding(bottom = bottomInset, start = 12.dp)
-        ) {
-            CategoryMenu(
-                selected = selectedCategory,
-                onSelect = { farms.selectedCategory.value = it },
-            )
-        }
+        // No category pill and no farms-count chip on the map — both are gone on
+        // iOS (the map is just the map; category filtering lives in the filter sheet).
 
         if (showFilters) {
             FilterSheet(farms = farms, onDismiss = { showFilters = false })
