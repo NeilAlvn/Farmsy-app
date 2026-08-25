@@ -100,15 +100,6 @@ import app.farmsy.android.ui.theme.FitText
 /// Compose maps slow down past a few hundred markers (same cap as iOS).
 private const val ANNOTATION_CAP = 130
 
-/// Cap the drawn markers without skewing the visible category mix. Naively
-/// taking the first N draws them in database order, which clusters one or two
-/// colours; instead spread the budget evenly across the pins in view.
-private fun capRepresentative(pins: List<FarmPin>, cap: Int): List<FarmPin> {
-    if (pins.size <= cap) return pins
-    val stride = pins.size.toDouble() / cap
-    return (0 until cap).map { pins[(it * stride).toInt()] }
-}
-
 /// Marker bitmaps are expensive to rasterise — build one per category, once.
 private val pinIcons = HashMap<FarmCategory, BitmapDescriptor>()
 
@@ -152,6 +143,69 @@ private fun farmPinBitmap(cat: FarmCategory): BitmapDescriptor {
     canvas.drawText(cat.emoji, cx, headCy - (fm.ascent + fm.descent) / 2f, text)
 
     return BitmapDescriptorFactory.fromBitmap(bmp)
+}
+
+/// A grid bucket of farms: one pin when it holds a single farm, a green count
+/// bubble when it holds several. Mirrors iOS MapCluster.
+private data class MapCluster(val id: String, val center: LatLng, val pins: List<FarmPin>)
+
+private const val GRID_CELLS_ACROSS = 10.0
+/// Below this latitude span (~neighbourhood zoom) stop clustering and draw every
+/// farm individually, so a dense area isn't stuck behind a bubble up close.
+private const val DECLUSTER_SPAN = 0.06
+
+/// Grid-cluster pins by the current span — cells merge when zoomed out and split
+/// when zoomed in. A bucket becomes a bubble only at 10+ farms; 2–9 draw as their
+/// own pins (a small bubble is just a tap away from being useful). Mirrors iOS.
+private fun clusterPins(pins: List<FarmPin>, latSpan: Double, lngSpan: Double): List<MapCluster> {
+    if (latSpan < DECLUSTER_SPAN) {
+        return pins.map { MapCluster(it.osmId, LatLng(it.lat, it.lng), listOf(it)) }
+    }
+    val cellLat = maxOf(latSpan / GRID_CELLS_ACROSS, 0.0001)
+    val cellLng = maxOf(lngSpan / GRID_CELLS_ACROSS, 0.0001)
+    val buckets = HashMap<String, MutableList<FarmPin>>()
+    for (pin in pins) {
+        val row = kotlin.math.floor(pin.lat / cellLat).toInt()
+        val col = kotlin.math.floor(pin.lng / cellLng).toInt()
+        buckets.getOrPut("${row}_$col") { mutableListOf() }.add(pin)
+    }
+    return buckets.flatMap { (key, group) ->
+        if (group.size < 10) group.map { MapCluster(it.osmId, LatLng(it.lat, it.lng), listOf(it)) }
+        else {
+            val lat = group.sumOf { it.lat } / group.size
+            val lng = group.sumOf { it.lng } / group.size
+            listOf(MapCluster(key, LatLng(lat, lng), group.toList()))
+        }
+    }
+}
+
+private fun capClusters(list: List<MapCluster>, cap: Int): List<MapCluster> {
+    if (list.size <= cap) return list
+    val stride = list.size.toDouble() / cap
+    return (0 until cap).map { list[(it * stride).toInt()] }
+}
+
+/// A green count bubble for a cluster of 10+ farms.
+private val bubbleIcons = HashMap<Int, BitmapDescriptor>()
+private fun clusterBubbleBitmap(count: Int): BitmapDescriptor = bubbleIcons.getOrPut(count) {
+    val label = if (count > 999) "999+" else count.toString()
+    val s = 96
+    val bmp = createBitmap(s, s)
+    val c = Canvas(bmp)
+    val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    p.color = 0x33000000
+    c.drawCircle(s / 2f, s / 2f + 2f, s / 2f - 8f, p)
+    p.color = 0xFF2E7D46.toInt()
+    c.drawCircle(s / 2f, s / 2f, s / 2f - 8f, p)
+    val t = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textAlign = Paint.Align.CENTER
+        textSize = if (label.length >= 4) 24f else 32f
+        isFakeBoldText = true
+    }
+    val fm = t.fontMetrics
+    c.drawText(label, s / 2f, s / 2f - (fm.ascent + fm.descent) / 2f, t)
+    BitmapDescriptorFactory.fromBitmap(bmp)
 }
 
 /// Map-first discovery — mirrors iOS MapScreen: full-bleed map with a floating
@@ -240,19 +294,24 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
             viewport = cameraPositionState.projection?.visibleRegion?.latLngBounds
         }
     }
-    val visiblePins = remember(filtered, viewport) {
-        val inView = viewport?.let { bounds ->
-            // Pad the box slightly so pins don't pop in right at the edge.
-            val latPad = (bounds.northeast.latitude - bounds.southwest.latitude) * 0.075
-            val lngPad = (bounds.northeast.longitude - bounds.southwest.longitude) * 0.075
-            filtered.filter {
-                it.lat > bounds.southwest.latitude - latPad &&
-                    it.lat < bounds.northeast.latitude + latPad &&
-                    it.lng > bounds.southwest.longitude - lngPad &&
-                    it.lng < bounds.northeast.longitude + lngPad
+    // Group the visible farms into grid clusters: a lone farm draws as its pin, a
+    // dense cell (10+) as a green count bubble that splits when tapped/zoomed —
+    // the same declustering the iOS map uses instead of drawing thousands of pins.
+    val clusters = remember(filtered, viewport) {
+        val b = viewport
+        val inView: List<FarmPin>; val latSpan: Double; val lngSpan: Double
+        if (b != null) {
+            latSpan = b.northeast.latitude - b.southwest.latitude
+            lngSpan = b.northeast.longitude - b.southwest.longitude
+            val latPad = latSpan * 0.1; val lngPad = lngSpan * 0.1
+            inView = filtered.filter {
+                it.lat > b.southwest.latitude - latPad && it.lat < b.northeast.latitude + latPad &&
+                    it.lng > b.southwest.longitude - lngPad && it.lng < b.northeast.longitude + lngPad
             }
-        } ?: filtered
-        capRepresentative(inView, ANNOTATION_CAP)
+        } else {
+            inView = filtered; latSpan = 3.4; lngSpan = 3.4
+        }
+        capClusters(clusterPins(inView, latSpan, lngSpan), ANNOTATION_CAP)
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -270,18 +329,34 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                     mapToolbarEnabled = false,
                 ),
             ) {
-                visiblePins.forEach { pin ->
-                    val cat = pin.primaryCategory
-                    val icon = remember(cat) { pinIcons[cat] ?: farmPinBitmap(cat).also { pinIcons[cat] = it } }
-                    Marker(
-                        state = MarkerState(LatLng(pin.lat, pin.lng)),
-                        title = pin.name,
-                        snippet = pin.city,
-                        icon = icon,
-                        anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
-                        onClick = { onOpenFarm(pin); true },
-                        onInfoWindowClick = { onOpenFarm(pin) },
-                    )
+                clusters.forEach { cluster ->
+                    if (cluster.pins.size == 1) {
+                        val pin = cluster.pins[0]
+                        val icon = pinIcons.getOrPut(pin.primaryCategory) { farmPinBitmap(pin.primaryCategory) }
+                        Marker(
+                            state = MarkerState(LatLng(pin.lat, pin.lng)),
+                            title = pin.name,
+                            snippet = pin.city,
+                            icon = icon,
+                            anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
+                            onClick = { onOpenFarm(pin); true },
+                            onInfoWindowClick = { onOpenFarm(pin) },
+                        )
+                    } else {
+                        // A count bubble — tapping it zooms in, which splits it apart.
+                        Marker(
+                            state = MarkerState(cluster.center),
+                            icon = clusterBubbleBitmap(cluster.pins.size),
+                            anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
+                            onClick = {
+                                scope.launch {
+                                    val z = cameraPositionState.position.zoom + 1.8f
+                                    cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(cluster.center, z))
+                                }
+                                true
+                            },
+                        )
+                    }
                 }
             }
         }
