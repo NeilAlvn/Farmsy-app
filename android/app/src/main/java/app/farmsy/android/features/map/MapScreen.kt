@@ -49,6 +49,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.google.android.gms.maps.CameraUpdateFactory
 import kotlinx.coroutines.launch
@@ -76,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalLocationHelper
+import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
 import app.farmsy.android.core.FarmAxis
 import app.farmsy.android.core.FarmCategory
@@ -95,7 +97,10 @@ import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.android.gms.maps.model.Dash
+import com.google.android.gms.maps.model.Gap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
 import app.farmsy.android.ui.theme.FitText
@@ -106,47 +111,52 @@ private const val ANNOTATION_CAP = 130
 /// Marker bitmaps are expensive to rasterise — build one per category, once.
 private val pinIcons = HashMap<FarmCategory, BitmapDescriptor>()
 
-/// Teardrop pin in the category's colour with its emoji, matching the iOS
-/// FarmPinView and the web map's markers.
-private fun farmPinBitmap(cat: FarmCategory): BitmapDescriptor {
-    val w = 84; val h = 108
+/// Teardrop pin, parameterised by the iOS FarmPinView sizes so the highlighted
+/// variant uses the *literal* manifest values (drop 38 normal / **50** highlighted,
+/// white circle 22/28, emoji 12/15). The SF-Symbol point sizes are mapped to bitmap
+/// pixels by fixed factors (headR = drop·0.9, whiteR = circlePt, emojiPx = emojiPt·2.33)
+/// so `farmPinBitmap` reproduces the previous normal pin and the highlight scales
+/// off the same mapping.
+private fun pinBitmap(dropPt: Int, whiteCirclePt: Int, emojiPt: Int, bodyArgb: Int, emoji: String): BitmapDescriptor {
+    val headR = dropPt * 0.9f
+    val w = (headR * 2f + 16f).toInt()
+    val h = (w * 1.29f).toInt()
+    val cx = w / 2f
+    val headCy = headR + 4f
     val bmp = createBitmap(w, h)
     val canvas = Canvas(bmp)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    val cx = w / 2f
-    val headR = 34f
-    val headCy = 38f
-
     // Drop shadow
     paint.color = 0x33000000
     canvas.drawCircle(cx, headCy + 3f, headR, paint)
-
     // Teardrop: circle head + triangular tail
-    paint.color = cat.color.toArgb()
+    paint.color = bodyArgb
     canvas.drawCircle(cx, headCy, headR, paint)
+    val tw = headR * 0.65f
     val tail = Path().apply {
-        moveTo(cx - 22f, headCy + 24f)
+        moveTo(cx - tw, headCy + headR * 0.7f)
         lineTo(cx, h - 6f)
-        lineTo(cx + 22f, headCy + 24f)
+        lineTo(cx + tw, headCy + headR * 0.7f)
         close()
     }
     canvas.drawPath(tail, paint)
-
     // White inner circle
     paint.color = android.graphics.Color.WHITE
-    canvas.drawCircle(cx, headCy, 22f, paint)
-
+    canvas.drawCircle(cx, headCy, whiteCirclePt.toFloat(), paint)
     // Category emoji
     val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 28f
+        textSize = emojiPt * 2.33f
         textAlign = Paint.Align.CENTER
     }
     val fm = text.fontMetrics
-    canvas.drawText(cat.emoji, cx, headCy - (fm.ascent + fm.descent) / 2f, text)
-
+    canvas.drawText(emoji, cx, headCy - (fm.ascent + fm.descent) / 2f, text)
     return BitmapDescriptorFactory.fromBitmap(bmp)
 }
+
+/// The category pin — iOS FarmPinView normal (drop 38, white 22, emoji 12).
+private fun farmPinBitmap(cat: FarmCategory): BitmapDescriptor =
+    pinBitmap(dropPt = 38, whiteCirclePt = 22, emojiPt = 12, bodyArgb = cat.color.toArgb(), emoji = cat.emoji)
 
 /// A grid bucket of farms: one pin when it holds a single farm, a green count
 /// bubble when it holds several. Mirrors iOS MapCluster.
@@ -211,20 +221,66 @@ private fun clusterBubbleBitmap(count: Int): BitmapDescriptor = bubbleIcons.getO
     BitmapDescriptorFactory.fromBitmap(bmp)
 }
 
+/// The selected pin — iOS FarmPinView(isHighlighted:) with the literal manifest
+/// values: drop **50**, white circle **28**, emoji **15**, in farmGreenDeep.
+private val highlightIcons = HashMap<FarmCategory, BitmapDescriptor>()
+private fun highlightedPinBitmap(cat: FarmCategory): BitmapDescriptor = highlightIcons.getOrPut(cat) {
+    pinBitmap(dropPt = 50, whiteCirclePt = 28, emojiPt = 15, bodyArgb = 0xFF18321A.toInt(), emoji = cat.emoji)
+}
+
+/// A numbered trip-stop marker — a green circle carrying the visiting order.
+/// Matches iOS TripStopMarker (farmGreen circle, white number, white ring).
+private val tripStopIcons = HashMap<Int, BitmapDescriptor>()
+private fun tripStopBitmap(n: Int): BitmapDescriptor = tripStopIcons.getOrPut(n) {
+    val s = 76
+    val bmp = createBitmap(s, s)
+    val c = Canvas(bmp)
+    val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    p.color = 0x33000000
+    c.drawCircle(s / 2f, s / 2f + 2f, s / 2f - 6f, p)
+    p.color = 0xFF234725.toInt()        // farmGreen (deep brand green — trip stops)
+    c.drawCircle(s / 2f, s / 2f, s / 2f - 6f, p)
+    p.color = android.graphics.Color.WHITE
+    p.style = Paint.Style.STROKE; p.strokeWidth = 4f
+    c.drawCircle(s / 2f, s / 2f, s / 2f - 8f, p)
+    p.style = Paint.Style.FILL
+    p.textSize = 34f; p.textAlign = Paint.Align.CENTER; p.isFakeBoldText = true
+    val fm = p.fontMetrics
+    c.drawText(n.toString(), s / 2f, s / 2f - (fm.ascent + fm.descent) / 2f, p)
+    BitmapDescriptorFactory.fromBitmap(bmp)
+}
+
 /// Map-first discovery — mirrors iOS MapScreen: full-bleed map with a floating
 /// search row, farms-count badge, and bottom controls (list toggle + category
 /// menu). Tapping a pin opens the farm (auth-gated one level up).
 @Composable
-fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
+fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomInset: Dp = 96.dp) {
     val farms = LocalFarms.current
     val locationHelper = LocalLocationHelper.current
+    val trip = LocalTrip.current
+    val density = LocalDensity.current
+    // iOS route widths are SwiftUI points (casing 8, line 5). Google Maps Compose
+    // Polyline width is in *pixels*, so convert 8.dp / 5.dp → px at the current
+    // density (points→dp is 1:1; the dp→px factor is the device density). Recorded
+    // in PORT_NOTES.md.
+    val routeCasingPx = with(density) { 8.dp.toPx() }
+    val routeLinePx = with(density) { 5.dp.toPx() }
 
     val pins by farms.pins.collectAsState()
     val isLoading by farms.isLoading.collectAsState()
     val loadError by farms.loadError.collectAsState()
     val searchText by farms.searchText.collectAsState()
-    val selectedCategory by farms.selectedCategory.collectAsState()
+    // Multi-select categories (used as a recompose key for `filtered`; the map has no
+    // category UI now — S5's FilterSheet will bind to this set).
+    val selectedCategories by farms.selectedCategories.collectAsState()
     val userLocation by locationHelper.location.collectAsState()
+    // Trip route lives on this single shared map (TripsScreen no longer has its own).
+    val tripStopIds by trip.stopIds.collectAsState()
+    val tripRouteLine by trip.routeLine.collectAsState()
+    val tripTraceProgress by trip.traceProgress.collectAsState()
+    val tripOnRoads by trip.onRoads.collectAsState()
+    val tripOrigin by trip.originCoord.collectAsState()
+    val tripFitToken by trip.fitToken.collectAsState()
     val aiIntent by farms.aiIntent.collectAsState()
     val aiPlaceToken by farms.aiPlaceToken.collectAsState()
     // The manual filters (quick toggles + the two axes) so the map recomposes as
@@ -269,7 +325,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
     // the current viewport, capped — same rule as iOS MapScreen.visiblePins.
     // Zooming in therefore reveals the farms in that area.
     val filtered = remember(
-        pins, searchText, selectedCategory, aiIntent,
+        pins, searchText, selectedCategories, aiIntent,
         fVerified, fOpen, fAutomaat, fZelfpluk, fPhotos, placeTypes, methods,
     ) { farms.filtered() }
 
@@ -317,6 +373,46 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
         capClusters(clusterPins(inView, latSpan, lngSpan), ANNOTATION_CAP)
     }
 
+    // Trip route pieces for the shared map (TripsScreen no longer draws its own).
+    val pinIndex = remember(pins) { pins.associateBy { it.osmId } }
+    val tripStops = remember(tripStopIds, pinIndex) { tripStopIds.mapNotNull { pinIndex[it] } }
+    val tripStopSet = remember(tripStopIds) { tripStopIds.toSet() }
+    val tracedRoute = remember(tripRouteLine, tripTraceProgress) { trip.tracedLine() }
+
+    // Selecting a farm flies the shared map, keeping the pin in the upper part of the
+    // screen (the detail sheet covers the lower ~55%).
+    // PORT NOTE: iOS flyToFocus keeps the user's zoom and shifts the centre south by
+    // span*0.28; Compose has no MKCoordinateRegion, so the shift is derived from the
+    // last settled viewport's latitude span (fallback 0.12°), and we only force a
+    // zoom-in when the user was far out (< 11).
+    LaunchedEffect(focusPin?.osmId) {
+        val p = focusPin ?: return@LaunchedEffect
+        val latSpan = viewport?.let { (it.northeast.latitude - it.southwest.latitude).coerceAtMost(0.15) } ?: 0.12
+        val z = cameraPositionState.position.zoom
+        if (z < 11f) {
+            cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(p.lat - 0.045, p.lng), 12f))
+        } else {
+            cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(p.lat - latSpan * 0.28, p.lng)))
+        }
+    }
+
+    // An explicit trip fit (Show route / open saved trip / set origin) frames the
+    // whole trip on the shared map.
+    LaunchedEffect(tripFitToken) {
+        if (tripFitToken == 0) return@LaunchedEffect
+        val pts = buildList {
+            tripOrigin?.let { add(it) }
+            tripStops.forEach { add(LatLng(it.lat, it.lng)) }
+            addAll(tracedRoute)
+        }
+        if (pts.size == 1) {
+            cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(pts.first(), 12f))
+        } else if (pts.size >= 2) {
+            val b = LatLngBounds.builder().apply { pts.forEach { include(it) } }.build()
+            runCatching { cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(b, 140)) }
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
         run {
             GoogleMap(
@@ -335,6 +431,9 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                 clusters.forEach { cluster ->
                     if (cluster.pins.size == 1) {
                         val pin = cluster.pins[0]
+                        // The focused pin is drawn highlighted below; trip stops are
+                        // drawn as numbered markers — skip both here to avoid doubles.
+                        if (pin.osmId == focusPin?.osmId || pin.osmId in tripStopSet) return@forEach
                         val icon = pinIcons.getOrPut(pin.primaryCategory) { farmPinBitmap(pin.primaryCategory) }
                         Marker(
                             state = MarkerState(LatLng(pin.lat, pin.lng)),
@@ -358,6 +457,47 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, bottomInset: Dp = 96.dp) {
                                 }
                                 true
                             },
+                        )
+                    }
+                }
+
+                // The active trip's road line — white casing (8dp) under a blue line
+                // (5dp, dashed for the straight-line fallback). The origin is the START
+                // of this line, not a separate marker (matches iOS — no origin pin).
+                // PORT NOTE (aboveLabels): iOS draws the route `.mapOverlayLevel(.aboveLabels)`;
+                // Google Maps Compose has no equivalent — polylines always render beneath
+                // the base map's place/road labels, and zIndex only orders overlays among
+                // themselves. Not expressible; see PORT_NOTES.md.
+                if (tracedRoute.size >= 2) {
+                    Polyline(points = tracedRoute, color = Color.White, width = routeCasingPx, zIndex = 1f)
+                    Polyline(
+                        points = tracedRoute, color = Color(0xFF2563EB), width = routeLinePx, zIndex = 2f,
+                        pattern = if (tripOnRoads) null else listOf(Dash(22f), Gap(18f)),
+                    )
+                }
+                // Numbered stop markers, above the route.
+                tripStops.forEachIndexed { i, pin ->
+                    Marker(
+                        state = MarkerState(LatLng(pin.lat, pin.lng)),
+                        title = pin.name, snippet = pin.city,
+                        icon = tripStopBitmap(i + 1),
+                        anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
+                        zIndex = 3f,
+                        onClick = { onOpenFarm(pin); true },
+                    )
+                }
+                // The focused (selected) pin, highlighted (drop 50, farmGreenDeep), on
+                // top — but NOT when the focused farm is a trip stop (it already shows as
+                // a numbered marker), so exactly one marker renders at that coordinate.
+                focusPin?.let { fp ->
+                    if (fp.osmId !in tripStopSet) {
+                        Marker(
+                            state = MarkerState(LatLng(fp.lat, fp.lng)),
+                            title = fp.name, snippet = fp.city,
+                            icon = highlightedPinBitmap(fp.primaryCategory),
+                            anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
+                            zIndex = 4f,
+                            onClick = { onOpenFarm(fp); true },
                         )
                     }
                 }

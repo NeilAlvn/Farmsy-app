@@ -48,11 +48,14 @@ import app.farmsy.android.LocalFavorites
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
+import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.features.whatsnew.SkeletonBox
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 
 /// The two-per-page recommendation shelf — mirrors iOS TripRecommendations: a
@@ -69,19 +72,55 @@ fun RecommendationCarousel(
     val farms = LocalFarms.current
     val favorites = LocalFavorites.current
     val locationHelper = LocalLocationHelper.current
+    val trip = LocalTrip.current
     val pins by farms.pins.collectAsState()
     val loc by locationHelper.location.collectAsState()
+    val galleries by farms.galleries.collectAsState()
+    val stopIds by trip.stopIds.collectAsState()
+    val originCoord by trip.originCoord.collectAsState()
+    val plannedFarmIds by trip.plannedFarmIds.collectAsState()
 
     var shown by remember { mutableStateOf<List<FarmPin>>(emptyList()) }
     var built by remember { mutableStateOf(false) }
 
-    // Build once the pins are in; rebuild if the location resolves after (nearby
-    // farms then lead). Excludes whatever is already saved at build time.
-    LaunchedEffect(pins.size, loc?.latitude, loc?.longitude) {
-        if (pins.isNotEmpty()) {
-            shown = farms.recommendations(loc, excluding = favorites.osmIds.value)
-            built = true
+    // The anchor to recommend around — GPS, else the draft origin, else the centroid
+    // of the draft's stops, else the centroid of every already-planned farm. 1:1 with
+    // iOS TripRecommendations.anchor.
+    fun centroid(ids: Collection<String>): LatLng? {
+        val coords = ids.mapNotNull { farms.pinForOsmId(it)?.let { p -> LatLng(p.lat, p.lng) } }
+        if (coords.isEmpty()) return null
+        return LatLng(coords.sumOf { it.latitude } / coords.size, coords.sumOf { it.longitude } / coords.size)
+    }
+    val anchor: LatLng? = loc?.let { LatLng(it.latitude, it.longitude) }
+        ?: originCoord
+        ?: centroid(stopIds)
+        ?: centroid(plannedFarmIds)
+    val hasAnchor = anchor != null
+
+    // Build once the pins are in; rebuild when the anchor/inputs change. Selection is
+    // 1:1 with iOS TripRecommendations.select(): exclude planned + stops + favourites;
+    // pool = nearbyWithImages(anchor, 100km) [else random photo'd, shuffled]; partition
+    // into described (has a gallery) and plain; described.take(6)+plain.take(6),
+    // shuffled, take 6.
+    LaunchedEffect(pins.size, anchor?.latitude, anchor?.longitude, stopIds, plannedFarmIds, galleries) {
+        // iOS load(): make sure the galleries are in *before* selecting (so the
+        // described/plain partition is real), then guard on pins. Idempotent — the
+        // store no-ops once loaded, and the `galleries` key re-runs this when they land.
+        farms.loadGalleriesIfNeeded()
+        if (pins.isEmpty()) return@LaunchedEffect
+        val excluded = plannedFarmIds + stopIds.toSet() + favorites.osmIds.value
+        val pool: List<FarmPin> = if (anchor != null) {
+            farms.nearbyWithImages(anchor.latitude, anchor.longitude, radiusKm = 100.0)
+                .filter { it.osmId !in excluded }
+        } else {
+            pins.filter { it.image != null && it.osmId !in excluded }.shuffled()
         }
+        fun hasGallery(p: FarmPin) = (galleries[p.osmId]?.isEmpty() == false)
+        val described = pool.filter { hasGallery(it) }
+        val plain = pool.filter { !hasGallery(it) }
+        val picked = described.take(6) + plain.take(6)
+        shown = picked.shuffled().take(6)
+        built = true
     }
 
     // Nothing sensible → render nothing (no empty state), same as iOS.
@@ -93,17 +132,20 @@ fun RecommendationCarousel(
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            stringResource(if (loc != null) R.string.rec_header_near_you else R.string.rec_header),
+            // "RECOMMENDATIONS NEAR YOU" when there's an anchor, else "RECOMMENDATION"
+            // — keyed on hasAnchor, matching iOS (not GPS-only).
+            stringResource(if (hasAnchor) R.string.rec_header_near_you else R.string.rec_header),
             style = geist(11.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted,
             modifier = Modifier.padding(top = 6.dp),
         )
 
         if (!built) {
+            // iOS loading: 2× SkeletonBox at radius 16, height = cardHeight.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 repeat(2) {
-                    Box(
-                        Modifier.weight(1f).height(cardHeight)
-                            .background(FarmsyColors.creamCard, RoundedCornerShape(16.dp))
+                    SkeletonBox(
+                        cornerRadius = 16.dp,
+                        modifier = Modifier.weight(1f).height(cardHeight),
                     )
                 }
             }

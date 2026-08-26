@@ -43,10 +43,23 @@ import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import app.farmsy.android.core.SignUpDetails
@@ -61,7 +74,10 @@ fun AuthSheet(onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("farmsy", android.content.Context.MODE_PRIVATE) }
 
-    var isSignUp by remember { mutableStateOf(true) }
+    // Default to log in — most people reaching this already have an account, and
+    // it's the screen they expect when they tap "Sign in". New users switch. (1:1
+    // with iOS, which defaults to .logIn.)
+    var isSignUp by remember { mutableStateOf(false) }
     // Signup is two steps, like the web: credentials, then personal details +
     // address. All of it is required by POST /api/auth/signup.
     var step by remember { mutableStateOf(1) }
@@ -160,6 +176,7 @@ fun AuthSheet(onDone: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
+            .animateContentSize()
             .padding(horizontal = 24.dp)
             .padding(bottom = 30.dp)
     ) {
@@ -189,52 +206,57 @@ fun AuthSheet(onDone: () -> Unit) {
         )
         Spacer(Modifier.height(20.dp))
 
-        // Step 1 (and log in): credentials only. Staging the commitment this way is
-        // what keeps the drop-off down — nobody abandons at "email and password".
-        if (!isSignUp || step == 1) {
-            AuthField(stringResource(R.string.email), email, { email = it }, KeyboardType.Email)
-            Spacer(Modifier.height(14.dp))
-            AuthField(
-                stringResource(R.string.password), password, { password = it },
-                KeyboardType.Password, isSecure = true
-            )
-            if (isSignUp) {
-                Spacer(Modifier.height(14.dp))
-                AuthField(
-                    stringResource(R.string.confirm_password), confirm, { confirm = it },
-                    KeyboardType.Password, isSecure = true
-                )
+        // Fields slide as the mode/step changes — 1:1 with iOS's spring transition.
+        // `credentials` (step 1 / log in) slides against `details` (step 2).
+        AnimatedContent(
+            targetState = (!isSignUp || step == 1),
+            transitionSpec = {
+                val forward = !targetState // moving to details = forward
+                val dir = if (forward) 1 else -1
+                (slideInHorizontally(tween(280)) { it * dir } + fadeIn(tween(200))) togetherWith
+                    (slideOutHorizontally(tween(280)) { -it * dir } + fadeOut(tween(200)))
+            },
+            label = "auth-fields",
+        ) { credentials ->
+            Column {
+                if (credentials) {
+                    AuthField(stringResource(R.string.email), email, { email = it }, KeyboardType.Email, placeholder = "you@email.com")
+                    Spacer(Modifier.height(14.dp))
+                    AuthField(
+                        stringResource(R.string.password), password, { password = it },
+                        KeyboardType.Password, isSecure = true,
+                        placeholder = if (isSignUp) stringResource(R.string.auth_pw_placeholder) else "",
+                    )
+                    if (isSignUp) {
+                        Spacer(Modifier.height(14.dp))
+                        AuthField(
+                            stringResource(R.string.confirm_password), confirm, { confirm = it },
+                            KeyboardType.Password, isSecure = true,
+                            placeholder = stringResource(R.string.auth_confirm_placeholder),
+                        )
+                    }
+                } else {
+                    // Step 2: the profile fields the API now requires.
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.weight(1f)) { AuthField(stringResource(R.string.first_name), firstName, { firstName = it }) }
+                        Box(Modifier.weight(1f)) { AuthField(stringResource(R.string.last_name), lastName, { lastName = it }) }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    DobField(value = dob, onPick = { dob = it })
+                    Spacer(Modifier.height(14.dp))
+                    val optional = stringResource(R.string.label_optional_suffix)
+                    AuthField("${stringResource(R.string.street_address)} ($optional)", street, { street = it })
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.weight(1.4f)) { AuthField("${stringResource(R.string.city_label)} ($optional)", city, { city = it }) }
+                        Box(Modifier.weight(1f)) { AuthField("${stringResource(R.string.postal_code)} ($optional)", postal, { postal = it }) }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    AuthField(stringResource(R.string.country), country, { country = it })
+                    Spacer(Modifier.height(14.dp))
+                    AuthField(stringResource(R.string.referral_code_optional), refCode, { refCode = it })
+                }
             }
-        } else {
-            // Step 2: the profile fields the API now requires.
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.weight(1f)) {
-                    AuthField(stringResource(R.string.first_name), firstName, { firstName = it })
-                }
-                Box(Modifier.weight(1f)) {
-                    AuthField(stringResource(R.string.last_name), lastName, { lastName = it })
-                }
-            }
-            Spacer(Modifier.height(14.dp))
-            // Date picker, not free text: the server wants a real ISO date and 16+,
-            // and a typed "12/04/98" would just bounce back as invalid_dob.
-            DobField(value = dob, onPick = { dob = it })
-            Spacer(Modifier.height(14.dp))
-            val optional = stringResource(R.string.label_optional_suffix)
-            AuthField("${stringResource(R.string.street_address)} ($optional)", street, { street = it })
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.weight(1.4f)) {
-                    AuthField("${stringResource(R.string.city_label)} ($optional)", city, { city = it })
-                }
-                Box(Modifier.weight(1f)) {
-                    AuthField("${stringResource(R.string.postal_code)} ($optional)", postal, { postal = it })
-                }
-            }
-            Spacer(Modifier.height(14.dp))
-            AuthField(stringResource(R.string.country), country, { country = it })
-            Spacer(Modifier.height(14.dp))
-            AuthField(stringResource(R.string.referral_code_optional), refCode, { refCode = it })
         }
 
         errorMessage?.let {
@@ -294,7 +316,9 @@ private fun AuthField(
     onChange: (String) -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text,
     isSecure: Boolean = false,
+    placeholder: String = "",
 ) {
+    var reveal by remember { mutableStateOf(false) }
     Column {
         Text(label, style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen)
         Spacer(Modifier.height(6.dp))
@@ -303,10 +327,24 @@ private fun AuthField(
             onValueChange = onChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
+            placeholder = if (placeholder.isNotEmpty()) {
+                { Text(placeholder, style = geist(15.sp), color = FarmsyColors.inkMuted.copy(alpha = 0.7f)) }
+            } else null,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            visualTransformation = if (isSecure) PasswordVisualTransformation()
+            visualTransformation = if (isSecure && !reveal) PasswordVisualTransformation()
             else androidx.compose.ui.text.input.VisualTransformation.None,
+            // A show/hide eye on password fields, like iOS.
+            trailingIcon = if (isSecure) {
+                {
+                    IconButton(onClick = { reveal = !reveal }) {
+                        Icon(
+                            if (reveal) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            null, tint = FarmsyColors.inkMuted,
+                        )
+                    }
+                }
+            } else null,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = FarmsyColors.farmGreen,
                 unfocusedBorderColor = FarmsyColors.inkMuted.copy(alpha = 0.25f),

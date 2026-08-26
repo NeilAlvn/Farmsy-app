@@ -260,4 +260,22 @@
     <string name="start_exploring">Start exploring</string>
     <string name="saved_farms">Saved farms</string>
     <string name="tap_a_heart_to_save_a_farm">Tap a heart to save a farm</string>
+    <string name="auth_pw_placeholder">At least 8 characters</string>
+    <string name="auth_confirm_placeholder">Repeat password</string>
+    <string name="whats_new">WHAT\'S NEW</string>
+    <string name="featured_farms">FEATURED FARMS</string>
+    <string name="no_posts_yet">No posts yet — check back soon.</string>
+    <string name="time_just_now">just now</string>
+    <plurals name="time_minutes">
+        <item quantity="one">%dm</item>
+        <item quantity="other">%dm</item>
+    </plurals>
+    <plurals name="time_hours">
+        <item quantity="one">%dh</item>
+        <item quantity="other">%dh</item>
+    </plurals>
+    <plurals name="time_days">
+        <item quantity="one">%dd</item>
+        <item quantity="other">%dd</item>
+    </plurals>
 </resources>

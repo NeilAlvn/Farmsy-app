@@ -260,4 +260,10 @@
     <string name="start_exploring">Commencer l\'exploration</string>
     <string name="saved_farms">Fermes enregistrées</string>
     <string name="tap_a_heart_to_save_a_farm">Touchez un cœur pour enregistrer une ferme</string>
+    <string name="auth_pw_placeholder">Au moins 8 caractères</string>
+    <string name="auth_confirm_placeholder">Répéter le mot de passe</string>
+    <string name="whats_new">QUOI DE NEUF</string>
+    <string name="featured_farms">FERMES EN VEDETTE</string>
+    <string name="no_posts_yet">Aucune publication — revenez bientôt.</string>
+    <string name="time_just_now">à l\'instant</string>
 </resources>

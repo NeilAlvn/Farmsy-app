@@ -1,11 +1,8 @@
 package app.farmsy.android.features.trips
 
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.location.Geocoder
 import android.content.Intent
 import android.net.Uri
-import androidx.core.graphics.createBitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +31,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.AlertDialog
@@ -74,18 +72,7 @@ import app.farmsy.android.features.discover.RecommendationCarousel
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.Polyline
-import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,7 +82,7 @@ import kotlinx.coroutines.withContext
 /// Stops come from "Add to trip" on a farm; the road route + totals come from
 /// POST /api/route; My trips is Pro-gated.
 @Composable
-fun TripsScreen(onOpenFarm: (FarmPin) -> Unit) {
+fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val farms = LocalFarms.current
     val trip = LocalTrip.current
     val session = LocalSession.current
@@ -108,14 +95,13 @@ fun TripsScreen(onOpenFarm: (FarmPin) -> Unit) {
     val originCoord by trip.originCoord.collectAsState()
     val originLabel by trip.originLabel.collectAsState()
     val mode by trip.mode.collectAsState()
-    val routeLine by trip.routeLine.collectAsState()
-    val traceProgress by trip.traceProgress.collectAsState()
+    // routeLine / traceProgress / fitToken are no longer read here — the route now
+    // renders on the shared map (MapScreen); "Show route" calls trip.requestFit().
     val distanceMeters by trip.distanceMeters.collectAsState()
     val durationSeconds by trip.durationSeconds.collectAsState()
     val isRouting by trip.isRouting.collectAsState()
     val onRoads by trip.onRoads.collectAsState()
     val savedTrips by trip.savedTrips.collectAsState()
-    val fitToken by trip.fitToken.collectAsState()
     val userSession by session.session.collectAsState()
     val profile by session.profile.collectAsState()
 
@@ -134,29 +120,34 @@ fun TripsScreen(onOpenFarm: (FarmPin) -> Unit) {
     LaunchedEffect(stopIds, originCoord) { trip.refreshRoute(pinIndex) }
     LaunchedEffect(uid) { uid?.let { trip.loadTrips(it) } }
 
-    val traced = remember(routeLine, traceProgress) { trip.tracedLine() }
+    // TripsScreen is now sheet content over the ONE shared map (owned by MainScreen);
+    // it no longer embeds its own GoogleMap. The route + numbered stops render on the
+    // shared map, and "Show route" bumps trip.fitToken to frame the trip there.
+    Column(
+        Modifier.fillMaxSize().background(FarmsyColors.cream)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        // Collapsed (0.5 detent): a quiet "drag up" cue; the trip-overview list tucks
+        // away so the header + actions stay on screen (iOS collapsed behaviour).
+        // PORT NOTE: iOS ties this to `detent == .fraction(0.5)`; Compose has no
+        // detent value, so MainScreen passes `collapsed` = the sheet's
+        // PartiallyExpanded state instead.
+        if (collapsed) {
+            Icon(
+                Icons.Filled.KeyboardArrowUp, null,
+                tint = FarmsyColors.inkMuted.copy(alpha = 0.8f),
+                modifier = Modifier.align(Alignment.CenterHorizontally).size(20.dp),
+            )
+        }
+        // Tabs
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TabButton(stringResource(R.string.plan_a_trip), planTab, Modifier.weight(1f)) { planTab = true }
+            TabButton(stringResource(R.string.my_trips), !planTab, Modifier.weight(1f)) { planTab = false }
+        }
 
-    Column(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
-        // --- Map with the route ---
-        TripMap(
-            stops = stops,
-            originCoord = originCoord,
-            traced = traced,
-            fitToken = fitToken,
-            modifier = Modifier.fillMaxWidth().height(280.dp),
-        )
-
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            // Tabs
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TabButton(stringResource(R.string.plan_a_trip), planTab, Modifier.weight(1f)) { planTab = true }
-                TabButton(stringResource(R.string.my_trips), !planTab, Modifier.weight(1f)) { planTab = false }
-            }
-
+        run {
             if (planTab) {
                 // Origin row
                 OriginRow(
@@ -178,26 +169,30 @@ fun TripsScreen(onOpenFarm: (FarmPin) -> Unit) {
                     onClear = { trip.clearOrigin(); scope.launch { trip.refreshRoute(pinIndex) } },
                 )
 
-                // Trip overview (numbered stops, 5-slot minimum)
-                Column(
-                    Modifier.fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(16.dp))
-                        .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp)),
-                ) {
-                    Text(
-                        stringResource(R.string.trip_overview), style = geist(16.sp, FontWeight.Bold),
-                        color = FarmsyColors.ink, modifier = Modifier.padding(14.dp),
-                    )
-                    val rows = maxOf(stops.size, 5)
-                    for (i in 0 until rows) {
-                        if (i < stops.size) {
-                            StopRow(
-                                index = i, pin = stops[i], legLabel = legLabel(i, stops, originCoord, mode),
-                                onRemove = { trip.remove(stops[i].osmId) },
-                                onOpen = { onOpenFarm(stops[i]) },
-                            )
-                        } else {
-                            EmptyStopRow(i)
+                // Trip overview (numbered stops, 5-slot minimum). Tucked away at the
+                // collapsed (0.5) detent so the header + actions stay on screen — this
+                // is reached by dragging the sheet down (collapsed = PartiallyExpanded).
+                if (!collapsed) {
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(16.dp))
+                            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp)),
+                    ) {
+                        Text(
+                            stringResource(R.string.trip_overview), style = geist(16.sp, FontWeight.Bold),
+                            color = FarmsyColors.ink, modifier = Modifier.padding(14.dp),
+                        )
+                        val rows = maxOf(stops.size, 5)
+                        for (i in 0 until rows) {
+                            if (i < stops.size) {
+                                StopRow(
+                                    index = i, pin = stops[i], legLabel = legLabel(i, stops, originCoord, mode),
+                                    onRemove = { trip.remove(stops[i].osmId) },
+                                    onOpen = { onOpenFarm(stops[i]) },
+                                )
+                            } else {
+                                EmptyStopRow(i)
+                            }
                         }
                     }
                 }
@@ -317,77 +312,6 @@ fun TripsScreen(onOpenFarm: (FarmPin) -> Unit) {
     }
 }
 
-// MARK: - Map
-
-@Composable
-private fun TripMap(
-    stops: List<FarmPin>,
-    originCoord: LatLng?,
-    traced: List<LatLng>,
-    fitToken: Int,
-    modifier: Modifier,
-) {
-    val camera = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(51.8, 4.7), 6.5f)
-    }
-    // Fit to the whole trip when it changes or when a fit is requested.
-    LaunchedEffect(fitToken, stops.size, originCoord, traced.size) {
-        val pts = buildList {
-            originCoord?.let { add(it) }
-            stops.forEach { add(LatLng(it.lat, it.lng)) }
-            addAll(traced)
-        }
-        if (pts.size == 1) {
-            camera.animate(CameraUpdateFactory.newLatLngZoom(pts.first(), 12f))
-        } else if (pts.size >= 2) {
-            val b = LatLngBounds.builder().apply { pts.forEach { include(it) } }.build()
-            runCatching { camera.animate(CameraUpdateFactory.newLatLngBounds(b, 120)) }
-        }
-    }
-
-    Box(modifier) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = camera,
-            uiSettings = MapUiSettings(zoomControlsEnabled = false, mapToolbarEnabled = false),
-            properties = MapProperties(),
-        ) {
-            if (traced.size >= 2) {
-                Polyline(points = traced, color = FarmsyColors.farmGreenMap, width = 12f)
-            }
-            originCoord?.let {
-                Marker(state = MarkerState(it), icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-            }
-            stops.forEachIndexed { i, pin ->
-                Marker(
-                    state = MarkerState(LatLng(pin.lat, pin.lng)),
-                    title = pin.name, snippet = pin.city,
-                    icon = numberedPin(i + 1),
-                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
-                )
-            }
-        }
-    }
-}
-
-/// A small green circle carrying the stop number — the trip's ordered markers.
-private val numberedPinCache = HashMap<Int, BitmapDescriptor>()
-private fun numberedPin(n: Int): BitmapDescriptor = numberedPinCache.getOrPut(n) {
-    val s = 72
-    val bmp = createBitmap(s, s)
-    val c = Canvas(bmp)
-    val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    p.color = 0x33000000
-    c.drawCircle(s / 2f, s / 2f + 2f, s / 2f - 6f, p)
-    p.color = 0xFF4E7F54.toInt()
-    c.drawCircle(s / 2f, s / 2f, s / 2f - 6f, p)
-    p.color = android.graphics.Color.WHITE
-    p.textSize = 34f
-    p.textAlign = Paint.Align.CENTER
-    val fm = p.fontMetrics
-    c.drawText(n.toString(), s / 2f, s / 2f - (fm.ascent + fm.descent) / 2f, p)
-    BitmapDescriptorFactory.fromBitmap(bmp)
-}
 
 // MARK: - Rows / controls
 

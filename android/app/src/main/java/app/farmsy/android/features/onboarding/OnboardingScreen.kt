@@ -127,9 +127,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     fun goBack() { if (index > 0) step = steps[index - 1] }
 
     fun finish() {
-        // Android's map is single-select — carry the first chosen category. Details
-        // prefs map onto the quick filters (added with the filter-groups work).
-        farms.selectedCategory.value = selectedCats.firstOrNull()
+        // Categories are multi-select now (iOS parity) — carry the whole chosen set.
+        // Details prefs map onto the quick filters.
+        farms.selectedCategories.value = selectedCats
         if (applyPrefs) {
             farms.filterVerified.value = prefs.verified
             farms.filterOpenToday.value = prefs.openToday

@@ -28,9 +28,16 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 /// Serif headline with the one-italic-word treatment (iOS DisplayTitle).
 @Composable
@@ -239,4 +246,91 @@ fun PlanCard(
             )
         }
     }
+}
+
+// MARK: - tapCard (iOS App/TapCard.swift) — a tap that does NOT fire when the
+// finger was actually scrolling, with an optional top-trailing exclusion for a
+// corner control (a save heart / close). Compose's detectTapGestures already
+// cancels the tap when the parent scrollable consumes the drag, so this reproduces
+// iOS TapActivate; `excludeTopTrailing` carves a square out of the top-right corner.
+// Fires a light haptic before the action, matching iOS `Haptics.tap()`
+// (UIImpactFeedback .light) — `TextHandleMove` is Compose's closest light tick.
+@Composable
+fun Modifier.tapCard(
+    excludeTopTrailing: androidx.compose.ui.unit.Dp? = null,
+    onTap: () -> Unit,
+): Modifier {
+    val haptics = LocalHapticFeedback.current
+    return this.then(
+        Modifier.pointerInput(excludeTopTrailing) {
+            val excludePx = excludeTopTrailing?.toPx()
+            detectTapGestures(onTap = { pos: androidx.compose.ui.geometry.Offset ->
+                val inExcluded = excludePx != null &&
+                    pos.x > size.width - excludePx && pos.y < excludePx
+                if (!inExcluded) {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onTap()
+                }
+            })
+        }
+    )
+}
+
+/// A description clamped to `lineLimit` lines with "… View more" at the end of the
+/// last visible line, expanding *inline* to the full text with "View less" when
+/// tapped (no modal). 1:1 with iOS ExpandableText (C7): truncation is detected from
+/// the real layout (hasVisualOverflow), the control appends at the exact end of the
+/// clamped text, and a tapCard toggles it. Shared component — S6's C4 teaser and S7's
+/// description both use this.
+@Composable
+fun ExpandableText(
+    text: String,
+    modifier: Modifier = Modifier,
+    lineLimit: Int = 3,
+    style: TextStyle = geist(15.sp),
+    color: Color = FarmsyColors.ink,
+    moreColor: Color = FarmsyColors.farmGreen,
+) {
+    var expanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var truncated by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var lastLineEnd by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+
+    val moreLabel = "  … View more"
+    val lessLabel = "  View less"
+
+    val display: AnnotatedString = buildAnnotatedString {
+        when {
+            expanded -> {
+                withStyle(SpanStyle(color = color)) { append(text) }
+                withStyle(SpanStyle(color = moreColor, fontWeight = FontWeight.Bold)) { append(lessLabel) }
+            }
+            truncated -> {
+                // Trim the clamped text back enough to fit "… View more" on the last
+                // line, matching iOS's truncate-to-fit.
+                val cut = lastLineEnd.coerceIn(0, text.length)
+                val head = text.substring(0, cut)
+                    .dropLast(moreLabel.length.coerceAtMost(cut))
+                    .trimEnd()
+                withStyle(SpanStyle(color = color)) { append(head) }
+                withStyle(SpanStyle(color = moreColor, fontWeight = FontWeight.Bold)) { append(moreLabel) }
+            }
+            else -> withStyle(SpanStyle(color = color)) { append(text) }
+        }
+    }
+
+    Text(
+        text = display,
+        style = style,
+        maxLines = if (expanded) Int.MAX_VALUE else lineLimit,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { res ->
+            if (!expanded && !truncated && res.hasVisualOverflow) {
+                truncated = true
+                lastLineEnd = res.getLineEnd(lineLimit - 1, visibleEnd = true)
+            }
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (truncated || expanded) Modifier.tapCard { expanded = !expanded } else Modifier),
+    )
 }

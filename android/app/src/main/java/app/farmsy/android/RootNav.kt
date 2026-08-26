@@ -20,16 +20,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import app.farmsy.android.core.FarmPin
 import app.farmsy.android.features.auth.AuthSheet
-import app.farmsy.android.features.detail.FarmDetailScreen
 import app.farmsy.android.features.main.MainScreen
 import app.farmsy.android.features.onboarding.OnboardingScreen
 import app.farmsy.android.features.splash.SplashScreen
 import app.farmsy.android.ui.theme.FarmsyColors
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
 
 /// Splash → onboarding (first run) → main app. Browsing is open to everyone;
@@ -47,7 +42,6 @@ fun RootNav() {
         mutableStateOf(prefs.getBoolean("didFinishOnboarding", false))
     }
     var showAuth by remember { mutableStateOf(false) }
-    var openPin by remember { mutableStateOf<FarmPin?>(null) }
 
     val isBootstrapped by session.isBootstrapped.collectAsState()
     val currentSession by session.session.collectAsState()
@@ -79,30 +73,10 @@ fun RootNav() {
                     prefs.edit().putBoolean("didFinishOnboarding", true).apply()
                     didFinishOnboarding = true
                 }
-                Screen.Main -> MainScreen(
-                    // Farm cards open for everyone, signed out included (iOS MainView
-                    // §0) — the card shows the free content and locks the paid fields
-                    // inside. Save/subscribe prompt for an account from within the card.
-                    onOpenFarm = { pin -> openPin = pin }
-                )
-            }
-        }
-
-        // Farm detail as an overlay "push" (simple + state-preserving).
-        //
-        // It used to be a bare `openPin?.let { … }`, which snapped the whole screen
-        // in and out with no animation at all — the detail just *appeared*. Slide it
-        // in from the trailing edge like the iOS navigation push. `lastPin` outlives
-        // `openPin` so the screen still has something to draw on the way out.
-        var lastPin by remember { mutableStateOf<FarmPin?>(null) }
-        LaunchedEffect(openPin) { openPin?.let { lastPin = it } }
-        AnimatedVisibility(
-            visible = openPin != null,
-            enter = slideInHorizontally(tween(300)) { it } + fadeIn(tween(200)),
-            exit = slideOutHorizontally(tween(260)) { it } + fadeOut(tween(200)),
-        ) {
-            lastPin?.let { pin ->
-                FarmDetailScreen(pin = pin, onBack = { openPin = null })
+                // Farm detail is no longer a RootNav push. MainScreen owns the single
+                // shared map and presents the farm card as a detented sheet OVER it
+                // (iOS MainView architecture), so it opens farms itself.
+                Screen.Main -> MainScreen()
             }
         }
 

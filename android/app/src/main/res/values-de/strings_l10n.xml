@@ -260,4 +260,10 @@
     <string name="start_exploring">Loslegen</string>
     <string name="saved_farms">Gespeicherte Höfe</string>
     <string name="tap_a_heart_to_save_a_farm">Tippe auf ein Herz, um einen Hof zu speichern</string>
+    <string name="auth_pw_placeholder">Mindestens 8 Zeichen</string>
+    <string name="auth_confirm_placeholder">Passwort wiederholen</string>
+    <string name="whats_new">NEUIGKEITEN</string>
+    <string name="featured_farms">EMPFOHLENE HÖFE</string>
+    <string name="no_posts_yet">Noch keine Beiträge — schau bald wieder vorbei.</string>
+    <string name="time_just_now">gerade eben</string>
 </resources>

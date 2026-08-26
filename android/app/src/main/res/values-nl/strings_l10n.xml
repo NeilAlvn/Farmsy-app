@@ -260,4 +260,10 @@
     <string name="start_exploring">Begin met ontdekken</string>
     <string name="saved_farms">Bewaarde boerderijen</string>
     <string name="tap_a_heart_to_save_a_farm">Tik op een hartje om een boerderij te bewaren</string>
+    <string name="auth_pw_placeholder">Minstens 8 tekens</string>
+    <string name="auth_confirm_placeholder">Herhaal wachtwoord</string>
+    <string name="whats_new">WAT\'S NIEUW</string>
+    <string name="featured_farms">UITGELICHTE BOERDERIJEN</string>
+    <string name="no_posts_yet">Nog geen berichten — kom snel terug.</string>
+    <string name="time_just_now">zojuist</string>
 </resources>
