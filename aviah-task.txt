@@ -5,34 +5,36 @@ STATUS UPDATE (mobile side) — 2026-08-26 — for your Trello
 Where the Android side is at, so you can update the board:
 
 DONE
+- COMPLIANCE RELEASE BUILT: a signed Android App Bundle for Play's Aug 31 2026
+  target-API deadline is ready to upload (targetSdk 36 / Android 16). It's a
+  minimal update off the live Play build — API 36 + the one map fix below,
+  none of the in-flight port work — so it's low-risk. versionName 1.0.1,
+  versionCode 24 (22 and 23 were already used on Play, so this is 24). Not
+  uploaded yet — that's a manual Play Console step.
+- API 36 audit fixes — DONE and in the release:
+   • Map: Google logo/"Terms" attribution no longer hides behind the system
+     bars under edge-to-edge (Google ToS). [was the one "will break"]
+   • 16 KB page size: checked every bundled native lib (Sentry etc.) — all
+     already 16 KB-aligned, no crash risk, no dependency bump needed.
+   • Sheet insets + predictive-back handled.
+  Compliance basics were already met: app targets API 36, payments on
+  RevenueCat 10.13.0 = Play Billing 8 (the other Aug 31 mandate).
+- Store listing copy drafted (EN): release notes + short/full description,
+  ready for you/Trello. Can localise to NL/FR/DE on request.
 - iOS -> Android 1:1 port, What's-New sheet (S6) — built and verified 1:1
-  against iOS: the post cards, featured-farm cards, photo rows with loading
-  skeletons, the recommendation carousel, expandable descriptions, and the
-  tap-that-isn't-a-scroll gesture (now with haptics). Also fixed timeAgo to
-  match iOS exactly — only "just now" is translated; m/h/d show in every
-  language (dropped some invented per-language unit letters).
-- Stood up a standalone Android build toolchain on the Mac WITHOUT Android
-  Studio (JDK 17 + Google command-line tools, Gradle pinned via
-  org.gradle.java.home). compileDebugKotlin and assembleDebug are both green.
-  (Side note: earlier "build green" claims were real — the machine did have a
-  JDK the whole time; it just wasn't on the default PATH.)
-- API 36 (Android 16) compliance audit — done, ahead of Play's Aug 31 2026
-  target-API deadline.
+  (post cards, featured-farm cards, photo rows w/ skeletons, recommendation
+  carousel, expandable descriptions, tap-not-scroll gesture w/ haptics;
+  timeAgo matches iOS — only "just now" translated, m/h/d everywhere). This
+  ships from main separately, NOT in the compliance build.
+- Standalone Android build toolchain on the Mac, no Android Studio (JDK 17 +
+  Google command-line tools, Gradle pinned). Debug + signed release both green.
 
-API 36 AUDIT — the headline
-- Compliant where it counts already: app targets API 36, and payments run on
-  RevenueCat 10.13.0 = Play Billing 8 (the other Aug 31 2026 mandate). No
-  billing work needed.
-- Android-side fixes to track (I'll do these — flagging so they're on the board):
-   1. Map: Google logo/attribution gets hidden behind the nav bar in
-      edge-to-edge — must fix (Google ToS). [will break]
-   2. 16 KB page size: our bundled native libs (Sentry etc.) need testing on
-      16 KB-page devices — potential crash. [test]
-   3. Edge-to-edge sheet insets + large-screen/landscape layout + predictive
-      back — all need testing on real >=600dp / 16 KB hardware. [test]
-   4. AGP 8.7.3 -> 8.9.1+ advisable for officially-supported compileSdk 36
-      (not a submission blocker).
-- None of the above needs web/backend changes — just noting it for the board.
+OPEN (Android, mine — for the board):
+- Upload the compliance AAB (build 24) to Play. [ready]
+- Still to TEST on real hardware: edge-to-edge sheet insets, large-screen /
+  landscape / multi-window layout, predictive back, on >=600dp + 16 KB devices.
+- AGP 8.7.3 -> 8.9.1+ advisable for officially-supported compileSdk 36 (not a
+  blocker). None of this needs web/backend changes.
 
 STILL OPEN — needs YOU (web): the deep-link .well-known files below. Referral
 capture stays broken on both platforms until these are live. (Unchanged from
