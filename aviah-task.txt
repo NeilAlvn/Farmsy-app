@@ -1,3 +1,45 @@
+========================================================================
+STATUS UPDATE (mobile side) — 2026-08-26 — for your Trello
+========================================================================
+
+Where the Android side is at, so you can update the board:
+
+DONE
+- iOS -> Android 1:1 port, What's-New sheet (S6) — built and verified 1:1
+  against iOS: the post cards, featured-farm cards, photo rows with loading
+  skeletons, the recommendation carousel, expandable descriptions, and the
+  tap-that-isn't-a-scroll gesture (now with haptics). Also fixed timeAgo to
+  match iOS exactly — only "just now" is translated; m/h/d show in every
+  language (dropped some invented per-language unit letters).
+- Stood up a standalone Android build toolchain on the Mac WITHOUT Android
+  Studio (JDK 17 + Google command-line tools, Gradle pinned via
+  org.gradle.java.home). compileDebugKotlin and assembleDebug are both green.
+  (Side note: earlier "build green" claims were real — the machine did have a
+  JDK the whole time; it just wasn't on the default PATH.)
+- API 36 (Android 16) compliance audit — done, ahead of Play's Aug 31 2026
+  target-API deadline.
+
+API 36 AUDIT — the headline
+- Compliant where it counts already: app targets API 36, and payments run on
+  RevenueCat 10.13.0 = Play Billing 8 (the other Aug 31 2026 mandate). No
+  billing work needed.
+- Android-side fixes to track (I'll do these — flagging so they're on the board):
+   1. Map: Google logo/attribution gets hidden behind the nav bar in
+      edge-to-edge — must fix (Google ToS). [will break]
+   2. 16 KB page size: our bundled native libs (Sentry etc.) need testing on
+      16 KB-page devices — potential crash. [test]
+   3. Edge-to-edge sheet insets + large-screen/landscape layout + predictive
+      back — all need testing on real >=600dp / 16 KB hardware. [test]
+   4. AGP 8.7.3 -> 8.9.1+ advisable for officially-supported compileSdk 36
+      (not a submission blocker).
+- None of the above needs web/backend changes — just noting it for the board.
+
+STILL OPEN — needs YOU (web): the deep-link .well-known files below. Referral
+capture stays broken on both platforms until these are live. (Unchanged from
+before — leaving the full details in place.)
+
+------------------------------------------------------------------------
+
 Hey — deep links are broken, and it's a web-side fix. Real impact: this is the referral capture path, so right now referrals silently don't get credited.
 
 The flow is meant to be: someone taps farmsy.app/join?ref=CODE with the app installed -> OS opens the app -> app grabs the ref code, holds it, and sends it on signup so the referrer gets credited (mirrors the web's 7-day farmsy_ref cookie). Because the .well-known files are empty, the OS won't verify the app, so /join?ref=CODE just opens the browser, the app never sees the code, and the referrer is never credited. Fails silently — worst kind.
