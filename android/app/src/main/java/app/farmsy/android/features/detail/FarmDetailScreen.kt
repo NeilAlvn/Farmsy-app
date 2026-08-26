@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -338,9 +337,11 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
             }
         }
 
-        // Top bar: back + favorite
+        // Top bar: back + favorite. No statusBarsPadding: this always renders inside
+        // the detented sheet (capped at 0.92, never full-screen), whose top is well
+        // below the status bar — status-bar padding here just added phantom top space.
         Row(
-            Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp),
+            Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = onBack)
@@ -444,8 +445,9 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
     }
 
     Column(
+        // No statusBarsPadding: rendered inside the detented sheet, not full-screen.
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-            .statusBarsPadding().padding(20.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {

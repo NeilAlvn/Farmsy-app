@@ -1,5 +1,6 @@
 package app.farmsy.android.features.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -142,6 +143,14 @@ fun MainScreen() {
     }
     val collapsed = sheetState.currentValue == SheetValue.PartiallyExpanded
 
+    // System back closes an open sheet (same clear as dragging it to Hidden) instead
+    // of leaving the app. Only enabled while a sheet is up, so on the bare map back
+    // still exits. At API 36 predictive back is on by default, so this also drives the
+    // predictive dismiss animation for the sheet rather than the app-exit animation.
+    BackHandler(enabled = route != null) {
+        route = null; selectedPin = null; focusPin = null
+    }
+
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = peek,
@@ -151,7 +160,11 @@ fun MainScreen() {
             // screen tall, so BottomSheetScaffold's Expanded state settles at a
             // declared 0.92 (not an emergent content height) — a strip of the live
             // map stays visible. The peek height gives the partial detent.
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.92f)) {
+            // navigationBarsPadding: edge-to-edge (mandatory at API 36) draws the
+            // sheet behind the gesture bar; without this the last row of a scrollable
+            // route (feed / detail) sits under it. BottomSheetScaffold does not inset
+            // sheet content for the nav bar, so we do it here for every route.
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.92f).navigationBarsPadding()) {
                 when (route) {
                     SheetRoute.FARM -> selectedPin?.let { pin ->
                         FarmDetailScreen(pin = pin, onBack = { route = null })

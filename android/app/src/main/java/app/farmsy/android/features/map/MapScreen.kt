@@ -21,10 +21,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -413,11 +417,24 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
         }
     }
 
+    // Map content padding = the system bars + the floating-pill clearance
+    // (`bottomInset`). Google Maps positions its logo and the required "Terms"
+    // legal attribution *inside* this padding, so with edge-to-edge (mandatory at
+    // API 36) the attribution clears the status/nav bars and the bottom pill
+    // instead of drawing under them — a Maps ToS requirement. Static, so it holds
+    // in every sheet detent. (Previously `bottomInset` was never applied.)
+    val systemBars = WindowInsets.systemBars.asPaddingValues()
+    val mapContentPadding = PaddingValues(
+        top = systemBars.calculateTopPadding(),
+        bottom = systemBars.calculateBottomPadding() + bottomInset,
+    )
+
     Box(Modifier.fillMaxSize()) {
         run {
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                contentPadding = mapContentPadding,
                 properties = MapProperties(
                     mapType = MapType.NORMAL,
                     isMyLocationEnabled = locationHelper.hasPermission(),
