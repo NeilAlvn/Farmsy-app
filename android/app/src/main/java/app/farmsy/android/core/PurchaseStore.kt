@@ -46,6 +46,9 @@ class PurchaseStore {
     val yearlyPrice: String? get() = _yearly.value?.product?.price?.formatted
     val lifetimePrice: String? get() = _lifetime.value?.product?.price?.formatted
 
+    /// Back-compat alias for the headline price. Mirrors iOS `displayPrice`.
+    val displayPrice: String? get() = yearlyPrice
+
     /// Length of the yearly plan's free trial in days, or null when there isn't one.
     ///
     /// Read from the store, never hardcoded: Play only attaches the free phase for
@@ -105,6 +108,18 @@ class PurchaseStore {
     private val _offeringFailed = MutableStateFlow(false)
     val offeringFailed: StateFlow<Boolean> = _offeringFailed.asStateFlow()
 
+    /// True once a load attempt has actually *finished* (success or failure), so the
+    /// paywall can tell "still fetching" apart from "fetched, nothing to sell."
+    /// Mirrors iOS `didLoadOffering`.
+    private val _didLoadOffering = MutableStateFlow(false)
+    val didLoadOffering: StateFlow<Boolean> = _didLoadOffering.asStateFlow()
+
+    /// We finished a fetch and still have no purchasable yearly product — the
+    /// App-Review-deadlock case (products rejected/unavailable, or a network
+    /// failure). The paywall must show a real message + retry here, never an endless
+    /// spinner. Mirrors iOS `productsUnavailable` = didLoadOffering && yearlyPackage == nil.
+    val productsUnavailable: Boolean get() = _didLoadOffering.value && _yearly.value == null
+
     /// Fetches the offering once and keeps it. The paywall used to call this on
     /// every open, so each visit paid the full RevenueCat round-trip (plus Play's
     /// product lookup) before it could draw the buttons — a wait long enough to
@@ -116,7 +131,9 @@ class PurchaseStore {
     /// ceiling the caller waits on those retries with nothing on screen. Better to
     /// give up at 10s and offer a retry than to leave someone staring at a spinner.
     suspend fun loadOffering(force: Boolean = false) {
-        if (!enabled) return
+        // Match iOS: when billing is disabled (no key), a load "finished" with nothing
+        // to sell — so didLoadOffering is true even though we never called the store.
+        if (!enabled) { _didLoadOffering.value = true; return }
         if (!force && _yearly.value != null) return
         val ok = runCatching {
             kotlinx.coroutines.withTimeout(10_000) {
@@ -131,6 +148,8 @@ class PurchaseStore {
             }
         }.isSuccess
         _offeringFailed.value = !ok || _yearly.value == null
+        // A load attempt has now finished (success or failure) — mirrors iOS.
+        _didLoadOffering.value = true
     }
 
     /// Buys the membership. Returns true once the purchase completes — the caller

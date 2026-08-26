@@ -41,7 +41,9 @@ class FarmsStore(private val scope: CoroutineScope) {
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
 
     val searchText = MutableStateFlow("")
-    val selectedCategory = MutableStateFlow<FarmCategory?>(null)
+    /// Categories are multi-select, like the web filter — a farm matches if it is in
+    /// ANY selected category. Empty means "all". Mirrors iOS `selectedCategories`.
+    val selectedCategories = MutableStateFlow<Set<FarmCategory>>(emptySet())
 
     // Quick filters + the two new axes (Aviah's taxonomy) — mirror iOS. They
     // combine with the category selection rather than replacing it.
@@ -53,14 +55,19 @@ class FarmsStore(private val scope: CoroutineScope) {
     val selectedPlaceTypes = MutableStateFlow<Set<String>>(emptySet())
     val selectedMethods = MutableStateFlow<Set<String>>(emptySet())
 
+    /// Any of the quick-filter toggles on (Verified / Open today / Automaat /
+    /// Zelfpluk / Has photos) — excludes categories and the two axes. Mirrors iOS.
+    fun anyQuickFilterOn(): Boolean =
+        filterVerified.value || filterOpenToday.value || filterAutomaat.value ||
+            filterZelfpluk.value || filterHasPhotos.value
+
     fun anyFilterOn(): Boolean =
-        selectedCategory.value != null ||
-            filterVerified.value || filterOpenToday.value || filterAutomaat.value ||
-            filterZelfpluk.value || filterHasPhotos.value ||
+        anyQuickFilterOn() ||
+            selectedCategories.value.isNotEmpty() ||
             selectedPlaceTypes.value.isNotEmpty() || selectedMethods.value.isNotEmpty()
 
     fun clearAllFilters() {
-        selectedCategory.value = null
+        selectedCategories.value = emptySet()
         filterVerified.value = false; filterOpenToday.value = false
         filterAutomaat.value = false; filterZelfpluk.value = false; filterHasPhotos.value = false
         selectedPlaceTypes.value = emptySet(); selectedMethods.value = emptySet()
@@ -79,6 +86,21 @@ class FarmsStore(private val scope: CoroutineScope) {
     private var produceByOsm: Map<String, String> = emptyMap()
     private var locationTypesByOsm: Map<String, List<String>> = emptyMap()
     private var methodsByOsm: Map<String, List<String>> = emptyMap()
+
+    // Featured farms (What's New shelf): a farm's gallery photos from the public
+    // flags endpoint (kept only when it has 2+ photos), plus a *cached, once-
+    // shuffled* order so the shelf doesn't reshuffle every time the sheet opens.
+    // Both persist for the session. Mirrors iOS FarmsStore.
+    private val _galleries = MutableStateFlow<Map<String, List<String>>>(emptyMap())
+    val galleries: StateFlow<Map<String, List<String>>> = _galleries.asStateFlow()
+    private val _galleriesLoaded = MutableStateFlow(false)
+    val galleriesLoaded: StateFlow<Boolean> = _galleriesLoaded.asStateFlow()
+    private val _featuredOrder = MutableStateFlow<List<String>>(emptyList())
+    val featuredOrder: StateFlow<List<String>> = _featuredOrder.asStateFlow()
+    /// Prefetched description teasers for the featured farms, so the cards render
+    /// instantly and the shelf can put farms *with* a description first.
+    private val _featuredTeasers = MutableStateFlow<Map<String, String>>(emptyMap())
+    val featuredTeasers: StateFlow<Map<String, String>> = _featuredTeasers.asStateFlow()
 
     private val radiusNearMe = 15.0
     private val radiusNamedPlace = 25.0
@@ -99,15 +121,55 @@ class FarmsStore(private val scope: CoroutineScope) {
             produceByOsm = rows.mapNotNull { r -> r.p?.takeIf { it.isNotEmpty() }?.let { r.o to it.lowercase() } }.toMap()
             locationTypesByOsm = rows.mapNotNull { r -> r.l?.takeIf { it.isNotEmpty() }?.let { r.o to it } }.toMap()
             methodsByOsm = rows.mapNotNull { r -> r.m?.takeIf { it.isNotEmpty() }?.let { r.o to it } }.toMap()
+            // Gallery photos, kept only for farms with 2+ photos — same rule as iOS
+            // (`if (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }`), for the featured shelf.
+            _galleries.value = rows.mapNotNull { r ->
+                r.g?.takeIf { it.size >= 2 }?.let { r.o to it }
+            }.toMap()
             flagsLoaded = true
         } catch (e: Exception) { /* leave maps empty; AI still filters on categories */ }
     }
+
+    /// Fetch the galleries once, prefetch their description teasers, and freeze an
+    /// order — farms that have a description first (so the top of the shelf always
+    /// has one), shuffled within each group. Mirrors iOS loadGalleriesIfNeeded: the
+    /// order freezes on first successful load (guarded by galleriesLoaded) and
+    /// nothing invalidates it for the rest of the session.
+    ///
+    /// PORT NOTE (structural): iOS prefetches per-id via `FarmDetailAPI.teaser` in a
+    /// concurrent TaskGroup; here we use the batch `FarmDetailApi.teasers` (server
+    /// caps 60/call, so ids are chunked into 60s) — fewer round trips, same result.
+    suspend fun loadGalleriesIfNeeded() {
+        loadFlagsIfNeeded()
+        if (_galleriesLoaded.value) return
+        val ids = _galleries.value.keys.toList()
+
+        val teasers = HashMap<String, String>()
+        withContext(Dispatchers.IO) {
+            ids.chunked(60).forEach { batch ->
+                teasers.putAll(FarmDetailApi.teasers(batch))
+            }
+        }
+        _featuredTeasers.value = teasers
+
+        val described = ids.filter { teasers[it] != null }.shuffled()
+        val rest = ids.filter { teasers[it] == null }.shuffled()
+        _featuredOrder.value = described + rest
+        _galleriesLoaded.value = true
+    }
+
+    /// The featured farms, in the frozen random order, resolved to pins. Mirrors iOS.
+    val featuredFarms: List<FarmPin>
+        get() {
+            val byId = _pins.value.associateBy { it.osmId }
+            return _featuredOrder.value.mapNotNull { byId[it] }
+        }
 
     /// Apply a parsed AI intent — takes over filtering and resolves the centre
     /// (server `center`, or the user's own location for a nearMe query).
     suspend fun applyAISearch(intent: SmartSearchIntent, userLocation: Location?) {
         loadFlagsIfNeeded()
-        selectedCategory.value = null
+        clearAllFilters()
         aiIntent.value = intent
         when {
             intent.center != null -> {
@@ -170,8 +232,10 @@ class FarmsStore(private val scope: CoroutineScope) {
         aiIntent.value?.let { return filteredForAI(it) }
 
         var result = _pins.value
-        selectedCategory.value?.let { cat ->
-            result = result.filter { it.categories.contains(cat) }
+        // Multi-select: a farm matches if it is in ANY selected category (iOS parity).
+        val cats = selectedCategories.value
+        if (cats.isNotEmpty()) {
+            result = result.filter { pin -> pin.categories.any { it in cats } }
         }
         if (filterVerified.value) result = result.filter { it.isVerified }
         if (filterOpenToday.value) result = result.filter { FarmFilters.isOpenToday(it.openingHours) }
@@ -294,4 +358,14 @@ class FarmsStore(private val scope: CoroutineScope) {
         limit: Int = 6,
     ): List<FarmPin> =
         feedPicks(location, limit = 40).filter { it.osmId !in excluding }.take(limit)
+
+    /// Farms within `radiusKm` that have at least one photo, nearest first. Powers
+    /// the onboarding "farms near you" shelf. Mirrors iOS nearbyWithImages.
+    fun nearbyWithImages(lat: Double, lng: Double, radiusKm: Double = 100.0): List<FarmPin> =
+        _pins.value
+            .filter { it.image != null }
+            .map { it to it.distanceMeters(lat, lng) }
+            .filter { it.second <= radiusKm * 1000 }
+            .sortedBy { it.second }
+            .map { it.first }
 }

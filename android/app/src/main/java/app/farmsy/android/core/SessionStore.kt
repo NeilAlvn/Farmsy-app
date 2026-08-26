@@ -68,6 +68,20 @@ class SessionStore(private val scope: CoroutineScope) {
     val hasFullAccess: Boolean get() = _profile.value?.hasFullAccess ?: false
     val email: String get() = _session.value?.user?.email ?: ""
 
+    /// Author name for posts/reviews, composed the way the web does: full name
+    /// from the profile, else the email prefix, else "Someone". Mirrors iOS
+    /// SessionStore.displayName.
+    val displayName: String
+        get() {
+            val full = listOfNotNull(_profile.value?.firstName, _profile.value?.lastName)
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString(" ")
+            if (full.isNotEmpty()) return full
+            val prefix = email.substringBefore("@")
+            return prefix.ifEmpty { "Someone" }
+        }
+
     fun bootstrap() {
         // Never let a slow or missing network hold the splash hostage: if auth
         // hasn't reported within a couple of seconds, carry on as a guest.

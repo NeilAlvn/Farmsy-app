@@ -215,14 +215,27 @@ data class Profile(
     /// web subscriber into Google Play to find nothing is the kind of dead end that
     /// reads as hiding the cancel button.
     @SerialName("subscription_source") val subscriptionSource: String? = null,
+    /// 'admin', 'farmer' or 'user'. Admins (Neil, Luuk) and farmers who own a farm
+    /// get full access with no subscription — the same `hasPaidAccess()` rule the
+    /// server applies, mirrored here so the app doesn't need a round trip to know.
+    @SerialName("role") val role: String? = null,
+    /// The 13 who paid during the original paywalled era — also full access.
+    @SerialName("founding_member") val foundingMember: Boolean? = null,
+    /// Name for authoring posts/reviews (added to /api/profile/status by Aviah).
+    @SerialName("first_name") val firstName: String? = null,
+    @SerialName("last_name") val lastName: String? = null,
 ) {
-    /// Same rule as the web's isPaid(): active/trialing always pass, and a
-    /// canceled plan keeps access until the already-paid period runs out.
+    /// Same order as the web's `hasPaidAccess()`: admin → farmer → founding member
+    /// → active/trialing → a canceled plan still inside its paid period.
     val hasFullAccess: Boolean
-        get() = when (subscriptionStatus) {
-            "active", "trialing" -> true
-            "canceled" -> parsePostgresDate(subscriptionEndDate)?.isAfter(OffsetDateTime.now()) ?: false
-            else -> false
+        get() {
+            if (role == "admin" || role == "farmer") return true
+            if (foundingMember == true) return true
+            return when (subscriptionStatus) {
+                "active", "trialing" -> true
+                "canceled" -> parsePostgresDate(subscriptionEndDate)?.isAfter(OffsetDateTime.now()) ?: false
+                else -> false
+            }
         }
 
     companion object {
@@ -239,3 +252,51 @@ data class Profile(
         }
     }
 }
+
+// MARK: Farm post ("What's new" ping, read straight from Supabase) — mirrors iOS Ping
+
+/// A short post a farm published, with up to 3 photos. Read via RLS
+/// (status = 'visible'); author_name is denormalised on the row so it survives
+/// an account being deleted. like_count is kept by a trigger.
+@Serializable
+data class Ping(
+    val id: String,
+    @SerialName("farm_osm_id") val farmOsmId: String,
+    @SerialName("author_name") val authorName: String,
+    val body: String,
+    @SerialName("like_count") val likeCount: Int = 0,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("farm_ping_images") private val imageRows: List<PingImageRow> = emptyList(),
+) {
+    @Serializable
+    data class PingImageRow(val url: String, @SerialName("sort_order") val sortOrder: Int = 0)
+
+    /// Photo URLs in sort order.
+    val images: List<String> get() = imageRows.sortedBy { it.sortOrder }.map { it.url }
+
+    /// Parsed timestamp, tolerant of the fractional seconds Postgres emits
+    /// (reuses Profile.parsePostgresDate).
+    val date: OffsetDateTime? get() = Profile.parsePostgresDate(createdAt)
+}
+
+// MARK: Review (public read from `reviews`; write is upsert-own) — mirrors iOS Review
+
+/// A farm review. `reviewer_name` is denormalised on the row (use it, don't join).
+/// `rating` is 1–5; `body` is optional. One review per user per farm (unique
+/// constraint), so writing is an upsert of the caller's own row.
+@Serializable
+data class Review(
+    val id: String,
+    @SerialName("user_id") val userId: String? = null,
+    @SerialName("reviewer_name") val reviewerName: String = "?",
+    val rating: Int = 0,
+    val body: String? = null,
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+// MARK: Farm teaser (public description opener) — mirrors iOS FarmTeaser
+
+/// The first ~200 characters of a farm's description, cut on a word. `truncated`
+/// is true when there is more behind the paywall, which drives the "View more".
+@Serializable
+data class FarmTeaser(val text: String, val truncated: Boolean = false)
