@@ -1,7 +1,9 @@
 import Foundation
 
 enum FarmDetailError: Error {
-    case locked      // 401/403 — no active subscription on this account
+    case locked      // 401 — no valid session (sign in required). Details are a
+                     // sign-up wall now, not a paywall: the server dropped the paid
+                     // check, so 403 no longer occurs on this route.
     case notFound
     case other
 }
@@ -31,7 +33,9 @@ enum FarmDetailAPI {
         switch status {
         case 200:
             return try JSONDecoder().decode(FarmDetail.self, from: data)
-        case 401, 403:
+        case 401:
+            // Details are a sign-up wall now — 403 (paid gate) is gone from the
+            // route; 401 means no valid session.
             throw FarmDetailError.locked
         case 404:
             throw FarmDetailError.notFound
@@ -40,11 +44,11 @@ enum FarmDetailAPI {
         }
     }
 
-    /// The opening of a farm's description, for someone without a membership.
-    /// Public on purpose — a farm that has written about itself gets to say its
-    /// first sentence to every visitor, which is the reason to unlock the rest.
-    /// The full text stays behind the 403 on `fetch(osmId:)`. Best-effort: any
-    /// failure yields nil and the card simply shows no teaser.
+    /// The opening of a farm's description, shown to a signed-out visitor above the
+    /// sign-up wall. Public on purpose — a farm that has written about itself gets to
+    /// say its first sentence to everyone, which is the reason to make an account.
+    /// The full detail is behind the 401 on `fetch(osmId:)` (no session). Best-effort:
+    /// any failure yields nil and the card simply shows no teaser.
     static func teaser(osmId: String) async -> FarmTeaser? {
         guard let url = farmURL(osmId, suffix: "/teaser"),
               let (data, response) = try? await URLSession.shared.data(from: url),

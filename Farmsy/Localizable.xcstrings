@@ -11154,6 +11154,72 @@
           }
         }
       }
+    },
+    "See this farm, free": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen Hof ansehen, kostenlos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir cette ferme, gratuitement"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijk deze boerderij, gratis"
+          }
+        }
+      }
+    },
+    "Address, phone, opening times and what they sell. One free account opens every farm on the map.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse, Telefon, Öffnungszeiten und was verkauft wird. Ein kostenloses Konto öffnet jeden Hof auf der Karte."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse, téléphone, horaires et ce qu’ils vendent. Un compte gratuit ouvre toutes les fermes de la carte."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart."
+          }
+        }
+      }
+    },
+    "Create a free account": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenloses Konto erstellen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un compte gratuit"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maak een gratis account aan"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

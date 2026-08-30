@@ -19,6 +19,9 @@ struct FarmDetailView: View {
     @State private var teaser: FarmTeaser?
     @State private var isLoading = true
     @State private var isLocked = false
+    /// A transient fetch failure for a SIGNED-IN user — never a lock (a lock is a
+    /// permission statement; this is a network failure). Shows an error + retry.
+    @State private var loadFailed = false
     @State private var showClaim = false
     @State private var showPaywall = false
     @State private var showSignIn = false
@@ -43,6 +46,9 @@ struct FarmDetailView: View {
 
                     if isLoading && detail == nil && teaser == nil {
                         cardSkeleton
+                            .padding(.horizontal, 14)
+                    } else if loadFailed {
+                        loadErrorView
                             .padding(.horizontal, 14)
                     } else if isLocked {
                         lockedSections
@@ -87,16 +93,20 @@ struct FarmDetailView: View {
 
     private func reload() async {
         isLoading = true
+        isLocked = false
+        loadFailed = false
         defer { isLoading = false }
 
         await session.refreshProfile()
+        // No session → the sign-up wall (401 from fetch means the same thing).
         guard let token = session.session?.accessToken else {
             isLocked = true
             await loadTeaser()
             return
         }
-        // The farmsy.app API is the source of truth for access — always ask
-        // it, and only its explicit 401/403 means "no subscription".
+        // The farmsy.app API is the source of truth — details are a sign-up wall
+        // now, so a signed-in account (free or paid) gets the data; only a 401
+        // (no valid session) locks.
         do {
             detail = try await FarmDetailAPI.fetch(osmId: pin.osmId, accessToken: token)
             isLocked = false
@@ -104,14 +114,11 @@ struct FarmDetailView: View {
             isLocked = true
             await loadTeaser()
         } catch {
-            // Transient failure: keep the member view if the profile says the
-            // account has access, otherwise fall back to the open/locked card.
-            if session.hasFullAccess {
-                isLocked = false
-            } else {
-                isLocked = true
-                await loadTeaser()
-            }
+            // A signed-in transient failure. NEVER a lock — every signed-in account
+            // is entitled to the details, so a network blip must not read as "you
+            // can't have this" (which sends a free user to a paywall they're past).
+            // Show error + retry regardless of subscription status.
+            loadFailed = true
         }
     }
 
@@ -202,7 +209,9 @@ struct FarmDetailView: View {
 
     private var ratingRow: some View {
         Button {
-            if isLocked { Haptics.tap(); showPaywall = true }
+            // Reviews are a detail behind the sign-up wall now, not Pro — signed
+            // out → sign-in (was paywall).
+            if isLocked { Haptics.tap(); showSignIn = true }
         } label: {
             HStack(spacing: 6) {
                 if let rating = pin.avgRating {
@@ -267,39 +276,20 @@ struct FarmDetailView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Trip button (Pro, not built yet — a locked, dashed prompt)
+    // MARK: - Trip button (free — add to / remove from the trip)
 
     @ViewBuilder
     private var tripButton: some View {
         if isLoading && detail == nil && teaser == nil {
-            // Pro status unknown — a placeholder rather than flashing "upgrade".
             SkeletonBox(cornerRadius: 16).frame(height: 44)
-        } else if isLocked {
-            // Non-member: the locked, dashed prompt.
-            Button {
-                Haptics.tap()
-                gateLocked()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "lock.fill").font(.system(size: 13, weight: .semibold))
-                    Text("Plan a trip with Farmsy Pro").font(.geist(14, .semibold))
-                }
-                .foregroundStyle(Color(hex: 0x6B7280))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.white)
-                        .strokeBorder(Color(hex: 0x9CA3AF), style: StrokeStyle(lineWidth: 1.5, dash: [5]))
-                )
-            }
-            .buttonStyle(.plain)
         } else {
-            // Member: add to / remove from the trip.
+            // Trips are free now — no Pro-locked prompt. Everyone sees add/remove;
+            // a signed-out tap routes to sign-in. (Dropped the old `isLocked` dashed
+            // "Plan a trip with Farmsy Pro" prompt + its shut lock.)
             let inTrip = trip.contains(pin.osmId)
             Button {
                 Haptics.tap()
-                trip.toggle(pin.osmId)
+                if isSignedIn { trip.toggle(pin.osmId) } else { showSignIn = true }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: inTrip ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold))
@@ -418,7 +408,9 @@ struct FarmDetailView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            footerButton(icon: isLocked ? "lock.fill" : "location.fill",
+            // Directions is free-with-account now — no shut padlock (web open-lock
+            // intent). Always the nav icon; a signed-out tap prompts sign-in.
+            footerButton(icon: "location.fill",
                          label: String(localized: "Directions"), filled: false) {
                 if isLocked { gateLocked() } else { openDirections() }
             }
@@ -471,6 +463,26 @@ struct FarmDetailView: View {
         .padding(.top, 8)
     }
 
+    /// Signed-in transient-failure state — a message + Retry, never a lock. Shown
+    /// when a signed-in account (free or paid) hits a network failure fetching the
+    /// details; a lock here would misread a network error as a permission wall.
+    private var loadErrorView: some View {
+        VStack(spacing: 10) {
+            Text("Couldn't load this farm. Check your connection and try again.")
+                .font(.geist(14, .medium))
+                .foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+            Button("Try again") {
+                Haptics.tap()
+                Task { await reload() }
+            }
+            .font(.geist(15, .semibold))
+            .foregroundStyle(Color.farmGreenMap)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+    }
+
     // MARK: - Actions
 
     private var shareURL: URL? {
@@ -479,7 +491,9 @@ struct FarmDetailView: View {
     }
 
     private func saveTapped() {
-        if isLocked { showPaywall = true; return }
+        // Saving is free now — it only needs a session. Signed out → sign-in
+        // (was `showPaywall`, a feature→paywall path).
+        if isLocked { showSignIn = true; return }
         guard let userId = session.session?.user.id else { return }
         Task { await favorites.toggle(pin.osmId, userId: userId) }
     }
@@ -490,7 +504,11 @@ struct FarmDetailView: View {
     /// signed out, otherwise show the membership paywall. Both sheets are
     /// presented from within this view so they show over the open farm card.
     private func gateLocked() {
-        if isSignedIn { showPaywall = true } else { showSignIn = true }
+        // Under the sign-up-wall contract `isLocked` means "signed out", and the
+        // features this guards (directions, trips, the wall CTA) are no longer Pro —
+        // so the only thing to ask for is a session. Always sign-in; never the paywall
+        // (that was a feature→LockedAccessView path, removed with the un-gating).
+        showSignIn = true
     }
 
     /// The web claim page for this farm. The route is a catch-all, so the osm_id
@@ -561,16 +579,18 @@ struct FarmDetailView: View {
                 .allowsHitTesting(false)
 
             VStack(spacing: 10) {
-                Image(systemName: "lock.fill")
+                // Sign-up wall, not a paywall — an OPEN padlock (a shut lock beside
+                // "free" reads as a catch). Web uses lucide Unlock.
+                Image(systemName: "lock.open.fill")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.farmGreen)
                     .frame(width: 48, height: 48)
                     .background(Color.farmGreen.opacity(0.10), in: Circle())
-                Text("Farm details are for members")
+                Text("See this farm, free")
                     .font(.geist(16, .bold))
                     .foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
-                Text("Address, phone, website and what this farm sells.")
+                Text("Address, phone, opening times and what they sell. One free account opens every farm on the map.")
                     .font(.geist(14))
                     .foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
@@ -580,7 +600,7 @@ struct FarmDetailView: View {
                     gateLocked()
                 } label: {
                     HStack(spacing: 8) {
-                        Text("See full details")
+                        Text("Create a free account")
                             .font(.geist(15, .semibold))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 13, weight: .semibold))

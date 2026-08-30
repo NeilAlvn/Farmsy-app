@@ -5,7 +5,7 @@ import MapKit
 /// The trip planner (Aviah's spec + Neil's screenshots): two tabs — Plan (the
 /// local draft) and My trips (saved trips from the DB). Stops come from "Add to
 /// trip" on farm cards; the road route + totals come from POST /api/route; the
-/// route is drawn on the map. My Trips is Pro-gated.
+/// route is drawn on the map. My Trips is free (sign-in only).
 struct TripsView: View {
     var onOpenFarm: (FarmPin) -> Void
     /// The farm currently selected/open on the map — its stop row is marked.
@@ -337,9 +337,10 @@ struct TripsView: View {
     private var mineTab: some View {
         if !session.isAuthenticated {
             gate(String(localized: "Sign in to view your trips"))
-        } else if session.profile?.hasFullAccess != true {
-            gate(String(localized: "Saved trips are a Farmsy Pro feature."))
         } else {
+            // My Trips is free now (was Pro). Any signed-in account sees their saved
+            // trips; the `hasFullAccess` gate was removed with the un-gating. The
+            // signed-out gate above stays.
             // Only the numbered list scrolls (its own box). On the small detent the
             // list is tucked away behind a hint (like the trip overview); fully open,
             // the box grows to fill so the recommendations sit at the frame's end.
