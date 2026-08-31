@@ -20,6 +20,14 @@ enum FarmFilters {
         let jsToday = Calendar.current.component(.weekday, from: Date()) - 1
         guard let todayMon = dayMon[jsToday] else { return false }
 
+        // A later `off` overrides an earlier open rule — "Mo-Su 09:00-17:00; Su off"
+        // is shut on Sunday. The loop below can only ever ADD an open day and it
+        // short-circuits on the first match, so a closure has to be collected and
+        // subtracted UP FRONT; the `continue` alone merely skips the off segment,
+        // which lets the broad rule above it win on exactly the day it said closed.
+        // Mirrors web src/lib/opening-hours.ts closedDays().
+        if closedDays(raw).contains(todayMon) { return false }
+
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
@@ -49,6 +57,51 @@ enum FarmFilters {
             }
         }
         return false
+    }
+
+    /// Days a record explicitly closes — the `Su` in "…; Su off" — as Mon-indexed
+    /// weekdays. `isOpenToday` subtracts these before it looks for an open day,
+    /// because in OSM notation a later rule overrides an earlier one. Unknown
+    /// tokens (e.g. `PH`) resolve to nothing and close no day. Mirrors web
+    /// src/lib/opening-hours.ts closedDays().
+    private static func closedDays(_ raw: String) -> Set<Int> {
+        var out = Set<Int>()
+        for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
+            let s = segment.trimmingCharacters(in: .whitespaces)
+            if s.isEmpty { continue }
+            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) == nil { continue }
+            let dayPart = s.replacingOccurrences(
+                of: "\\boff\\b", with: "", options: [.regularExpression, .caseInsensitive]
+            ).trimmingCharacters(in: .whitespaces)
+            if dayPart.isEmpty { continue }
+            out.formUnion(daysOf(dayPart))
+        }
+        return out
+    }
+
+    /// The Mon-indexed weekdays a day-part covers: "Mo-Fr" (range, wrap-aware),
+    /// "Sa,Su" (comma list), "We" (single). Mirrors web daysOf().
+    private static func daysOf(_ dayPart: String) -> Set<Int> {
+        var out = Set<Int>()
+        for group in dayPart.components(separatedBy: ",") {
+            let g = group.trimmingCharacters(in: .whitespaces)
+            if g.isEmpty { continue }
+            if g.contains("-") {
+                let parts = g.components(separatedBy: "-")
+                guard parts.count == 2,
+                      let ja = dayJS[parts[0]], let jb = dayJS[parts[1]],
+                      let startMon = dayMon[ja], let endMon = dayMon[jb] else { continue }
+                if startMon <= endMon {
+                    for d in startMon...endMon { out.insert(d) }
+                } else {
+                    for d in startMon...6 { out.insert(d) }
+                    for d in 0...endMon { out.insert(d) }
+                }
+            } else if let js = dayJS[g], let mon = dayMon[js] {
+                out.insert(mon)
+            }
+        }
+        return out
     }
 
     // MARK: - Farm vending machine (automaat)

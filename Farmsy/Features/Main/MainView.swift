@@ -15,6 +15,7 @@ struct MainView: View {
     @State private var accountRoute: AccountRoute?
     @State private var showWhatsNew = false
     @State private var showTrips = false
+    @State private var showSurvey = false
     @State private var tripDetent: PresentationDetent = .fraction(0.92)
     /// The card opens at half and can be dragged to peek or full.
     @State private var farmDetent: PresentationDetent = .fraction(0.55)
@@ -37,6 +38,14 @@ struct MainView: View {
                 .padding(.horizontal, 14)
                 .padding(.bottom, 6)
         }
+        // Survey entry point (button + sheet). Extracted into one modifier so the
+        // already-large body stays within the type-checker's budget. Aviah's spec
+        // delegates placement on a phone explicitly ("the button placement is
+        // yours"); a small round button at bottom-trailing, above the panel, mirrors
+        // the web's bottom-right corner without colliding with the map controls. The
+        // server gate hides it after answering. (Auto-open timing is a deliberate
+        // deferral — see PORT_NOTES.)
+        .modifier(SurveyEntry(isPresented: $showSurvey))
         // The farm card — three resting heights, opening at half, and the map
         // stays interactive behind it up through half.
         .sheet(isPresented: Binding(
@@ -129,5 +138,37 @@ struct MainView: View {
 
     private func requireAuth(_ action: @escaping () -> Void) {
         if session.isAuthenticated { action() } else { showAuth = true }
+    }
+}
+
+/// The survey's floating entry button + its sheet, as one modifier so MainView's
+/// body stays small enough to type-check quickly. The button is a small round
+/// control at bottom-trailing (above the panel); the sheet presents the survey at
+/// 0.92, matching the other secondary surfaces.
+private struct SurveyEntry: ViewModifier {
+    @Binding var isPresented: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .bottomTrailing) {
+                Button { Haptics.tap(); isPresented = true } label: {
+                    Image(systemName: "text.bubble.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.farmGreenMap)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.94), in: Circle())
+                        .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
+                        .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 14)
+                .padding(.bottom, 66)
+            }
+            .sheet(isPresented: $isPresented) {
+                SurveyView()
+                    .presentationDetents([.fraction(0.92)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(28)
+            }
     }
 }
