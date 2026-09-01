@@ -142,71 +142,62 @@ struct MainView: View {
 }
 
 /// The survey's floating entry button + arrow + sheet, as one modifier so MainView's
-/// body stays small. The button never goes away (except for admins) and changes what
-/// it opens: the seven questions while unanswered, the feedback box once answered
-/// (Aviah's spec). A hand-drawn arrow bounces above it while unanswered. It also
-/// auto-opens once on cold launch after the map settles — once ever per signed-in
-/// account, once a day for signed-out visitors.
+/// body stays small. The button is shown for EVERY role — signed-out, signed-in and
+/// admin alike (Neil: "the survey appears whatever the role"). It changes what it
+/// opens: the seven questions while unanswered, the feedback box once answered. A down
+/// arrow bounces above it while unanswered. It also auto-opens once on cold launch
+/// after the map settles — once ever per signed-in account, once a day for signed-out.
+/// (Admin data integrity is kept server-side: `POST /api/survey/respond` rejects an
+/// admin submit with `is_admin`, so showing the UI to staff pollutes nothing.)
 private struct SurveyEntry: ViewModifier {
     @Binding var isPresented: Bool
     @Environment(SessionStore.self) private var session
 
-    /// The gate result (nil until loaded). Drives everything: admin → no button;
-    /// answered → the button opens feedback and the arrow is gone; not-answered →
-    /// questions + arrow.
+    /// The gate result (nil until loaded). Drives only `answered` now: answered → the
+    /// button opens feedback and the arrow is gone; not-answered → questions + arrow.
+    /// Role no longer hides anything on the client.
     @State private var gate: SurveyGate?
     @State private var mode: SurveyView.Mode = .questions
     /// Cold-launch auto-open is attempted exactly once (this modifier appears once at
     /// app start; resume does not recreate it, so a plain `.task` never re-fires).
     @State private var didAutoOpen = false
 
-    /// Admin gets NO entry point at all. While the gate is still loading we fail open
-    /// (show the button) — better to offer the survey than wrongly withhold it.
-    private var hideButton: Bool {
-        #if DEBUG
-        false   // Debug keeps the button for everyone so the survey stays testable.
-        #else
-        gate?.isAdmin == true
-        #endif
-    }
-
-    /// The arrow points only while there is an unanswered survey to point at.
+    /// The arrow points only while there is an unanswered survey to point at — role
+    /// no longer matters, only `answered`.
     private var showArrow: Bool {
         guard let g = gate else { return false }
-        return !g.isAdmin && !g.answered
+        return !g.answered
     }
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottomTrailing) {
-                if !hideButton {
-                    ZStack(alignment: .bottom) {
-                        if showArrow {
-                            SurveyArrow()
-                                .offset(y: -52)   // sit above the 44pt button
-                                .accessibilityHidden(true)
-                        }
-                        Button {
-                            Haptics.tap()
-                            mode = (gate?.answered == true) ? .feedback : .questions
-                            isPresented = true
-                        } label: {
-                            Image(systemName: "text.bubble.fill")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(Color.farmGreenMap)
-                                .frame(width: 44, height: 44)
-                                .background(Color.white.opacity(0.94), in: Circle())
-                                .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
-                                .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
-                        }
-                        .buttonStyle(.plain)
+                ZStack(alignment: .bottom) {
+                    if showArrow {
+                        SurveyArrow()
+                            .offset(y: -52)   // sit above the 44pt button
+                            .accessibilityHidden(true)
                     }
-                    .padding(.trailing, 14)
-                    // 120 clears the bottom pill (spans ~safe-bottom+6 to +67) by ~50pt.
-                    // The overlay is inset by the safe area, so it clears the home
-                    // indicator; button + pill ignore Dynamic Type, so the gap holds.
-                    .padding(.bottom, 120)
+                    Button {
+                        Haptics.tap()
+                        mode = (gate?.answered == true) ? .feedback : .questions
+                        isPresented = true
+                    } label: {
+                        Image(systemName: "text.bubble.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.farmGreenMap)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.94), in: Circle())
+                            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.trailing, 14)
+                // 120 clears the bottom pill (spans ~safe-bottom+6 to +67) by ~50pt.
+                // The overlay is inset by the safe area, so it clears the home
+                // indicator; button + pill ignore Dynamic Type, so the gap holds.
+                .padding(.bottom, 120)
             }
             .sheet(isPresented: $isPresented) {
                 SurveyView(mode: mode)
@@ -217,20 +208,21 @@ private struct SurveyEntry: ViewModifier {
                     // the arrow disappears and the button switches to feedback mode.
                     .onDisappear { Task { gate = await SurveyAPI.gate(accessToken: session.session?.accessToken) } }
             }
-            // Refresh the gate on sign-in / sign-out (token change) for button + arrow.
+            // Refresh the gate on sign-in / sign-out (token change) for the arrow + mode.
             .task(id: session.session?.accessToken) {
                 gate = await SurveyAPI.gate(accessToken: session.session?.accessToken)
             }
             // Cold-launch auto-open — runs once when the map first appears (not on
             // resume). The 1.4s delay lets the map settle (and the session bootstrap)
             // before asking, so it reads as a question rather than part of the loading.
+            // Fires for any role; only `answered` and the frequency cap stop it.
             .task {
                 guard !didAutoOpen else { return }
                 didAutoOpen = true
                 try? await Task.sleep(for: .seconds(1.4))
                 let g = await SurveyAPI.gate(accessToken: session.session?.accessToken)
                 gate = g
-                guard !g.isAdmin, !g.answered else { return }
+                guard !g.answered else { return }
                 let account = session.isAuthenticated ? session.email : nil
                 guard SurveyAutoOpen.canAutoOpen(account: account) else { return }
                 SurveyAutoOpen.recordAutoOpen(account: account)

@@ -70,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.farmsy.android.BuildConfig
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
@@ -125,28 +124,30 @@ fun MainScreen() {
     // Best-effort/fail-open: while null (loading) or on a gate failure (all-false) the
     // button shows — better to offer the survey than wrongly withhold it. Refreshed on
     // sign-in/out and after the sheet closes (they may have just answered).
+    // The survey entry (button + arrow + auto-open) is shown for EVERY role — signed
+    // out, signed in and admin alike (Neil: "the survey appears whatever the role").
+    // Only `answered` differs it: answered → the button opens feedback, no arrow.
+    // Admin data integrity is kept server-side — POST /api/survey/respond rejects an
+    // admin submit with `is_admin` — so showing the UI to staff pollutes nothing.
     var surveyGate by remember { mutableStateOf<SurveyGate?>(null) }
     LaunchedEffect(session.isAuthenticated) {
         surveyGate = SurveyApi.gate(session.accessToken())
     }
-    // An admin gets NO entry point at all. DEBUG keeps the button for everyone so the
-    // survey stays testable on a dev build (the SurveyScreen debug bypass then renders
-    // it); Release hides it for admins.
-    val hideSurveyButton = !BuildConfig.DEBUG && (surveyGate?.isAdmin == true)
-    // The arrow points only while there is an unanswered survey to point at.
-    val showSurveyArrow = surveyGate?.let { !it.isAdmin && !it.answered } == true
+    // The arrow points only while there is an unanswered survey to point at — role no
+    // longer matters, only `answered`.
+    val showSurveyArrow = surveyGate?.let { !it.answered } == true
 
     // Cold-launch auto-open. LaunchedEffect(Unit) runs once when MainScreen first
     // enters composition — i.e. on cold launch (RootNav builds Main fresh), NOT on
     // resume (the retained composition is not rebuilt when the app returns from the
     // background). 1.4s after the map appears lets it settle first so the survey reads
-    // as a question, not part of the loading. Capped: once ever per signed-in account,
-    // once a day signed-out (SurveyAutoOpen) — a phone cold-launches often.
+    // as a question, not part of the loading. Fires for any role; only `answered` and
+    // the frequency cap stop it (once ever per signed-in account, once a day signed-out).
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1400)
         val g = SurveyApi.gate(session.accessToken())
         surveyGate = g
-        if (g.isAdmin || g.answered) return@LaunchedEffect
+        if (g.answered) return@LaunchedEffect
         val account = session.email.takeIf { it.isNotEmpty() }
         if (!SurveyAutoOpen.canAutoOpen(context, account)) return@LaunchedEffect
         SurveyAutoOpen.recordAutoOpen(context, account)
@@ -303,35 +304,32 @@ fun MainScreen() {
             }
 
             // Floating survey entry button — bottom-trailing, above the pill (which
-            // spans ~safe-bottom+6 to +67), so it clears it. Hidden entirely for admins.
-            // A down-arrow points at it while the survey is unanswered. iOS SF
-            // `text.bubble.fill` → Material Chat. The button never goes away (except
-            // admins): it opens the questions while unanswered, the feedback box once
-            // answered.
-            if (!hideSurveyButton) {
-                Column(
-                    Modifier.align(Alignment.BottomEnd).navigationBarsPadding()
-                        .padding(end = 14.dp, bottom = 120.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+            // spans ~safe-bottom+6 to +67), so it clears it. Shown for every role
+            // (Neil). A down-arrow points at it while the survey is unanswered. iOS SF
+            // `text.bubble.fill` → Material Chat. The button never goes away: it opens
+            // the questions while unanswered, the feedback box once answered.
+            Column(
+                Modifier.align(Alignment.BottomEnd).navigationBarsPadding()
+                    .padding(end = 14.dp, bottom = 120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (showSurveyArrow) SurveyArrow()
+                Box(
+                    Modifier
+                        .capsuleShadow(Color.Black.copy(alpha = 0.22f), blurRadius = 10.dp, offsetY = 3.dp)
+                        .size(44.dp)
+                        .background(Color.White.copy(alpha = 0.94f), CircleShape)
+                        .clickable {
+                            surveyMode = if (surveyGate?.answered == true) SurveyMode.FEEDBACK else SurveyMode.QUESTIONS
+                            showSurvey = true
+                        },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    if (showSurveyArrow) SurveyArrow()
-                    Box(
-                        Modifier
-                            .capsuleShadow(Color.Black.copy(alpha = 0.22f), blurRadius = 10.dp, offsetY = 3.dp)
-                            .size(44.dp)
-                            .background(Color.White.copy(alpha = 0.94f), CircleShape)
-                            .clickable {
-                                surveyMode = if (surveyGate?.answered == true) SurveyMode.FEEDBACK else SurveyMode.QUESTIONS
-                                showSurvey = true
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Chat, null,
-                            tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(17.dp),
-                        )
-                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.Chat, null,
+                        tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(17.dp),
+                    )
                 }
             }
         }

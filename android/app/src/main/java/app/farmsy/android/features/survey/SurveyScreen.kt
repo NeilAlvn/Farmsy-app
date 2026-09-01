@@ -46,7 +46,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.farmsy.android.BuildConfig
 import app.farmsy.android.LocalSession
 import app.farmsy.android.core.SurveyApi
 import app.farmsy.android.core.SurveyDefinition
@@ -87,9 +86,6 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
 
     var phase by remember { mutableStateOf(Phase.LOADING) }
     var def by remember { mutableStateOf<SurveyDefinition?>(null) }
-    /// DEBUG only: the gate said hide (admin / already answered) but a Debug build
-    /// showed the survey anyway for testing. Always false in Release.
-    var gateWouldHide by remember { mutableStateOf(false) }
 
     val single = remember { mutableStateMapOf<String, String>() }        // one → option id
     val multi = remember { mutableStateMapOf<String, List<String>>() }    // many → ordered ids
@@ -102,28 +98,14 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
 
     fun load() {
         phase = Phase.LOADING
-        gateWouldHide = false
         scope.launch {
-            val token = session.accessToken()
-            // Gate first. Admin is never shown in either mode. In QUESTIONS mode an
-            // already-answered user is also excluded (they get FEEDBACK from the button
-            // instead); in FEEDBACK mode `answered` is expected, so it is not a hide.
-            // A FAILED gate call is not a hide — `gate()` is best-effort and returns
-            // all-false on any error, so a blip falls through to load, not close.
-            val gate = SurveyApi.gate(token)
-            val excluded = gate.isAdmin || (mode == SurveyMode.QUESTIONS && gate.answered)
-            if (excluded) {
-                @Suppress("KotlinConstantConditions")
-                if (BuildConfig.DEBUG) {
-                    // Debug renders the survey anyway (with a banner) so a developer —
-                    // whose account is role=admin, so the gate hides it — can test the
-                    // UI. RELEASE closes here unchanged. Submit still returns is_admin
-                    // for an admin, so test submit with a non-admin account.
-                    gateWouldHide = true
-                } else {
-                    onClose(); return@launch
-                }
-            }
+            // No client-side role/answered gate — the entry point already routes by
+            // `mode` (the button opens FEEDBACK for an answered person; auto-open only
+            // fires QUESTIONS when unanswered), and the server rejects an admin submit
+            // with `is_admin`. So the screen loads whatever the caller asked for, for
+            // every role (Neil: "the survey appears whatever the role"). This also fixes
+            // the "opens then closes" an admin used to hit — the old gate dismissed on
+            // isAdmin before anything rendered.
             // Feedback mode skips the questions fetch entirely — straight to the box.
             if (mode == SurveyMode.FEEDBACK) {
                 phase = Phase.FEEDBACK
@@ -144,7 +126,7 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
             )
             Phase.FAILED -> LoadError(onRetry = { load() }, modifier = Modifier.align(Alignment.Center))
             Phase.READY -> Form(
-                def = def, signedIn = signedIn, gateWouldHide = gateWouldHide,
+                def = def, signedIn = signedIn,
                 single = single, multi = multi, texts = texts,
                 name = name, onName = { name = it }, email = email, onEmail = { email = it },
                 submitting = submitting, submitError = submitError, onClose = onClose,
@@ -219,7 +201,6 @@ private fun LoadError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
 private fun Form(
     def: SurveyDefinition?,
     signedIn: Boolean,
-    gateWouldHide: Boolean,
     single: MutableMap<String, String>,
     multi: MutableMap<String, List<String>>,
     texts: MutableMap<String, String>,
@@ -254,7 +235,6 @@ private fun Form(
                 .padding(horizontal = 20.dp).padding(top = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(36.dp),
         ) {
-            if (gateWouldHide) DebugGateBanner()
             def?.questions?.forEachIndexed { i, q ->
                 QuestionBlock(number = i + 1, q = q, single = single, multi = multi, texts = texts)
             }
@@ -303,20 +283,6 @@ private fun Form(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DebugGateBanner() {
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xFFFEF3C7), RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            "Debug: the gate would hide this (admin or already answered). Shown for testing — Release excludes it.",
-            style = geist(12.sp, FontWeight.Medium), color = Color(0xFF9A6B00),
-        )
     }
 }
 
