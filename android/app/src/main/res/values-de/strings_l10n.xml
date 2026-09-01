@@ -187,7 +187,6 @@
     <string name="trips">Touren</string>
     <string name="plan_a_trip">Tour planen</string>
     <string name="my_trips">Meine Touren</string>
-    <string name="start_from_my_location">Von meinem Standort starten</string>
     <string name="trip_overview">Tourübersicht</string>
     <string name="pick_farm_on_map">Wähle einen Hof auf der Karte</string>
     <string name="best_order">Beste Reihenfolge</string>
@@ -203,7 +202,6 @@
     <string name="my_weekend_trip">Meine Wochenendtour</string>
     <string name="save">Speichern</string>
     <string name="sign_in_to_view_trips">Anmelden, um deine Touren zu sehen</string>
-    <string name="saved_trips_pro">Gespeicherte Touren sind eine Farmsy-Pro-Funktion.</string>
     <string name="no_trip_in_progress">Keine Tour in Arbeit</string>
     <string name="draft_waiting">Ein Entwurf mit %d Stopps wartet</string>
     <string name="plan_trip_to_fill">Plane eine Tour, um dies zu füllen</string>
@@ -264,6 +262,55 @@
     <string name="auth_confirm_placeholder">Passwort wiederholen</string>
     <string name="whats_new">NEUIGKEITEN</string>
     <string name="featured_farms">EMPFOHLENE HÖFE</string>
+    <string name="no_reviews_yet">Noch keine Bewertungen</string>
     <string name="no_posts_yet">Noch keine Beiträge — schau bald wieder vorbei.</string>
+    <string name="lightbox_from_a_post">Aus einem Beitrag</string>
     <string name="time_just_now">gerade eben</string>
+
+    <!-- S7 FarmDetailView — Pass 2 -->
+    <string name="verified">Verifiziert</string>
+    <string name="open_now">Jetzt geöffnet</string>
+    <string name="in_your_trip">In deiner Tour</string>
+    <string name="view_more">Mehr anzeigen</string>
+    <string name="lightbox_farm_photo">Hoffoto</string>
+
+    <!-- C8 ReviewComposer + PostComposer -->
+    <string name="review_leave">Bewertung schreiben</string>
+    <string name="review_placeholder">Teile deine Erfahrung… (optional)</string>
+    <string name="review_submit">Absenden</string>
+    <string name="composer_photo">Foto</string>
+    <string name="composer_post">Posten</string>
+    <string name="composer_posted_note">Auf deinem Hof auf der Karte gepostet.</string>
+    <string name="composer_whats_new_at">Was gibt\'s Neues bei %1$s?</string>
+
+    <!-- S9 FarmMemberSections -->
+    <string name="section_people_saying">Was andere sagen</string>
+    <string name="reviews_be_first">Bewerte diesen Hof als Erster.</string>
+    <string name="details">Details</string>
+    <string name="hours">Öffnungszeiten</string>
+    <string name="organic_yes">Ja 🌱</string>
+    <string name="section_whats_new">Was gibt\'s Neues</string>
+    <string name="posts_empty_today">Heute noch nichts gepostet.</string>
+    <string name="reviews">Bewertungen</string>
+    <string name="reviews_none_be_first">Noch keine Bewertungen. Sei der Erste!</string>
+    <string name="claim_is_your_farm">Ist das dein Hof?</string>
+    <string name="claim_fine_print">Beanspruche ihn, um Details, Fotos und Öffnungszeiten aktuell zu halten. Wir prüfen jede Anfrage von Hand.</string>
+    <string name="report_incorrect_info">Falsche Angaben melden</string>
+    <string name="post_report">Melden</string>
+    <string name="post_reported">Gemeldet</string>
+
+    <!-- S19 PlaceSearchSheet -->
+    <string name="starting_point">AUSGANGSPUNKT</string>
+    <string name="search_town_address_postcode">Ort, Adresse oder PLZ suchen</string>
+
+    <!-- Farm-detail sign-up wall -->
+    <string name="signup_wall_title">Diesen Hof ansehen, kostenlos</string>
+    <string name="signup_wall_body">Adresse, Telefon, Öffnungszeiten und was verkauft wird. Ein kostenloses Konto öffnet jeden Hof auf der Karte.</string>
+    <string name="signup_wall_cta">Kostenloses Konto erstellen</string>
+    <string name="choose_a_starting_point">Wähle einen Ausgangspunkt</string>
+    <string name="farmsy_for_android_arg">Farmsy für Android %1$s</string>
+    <string name="farmsy_pro">Farmsy Pro</string>
+    <string name="pro_open_now">Jetzt geöffnet</string>
+    <string name="pro_open_saturday">Samstag geöffnet</string>
+    <string name="pro_open_sunday">Sonntag geöffnet</string>
 </resources>

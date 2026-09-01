@@ -55,21 +55,35 @@ class FarmsStore(private val scope: CoroutineScope) {
     val selectedPlaceTypes = MutableStateFlow<Set<String>>(emptySet())
     val selectedMethods = MutableStateFlow<Set<String>>(emptySet())
 
+    // Pro time filters (Aviah's closed five-group set). Distinct from the FREE
+    // `filterOpenToday` (day-based): these use the Amsterdam-clock parser —
+    // `filterOpenNow` is open at this exact minute, the day filters ask about a
+    // specific weekday (Sat = Mon-based 5, Sun = 6). Gated on membership in the UI;
+    // the predicates here are unconditional (only *set* when unlocked).
+    val filterOpenNow = MutableStateFlow(false)
+    val filterOpenSaturday = MutableStateFlow(false)
+    val filterOpenSunday = MutableStateFlow(false)
+
     /// Any of the quick-filter toggles on (Verified / Open today / Automaat /
     /// Zelfpluk / Has photos) — excludes categories and the two axes. Mirrors iOS.
     fun anyQuickFilterOn(): Boolean =
         filterVerified.value || filterOpenToday.value || filterAutomaat.value ||
             filterZelfpluk.value || filterHasPhotos.value
 
-    fun anyFilterOn(): Boolean =
-        anyQuickFilterOn() ||
-            selectedCategories.value.isNotEmpty() ||
+    /// Any of the five Pro groups active (three time filters + the two axis groups,
+    /// which moved into Pro per Aviah's later-3). Mirrors iOS anyProFilterOn.
+    fun anyProFilterOn(): Boolean =
+        filterOpenNow.value || filterOpenSaturday.value || filterOpenSunday.value ||
             selectedPlaceTypes.value.isNotEmpty() || selectedMethods.value.isNotEmpty()
+
+    fun anyFilterOn(): Boolean =
+        anyQuickFilterOn() || anyProFilterOn() || selectedCategories.value.isNotEmpty()
 
     fun clearAllFilters() {
         selectedCategories.value = emptySet()
         filterVerified.value = false; filterOpenToday.value = false
         filterAutomaat.value = false; filterZelfpluk.value = false; filterHasPhotos.value = false
+        filterOpenNow.value = false; filterOpenSaturday.value = false; filterOpenSunday.value = false
         selectedPlaceTypes.value = emptySet(); selectedMethods.value = emptySet()
     }
 
@@ -239,6 +253,10 @@ class FarmsStore(private val scope: CoroutineScope) {
         }
         if (filterVerified.value) result = result.filter { it.isVerified }
         if (filterOpenToday.value) result = result.filter { FarmFilters.isOpenToday(it.openingHours) }
+        // Pro time filters (Amsterdam clock). Saturday = Mon-based 5, Sunday = 6.
+        if (filterOpenNow.value) result = result.filter { FarmFilters.isOpenNow(it.openingHours) }
+        if (filterOpenSaturday.value) result = result.filter { FarmFilters.isOpenOnDay(it.openingHours, 5) }
+        if (filterOpenSunday.value) result = result.filter { FarmFilters.isOpenOnDay(it.openingHours, 6) }
         if (filterHasPhotos.value) result = result.filter { it.image != null }
         if (filterAutomaat.value) result = result.filter { FarmFilters.looksLikeAutomaat(it.name, it.openingHours) }
         if (filterZelfpluk.value) result = result.filter { FarmFilters.looksLikeZelfpluk(it.name) }

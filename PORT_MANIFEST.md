@@ -903,6 +903,21 @@ Covered under S9. **Status:** IN_PROGRESS — built in `features/detail/Composer
 
 ---
 
+## 12. Pro filters — `core/FarmFilters.kt` + `FarmsStore.kt` + `features/map/FilterSheet` + `ProUpsellSheet` (PRODUCT-SOURCED)
+
+**Product-sourced, both platforms build from Aviah's closed five-group set (later-3/7/8), not iOS→Android.** Paid on both, no exception (Aviah later-8: Play IAP works and carries most revenue).
+
+**Status: IN_PROGRESS (both platforms).** No VERIFIED.
+
+- **Parser** (`FarmFilters`): `isOpenToday` re-synced to the **Amsterdam** wall clock (was device — the free/paid disagreement for users outside CET, web `a46ab4b`); added `isOpenNow` (Amsterdam minute, `windowsOf`, `00:00`=end-of-day, multi-windows) and `isOpenOnDay(dayMon)`. Both platforms; tested via a frozen-clock harness (Sun 23:00 Amsterdam / Tokyo device) — **18/18 each**, incl. timezone independence.
+- **State** (`FarmsStore`): `filterOpenNow`/`OpenSaturday`/`OpenSunday` wired into `filtered()` (Sat=5, Sun=6), `anyProFilterOn`, cleared by `clearAllFilters`.
+- **FilterSheet**: FARMSY PRO section — three time filters; **Type-of-place + How-it's-grown moved out of the free rail into Pro**. Non-members see all five **dimmed + a lock** (shown, not hidden); a locked tap opens the upsell (signed out → sign-in first) instead of toggling. `proLocked = !hasFullAccess`, unconditional (no Android exception, no flag).
+- **ProUpsellSheet** (iOS `Features/Map/ProUpsellSheet.swift`, Android `features/map/ProUpsellSheet.kt`): farm-free membership panel (Aviah option 2, matches web `SubscriptionGateModal`) — title + four `account.gateFeature` lines + the **same native RevenueCat/Play plan buttons** LockedAccessView uses (Android reuses `PlanButton`, made internal). **Native purchase, NOT a web URL** (Aviah later-8: the Settings web URL only *manages* a sub; buying is native — where the 19 Play / 13 Apple purchases came through).
+- **iOS shipped** TestFlight build 25. **Android committed** (Play release blocked on Console access). Chrome/labels: `farmsy_pro`/`pro_open_now`/`_saturday`/`_sunday` added ×4 locales (Android); iOS en `String(localized:)`.
+- **DEFERRED (both):** per-value counts on the locked rows (Aviah's "let people see how many farms it finds" — sustainable 5, unstaffed 9). Shown-dimmed works without them; the live counts (esp. `isOpenNow` over all pins) are a refinement, unbuilt.
+
+---
+
 ## 10. Totals
 
 - **iOS source:** 39 Swift files, ~10,098 LOC.

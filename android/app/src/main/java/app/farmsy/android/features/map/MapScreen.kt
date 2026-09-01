@@ -9,7 +9,6 @@ import android.graphics.Paint
 import android.graphics.Canvas
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,17 +36,36 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.DoNotTouch
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.FrontHand
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import app.farmsy.android.ui.theme.tapCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -58,8 +76,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.google.android.gms.maps.CameraUpdateFactory
 import kotlinx.coroutines.launch
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,7 +96,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.alpha
 import app.farmsy.android.LocalFarms
+import app.farmsy.android.LocalRequestAuth
+import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
@@ -384,20 +404,29 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
     val tracedRoute = remember(tripRouteLine, tripTraceProgress) { trip.tracedLine() }
 
     // Selecting a farm flies the shared map, keeping the pin in the upper part of the
-    // screen (the detail sheet covers the lower ~55%).
-    // PORT NOTE: iOS flyToFocus keeps the user's zoom and shifts the centre south by
-    // span*0.28; Compose has no MKCoordinateRegion, so the shift is derived from the
-    // last settled viewport's latitude span (fallback 0.12°), and we only force a
-    // zoom-in when the user was far out (< 11).
+    // screen (the detail sheet covers the lower ~55%). This ports iOS `flyToFocus`
+    // (MapScreen.swift:327) exactly, as a single code path: delta = min(currentSpan,
+    // 0.15) — keep the user's zoom when they're already in past 0.15, else zoom in to
+    // 0.15; the region centre is shifted south by delta*0.28 so the pin sits in the
+    // upper strip; the shown span is delta. iOS sets `MKCoordinateRegion(center, span)`
+    // and lets MapKit fit it; the exact Google-Maps analog is `newLatLngBounds` of a
+    // delta-sized box (both fit-a-region with the same aspect adjustment), which also
+    // retires the old `zoom < 11 → 12` heuristic. Fallback span 0.15 mirrors iOS's
+    // `visibleRegion ?? cap`.
     LaunchedEffect(focusPin?.osmId) {
         val p = focusPin ?: return@LaunchedEffect
-        val latSpan = viewport?.let { (it.northeast.latitude - it.southwest.latitude).coerceAtMost(0.15) } ?: 0.12
-        val z = cameraPositionState.position.zoom
-        if (z < 11f) {
-            cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(p.lat - 0.045, p.lng), 12f))
-        } else {
-            cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(p.lat - latSpan * 0.28, p.lng)))
-        }
+        val current = viewport?.let { it.northeast.latitude - it.southwest.latitude } ?: 0.15
+        val delta = minOf(current, 0.15)
+        val centerLat = p.lat - delta * 0.28
+        val half = delta / 2.0
+        val bounds = LatLngBounds(
+            LatLng(centerLat - half, p.lng - half),
+            LatLng(centerLat + half, p.lng + half),
+        )
+        // newLatLngBounds needs a laid-out map (throws otherwise); we're post-interaction
+        // so it's fine, but guard + fall back to a plain recenter that keeps zoom.
+        runCatching { cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 0)) }
+            .onFailure { cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(centerLat, p.lng))) }
     }
 
     // An explicit trip fit (Show route / open saved trip / set origin) frames the
@@ -660,91 +689,204 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
 /// selections combine (AND) with each other and with the category pill, and
 /// "organic" deliberately stays a category, not a method. Values write straight
 /// to the store, so the map behind the sheet updates live as you tap.
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+/// S5 · FilterSheet — iOS `MapScreen.swift:690` (a unified `.tapCard` ROW list, not
+/// chips): header + "All categories" row + 10 category rows + 5 quick-filter rows +
+/// two axis sections (Type of place / How it's grown). Rebuilt this session from a
+/// chip layout that had NO category selection. Category rows bind to
+/// `selectedCategories` (multi-select; add/remove per iOS). SF→Material subs in §7a.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val session = LocalSession.current
+    val requestAuth = LocalRequestAuth.current
     val fVerified by farms.filterVerified.collectAsState()
     val fOpen by farms.filterOpenToday.collectAsState()
     val fAutomaat by farms.filterAutomaat.collectAsState()
     val fZelfpluk by farms.filterZelfpluk.collectAsState()
     val fPhotos by farms.filterHasPhotos.collectAsState()
+    val fOpenNow by farms.filterOpenNow.collectAsState()
+    val fOpenSat by farms.filterOpenSaturday.collectAsState()
+    val fOpenSun by farms.filterOpenSunday.collectAsState()
+    val categories by farms.selectedCategories.collectAsState()
     val placeTypes by farms.selectedPlaceTypes.collectAsState()
     val methods by farms.selectedMethods.collectAsState()
+    val pins by farms.pins.collectAsState()
+
+    // The five Pro groups are gated when the account isn't a member — paid on both,
+    // no exception (Aviah later-8). A locked tap opens the upsell (signed out →
+    // sign-in first) instead of toggling. proLocked reads profile; recompose on it.
+    val profile by session.profile.collectAsState()
+    val proLocked = profile?.hasFullAccess != true
+    var showPro by remember { mutableStateOf(false) }
+    fun onProTap(toggle: () -> Unit) {
+        if (!proLocked) { toggle(); return }
+        if (session.isAuthenticated) showPro = true else requestAuth()
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = FarmsyColors.cream) {
-        Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).padding(bottom = 28.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.filters_title), style = geist(20.sp, FontWeight.Bold), color = FarmsyColors.ink)
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+            // Header (iOS pad h16 t12 b6): "Filters" + xmark close.
+            Row(
+                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.filters_title), style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
                 Spacer(Modifier.weight(1f))
-                if (farms.anyFilterOn()) {
-                    Text(
-                        stringResource(R.string.clear_all),
-                        style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap,
-                        modifier = Modifier.clickable { farms.clearAllFilters() },
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(stringResource(R.string.filter_verified), fVerified) { farms.filterVerified.value = !fVerified }
-                FilterChip(stringResource(R.string.filter_open_today), fOpen) { farms.filterOpenToday.value = !fOpen }
-                FilterChip(stringResource(R.string.filter_automaat), fAutomaat) { farms.filterAutomaat.value = !fAutomaat }
-                FilterChip(stringResource(R.string.filter_zelfpluk), fZelfpluk) { farms.filterZelfpluk.value = !fZelfpluk }
-                FilterChip(stringResource(R.string.filter_has_photos), fPhotos) { farms.filterHasPhotos.value = !fPhotos }
+                Icon(
+                    Icons.Filled.Close, null, tint = Color(0xFF6B7280),
+                    modifier = Modifier.size(32.dp).background(Color(0xFFF3F4F6), CircleShape).tapCard { onDismiss() }.padding(9.dp),
+                )
             }
 
-            FilterGroupHeader(stringResource(R.string.filter_type_of_place))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FarmAxis.placeTypes.forEach { v ->
-                    val on = v.id in placeTypes
-                    FilterChip(stringResource(v.labelRes), on) {
-                        farms.selectedPlaceTypes.value =
-                            placeTypes.toMutableSet().apply { if (on) remove(v.id) else add(v.id) }
-                    }
+            // "All categories" — clears every filter; on when nothing is selected.
+            FilterRow(emoji = "🍽️", tint = FarmsyColors.inkMuted, label = stringResource(R.string.all_categories),
+                trailing = "${pins.size}", isOn = !farms.anyFilterOn()) { farms.clearAllFilters() }
+            FilterDivider()
+
+            // 10 category rows — emoji in cat.color circle; toggle selectedCategories
+            // (iOS: contains → remove, else insert).
+            FarmCategory.entries.forEach { cat ->
+                FilterRow(emoji = cat.emoji, tint = cat.color, label = stringResource(cat.labelRes),
+                    isOn = categories.contains(cat)) {
+                    farms.selectedCategories.value =
+                        categories.toMutableSet().apply { if (contains(cat)) remove(cat) else add(cat) }
+                }
+            }
+            FilterDivider()
+
+            // 5 quick-filter rows (icon in #F3F4F6 circle).
+            FilterRow(icon = Icons.Filled.Verified, label = stringResource(R.string.filter_verified), isOn = fVerified) { farms.filterVerified.value = !fVerified }
+            FilterRow(icon = Icons.Filled.Bolt, label = stringResource(R.string.filter_automaat), isOn = fAutomaat) { farms.filterAutomaat.value = !fAutomaat }
+            FilterRow(icon = Icons.Filled.Schedule, label = stringResource(R.string.filter_open_today), isOn = fOpen) { farms.filterOpenToday.value = !fOpen }
+            FilterRow(icon = Icons.Filled.Eco, label = stringResource(R.string.filter_zelfpluk), isOn = fZelfpluk) { farms.filterZelfpluk.value = !fZelfpluk }
+            FilterRow(icon = Icons.Filled.PhotoCamera, label = stringResource(R.string.filter_has_photos), isOn = fPhotos) { farms.filterHasPhotos.value = !fPhotos }
+
+            // FARMSY PRO — five groups (Aviah's closed set, paid on both). Shown to
+            // everyone, dimmed + a lock when the account isn't a member; a locked tap
+            // opens the upsell rather than toggling. The three time filters were never
+            // free; the two axis groups moved here from the free rail.
+            FilterDivider()
+            FilterSectionHeader(stringResource(R.string.farmsy_pro))
+            FilterRow(icon = Icons.Filled.Schedule, label = stringResource(R.string.pro_open_now),
+                isOn = fOpenNow, lockedTrailing = proLocked, dimmed = proLocked) {
+                onProTap { farms.filterOpenNow.value = !fOpenNow }
+            }
+            FilterRow(icon = Icons.Filled.CalendarMonth, label = stringResource(R.string.pro_open_saturday),
+                isOn = fOpenSat, lockedTrailing = proLocked, dimmed = proLocked) {
+                onProTap { farms.filterOpenSaturday.value = !fOpenSat }
+            }
+            FilterRow(icon = Icons.Filled.CalendarMonth, label = stringResource(R.string.pro_open_sunday),
+                isOn = fOpenSun, lockedTrailing = proLocked, dimmed = proLocked) {
+                onProTap { farms.filterOpenSunday.value = !fOpenSun }
+            }
+
+            // Type of place — an axis group, now Pro. Combines with categories.
+            FilterDivider()
+            FilterSectionHeader(stringResource(R.string.filter_type_of_place))
+            FarmAxis.placeTypes.forEach { v ->
+                val on = v.id in placeTypes
+                FilterRow(icon = axisIcon(v.id), label = stringResource(v.labelRes),
+                    isOn = on, lockedTrailing = proLocked, dimmed = proLocked) {
+                    onProTap { farms.selectedPlaceTypes.value = placeTypes.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
                 }
             }
 
-            FilterGroupHeader(stringResource(R.string.filter_how_grown))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FarmAxis.methods.forEach { v ->
-                    val on = v.id in methods
-                    FilterChip(stringResource(v.labelRes), on) {
-                        farms.selectedMethods.value =
-                            methods.toMutableSet().apply { if (on) remove(v.id) else add(v.id) }
-                    }
+            FilterDivider()
+            FilterSectionHeader(stringResource(R.string.filter_how_grown))
+            FarmAxis.methods.forEach { v ->
+                val on = v.id in methods
+                FilterRow(icon = axisIcon(v.id), label = stringResource(v.labelRes),
+                    isOn = on, lockedTrailing = proLocked, dimmed = proLocked) {
+                    onProTap { farms.selectedMethods.value = methods.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
                 }
             }
+
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (showPro) {
+        ProUpsellSheet(onDismiss = { showPro = false })
+    }
+}
+
+/// One filter row (iOS `row()`): 34 circle (emoji→tint fill / icon→#F3F4F6), label
+/// `geist(15)` lineLimit1, optional trailing count Capsule, `checkmark`(14) farmGreenMap
+/// when on; pad h16 v11, tapCard. `checkmark`→Material `Check` (§7a).
+@Composable
+private fun FilterRow(
+    label: String,
+    isOn: Boolean,
+    emoji: String? = null,
+    icon: ImageVector? = null,
+    tint: Color = FarmsyColors.inkMuted,
+    trailing: String? = null,
+    lockedTrailing: Boolean = false,
+    dimmed: Boolean = false,
+    onTap: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().tapCard { onTap() }.padding(horizontal = 16.dp, vertical = 11.dp)
+            .then(if (dimmed) Modifier.alpha(0.5f) else Modifier),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(
+            Modifier.size(34.dp).background(if (emoji != null) tint else Color(0xFFF3F4F6), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            when {
+                emoji != null -> Text(emoji, style = geist(15.sp))
+                icon != null -> Icon(icon, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(15.dp))
+            }
+        }
+        Text(label, style = geist(15.sp), color = FarmsyColors.ink, maxLines = 1, modifier = Modifier.weight(1f))
+        if (trailing != null) {
+            Text(
+                trailing, style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted,
+                modifier = Modifier.background(Color(0xFFF3F4F6), CircleShape).padding(vertical = 3.dp, horizontal = 8.dp),
+            )
+        }
+        if (lockedTrailing) {
+            // A member-only row for a non-member: a lock instead of a checkmark.
+            Icon(Icons.Filled.Lock, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(13.dp))
+        } else if (isOn) {
+            Icon(Icons.Filled.Check, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(14.dp))
         }
     }
 }
 
 @Composable
-private fun FilterGroupHeader(text: String) {
-    Spacer(Modifier.height(20.dp))
-    Text(text, style = geist(13.sp, FontWeight.Bold), color = FarmsyColors.inkMuted)
-    Spacer(Modifier.height(10.dp))
+private fun FilterDivider() {
+    HorizontalDivider(Modifier.padding(vertical = 4.dp), color = FarmsyColors.hairline)
 }
 
+/// iOS sectionHeader: uppercased `geist(11,.semibold)` kerning 1.1 inkMuted, pad h16 t6 b2.
 @Composable
-private fun FilterChip(label: String, selected: Boolean, onToggle: () -> Unit) {
-    Surface(
-        shape = CircleShape,
-        color = if (selected) FarmsyColors.farmGreen else Color.White,
-        modifier = Modifier
-            .then(if (selected) Modifier else Modifier.border(BorderStroke(1.dp, FarmsyColors.inkMuted.copy(alpha = 0.25f)), CircleShape))
-            .clickable { onToggle() },
-    ) {
-        Text(
-            label, style = geist(13.sp, FontWeight.Medium),
-            color = if (selected) Color.White else FarmsyColors.ink,
-            modifier = Modifier.padding(vertical = 8.dp, horizontal = 14.dp),
-        )
-    }
+private fun FilterSectionHeader(text: String) {
+    Text(
+        text.uppercase(),
+        style = geist(11.sp, FontWeight.SemiBold), letterSpacing = 1.1.sp, color = FarmsyColors.inkMuted,
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 2.dp),
+    )
+}
+
+/// FarmAxis id → Material icon, mirroring iOS `FarmAxisValue.icon` (SF symbols) at the
+/// UI layer — Android's core `FarmAxisValue` has no icon field and is left untouched.
+/// SF→Material subs recorded in §7a. Unknown id falls back to Place.
+private fun axisIcon(id: String): ImageVector = when (id) {
+    "shop" -> Icons.Filled.Storefront                    // storefront
+    "vending-machine" -> Icons.Filled.Inventory2         // cabinet
+    "stall" -> Icons.Filled.ShoppingBasket               // basket
+    "milk-tap" -> Icons.Filled.WaterDrop                 // drop
+    "self-picking" -> Icons.Filled.FrontHand             // hand.raised
+    "self-picking-unstaffed" -> Icons.Filled.DoNotTouch  // hand.raised.slash
+    "biodynamic" -> Icons.Filled.NightsStay              // moon.stars
+    "regenerative" -> Icons.Filled.Recycling             // arrow.3.trianglepath
+    "grass-fed" -> Icons.Filled.Eco                      // leaf
+    "sustainable" -> Icons.Filled.Public                 // globe.europe.africa
+    else -> Icons.Filled.Place
 }
 
 /// The parsed AI values as short chip labels — categories and axes localised the
@@ -763,48 +905,5 @@ private fun aiChips(ai: SmartSearchIntent): List<String> {
         out += "📍 ${ai.place} · ${(ai.radiusKm ?: 25.0).toInt()} km"
     }
     return out.distinct()
-}
-
-@Composable
-private fun CategoryMenu(
-    selected: FarmCategory?,
-    onSelect: (FarmCategory?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier) {
-        Surface(
-            Modifier.clickable { expanded = true },
-            shape = CircleShape, color = Color.White, shadowElevation = 6.dp
-        ) {
-            Row(
-                Modifier.padding(vertical = 11.dp, horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // When a category is picked, show its emoji + name. With none, keep
-                // it short — "Categories", not "All Categories" — so the pill stays
-                // a compact control rather than a banner across the map.
-                Text(
-                    selected?.let { "${it.emoji} ${stringResource(it.labelRes)}" }
-                        ?: "🍽️ ${stringResource(R.string.categories_short)}",
-                    style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap, maxLines = 1
-                )
-                Spacer(Modifier.size(6.dp))
-                Icon(Icons.Filled.KeyboardArrowUp, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(14.dp))
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.all_categories)) },
-                onClick = { onSelect(null); expanded = false }
-            )
-            FarmCategory.entries.forEach { cat ->
-                DropdownMenuItem(
-                    text = { Text("${cat.emoji} ${stringResource(cat.labelRes)}") },
-                    onClick = { onSelect(cat); expanded = false }
-                )
-            }
-        }
-    }
 }
 

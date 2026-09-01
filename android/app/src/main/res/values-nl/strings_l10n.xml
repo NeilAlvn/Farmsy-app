@@ -187,7 +187,6 @@
     <string name="trips">Routes</string>
     <string name="plan_a_trip">Plan een route</string>
     <string name="my_trips">Mijn routes</string>
-    <string name="start_from_my_location">Start bij mijn locatie</string>
     <string name="trip_overview">Overzicht</string>
     <string name="pick_farm_on_map">Kies een boerderij op de kaart</string>
     <string name="best_order">Beste volgorde</string>
@@ -203,7 +202,6 @@
     <string name="my_weekend_trip">Mijn weekendroute</string>
     <string name="save">Opslaan</string>
     <string name="sign_in_to_view_trips">Log in om je routes te zien</string>
-    <string name="saved_trips_pro">Opgeslagen routes zijn een Farmsy Pro-functie.</string>
     <string name="no_trip_in_progress">Geen route bezig</string>
     <string name="draft_waiting">Een concept met %d stops wacht</string>
     <string name="plan_trip_to_fill">Plan een route om dit te vullen</string>
@@ -264,6 +262,55 @@
     <string name="auth_confirm_placeholder">Herhaal wachtwoord</string>
     <string name="whats_new">WAT\'S NIEUW</string>
     <string name="featured_farms">UITGELICHTE BOERDERIJEN</string>
+    <string name="no_reviews_yet">Nog geen reviews</string>
     <string name="no_posts_yet">Nog geen berichten — kom snel terug.</string>
+    <string name="lightbox_from_a_post">Uit een bericht</string>
     <string name="time_just_now">zojuist</string>
+
+    <!-- S7 FarmDetailView — Pass 2 -->
+    <string name="verified">Geverifieerd</string>
+    <string name="open_now">Nu open</string>
+    <string name="in_your_trip">In je route</string>
+    <string name="view_more">Meer weergeven</string>
+    <string name="lightbox_farm_photo">Boerderijfoto</string>
+
+    <!-- C8 ReviewComposer + PostComposer -->
+    <string name="review_leave">Schrijf een beoordeling</string>
+    <string name="review_placeholder">Deel je ervaring… (optioneel)</string>
+    <string name="review_submit">Versturen</string>
+    <string name="composer_photo">Foto</string>
+    <string name="composer_post">Plaatsen</string>
+    <string name="composer_posted_note">Geplaatst bij jouw boerderij op de kaart.</string>
+    <string name="composer_whats_new_at">Wat is er nieuw bij %1$s?</string>
+
+    <!-- S9 FarmMemberSections -->
+    <string name="section_people_saying">Wat mensen zeggen</string>
+    <string name="reviews_be_first">Wees de eerste die deze boerderij beoordeelt.</string>
+    <string name="details">Details</string>
+    <string name="hours">Openingstijden</string>
+    <string name="organic_yes">Ja 🌱</string>
+    <string name="section_whats_new">Wat is er nieuw</string>
+    <string name="posts_empty_today">Vandaag nog niets geplaatst.</string>
+    <string name="reviews">Beoordelingen</string>
+    <string name="reviews_none_be_first">Nog geen beoordelingen. Wees de eerste!</string>
+    <string name="claim_is_your_farm">Is dit jouw boerderij?</string>
+    <string name="claim_fine_print">Claim de boerderij om details, foto\'s en openingstijden actueel te houden. We controleren elke claim handmatig.</string>
+    <string name="report_incorrect_info">Onjuiste informatie melden</string>
+    <string name="post_report">Melden</string>
+    <string name="post_reported">Gemeld</string>
+
+    <!-- S19 PlaceSearchSheet -->
+    <string name="starting_point">VERTREKPUNT</string>
+    <string name="search_town_address_postcode">Zoek een plaats, adres of postcode</string>
+
+    <!-- Farm-detail sign-up wall -->
+    <string name="signup_wall_title">Bekijk deze boerderij, gratis</string>
+    <string name="signup_wall_body">Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart.</string>
+    <string name="signup_wall_cta">Maak een gratis account aan</string>
+    <string name="choose_a_starting_point">Kies een vertrekpunt</string>
+    <string name="farmsy_for_android_arg">Farmsy voor Android %1$s</string>
+    <string name="farmsy_pro">Farmsy Pro</string>
+    <string name="pro_open_now">Nu geopend</string>
+    <string name="pro_open_saturday">Zaterdag geopend</string>
+    <string name="pro_open_sunday">Zondag geopend</string>
 </resources>

@@ -187,7 +187,6 @@
     <string name="trips">Trips</string>
     <string name="plan_a_trip">Plan a trip</string>
     <string name="my_trips">My trips</string>
-    <string name="start_from_my_location">Start from my location</string>
     <string name="trip_overview">Trip overview</string>
     <string name="pick_farm_on_map">Pick a farm on the map</string>
     <string name="best_order">Best order</string>
@@ -203,7 +202,6 @@
     <string name="my_weekend_trip">My weekend trip</string>
     <string name="save">Save</string>
     <string name="sign_in_to_view_trips">Sign in to view your trips</string>
-    <string name="saved_trips_pro">Saved trips are a Farmsy Pro feature.</string>
     <string name="no_trip_in_progress">No trip in progress</string>
     <string name="draft_waiting">A draft with %d stops is waiting</string>
     <string name="plan_trip_to_fill">Plan a trip to fill this</string>
@@ -264,7 +262,9 @@
     <string name="auth_confirm_placeholder">Repeat password</string>
     <string name="whats_new">WHAT\'S NEW</string>
     <string name="featured_farms">FEATURED FARMS</string>
+    <string name="no_reviews_yet">No reviews yet</string>
     <string name="no_posts_yet">No posts yet — check back soon.</string>
+    <string name="lightbox_from_a_post">From a post</string>
     <string name="time_just_now">just now</string>
     <plurals name="time_minutes">
         <item quantity="one">%dm</item>
@@ -278,4 +278,62 @@
         <item quantity="one">%dd</item>
         <item quantity="other">%dd</item>
     </plurals>
+
+    <!-- S7 FarmDetailView — Pass 2 (badgeRow / tripButton / locked body) -->
+    <string name="verified">Verified</string>
+    <string name="open_now">Open now</string>
+    <string name="in_your_trip">In your trip</string>
+    <string name="view_more">View more</string>
+    <string name="lightbox_farm_photo">Farm photo</string>
+
+    <!-- C8 ReviewComposer + PostComposer (consumed by S9) -->
+    <string name="review_leave">Leave a review</string>
+    <string name="review_placeholder">Share your experience… (optional)</string>
+    <string name="review_submit">Submit</string>
+    <string name="composer_photo">Photo</string>
+    <string name="composer_post">Post</string>
+    <string name="composer_posted_note">Posted to your farm on the map.</string>
+    <string name="composer_whats_new_at">What\'s new at %1$s?</string>
+
+    <!-- S9 FarmMemberSections -->
+    <string name="section_people_saying">What people are saying</string>
+    <string name="reviews_be_first">Be the first to review this farm.</string>
+    <string name="details">Details</string>
+    <string name="hours">Hours</string>
+    <string name="organic_yes">Yes 🌱</string>
+    <string name="section_whats_new">What\'s new</string>
+    <string name="posts_empty_today">Nothing posted here today.</string>
+    <string name="reviews">Reviews</string>
+    <string name="reviews_none_be_first">No reviews yet. Be the first!</string>
+    <string name="claim_is_your_farm">Is this your farm?</string>
+    <string name="claim_fine_print">Claim it to keep its details, photos and opening hours up to date. We check every claim by hand.</string>
+    <string name="report_incorrect_info">Report incorrect info</string>
+    <string name="post_report">Report</string>
+    <string name="post_reported">Reported</string>
+    <!-- iOS hardcodes "review"/"reviews" as inline English literals (not localized);
+         English-only here so other locales fall back to English, matching iOS exactly. -->
+    <plurals name="reviews_count">
+        <item quantity="one">· %d review</item>
+        <item quantity="other">· %d reviews</item>
+    </plurals>
+
+    <!-- S19 PlaceSearchSheet (trip origin) -->
+    <string name="starting_point">STARTING POINT</string>
+    <string name="search_town_address_postcode">Search a town, address or postcode</string>
+    <!-- Attribution for OSM-derived place data (Photon). Android-only; iOS's MapKit
+         carries its own. English-only — no catalog source, a standard ODbL notice. -->
+    <string name="osm_attribution">Place data © OpenStreetMap contributors</string>
+
+    <!-- Farm-detail sign-up wall (web contract: details need an account, not a
+         subscription). Source of truth: farmsy-web origin/main messages/*.json
+         map.lockedTitle/lockedBody/lockedCta. Replaces the old paywall copy. -->
+    <string name="signup_wall_title">See this farm, free</string>
+    <string name="signup_wall_body">Address, phone, opening times and what they sell. One free account opens every farm on the map.</string>
+    <string name="signup_wall_cta">Create a free account</string>
+    <string name="choose_a_starting_point">Choose a starting point</string>
+    <string name="farmsy_for_android_arg">Farmsy for Android %1$s</string>
+    <string name="farmsy_pro">Farmsy Pro</string>
+    <string name="pro_open_now">Open right now</string>
+    <string name="pro_open_saturday">Open Saturday</string>
+    <string name="pro_open_sunday">Open Sunday</string>
 </resources>
