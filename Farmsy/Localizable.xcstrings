@@ -8232,19 +8232,19 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Er is iets misgegaan. Probeer het opnieuw."
+            "value": "Er ging iets mis. Probeer het nog eens."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quelque chose s'est mal passé. Veuillez réessayer."
+            "value": "Une erreur est survenue. Réessayez."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+            "value": "Etwas ist schiefgelaufen. Bitte noch einmal versuchen."
           }
         }
       }
@@ -11217,6 +11217,534 @@
           "stringUnit": {
             "state": "translated",
             "value": "Maak een gratis account aan"
+          }
+        }
+      }
+    },
+    "Seven questions about buying from farms": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeven vragen over boodschappen bij de boer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sept questions sur les achats à la ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sieben Fragen zum Einkaufen beim Hof"
+          }
+        }
+      }
+    },
+    "More than one answer is possible": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meerdere antwoorden mogelijk"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plusieurs réponses possibles"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere Antworten möglich"
+          }
+        }
+      }
+    },
+    "Choose up to %lld": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies er maximaal %lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez-en %lld au maximum"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wählen Sie höchstens %lld"
+          }
+        }
+      }
+    },
+    "And who may we thank?": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En wie mogen we bedanken?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et qui devons-nous remercier ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Und wem dürfen wir danken?"
+          }
+        }
+      }
+    },
+    "We use this only to keep your answers together and to write back if you asked something.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We gebruiken dit alleen om je antwoorden te bewaren en om terug te schrijven als je een vraag stelt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous l’utilisons uniquement pour regrouper vos réponses et vous répondre si vous avez posé une question."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir verwenden das nur, um Ihre Antworten zusammenzuhalten und zu antworten, falls Sie etwas gefragt haben."
+          }
+        }
+      }
+    },
+    "Your name (optional)": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je naam (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre nom (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ihr Name (optional)"
+          }
+        }
+      }
+    },
+    "Email address": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-mailadres"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse e-mail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-Mail-Adresse"
+          }
+        }
+      }
+    },
+    "%lld questions to go": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog %lld vragen te gaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encore %lld questions"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch %lld Fragen"
+          }
+        }
+      }
+    },
+    "1 question to go": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog 1 vraag te gaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encore 1 question"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch 1 Frage"
+          }
+        }
+      }
+    },
+    "Just your email address": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alleen je e-mailadres nog"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus que votre adresse e-mail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur noch Ihre E-Mail-Adresse"
+          }
+        }
+      }
+    },
+    "An answer is still missing.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Er ontbreekt nog een antwoord."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il manque encore une réponse."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es fehlt noch eine Antwort."
+          }
+        }
+      }
+    },
+    "This is an admin account, so your answers are not counted.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit is een beheerdersaccount, dus je antwoorden tellen niet mee."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ceci est un compte administrateur, vos réponses ne sont donc pas comptées."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dies ist ein Administratorkonto, Ihre Antworten zählen daher nicht."
+          }
+        }
+      }
+    },
+    "Please wait a moment and try again.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Even wachten en dan opnieuw proberen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Patientez un instant et réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einen Moment warten und noch einmal versuchen."
+          }
+        }
+      }
+    },
+    "We could not find your account. Open the link from the email, or sign in first.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We konden je account niet vinden. Open de link uit de e-mail, of log eerst in."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous n’avons pas trouvé votre compte. Ouvrez le lien de l’e-mail, ou connectez-vous d’abord."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir konnten Ihr Konto nicht finden. Öffnen Sie den Link aus der E-Mail, oder melden Sie sich zuerst an."
+          }
+        }
+      }
+    },
+    "Thank you, we have your answers.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedankt, we hebben je antwoorden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci, nous avons vos réponses."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danke, wir haben Ihre Antworten."
+          }
+        }
+      }
+    },
+    "This genuinely decides what we build next.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit bepaalt echt wat we hierna bouwen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela décide vraiment de ce que nous construirons ensuite."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das entscheidet wirklich, was wir als Nächstes bauen."
+          }
+        }
+      }
+    },
+    "What could be better?": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat kan er beter?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qu’est-ce qui pourrait être mieux ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was könnte besser sein?"
+          }
+        }
+      }
+    },
+    "You have already answered the questions, thank you. Anything you write here comes straight to us.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt de vragen al beantwoord, dank je. Alles wat je hier schrijft komt rechtstreeks bij ons terecht."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez déjà répondu aux questions, merci. Tout ce que vous écrivez ici nous parvient directement."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sie haben die Fragen bereits beantwortet, danke. Alles, was Sie hier schreiben, kommt direkt bei uns an."
+          }
+        }
+      }
+    },
+    "Thank you, we read every one.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dank je, we lezen alles."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci, nous lisons tout."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danke, wir lesen alles."
+          }
+        }
+      }
+    },
+    "Add something else": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog iets toevoegen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter autre chose"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch etwas hinzufügen"
+          }
+        }
+      }
+    },
+    "Subject, briefly": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onderwerp, kort"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objet, en bref"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betreff, kurz"
+          }
+        }
+      }
+    },
+    "What did not work, what was missing, or what went well?": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat werkte niet, wat miste je, of wat viel juist mee?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qu’est-ce qui n’a pas marché, qu’est-ce qui manquait, ou qu’est-ce qui allait bien ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was hat nicht funktioniert, was hat gefehlt, oder was lief gut?"
+          }
+        }
+      }
+    },
+    "Sending failed. Please try again.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versturen lukte niet. Probeer het nog eens."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’envoi a échoué. Réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden fehlgeschlagen. Bitte noch einmal versuchen."
+          }
+        }
+      }
+    },
+    "Send": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versturen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
           }
         }
       }

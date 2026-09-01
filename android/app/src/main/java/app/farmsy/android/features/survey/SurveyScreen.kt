@@ -41,12 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalSession
+import app.farmsy.android.R
 import app.farmsy.android.core.SurveyApi
 import app.farmsy.android.core.SurveyDefinition
 import app.farmsy.android.core.SurveyKind
@@ -95,6 +97,14 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var submitting by remember { mutableStateOf(false) }
     var submitError by remember { mutableStateOf<String?>(null) }
+
+    // Error copy resolved here (stringResource needs @Composable context) so the
+    // submit coroutine can reference it. One per server code Aviah's route returns.
+    val errIncomplete = stringResource(R.string.survey_err_incomplete)
+    val errAdmin = stringResource(R.string.survey_err_admin)
+    val errRateLimited = stringResource(R.string.survey_err_rate_limited)
+    val errUnknown = stringResource(R.string.survey_err_unknown)
+    val errFailed = stringResource(R.string.survey_err_failed)
 
     fun load() {
         phase = Phase.LOADING
@@ -145,9 +155,14 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
                             submitting = false; phase = Phase.THANKS
                         }.onFailure { e ->
                             submitting = false
-                            submitError = if (e is SurveyRefused && e.reason == "incomplete")
-                                "It looks like a question is still unanswered."
-                            else "We couldn't save that. Please try again."
+                            // Map each server code to Aviah's per-code message (survey.err*).
+                            submitError = if (e is SurveyRefused) when (e.reason) {
+                                "incomplete" -> errIncomplete
+                                "is_admin" -> errAdmin
+                                "rate_limited" -> errRateLimited
+                                "unknown_person" -> errUnknown
+                                else -> errFailed
+                            } else errFailed
                         }
                     }
                 },
@@ -218,7 +233,7 @@ private fun Form(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "Seven questions about buying from farms",
+                stringResource(R.string.survey_title),
                 style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink,
                 modifier = Modifier.weight(1f),
             )
@@ -278,7 +293,7 @@ private fun Form(
                     if (submitting) {
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                     } else {
-                        Text("Send", style = geist(15.sp, FontWeight.SemiBold), color = Color.White)
+                        Text(stringResource(R.string.survey_send), style = geist(15.sp, FontWeight.SemiBold), color = Color.White)
                     }
                 }
             }
@@ -324,9 +339,10 @@ private fun QuestionBlock(
     }
 }
 
+@Composable
 private fun hint(q: SurveyQuestion): String? = when {
-    q.kind == SurveyKind.many && q.max != null -> "Choose up to ${q.max}"
-    q.kind == SurveyKind.many -> "More than one answer is possible"
+    q.kind == SurveyKind.many && q.max != null -> stringResource(R.string.survey_choose_up_to, q.max)
+    q.kind == SurveyKind.many -> stringResource(R.string.survey_multiple)
     else -> null
 }
 
@@ -367,20 +383,20 @@ private fun Indicator(on: Boolean, square: Boolean) {
 
 @Composable
 private fun TextRow(value: String, onChange: (String) -> Unit) {
-    StyledField(value = value, onChange = onChange, placeholder = "Optional", singleLine = false)
+    StyledField(value = value, onChange = onChange, placeholder = stringResource(R.string.survey_optional), singleLine = false)
 }
 
 @Composable
 private fun IdentityBlock(name: String, onName: (String) -> Unit, email: String, onEmail: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider(color = FarmsyColors.hairline)
-        Text("And who may we thank?", style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
+        Text(stringResource(R.string.survey_who_thanks), style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
         Text(
-            "Your email lets us follow up if you asked us something. Name is optional.",
+            stringResource(R.string.survey_who_thanks_why),
             style = geist(12.sp), color = FarmsyColors.inkMuted,
         )
-        StyledField(value = name, onChange = onName, placeholder = "Name (optional)")
-        StyledField(value = email, onChange = onEmail, placeholder = "Email", keyboardType = KeyboardType.Email)
+        StyledField(value = name, onChange = onName, placeholder = stringResource(R.string.survey_your_name))
+        StyledField(value = email, onChange = onEmail, placeholder = stringResource(R.string.survey_your_email), keyboardType = KeyboardType.Email)
     }
 }
 
@@ -438,9 +454,9 @@ private fun ThankYou(onClose: () -> Unit) {
         ) {
             Icon(Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(48.dp))
             Spacer(Modifier.size(14.dp))
-            Text("Thank you, we have your answers.", style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.survey_thanks), style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
             Spacer(Modifier.size(14.dp))
-            Text("This genuinely decides what we build next.", style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.survey_thanks_sub), style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
         }
     }
 }
@@ -462,6 +478,8 @@ private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
     var sending by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var sent by remember { mutableStateOf(false) }
+    // Resolved here so the send coroutine can reference it (stringResource is @Composable).
+    val feedbackFailed = stringResource(R.string.survey_feedback_failed)
 
     val effectiveName = if (signedIn) session.displayName else name
     val effectiveEmail = if (signedIn) session.email else email
@@ -481,18 +499,18 @@ private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("What could be better?", style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.survey_feedback_title), style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
             Text(
-                "You have already answered the questions, thank you. Anything you write here comes straight to us.",
+                stringResource(R.string.survey_feedback_intro),
                 style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
             )
 
             if (sent) {
                 // After sending — a tick, the confirmation, and a way to add more.
                 Icon(Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(36.dp))
-                Text("Thank you, we read every one.", style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.survey_feedback_thanks), style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen, textAlign = TextAlign.Center)
                 Text(
-                    "Add something else",
+                    stringResource(R.string.survey_feedback_more),
                     style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.farmGreenMap,
                     modifier = Modifier.clickable(
                         interactionSource = remember { MutableInteractionSource() }, indication = null,
@@ -503,11 +521,11 @@ private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
                     HorizontalDivider(color = FarmsyColors.hairline)
                     // Two fields that visibly want different things (Aviah): a subject
                     // and a message, so the subject line isn't the whole report.
-                    StyledField(value = subject, onChange = { subject = it }, placeholder = "Subject")
-                    StyledField(value = message, onChange = { message = it }, placeholder = "Your message", singleLine = false)
+                    StyledField(value = subject, onChange = { subject = it }, placeholder = stringResource(R.string.survey_feedback_subject))
+                    StyledField(value = message, onChange = { message = it }, placeholder = stringResource(R.string.survey_feedback_body), singleLine = false)
                     if (!signedIn) {
-                        StyledField(value = name, onChange = { name = it }, placeholder = "Name")
-                        StyledField(value = email, onChange = { email = it }, placeholder = "Email", keyboardType = KeyboardType.Email)
+                        StyledField(value = name, onChange = { name = it }, placeholder = stringResource(R.string.survey_your_name))
+                        StyledField(value = email, onChange = { email = it }, placeholder = stringResource(R.string.survey_your_email), keyboardType = KeyboardType.Email)
                     }
                     error?.let { Text(it, style = geist(13.sp, FontWeight.Medium), color = FarmsyColors.warnRed) }
                     Box(
@@ -526,7 +544,7 @@ private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
                                             accessToken = session.accessToken(),
                                         )
                                     }.onSuccess { sending = false; sent = true }
-                                        .onFailure { sending = false; error = "We couldn't send that. Please try again." }
+                                        .onFailure { sending = false; error = feedbackFailed }
                                 }
                             }
                             .padding(vertical = 12.dp),
@@ -535,7 +553,7 @@ private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
                         if (sending) {
                             CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                         } else {
-                            Text("Send feedback", style = geist(15.sp, FontWeight.SemiBold), color = Color.White)
+                            Text(stringResource(R.string.survey_send), style = geist(15.sp, FontWeight.SemiBold), color = Color.White)
                         }
                     }
                 }
@@ -559,8 +577,12 @@ private fun requiredRemaining(
     }
 }
 
+@Composable
 private fun remainingLabel(remaining: Int, needsEmail: Boolean): String = when {
-    remaining > 0 -> "$remaining questions to go"
-    needsEmail -> "Just your email address"
+    // Singular/plural split (not ICU) — Aviah keeps them separate because the two
+    // forms differ by more than a suffix in half these languages.
+    remaining == 1 -> stringResource(R.string.survey_question_to_go)
+    remaining > 1 -> stringResource(R.string.survey_questions_to_go, remaining)
+    needsEmail -> stringResource(R.string.survey_email_to_go)
     else -> ""
 }

@@ -255,10 +255,10 @@ struct SurveyView: View {
             Divider().background(Color.hairline)
             Text("And who may we thank?")
                 .font(.geist(15, .semibold)).foregroundStyle(Color.ink)
-            Text("Your email lets us follow up if you asked us something. Name is optional.")
+            Text("We use this only to keep your answers together and to write back if you asked something.")
                 .font(.geist(12)).foregroundStyle(Color.inkMuted)
-            plainField(String(localized: "Name (optional)"), text: $name)
-            plainField(String(localized: "Email"), text: $email, keyboard: .emailAddress)
+            plainField(String(localized: "Your name (optional)"), text: $name)
+            plainField(String(localized: "Email address"), text: $email, keyboard: .emailAddress)
         }
     }
 
@@ -324,7 +324,10 @@ struct SurveyView: View {
 
     private var remainingLabel: String {
         let q = requiredQuestionsRemaining
-        if q > 0 { return String(localized: "\(q) questions to go") }
+        // Singular/plural split (not a format plural) — Aviah keeps them separate
+        // because the two forms differ by more than a suffix in half these languages.
+        if q == 1 { return String(localized: "1 question to go") }
+        if q > 1 { return String(localized: "\(q) questions to go") }
         if needsEmail { return String(localized: "Just your email address") }
         return ""
     }
@@ -357,12 +360,22 @@ struct SurveyView: View {
             Haptics.success()
             phase = .thanks
         } catch SurveyError.refused(let reason) {
-            // `incomplete` is "you missed a question"; the rest are "couldn't save".
-            submitError = reason == "incomplete"
-                ? String(localized: "It looks like a question is still unanswered.")
-                : String(localized: "We couldn't save that. Please try again.")
+            // Map each server code to Aviah's per-code message (survey.err*).
+            submitError = Self.errorMessage(for: reason)
         } catch {
-            submitError = String(localized: "We couldn't save that. Please try again.")
+            submitError = String(localized: "Something went wrong. Please try again.")
+        }
+    }
+
+    /// The localized message for a submit-refusal code (`incomplete` / `is_admin` /
+    /// `rate_limited` / `unknown_person` / else). Web `survey.err*`.
+    private static func errorMessage(for reason: String) -> String {
+        switch reason {
+        case "incomplete":     return String(localized: "An answer is still missing.")
+        case "is_admin":       return String(localized: "This is an admin account, so your answers are not counted.")
+        case "rate_limited":   return String(localized: "Please wait a moment and try again.")
+        case "unknown_person": return String(localized: "We could not find your account. Open the link from the email, or sign in first.")
+        default:               return String(localized: "Something went wrong. Please try again.")
         }
     }
 }
@@ -474,21 +487,21 @@ private struct FeedbackView: View {
     private var feedbackBox: some View {
         VStack(alignment: .leading, spacing: 12) {
             Divider().background(Color.hairline)
-            field(String(localized: "Subject"), text: $subject)
-            TextField(String(localized: "Your message"), text: $message, axis: .vertical)
+            field(String(localized: "Subject, briefly"), text: $subject)
+            TextField(String(localized: "What did not work, what was missing, or what went well?"), text: $message, axis: .vertical)
                 .font(.geist(14)).lineLimit(4, reservesSpace: true)
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(.white.opacity(0.6)).stroke(Color.hairline, lineWidth: 1))
             if !session.isAuthenticated {
-                field(String(localized: "Name"), text: $name)
-                field(String(localized: "Email"), text: $email, keyboard: .emailAddress)
+                field(String(localized: "Your name (optional)"), text: $name)
+                field(String(localized: "Email address"), text: $email, keyboard: .emailAddress)
             }
             if let error { Text(error).font(.geist(13, .medium)).foregroundStyle(Color.warnRed) }
             Button { Haptics.tap(); Task { await send() } } label: {
                 Group {
                     if sending { ProgressView().tint(.white) }
-                    else { Text("Send feedback").font(.geist(15, .semibold)) }
+                    else { Text("Send").font(.geist(15, .semibold)) }
                 }
                 .foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(canSend ? Color.farmGreenMap : Color.farmGreenMap.opacity(0.4),
@@ -532,7 +545,7 @@ private struct FeedbackView: View {
             Haptics.success()
             sent = true
         } catch {
-            self.error = String(localized: "We couldn't send that. Please try again.")
+            self.error = String(localized: "Sending failed. Please try again.")
         }
     }
 }
