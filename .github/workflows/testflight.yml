@@ -23,6 +23,29 @@ jobs:
           sudo xcode-select -s "$XC/Contents/Developer"
           xcodebuild -version
 
+      # Secrets.plist is gitignored (never committed), so a fresh CI checkout lacks
+      # it — which left the RevenueCat/Sentry/PostHog client keys EMPTY in every
+      # TestFlight build, so the membership sheet showed "can't be loaded" (the app
+      # skips Purchases.configure when the key is empty). Decode it here from an
+      # encrypted Actions secret. These are PUBLIC client keys (RevenueCat public SDK
+      # key, Sentry DSN, PostHog key) that ship in the binary anyway — NOT Luuk's .p8
+      # or any server secret, which never touch CI. Fail loudly if the secret is unset
+      # rather than silently shipping another keyless build.
+      - name: Inject Secrets.plist
+        env:
+          SECRETS_PLIST_BASE64: ${{ secrets.SECRETS_PLIST_BASE64 }}
+        run: |
+          if [ -z "$SECRETS_PLIST_BASE64" ]; then
+            echo "::error::SECRETS_PLIST_BASE64 is not set — RevenueCat/analytics would be disabled. Set it with: base64 < Farmsy/Secrets.plist | tr -d '\n' | gh secret set SECRETS_PLIST_BASE64 --repo NeilAlvn/Farmsy-app"
+            exit 1
+          fi
+          printf '%s' "$SECRETS_PLIST_BASE64" | base64 --decode > Farmsy/Secrets.plist
+          # Sanity-check it parses and has the RevenueCat key, without printing values.
+          plutil -lint Farmsy/Secrets.plist
+          /usr/libexec/PlistBuddy -c "Print :RevenueCatPublicKey" Farmsy/Secrets.plist >/dev/null \
+            && echo "Secrets.plist injected (RevenueCatPublicKey present)" \
+            || { echo "::error::RevenueCatPublicKey missing from injected plist"; exit 1; }
+
       - name: Archive (unsigned)
         run: |
           xcodebuild archive \
