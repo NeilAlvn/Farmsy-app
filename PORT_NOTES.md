@@ -159,14 +159,3 @@ DEFERRED, not built. File: `features/auth/AuthSheet.kt` `AuthField`.
 
 **Android:** there is no free on-device autocomplete equivalent. The chosen provider is **Photon** (OSM-based, `photon.komoot.io/api`) — a plain Ktor GET, no key, no dependency, coordinates in the same response. Evaluated live (NL+BE towns rank #1, typos and `'s-Gravenhage`→Den Haag resolve, postcodes need the proximity bias that is applied). What is given up vs Google Places / iOS: no SLA (public instance, "extensive usage will be throttled", no published limit, no availability guarantee), and weaker fuzzy-matching than Apple/Google on very messy input. Photon is self-hostable (Apache-2.0) if the public instance throttles — the client code would not change. Google Places would restore exact parity but reintroduces the billing/Cloud-config Photon was chosen to avoid → DEFERRED, not built. Nominatim is **not** an option: its usage policy prohibits client-side autocomplete outright. File: `features/trips/PlaceSearchSheet.kt` `photonSearch`.
 
-## Survey arrow — standard Material arrow, not Aviah's hand-drawn one (Survey · MainScreen)
-
-**Status: ACCEPTED_DIVERGENCE** — not a missing-API divergence but a **deliberate design divergence from the written spec, made on Neil's direct instruction.** Recording it so the two authorities are visible and reconcilable.
-
-**Aviah's thread (2026-09-01 later):** "A hand-drawn arrow above the button… Drawn rather than taken from an icon set, and that is deliberate: a slightly uneven curve reads as a person pointing… It bounces ~9px… hidden from screen readers… holds still under reduced motion."
-
-**Neil's session brief (this session):** "It is a REGULAR DARK GREEN ARROW, positioned ABOVE the entry button and POINTING DOWN at it. iOS build 23 hand-drew a curved Path beside the button as an approximation; that was wrong on both shape and placement. Use a standard arrow… No custom Path."
-
-**Built (Android):** `Icons.Filled.ArrowDownward`, `farmGreen`, above the button, pointing down, size 22. **Bounces** ~9px / ~0.9s / eased (thread settles the animation), **hidden from a11y** (`clearAndSetSemantics {}`), **still under reduce-motion** (`ANIMATOR_DURATION_SCALE == 0`). Colour = `farmGreen` (the button is `--primary`; "dark green" per the brief distinguishes it from the lighter on-map `farmGreenMap`) — chosen and flagged rather than invented.
-
-**The divergence:** shape (standard icon vs hand-drawn curve) and placement (above vs beside) follow Neil, not the thread. The bounce, a11y-hiding, reduce-motion, and unanswered-only visibility follow the thread. **iOS build 23 differs from both** (hand-drawn Path, beside) and should be corrected to match this. File: `features/main/MainScreen.kt` `SurveyArrow`.

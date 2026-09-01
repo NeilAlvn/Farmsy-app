@@ -69,9 +69,12 @@ import kotlinx.coroutines.launch
 /// (already answered).
 enum class SurveyMode { QUESTIONS, FEEDBACK }
 
-/// FEEDBACK is reached two ways: after submitting the questions, or directly when an
-/// already-answered person taps the button. Both render the same feedback screen.
-private enum class Phase { LOADING, FAILED, READY, FEEDBACK }
+/// The sequence is answer → THANKS (a standalone celebration that STAYS until closed)
+/// → close → reopen later → FEEDBACK (the "What could be better?" box). Keeping the
+/// thank-you on its own screen — rather than dropping the person straight into a
+/// feedback form — is the fix for the web bug Aviah found (later-5): the panel used to
+/// swap to feedback the instant the answer stored, so the acknowledgement never showed.
+private enum class Phase { LOADING, FAILED, READY, THANKS, FEEDBACK }
 
 @Composable
 fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
@@ -157,7 +160,7 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
                                 accessToken = session.accessToken(),
                             )
                         }.onSuccess {
-                            submitting = false; phase = Phase.FEEDBACK
+                            submitting = false; phase = Phase.THANKS
                         }.onFailure { e ->
                             submitting = false
                             submitError = if (e is SurveyRefused && e.reason == "incomplete")
@@ -167,6 +170,7 @@ fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
                     }
                 },
             )
+            Phase.THANKS -> ThankYou(onClose = onClose)
             Phase.FEEDBACK -> Feedback(signedIn = signedIn, onClose = onClose)
         }
     }
@@ -447,12 +451,39 @@ private fun StyledField(
     }
 }
 
+/// The just-answered celebration — shown after the seven questions store, and it STAYS
+/// until the person closes (they do not get dropped into a feedback form in the same
+/// breath; the feedback box is a separate screen reached by reopening the button
+/// later). Aviah's copy. Matches the iOS `ThankYouView`.
+@Composable
+private fun ThankYou(onClose: () -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier.size(32.dp).background(Color(0xFFF3F4F6), CircleShape).clickable { onClose() },
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.Close, null, tint = Color(0xFF6B7280), modifier = Modifier.size(14.dp)) }
+        }
+        Column(
+            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(48.dp))
+            Spacer(Modifier.size(14.dp))
+            Text("Thank you, we have your answers.", style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+            Spacer(Modifier.size(14.dp))
+            Text("This genuinely decides what we build next.", style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
+        }
+    }
+}
+
 /// The feedback surface (Aviah's spec — the entry button never goes away, it changes
-/// what it opens). Reached after submitting the questions, or directly when an
-/// already-answered person taps the button; the copy is the same either way. Subject
-/// + message (+ name/email when signed out) → `POST /api/contact` topic=feedback. The
-/// order is the point: a remark from someone who told us what they came for is worth
-/// more. Copy is Aviah's verbatim from the thread.
+/// what it opens). Reached when an already-answered person taps the button — a separate
+/// screen from the just-answered thank-you. Subject + message (+ name/email when signed
+/// out) → `POST /api/contact` topic=feedback. The order is the point: a remark from
+/// someone who told us what they came for is worth more. Copy is Aviah's verbatim.
 @Composable
 private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
     val session = LocalSession.current

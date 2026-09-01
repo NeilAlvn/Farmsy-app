@@ -21,9 +21,13 @@ struct SurveyView: View {
     @Environment(\.dismiss) private var dismiss
 
     // Load state for the questions fetch (existing error/retry shape: a message +
-    // a "Try again" button, as MapScreen and FarmDetail use). `.feedback` is the
-    // answered-user path (feedback box, no questions); `.thanks` is the just-answered
-    // path (both show FeedbackView, differing only by its `justAnswered` flag).
+    // a "Try again" button, as MapScreen and FarmDetail use). The sequence is
+    // answer → `.thanks` (a standalone celebration that STAYS until closed) → close →
+    // reopen later → `.feedback` (the "What could be better?" box). Keeping the
+    // thank-you on its own screen — rather than dropping the person straight into a
+    // feedback form — is the fix for the web bug Aviah found (later-5): the panel used
+    // to swap to feedback the instant the answer stored, so the acknowledgement never
+    // showed and Send read as "went nowhere".
     private enum Phase { case loading, failed, ready, thanks, feedback }
     @State private var phase: Phase = .loading
     @State private var def: SurveyDefinition?
@@ -57,8 +61,8 @@ struct SurveyView: View {
             case .loading:  ProgressView().tint(.farmGreenMap)
             case .failed:   loadError
             case .ready:    form
-            case .thanks:   FeedbackView(justAnswered: true, onClose: { dismiss() })
-            case .feedback: FeedbackView(justAnswered: false, onClose: { dismiss() })
+            case .thanks:   ThankYouView(onClose: { dismiss() })
+            case .feedback: FeedbackView(onClose: { dismiss() })
             }
         }
         .task { await load() }
@@ -402,14 +406,52 @@ struct SurveyView: View {
     }
 }
 
-/// The feedback surface. Reached two ways (Aviah's spec — the entry button never
-/// goes away, it changes what it opens): `justAnswered = true` right after the seven
-/// questions, or `justAnswered = false` when an already-answered person taps the
-/// button again ("What could be better?"). Either way it's subject + message (+ name
-/// /email when signed out) → `POST /api/contact` with `topic: "feedback"`. The order
-/// is the point: a remark from someone who told us what they came for is worth more.
+/// The just-answered celebration — shown after the seven questions store, and it
+/// STAYS until the person closes (they do not get dropped into a feedback form in the
+/// same breath; the feedback box is a separate screen reached by reopening the button
+/// later). Aviah's copy. Matches the Android `ThankYou`.
+private struct ThankYouView: View {
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button { Haptics.tap(); onClose() } label: {
+                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(hex: 0x6B7280))
+                        .frame(width: 32, height: 32).background(Color(hex: 0xF3F4F6), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16).padding(.top, 16)
+
+            Spacer()
+            VStack(spacing: 14) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48)).foregroundStyle(Color.farmGreen)
+                Text("Thank you, we have your answers.")
+                    .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                    .multilineTextAlignment(.center)
+                Text("This genuinely decides what we build next.")
+                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+            Spacer()
+            Spacer()
+        }
+        .background(Color.cream)
+    }
+}
+
+/// The feedback surface (Aviah's spec — the entry button never goes away, it changes
+/// what it opens). Reached when an already-answered person taps the button (mode
+/// `.feedback`) — a separate screen from the just-answered thank-you. Subject + message
+/// (+ name/email when signed out) → `POST /api/contact` with `topic: "feedback"`. The
+/// order is the point: a remark from someone who told us what they came for is worth
+/// more. Matches the Android `Feedback`.
 private struct FeedbackView: View {
-    let justAnswered: Bool
     let onClose: () -> Void
 
     @Environment(SessionStore.self) private var session
@@ -437,30 +479,18 @@ private struct FeedbackView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    if justAnswered {
-                        // Just finished the questions — a small celebration, then feedback.
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 44)).foregroundStyle(Color.farmGreen)
-                            .padding(.top, 8)
-                        Text("Thank you, we have your answers.")
-                            .font(.geist(18, .bold)).foregroundStyle(Color.ink)
-                            .multilineTextAlignment(.center)
-                        Text("This genuinely decides what we build next.")
-                            .font(.geist(14)).foregroundStyle(Color.inkMuted)
-                            .multilineTextAlignment(.center)
-                    } else {
-                        // Already answered, tapped the button again — straight to feedback.
-                        Text("What could be better?")
-                            .font(.geist(18, .bold)).foregroundStyle(Color.ink)
-                            .multilineTextAlignment(.center).padding(.top, 8)
-                        Text("You have already answered the questions, thank you. Anything you write here comes straight to us.")
-                            .font(.geist(14)).foregroundStyle(Color.inkMuted)
-                            .multilineTextAlignment(.center)
-                    }
+                    Text("What could be better?")
+                        .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                        .multilineTextAlignment(.center).padding(.top, 8)
+                    Text("You have already answered the questions, thank you. Anything you write here comes straight to us.")
+                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                        .multilineTextAlignment(.center)
 
                     if sent {
                         // After sending feedback (Aviah's copy) — with a way to add more.
                         VStack(spacing: 10) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 36)).foregroundStyle(Color.farmGreen)
                             Text("Thank you, we read every one.")
                                 .font(.geist(15, .semibold)).foregroundStyle(Color.farmGreen)
                             Button("Add something else") {
@@ -483,8 +513,6 @@ private struct FeedbackView: View {
     private var feedbackBox: some View {
         VStack(alignment: .leading, spacing: 12) {
             Divider().background(Color.hairline)
-            Text("Anything else on your mind?")
-                .font(.geist(15, .semibold)).foregroundStyle(Color.ink)
             field(String(localized: "Subject"), text: $subject)
             TextField(String(localized: "Your message"), text: $message, axis: .vertical)
                 .font(.geist(14)).lineLimit(4, reservesSpace: true)

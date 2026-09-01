@@ -272,42 +272,22 @@ enum SurveyAutoOpen {
     }
 }
 
-/// A small hand-drawn-style arrow that points down at the survey button while the
-/// survey is unanswered, bouncing gently. Drawn as a Path (not an SF Symbol) for the
-/// slightly uneven, pointed-by-a-person feel Aviah asked for. Hidden from VoiceOver
-/// (it says nothing the button's label doesn't) and it holds still under Reduce Motion.
-/// NOTE: an approximation of the web's bespoke SVG, not a pixel match — flagged to the
-/// thread; swap for the exact asset if shared.
+/// A regular dark-green down arrow above the survey button, pointing at it — shown
+/// only while the survey is unanswered. Per Neil's brief (a standard arrow, not a
+/// hand-drawn Path): SF `arrow.down`, `farmGreen` (dark brand green, distinct from the
+/// lighter on-map `farmGreenMap`). Bounces ~9px / ~0.9s eased; hidden from VoiceOver;
+/// holds still under Reduce Motion. Matches the Android `SurveyArrow`.
 private struct SurveyArrow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var drop = false
 
     var body: some View {
-        HandArrowShape()
-            .stroke(Color.farmGreen, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-            .frame(width: 22, height: 34)
+        Image(systemName: "arrow.down")
+            .font(.system(size: 22, weight: .semibold))
+            .foregroundStyle(Color.farmGreen)
             .offset(y: drop ? 9 : 0)   // ~9px fall-and-settle
             .animation(reduceMotion ? nil
                        : .easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: drop)
             .onAppear { if !reduceMotion { drop = true } }
-    }
-}
-
-private struct HandArrowShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        let x = rect.midX
-        // A slightly wavy shaft — the unevenness is deliberate.
-        p.move(to: CGPoint(x: x - 2.5, y: rect.minY))
-        p.addCurve(
-            to: CGPoint(x: x + 1.5, y: rect.maxY - 9),
-            control1: CGPoint(x: x + 5, y: rect.height * 0.34),
-            control2: CGPoint(x: x - 4, y: rect.height * 0.68)
-        )
-        // Arrowhead.
-        p.move(to: CGPoint(x: x - 6, y: rect.maxY - 12))
-        p.addLine(to: CGPoint(x: x + 1.5, y: rect.maxY))
-        p.addLine(to: CGPoint(x: x + 8, y: rect.maxY - 13))
-        return p
     }
 }
