@@ -141,64 +141,173 @@ struct MainView: View {
     }
 }
 
-/// The survey's floating entry button + its sheet, as one modifier so MainView's
-/// body stays small enough to type-check quickly. The button is a small round
-/// control at bottom-trailing (above the panel); the sheet presents the survey at
-/// 0.92, matching the other secondary surfaces.
+/// The survey's floating entry button + arrow + sheet, as one modifier so MainView's
+/// body stays small. The button never goes away (except for admins) and changes what
+/// it opens: the seven questions while unanswered, the feedback box once answered
+/// (Aviah's spec). A hand-drawn arrow bounces above it while unanswered. It also
+/// auto-opens once on cold launch after the map settles — once ever per signed-in
+/// account, once a day for signed-out visitors.
 private struct SurveyEntry: ViewModifier {
     @Binding var isPresented: Bool
     @Environment(SessionStore.self) private var session
 
-    /// True when the signed-in account is an admin — an admin gets NO survey entry
-    /// point at all (Aviah's spec: an answer from staff is >0.5% of the data and
-    /// indistinguishable from a real one later). Decided here at the map level so the
-    /// button never appears, rather than appearing and the sheet dismissing on tap.
-    @State private var hideForAdmin = false
+    /// The gate result (nil until loaded). Drives everything: admin → no button;
+    /// answered → the button opens feedback and the arrow is gone; not-answered →
+    /// questions + arrow.
+    @State private var gate: SurveyGate?
+    @State private var mode: SurveyView.Mode = .questions
+    /// Cold-launch auto-open is attempted exactly once (this modifier appears once at
+    /// app start; resume does not recreate it, so a plain `.task` never re-fires).
+    @State private var didAutoOpen = false
+
+    /// Admin gets NO entry point at all. While the gate is still loading we fail open
+    /// (show the button) — better to offer the survey than wrongly withhold it.
+    private var hideButton: Bool {
+        #if DEBUG
+        false   // Debug keeps the button for everyone so the survey stays testable.
+        #else
+        gate?.isAdmin == true
+        #endif
+    }
+
+    /// The arrow points only while there is an unanswered survey to point at.
+    private var showArrow: Bool {
+        guard let g = gate else { return false }
+        return !g.isAdmin && !g.answered
+    }
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottomTrailing) {
-                if !hideForAdmin {
-                    Button { Haptics.tap(); isPresented = true } label: {
-                        Image(systemName: "text.bubble.fill")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color.farmGreenMap)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.94), in: Circle())
-                            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+                if !hideButton {
+                    ZStack(alignment: .bottom) {
+                        if showArrow {
+                            SurveyArrow()
+                                .offset(y: -52)   // sit above the 44pt button
+                                .accessibilityHidden(true)
+                        }
+                        Button {
+                            Haptics.tap()
+                            mode = (gate?.answered == true) ? .feedback : .questions
+                            isPresented = true
+                        } label: {
+                            Image(systemName: "text.bubble.fill")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(Color.farmGreenMap)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.94), in: Circle())
+                                .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
+                                .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                     .padding(.trailing, 14)
-                    // Raised from 66: at 66 the button's bottom edge met the bottom pill's
-                    // top (the pill spans ~safe-bottom+6 to +67), so it crowded the pill
-                    // ("too low" on device). 120 clears the pill by ~50pt. The overlay is
-                    // inset by the safe area (the pill at bottom 6 already clears the home
-                    // indicator), so this sits well above it; both the 44pt button and the
-                    // fixed-size-font pill ignore Dynamic Type, so the gap holds at large
-                    // text too.
+                    // 120 clears the bottom pill (spans ~safe-bottom+6 to +67) by ~50pt.
+                    // The overlay is inset by the safe area, so it clears the home
+                    // indicator; button + pill ignore Dynamic Type, so the gap holds.
                     .padding(.bottom, 120)
                 }
             }
             .sheet(isPresented: $isPresented) {
-                SurveyView()
+                SurveyView(mode: mode)
                     .presentationDetents([.fraction(0.92)])
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(28)
+                    // Re-check once the sheet closes (they may have just answered), so
+                    // the arrow disappears and the button switches to feedback mode.
+                    .onDisappear { Task { gate = await SurveyAPI.gate(accessToken: session.session?.accessToken) } }
             }
-            // Re-check on sign-in / sign-out (token change). Best-effort: a failed
-            // gate leaves the button shown (fail-open — better to offer the survey on
-            // a blip than wrongly withhold it). Signed out → token nil → not admin →
-            // button shows, per spec ("signed out, not answered: every visit").
+            // Refresh the gate on sign-in / sign-out (token change) for button + arrow.
             .task(id: session.session?.accessToken) {
-                #if DEBUG
-                // Debug keeps the button for everyone (admins included) so the survey
-                // stays testable on a dev build (the SurveyView debug bypass then
-                // renders it). Release hides it for admins.
-                hideForAdmin = false
-                #else
-                hideForAdmin = await SurveyAPI.gate(accessToken: session.session?.accessToken).isAdmin
-                #endif
+                gate = await SurveyAPI.gate(accessToken: session.session?.accessToken)
             }
+            // Cold-launch auto-open — runs once when the map first appears (not on
+            // resume). The 1.4s delay lets the map settle (and the session bootstrap)
+            // before asking, so it reads as a question rather than part of the loading.
+            .task {
+                guard !didAutoOpen else { return }
+                didAutoOpen = true
+                try? await Task.sleep(for: .seconds(1.4))
+                let g = await SurveyAPI.gate(accessToken: session.session?.accessToken)
+                gate = g
+                guard !g.isAdmin, !g.answered else { return }
+                let account = session.isAuthenticated ? session.email : nil
+                guard SurveyAutoOpen.canAutoOpen(account: account) else { return }
+                SurveyAutoOpen.recordAutoOpen(account: account)
+                mode = .questions
+                isPresented = true
+            }
+    }
+}
+
+/// Whether the survey may auto-open, and the record that it did. Signed in it opens
+/// once ever per account; signed out, once per calendar day (a phone cold-launches
+/// often, so an uncapped "every visit" would harass). Persisted in UserDefaults —
+/// per-device is acceptable for signed-out (there is no identity to key on), and the
+/// signed-in per-account key survives across devices only as far as the account's
+/// server-side `answered` state does, which is the real stop.
+enum SurveyAutoOpen {
+    private static let store = UserDefaults.standard
+
+    static func canAutoOpen(account: String?) -> Bool {
+        if let a = account, !a.isEmpty {
+            return !store.bool(forKey: "survey_autoopen_acct_\(a)")
+        }
+        return store.string(forKey: "survey_autoopen_day") != today()
+    }
+
+    static func recordAutoOpen(account: String?) {
+        if let a = account, !a.isEmpty {
+            store.set(true, forKey: "survey_autoopen_acct_\(a)")
+        } else {
+            store.set(today(), forKey: "survey_autoopen_day")
+        }
+    }
+
+    private static func today() -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f.string(from: Date())
+    }
+}
+
+/// A small hand-drawn-style arrow that points down at the survey button while the
+/// survey is unanswered, bouncing gently. Drawn as a Path (not an SF Symbol) for the
+/// slightly uneven, pointed-by-a-person feel Aviah asked for. Hidden from VoiceOver
+/// (it says nothing the button's label doesn't) and it holds still under Reduce Motion.
+/// NOTE: an approximation of the web's bespoke SVG, not a pixel match — flagged to the
+/// thread; swap for the exact asset if shared.
+private struct SurveyArrow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var drop = false
+
+    var body: some View {
+        HandArrowShape()
+            .stroke(Color.farmGreen, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            .frame(width: 22, height: 34)
+            .offset(y: drop ? 9 : 0)   // ~9px fall-and-settle
+            .animation(reduceMotion ? nil
+                       : .easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: drop)
+            .onAppear { if !reduceMotion { drop = true } }
+    }
+}
+
+private struct HandArrowShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let x = rect.midX
+        // A slightly wavy shaft — the unevenness is deliberate.
+        p.move(to: CGPoint(x: x - 2.5, y: rect.minY))
+        p.addCurve(
+            to: CGPoint(x: x + 1.5, y: rect.maxY - 9),
+            control1: CGPoint(x: x + 5, y: rect.height * 0.34),
+            control2: CGPoint(x: x - 4, y: rect.height * 0.68)
+        )
+        // Arrowhead.
+        p.move(to: CGPoint(x: x - 6, y: rect.maxY - 12))
+        p.addLine(to: CGPoint(x: x + 1.5, y: rect.maxY))
+        p.addLine(to: CGPoint(x: x + 8, y: rect.maxY - 13))
+        return p
     }
 }

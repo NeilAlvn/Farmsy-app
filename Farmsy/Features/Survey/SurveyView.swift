@@ -10,13 +10,21 @@ import SwiftUI
 /// Presented as a `.sheet` from the map overlay entry point (see MapScreen), the
 /// same presentation the other secondary surfaces use.
 struct SurveyView: View {
+    /// What the entry point opens: the seven questions (not-answered), or the
+    /// feedback box directly (already answered — "it never goes away"). Aviah's spec:
+    /// the button stays after answering and becomes a place to leave feedback.
+    enum Mode { case questions, feedback }
+    var mode: Mode = .questions
+
     @Environment(SessionStore.self) private var session
     @Environment(LanguageManager.self) private var language
     @Environment(\.dismiss) private var dismiss
 
     // Load state for the questions fetch (existing error/retry shape: a message +
-    // a "Try again" button, as MapScreen and FarmDetail use).
-    private enum Phase { case loading, failed, ready, thanks }
+    // a "Try again" button, as MapScreen and FarmDetail use). `.feedback` is the
+    // answered-user path (feedback box, no questions); `.thanks` is the just-answered
+    // path (both show FeedbackView, differing only by its `justAnswered` flag).
+    private enum Phase { case loading, failed, ready, thanks, feedback }
     @State private var phase: Phase = .loading
     @State private var def: SurveyDefinition?
 
@@ -46,10 +54,11 @@ struct SurveyView: View {
         ZStack {
             Color.cream.ignoresSafeArea()
             switch phase {
-            case .loading: ProgressView().tint(.farmGreenMap)
-            case .failed:  loadError
-            case .ready:   form
-            case .thanks:  ThankYouView(onFeedbackSent: { dismiss() }, onClose: { dismiss() })
+            case .loading:  ProgressView().tint(.farmGreenMap)
+            case .failed:   loadError
+            case .ready:    form
+            case .thanks:   FeedbackView(justAnswered: true, onClose: { dismiss() })
+            case .feedback: FeedbackView(justAnswered: false, onClose: { dismiss() })
             }
         }
         .task { await load() }
@@ -67,7 +76,11 @@ struct SurveyView: View {
         // all-false on any error, so a network blip falls through to `.ready`/`.failed`
         // below rather than silently dismissing.
         let gate = await SurveyAPI.gate(accessToken: token)
-        if !gate.shouldShow {
+        // Admin never sees the survey in either mode. In `.questions` mode an
+        // already-answered user is also excluded (they get `.feedback` mode from the
+        // button instead). In `.feedback` mode `answered` is expected — do not exclude.
+        let excluded = gate.isAdmin || (mode == .questions && gate.answered)
+        if excluded {
             #if DEBUG
             // Debug builds render the survey anyway so a developer — whose account is
             // `role = admin`, so the gate returns isAdmin:true and hides it (this is
@@ -79,6 +92,11 @@ struct SurveyView: View {
             #else
             dismiss(); return
             #endif
+        }
+        // Feedback mode skips the questions fetch entirely — straight to the box.
+        if mode == .feedback {
+            phase = .feedback
+            return
         }
         do {
             def = try await SurveyAPI.questions(locale: locale)
@@ -139,8 +157,9 @@ struct SurveyView: View {
 
     private var header: some View {
         HStack {
-            Text("One quick survey")
+            Text("Seven questions about buying from farms")
                 .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button { Haptics.tap(); dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 14, weight: .semibold))
@@ -383,12 +402,14 @@ struct SurveyView: View {
     }
 }
 
-/// After answering, the same surface becomes a feedback box — the order is the
-/// point (a remark from someone who has told us what they came for is worth more
-/// than one from a stranger). Subject + message, plus name/email when signed out,
-/// → `POST /api/contact` with `topic: "feedback"`.
-private struct ThankYouView: View {
-    let onFeedbackSent: () -> Void
+/// The feedback surface. Reached two ways (Aviah's spec — the entry button never
+/// goes away, it changes what it opens): `justAnswered = true` right after the seven
+/// questions, or `justAnswered = false` when an already-answered person taps the
+/// button again ("What could be better?"). Either way it's subject + message (+ name
+/// /email when signed out) → `POST /api/contact` with `topic: "feedback"`. The order
+/// is the point: a remark from someone who told us what they came for is worth more.
+private struct FeedbackView: View {
+    let justAnswered: Bool
     let onClose: () -> Void
 
     @Environment(SessionStore.self) private var session
@@ -416,20 +437,39 @@ private struct ThankYouView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 44)).foregroundStyle(Color.farmGreen)
-                        .padding(.top, 8)
-                    Text("Thank you, we have your answers.")
-                        .font(.geist(18, .bold)).foregroundStyle(Color.ink)
-                        .multilineTextAlignment(.center)
-                    Text("This genuinely decides what we build next.")
-                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
-                        .multilineTextAlignment(.center)
+                    if justAnswered {
+                        // Just finished the questions — a small celebration, then feedback.
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 44)).foregroundStyle(Color.farmGreen)
+                            .padding(.top, 8)
+                        Text("Thank you, we have your answers.")
+                            .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                            .multilineTextAlignment(.center)
+                        Text("This genuinely decides what we build next.")
+                            .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        // Already answered, tapped the button again — straight to feedback.
+                        Text("What could be better?")
+                            .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                            .multilineTextAlignment(.center).padding(.top, 8)
+                        Text("You have already answered the questions, thank you. Anything you write here comes straight to us.")
+                            .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                            .multilineTextAlignment(.center)
+                    }
 
                     if sent {
-                        Text("Thanks — your note is on its way.")
-                            .font(.geist(14, .medium)).foregroundStyle(Color.farmGreen)
-                            .padding(.top, 8)
+                        // After sending feedback (Aviah's copy) — with a way to add more.
+                        VStack(spacing: 10) {
+                            Text("Thank you, we read every one.")
+                                .font(.geist(15, .semibold)).foregroundStyle(Color.farmGreen)
+                            Button("Add something else") {
+                                Haptics.tap()
+                                subject = ""; message = ""; sent = false
+                            }
+                            .font(.geist(14, .medium)).foregroundStyle(Color.farmGreenMap)
+                        }
+                        .padding(.top, 8)
                     } else {
                         feedbackBox.padding(.top, 8)
                     }
