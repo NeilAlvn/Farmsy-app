@@ -16,9 +16,11 @@ enum FarmFilters {
         else { return false }
         if raw == "24/7" { return true }
 
-        // Calendar weekday: 1 = Sunday … 7 = Saturday → JS getDay() 0 = Sunday.
-        let jsToday = Calendar.current.component(.weekday, from: Date()) - 1
-        guard let todayMon = dayMon[jsToday] else { return false }
+        // The weekday is read in Amsterdam, NOT on the device — every farm is in NL/BE,
+        // so "open today" means today where the farms are. Reading the device clock had
+        // the free filter and the paid open-now filter disagree for a visitor outside
+        // CET (Tokyo Monday morning = Sunday night in Amsterdam). Mirrors web a46ab4b.
+        let todayMon = todayInAmsterdam()
 
         // A later `off` overrides an earlier open rule — "Mo-Su 09:00-17:00; Su off"
         // is shut on Sunday. The loop below can only ever ADD an open day and it
@@ -55,6 +57,94 @@ enum FarmFilters {
                     return true
                 }
             }
+        }
+        return false
+    }
+
+    // MARK: - Amsterdam clock (Pro time filters + isOpenToday)
+
+    private static let amsterdam = TimeZone(identifier: "Europe/Amsterdam") ?? .current
+
+    private static func amsterdamCalendar() -> Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = amsterdam
+        return cal
+    }
+
+    /// The Amsterdam weekday, Mon-based (0 = Monday … 6 = Sunday). Mirrors web
+    /// `todayInAmsterdam`.
+    private static func todayInAmsterdam(_ date: Date = Date()) -> Int {
+        let js = amsterdamCalendar().component(.weekday, from: date) - 1  // 0=Sun … 6=Sat
+        return dayMon[js] ?? 0
+    }
+
+    /// The day-part of a segment — everything before the first HH:MM token, trimmed.
+    private static func dayPartOf(_ s: String) -> String {
+        let dayPart = s.range(of: "\\s+\\d{1,2}:\\d{2}", options: .regularExpression)
+            .map { String(s[s.startIndex..<$0.lowerBound]) } ?? s
+        return dayPart.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Every HH:MM-HH:MM window in a segment, as minutes past midnight. `00:00` as a
+    /// closing time means midnight at the END of the day (09:00-00:00 open at 21:00).
+    /// Mirrors web `windowsOf`.
+    private static func windowsOf(_ segment: String) -> [(from: Int, to: Int)] {
+        guard let re = try? NSRegularExpression(pattern: "(\\d{1,2}):(\\d{2})\\s*-\\s*(\\d{1,2}):(\\d{2})")
+        else { return [] }
+        let ns = segment as NSString
+        var out: [(Int, Int)] = []
+        for m in re.matches(in: segment, range: NSRange(location: 0, length: ns.length)) {
+            let from = (Int(ns.substring(with: m.range(at: 1))) ?? 0) * 60 + (Int(ns.substring(with: m.range(at: 2))) ?? 0)
+            var to = (Int(ns.substring(with: m.range(at: 3))) ?? 0) * 60 + (Int(ns.substring(with: m.range(at: 4))) ?? 0)
+            if to == 0 { to = 24 * 60 }
+            out.append((from, to))
+        }
+        return out
+    }
+
+    /// Open at this exact minute, in Amsterdam time (the Pro "open right now" filter).
+    /// Distinct from `isOpenToday`, which only asks whether the day is one the farm
+    /// opens at all. Mirrors web `isOpenNow`.
+    static func isOpenNow(_ openingHours: String?, at date: Date = Date()) -> Bool {
+        guard let raw = openingHours?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty
+        else { return false }
+        if raw == "24/7" { return true }
+
+        let comps = amsterdamCalendar().dateComponents([.hour, .minute], from: date)
+        let minutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+        let dayMon = todayInAmsterdam(date)
+
+        if closedDays(raw).contains(dayMon) { return false }
+
+        for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
+            let s = segment.trimmingCharacters(in: .whitespaces)
+            if s.isEmpty { continue }
+            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            let dayPart = dayPartOf(s)
+            if dayPart.isEmpty || !daysOf(dayPart).contains(dayMon) { continue }
+
+            // A day named with no times at all is treated as open — some records say
+            // "Mo-Sa" and nothing more, and refusing those would hide real farms.
+            let windows = windowsOf(s)
+            if windows.isEmpty { return true }
+            for w in windows where minutes >= w.from && minutes < w.to { return true }
+        }
+        return false
+    }
+
+    /// Open on a given weekday, Mon-based (0 = Monday … 6 = Sunday) — the Pro "open
+    /// Saturday/Sunday" filters. Mirrors web `isOpenOnDay`.
+    static func isOpenOnDay(_ openingHours: String?, dayMon: Int) -> Bool {
+        guard let raw = openingHours?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty
+        else { return false }
+        if raw == "24/7" { return true }
+        if closedDays(raw).contains(dayMon) { return false }
+        for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
+            let s = segment.trimmingCharacters(in: .whitespaces)
+            if s.isEmpty { continue }
+            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            let dayPart = dayPartOf(s)
+            if !dayPart.isEmpty && daysOf(dayPart).contains(dayMon) { return true }
         }
         return false
     }
