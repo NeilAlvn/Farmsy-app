@@ -24,6 +24,15 @@ final class FarmsStore {
     var filterZelfpluk = false
     var filterHasPhotos = false
 
+    // Pro time filters (Aviah's closed five-group set). Distinct from the FREE
+    // `filterOpenToday` (day-based): these use the Amsterdam-clock parser —
+    // `filterOpenNow` is open at this exact minute, the two day filters ask about a
+    // specific weekday (Sat = Mon-based 5, Sun = 6). Gated on membership in the UI;
+    // the predicates here are unconditional (the filter is only *set* when unlocked).
+    var filterOpenNow = false
+    var filterOpenSaturday = false
+    var filterOpenSunday = false
+
     // The two new axes from Aviah's taxonomy (multi-select, combine with the
     // categories rather than replacing them). Values are language-neutral ids; the
     // labels live client-side in FarmAxis. `organic` deliberately stays a category,
@@ -35,9 +44,16 @@ final class FarmsStore {
         filterVerified || filterOpenToday || filterAutomaat || filterZelfpluk || filterHasPhotos
     }
 
-    var anyFilterOn: Bool {
-        anyQuickFilterOn || !selectedCategories.isEmpty
+    /// Any of the five Pro groups active (three time filters + the two axis groups,
+    /// which moved into Pro per Aviah's later-3). Used to show the "Pro filters active"
+    /// state and to clear them when membership lapses.
+    var anyProFilterOn: Bool {
+        filterOpenNow || filterOpenSaturday || filterOpenSunday
             || !selectedPlaceTypes.isEmpty || !selectedMethods.isEmpty
+    }
+
+    var anyFilterOn: Bool {
+        anyQuickFilterOn || anyProFilterOn || !selectedCategories.isEmpty
     }
 
     // AI search — the parsed intent currently in effect. When set, it drives the
@@ -140,6 +156,7 @@ final class FarmsStore {
         selectedCategories = []
         filterVerified = false; filterOpenToday = false
         filterAutomaat = false; filterZelfpluk = false; filterHasPhotos = false
+        filterOpenNow = false; filterOpenSaturday = false; filterOpenSunday = false
         selectedPlaceTypes = []; selectedMethods = []
     }
 
@@ -252,6 +269,10 @@ final class FarmsStore {
         // Quick filters, same predicates the web applies (FarmFilters ports them).
         if filterVerified  { result = result.filter { $0.isVerified } }
         if filterOpenToday { result = result.filter { FarmFilters.isOpenToday($0.openingHours) } }
+        // Pro time filters (Amsterdam clock). Saturday = Mon-based 5, Sunday = 6.
+        if filterOpenNow      { result = result.filter { FarmFilters.isOpenNow($0.openingHours) } }
+        if filterOpenSaturday { result = result.filter { FarmFilters.isOpenOnDay($0.openingHours, dayMon: 5) } }
+        if filterOpenSunday   { result = result.filter { FarmFilters.isOpenOnDay($0.openingHours, dayMon: 6) } }
         if filterHasPhotos { result = result.filter { $0.image != nil } }
         if filterAutomaat  { result = result.filter { FarmFilters.looksLikeAutomaat($0.name, openingHours: $0.openingHours) } }
         if filterZelfpluk  { result = result.filter { FarmFilters.looksLikeZelfpluk($0.name) } }
