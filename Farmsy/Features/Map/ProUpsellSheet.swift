@@ -15,11 +15,15 @@ struct ProUpsellSheet: View {
     @Environment(SessionStore.self) private var session
     @State private var isChecking = false
 
+    // Corrected copy — web `account.gateFeature1-4` at bbe3d0d. The old lines sold
+    // saving + trip-planning (both free since 29 Aug) and called the filters
+    // "coming" when they've shipped; Aviah fixed both. Lead with open-now (the line
+    // with numbers behind it).
     private let features = [
+        "See what is open right now, not just open today",
+        "Filter by kind of place, and by how it is grown",
         "An email when a farm you saved posts something new",
-        "The filters we are building next, as they land",
         "Everything new we add to Pro, included",
-        "You keep a small independent project going",
     ]
 
     /// Poll the profile after a purchase — the grant lands a few seconds after the
@@ -53,27 +57,38 @@ struct ProUpsellSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    Kicker(text: String(localized: "Farmsy Pro"))
+                    // Header: "Farmsy" kicker + the reason title (a filter tap = unlock).
+                    Kicker(text: String(localized: "Farmsy"))
                         .padding(.top, 4)
-                    DisplayTitle(String(localized: "Unlock the *Pro* filters"), size: 30)
+                    Text("Unlock Farmsy Pro")
+                        .font(.display(28, weight: .semibold)).foregroundStyle(Color.ink)
+                        .multilineTextAlignment(.center)
+                    // Subheading (account.gateSubUnlock) — leads with open-now.
+                    Text("Find what is open at this minute, and filter by the kind of place. Cancel anytime.")
+                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
 
-                    VStack(alignment: .leading, spacing: 10) {
+                    // Plan cards first, then the feature list — Aviah's order.
+                    purchaseArea.padding(.horizontal, 20)
+
+                    // "Included in both plans" — unboxed ticks (a list inside a card
+                    // inside a sheet is a third frame around something framed twice).
+                    VStack(alignment: .leading, spacing: 12) {
+                        Divider().background(Color.hairline)
+                        Text("Included in both plans")
+                            .font(.geist(13, .semibold)).foregroundStyle(Color.inkMuted)
                         ForEach(features, id: \.self) { line in
                             HStack(alignment: .top, spacing: 10) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 16)).foregroundStyle(Color.farmGreen)
-                                    .padding(.top, 1)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .bold)).foregroundStyle(Color.farmGreen)
+                                    .padding(.top, 2)
                                 Text(line).font(.geist(14)).foregroundStyle(Color.ink)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                     }
-                    .padding(16)
-                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.creamCard).stroke(Color.hairline, lineWidth: 1))
                     .padding(.horizontal, 20)
-
-                    purchaseArea.padding(.horizontal, 20)
                 }
                 .padding(.bottom, 28)
             }
@@ -102,13 +117,17 @@ struct ProUpsellSheet: View {
             ProgressView().tint(Color.farmGreen)
         } else {
             let uid = session.session?.user.id
+            // Trial only offered to someone who's never had one — StoreKit reports
+            // ineligible as trialDays == nil, so the free-days copy simply doesn't show
+            // (Aviah: never advertise a trial someone won't get). Copy = web gate keys.
             let trialDays = purchases.yearlyFreeTrialDays
             VStack(spacing: 8) {
                 PlanButton(
-                    label: trialDays.map { String(localized: "\($0) days free") } ?? String(localized: "Yearly"),
+                    label: trialDays != nil ? String(localized: "Try free for 3 days")
+                                            : String(localized: "Get yearly"),
                     detail: purchases.yearlyPrice.map { price in
                         trialDays == nil ? String(localized: "\(price) / year")
-                                         : String(localized: "then \(price) / year")
+                                         : String(localized: "3 days free · then \(price)/year")
                     },
                     filled: true
                 ) {
@@ -119,8 +138,12 @@ struct ProUpsellSheet: View {
                     }
                 }
                 if let price = purchases.lifetimePrice {
-                    PlanButton(label: String(localized: "Lifetime"),
-                               detail: "\(price) · " + String(localized: "One payment, yours forever"),
+                    // NOTE: Aviah's spec adds a "Best value" badge + a struck-through
+                    // €59.99 anchor to the lifetime card — not expressible in the shared
+                    // single-button PlanButton; flagged as a follow-up (needs custom
+                    // plan cards). Copy + button text are correct here.
+                    PlanButton(label: String(localized: "Buy lifetime access"),
+                               detail: "\(price) · " + String(localized: "One-time · no renewals"),
                                filled: false) {
                         Task {
                             if await purchases.purchase(purchases.lifetimePackage, userId: uid) {

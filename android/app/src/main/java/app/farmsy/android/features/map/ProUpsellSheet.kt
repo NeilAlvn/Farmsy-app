@@ -2,7 +2,6 @@ package app.farmsy.android.features.map
 
 import android.app.Activity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -17,9 +16,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -46,6 +46,7 @@ import app.farmsy.android.features.detail.PlanButton
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.Kicker
+import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 
@@ -87,11 +88,14 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
         if (session.hasFullAccess) onDismiss()
     }
 
+    // Corrected copy — web `account.gateFeature1-4` at bbe3d0d. The old lines sold
+    // saving + trip-planning (both free since 29 Aug) and called the filters "coming"
+    // when they've shipped; Aviah fixed both. Lead with open-now.
     val features = listOf(
+        "See what is open right now, not just open today",
+        "Filter by kind of place, and by how it is grown",
         "An email when a farm you saved posts something new",
-        "The filters we are building next, as they land",
         "Everything new we add to Pro, included",
-        "You keep a small independent project going",
     )
     val userId = session.session.collectAsState().value?.user?.id
     val productsUnavailable = didLoadOffering && yearlyPkg == null
@@ -103,24 +107,15 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // Header: "Farmsy" kicker + the reason title (a filter tap = unlock).
             Spacer(Modifier.size(4.dp))
-            Kicker("Farmsy Pro")
-            DisplayTitle(leading = "Unlock the", emphasis = "Pro", trailing = "filters", size = 30.sp)
-
-            Column(
-                Modifier.fillMaxWidth()
-                    .background(FarmsyColors.creamCard, RoundedCornerShape(16.dp))
-                    .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                features.forEach { line ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(16.dp).padding(top = 1.dp))
-                        Text(line, style = geist(14.sp), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
-                    }
-                }
-            }
+            Kicker("Farmsy")
+            Text("Unlock Farmsy Pro", style = display(28.sp, FontWeight.SemiBold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+            // Subheading (account.gateSubUnlock) — leads with open-now.
+            Text(
+                "Find what is open at this minute, and filter by the kind of place. Cancel anytime.",
+                style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
+            )
 
             purchaseError?.let {
                 Text(it, style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.warnRed, textAlign = TextAlign.Center)
@@ -138,20 +133,27 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                 )
                 purchases.yearlyPrice == null -> CircularProgressIndicator(color = FarmsyColors.farmGreen)
                 else -> {
+                    // Trial only offered to someone who's never had one — ineligible is
+                    // trialDays == null, so the free-days copy just doesn't show (Aviah:
+                    // never advertise a trial someone won't get). Copy = web gate keys.
                     val trialDays = purchases.yearlyFreeTrialDays
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         PlanButton(
-                            label = if (trialDays != null) "$trialDays days free" else "Yearly",
-                            detail = purchases.yearlyPrice?.let { if (trialDays != null) "then $it / year" else "$it / year" },
+                            label = if (trialDays != null) "Try free for 3 days" else "Get yearly",
+                            detail = purchases.yearlyPrice?.let { if (trialDays != null) "3 days free · then $it/year" else "$it / year" },
                             filled = true, fallbackLabel = fallback,
                         ) {
                             val activity = context as? Activity ?: return@PlanButton
                             scope.launch { if (purchases.purchase(activity, yearlyPkg, userId)) awaitGrant() }
                         }
                         purchases.lifetimePrice?.let { price ->
+                            // NOTE: Aviah's spec adds a "Best value" badge + a struck-
+                            // through €59.99 anchor to the lifetime card — not expressible
+                            // in the shared single-button PlanButton; flagged as a
+                            // follow-up (needs custom plan cards). Copy is correct here.
                             PlanButton(
-                                label = "Lifetime",
-                                detail = "$price · One payment, yours forever",
+                                label = "Buy lifetime access",
+                                detail = "$price · One-time · no renewals",
                                 filled = false, fallbackLabel = fallback,
                             ) {
                                 val activity = context as? Activity ?: return@PlanButton
@@ -166,6 +168,19 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                             scope.launch { if (purchases.restore()) awaitGrant() }
                         },
                     )
+                }
+            }
+
+            // "Included in both plans" — unboxed ticks (a list inside a card inside a
+            // sheet is a third frame around something framed twice).
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                HorizontalDivider(color = FarmsyColors.hairline)
+                Text("Included in both plans", style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted)
+                features.forEach { line ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Filled.Check, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(13.dp).padding(top = 2.dp))
+                        Text(line, style = geist(14.sp), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }
