@@ -29,7 +29,7 @@ android {
         applicationId = "app.farmsy.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 22
+        versionCode = 26
         versionName = "1.0.1"
 
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
@@ -118,6 +118,11 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:6.2.1")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    // (S19 trip-origin search uses Photon over the shared Ktor client — no SDK/key.
+    //  The Google Places SDK was removed: never referenced or initialised, it shipped
+    //  unused drawables, pulled Volley transitively, and injected four autocomplete
+    //  activities into the merged manifest. Google Places Autocomplete (New) remains
+    //  the exact-iOS-parity path — DEFERRED, see PORT_NOTES.)
 
     // In-app purchases (Google Play Billing via RevenueCat).
     // Must stay on a version that bundles Play Billing 8+: Play's "one-time product
@@ -129,3 +134,84 @@ dependencies {
     implementation("io.sentry:sentry-android:7.20.0")
     implementation("com.posthog:posthog-android:3.11.1")
 }
+
+// ── Mojibake guard ───────────────────────────────────────────────────────────
+// Fails the build if any locale strings file contains double-encoded UTF-8
+// (e.g. "café" pasted through a Latin-1-assuming step becomes "cafÃ©"). Exactly
+// this garbled 123 lines of values-fr/strings_l10n.xml and shipped French users
+// unreadable text until it was repaired; the paste path is still in use, so this
+// catches a re-introduction at build time.
+//
+// Signature (raw bytes): a byte C3 followed by 82..B4 — a UTF-8 char U+00C2..U+00F4,
+// which is precisely a real UTF-8 LEAD byte (0xC2..0xF4) reinterpreted as Latin-1
+// and re-encoded (Ã Â Å â ð …) — IMMEDIATELY followed by C2 then 80..BF, the
+// re-encoded CONTINUATION byte. Correct UTF-8 never places those two adjacent
+// (an accented letter is followed by a space or another letter, not by a raw
+// Latin-1 punctuation byte), so this flags every mangled glyph — accents, the
+// Œ/œ ligatures, ellipsis, curly quotes, em-dashes and emoji (which mangle to
+// Å/â/ð, not Ã, and a marker-only grep misses) — with zero false positives on
+// legitimate à/è/é/ê/î/À, MIDDLE DOT ·, ©, em-dashes or 🌱/🧺. Verified: 100%
+// recall on the pre-repair content, 0 hits on all nine current string files.
+val mojibakeResDir = file("src/main/res")
+val mojibakeRepoRoot = rootDir
+val checkStringEncoding =
+    tasks.register("checkStringEncoding") {
+        group = "verification"
+        description =
+            "Fails on double-encoded UTF-8 (mojibake) in res/values*/strings*.xml."
+        inputs.dir(mojibakeResDir)
+        doLast {
+            val nameRe = Regex("""strings.*\.xml""")
+            val problems = mutableListOf<String>()
+            mojibakeResDir.walkTopDown()
+                .filter {
+                    it.isFile &&
+                        it.parentFile.name.startsWith("values") &&
+                        nameRe.matches(it.name)
+                }
+                .sortedBy { it.path }
+                .forEach { f ->
+                    val bytes = f.readBytes()
+                    val n = bytes.size
+                    var line = 1
+                    var lastFlaggedLine = -1
+                    var i = 0
+                    while (i < n) {
+                        val b = bytes[i].toInt() and 0xFF
+                        if (b == 0x0A) line++
+                        if (b == 0xC3 && i + 3 < n) {
+                            val b1 = bytes[i + 1].toInt() and 0xFF
+                            val b2 = bytes[i + 2].toInt() and 0xFF
+                            val b3 = bytes[i + 3].toInt() and 0xFF
+                            if (b1 in 0x82..0xB4 && b2 == 0xC2 && b3 in 0x80..0xBF &&
+                                line != lastFlaggedLine
+                            ) {
+                                problems += "${f.relativeTo(mojibakeRepoRoot)}:$line"
+                                lastFlaggedLine = line
+                            }
+                        }
+                        i++
+                    }
+                }
+            if (problems.isNotEmpty()) {
+                throw GradleException(
+                    buildString {
+                        appendLine(
+                            "Double-encoded UTF-8 (mojibake) in locale strings — " +
+                                "these ship garbled text to users.",
+                        )
+                        appendLine(
+                            "A UTF-8 string was pasted through a Latin-1-assuming step. " +
+                                "Re-encode the offending file(s) as UTF-8.",
+                        )
+                        appendLine("Offending lines:")
+                        problems.forEach { appendLine("  $it") }
+                    },
+                )
+            }
+        }
+    }
+
+// Wire into preBuild so every build (assembleDebug / bundleRelease / CI) runs it
+// before compilation — the guard cannot be skipped by forgetting a separate step.
+tasks.named("preBuild") { dependsOn(checkStringEncoding) }
