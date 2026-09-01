@@ -147,35 +147,58 @@ struct MainView: View {
 /// 0.92, matching the other secondary surfaces.
 private struct SurveyEntry: ViewModifier {
     @Binding var isPresented: Bool
+    @Environment(SessionStore.self) private var session
+
+    /// True when the signed-in account is an admin — an admin gets NO survey entry
+    /// point at all (Aviah's spec: an answer from staff is >0.5% of the data and
+    /// indistinguishable from a real one later). Decided here at the map level so the
+    /// button never appears, rather than appearing and the sheet dismissing on tap.
+    @State private var hideForAdmin = false
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottomTrailing) {
-                Button { Haptics.tap(); isPresented = true } label: {
-                    Image(systemName: "text.bubble.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.farmGreenMap)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.94), in: Circle())
-                        .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
-                        .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+                if !hideForAdmin {
+                    Button { Haptics.tap(); isPresented = true } label: {
+                        Image(systemName: "text.bubble.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.farmGreenMap)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.94), in: Circle())
+                            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 14)
+                    // Raised from 66: at 66 the button's bottom edge met the bottom pill's
+                    // top (the pill spans ~safe-bottom+6 to +67), so it crowded the pill
+                    // ("too low" on device). 120 clears the pill by ~50pt. The overlay is
+                    // inset by the safe area (the pill at bottom 6 already clears the home
+                    // indicator), so this sits well above it; both the 44pt button and the
+                    // fixed-size-font pill ignore Dynamic Type, so the gap holds at large
+                    // text too.
+                    .padding(.bottom, 120)
                 }
-                .buttonStyle(.plain)
-                .padding(.trailing, 14)
-                // Raised from 66: at 66 the button's bottom edge met the bottom pill's
-                // top (the pill spans ~safe-bottom+6 to +67), so it crowded the pill
-                // ("too low" on device). 120 clears the pill by ~50pt. The overlay is
-                // inset by the safe area (the pill at bottom 6 already clears the home
-                // indicator), so this sits well above it; both the 44pt button and the
-                // fixed-size-font pill ignore Dynamic Type, so the gap holds at large
-                // text too.
-                .padding(.bottom, 120)
             }
             .sheet(isPresented: $isPresented) {
                 SurveyView()
                     .presentationDetents([.fraction(0.92)])
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(28)
+            }
+            // Re-check on sign-in / sign-out (token change). Best-effort: a failed
+            // gate leaves the button shown (fail-open — better to offer the survey on
+            // a blip than wrongly withhold it). Signed out → token nil → not admin →
+            // button shows, per spec ("signed out, not answered: every visit").
+            .task(id: session.session?.accessToken) {
+                #if DEBUG
+                // Debug keeps the button for everyone (admins included) so the survey
+                // stays testable on a dev build (the SurveyView debug bypass then
+                // renders it). Release hides it for admins.
+                hideForAdmin = false
+                #else
+                hideForAdmin = await SurveyAPI.gate(accessToken: session.session?.accessToken).isAdmin
+                #endif
             }
     }
 }
