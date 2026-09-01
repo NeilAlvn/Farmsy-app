@@ -64,10 +64,17 @@ import kotlinx.coroutines.launch
 /// messages/*.json (only the old 2-step map survey's are).
 ///
 /// Presented as a ModalBottomSheet from the map's floating survey button (MainScreen).
-private enum class Phase { LOADING, FAILED, READY, THANKS }
+/// What the entry point opens (Aviah's spec — the button never goes away, it changes
+/// what it opens): the seven questions (not-answered), or the feedback box directly
+/// (already answered).
+enum class SurveyMode { QUESTIONS, FEEDBACK }
+
+/// FEEDBACK is reached two ways: after submitting the questions, or directly when an
+/// already-answered person taps the button. Both render the same feedback screen.
+private enum class Phase { LOADING, FAILED, READY, FEEDBACK }
 
 @Composable
-fun SurveyScreen(onClose: () -> Unit) {
+fun SurveyScreen(mode: SurveyMode = SurveyMode.QUESTIONS, onClose: () -> Unit) {
     val session = LocalSession.current
     val scope = rememberCoroutineScope()
     val signedIn = session.isAuthenticated
@@ -95,11 +102,14 @@ fun SurveyScreen(onClose: () -> Unit) {
         gateWouldHide = false
         scope.launch {
             val token = session.accessToken()
-            // Gate first: an already-answered person or an admin must never see the
-            // questions. A FAILED gate call is not a hide — `gate()` is best-effort and
-            // returns all-false on any error, so a blip falls through to load, not close.
+            // Gate first. Admin is never shown in either mode. In QUESTIONS mode an
+            // already-answered user is also excluded (they get FEEDBACK from the button
+            // instead); in FEEDBACK mode `answered` is expected, so it is not a hide.
+            // A FAILED gate call is not a hide — `gate()` is best-effort and returns
+            // all-false on any error, so a blip falls through to load, not close.
             val gate = SurveyApi.gate(token)
-            if (!gate.shouldShow) {
+            val excluded = gate.isAdmin || (mode == SurveyMode.QUESTIONS && gate.answered)
+            if (excluded) {
                 @Suppress("KotlinConstantConditions")
                 if (BuildConfig.DEBUG) {
                     // Debug renders the survey anyway (with a banner) so a developer —
@@ -110,6 +120,11 @@ fun SurveyScreen(onClose: () -> Unit) {
                 } else {
                     onClose(); return@launch
                 }
+            }
+            // Feedback mode skips the questions fetch entirely — straight to the box.
+            if (mode == SurveyMode.FEEDBACK) {
+                phase = Phase.FEEDBACK
+                return@launch
             }
             runCatching { SurveyApi.questions(locale) }
                 .onSuccess { def = it; phase = Phase.READY }
@@ -142,7 +157,7 @@ fun SurveyScreen(onClose: () -> Unit) {
                                 accessToken = session.accessToken(),
                             )
                         }.onSuccess {
-                            submitting = false; phase = Phase.THANKS
+                            submitting = false; phase = Phase.FEEDBACK
                         }.onFailure { e ->
                             submitting = false
                             submitError = if (e is SurveyRefused && e.reason == "incomplete")
@@ -152,7 +167,7 @@ fun SurveyScreen(onClose: () -> Unit) {
                     }
                 },
             )
-            Phase.THANKS -> ThankYou(signedIn = signedIn, onClose = onClose)
+            Phase.FEEDBACK -> Feedback(signedIn = signedIn, onClose = onClose)
         }
     }
 }
@@ -217,8 +232,12 @@ private fun Form(
             Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("One quick survey", style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink)
-            Spacer(Modifier.weight(1f))
+            Text(
+                "Seven questions about buying from farms",
+                style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.size(12.dp))
             Box(
                 Modifier.size(32.dp).background(Color(0xFFF3F4F6), CircleShape)
                     .clickable { onClose() },
@@ -428,10 +447,14 @@ private fun StyledField(
     }
 }
 
-/// After answering, the same surface becomes a feedback box — a remark from someone
-/// who has told us what they came for is worth more than one from a stranger.
+/// The feedback surface (Aviah's spec — the entry button never goes away, it changes
+/// what it opens). Reached after submitting the questions, or directly when an
+/// already-answered person taps the button; the copy is the same either way. Subject
+/// + message (+ name/email when signed out) → `POST /api/contact` topic=feedback. The
+/// order is the point: a remark from someone who told us what they came for is worth
+/// more. Copy is Aviah's verbatim from the thread.
 @Composable
-private fun ThankYou(signedIn: Boolean, onClose: () -> Unit) {
+private fun Feedback(signedIn: Boolean, onClose: () -> Unit) {
     val session = LocalSession.current
     val scope = rememberCoroutineScope()
 
@@ -461,19 +484,28 @@ private fun ThankYou(signedIn: Boolean, onClose: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Icon(
-                Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen,
-                modifier = Modifier.size(44.dp).padding(top = 8.dp),
+            Text("What could be better?", style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+            Text(
+                "You have already answered the questions, thank you. Anything you write here comes straight to us.",
+                style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
             )
-            Text("Thank you, we have your answers.", style = geist(18.sp, FontWeight.Bold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
-            Text("This genuinely decides what we build next.", style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
 
             if (sent) {
-                Text("Thanks — your note is on its way.", style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.farmGreen)
+                // After sending — a tick, the confirmation, and a way to add more.
+                Icon(Icons.Filled.CheckCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(36.dp))
+                Text("Thank you, we read every one.", style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen, textAlign = TextAlign.Center)
+                Text(
+                    "Add something else",
+                    style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.farmGreenMap,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() }, indication = null,
+                    ) { subject = ""; message = ""; sent = false },
+                )
             } else {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HorizontalDivider(color = FarmsyColors.hairline)
-                    Text("Anything else on your mind?", style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
+                    // Two fields that visibly want different things (Aviah): a subject
+                    // and a message, so the subject line isn't the whole report.
                     StyledField(value = subject, onChange = { subject = it }, placeholder = "Subject")
                     StyledField(value = message, onChange = { message = it }, placeholder = "Your message", singleLine = false)
                     if (!signedIn) {

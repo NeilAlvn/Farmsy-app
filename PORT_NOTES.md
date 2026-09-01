@@ -12,87 +12,25 @@ statuses:**
 
 ---
 
-## Detented sheets over the live map (S3 · MainScreen)
+## Farm-card 180px mini-detent (S3 · MainScreen)
 
-**Status: mostly implemented** — the 0.55/0.5 partial detents, the declared 0.92
-expanded detent, and `upThrough`-partial background interaction (now offset-gated,
-below) are built via `BottomSheetScaffold`. The one remaining gap is the farm-card
-180px mini-detent → **DEFERRED** (own entry below).
+**Status: DEFERRED** (API: `AnchoredDraggable` with three anchors). iOS's farm card has
+three stops `[.height(180), .fraction(0.55), .large]` (`MainView.swift:49`).
+`BottomSheetScaffold` exposes exactly one intermediate stop (`sheetPeekHeight` =
+PartiallyExpanded) plus Expanded, so it expresses the 0.55 partial OR the 180 mini-detent,
+not both. Reproducing all three stops needs a custom `AnchoredDraggable` sheet. The farm
+card uses `[0.55, 0.92]`; the 180 mini-detent is dropped. Manifest S3 farm-card detent row
+stays OPEN. File: `features/main/MainScreen.kt`.
 
-**iOS:** `.sheet(...) { … }.presentationDetents([.fraction(0.55), .large])` with
-`.presentationBackgroundInteraction(.enabled(upThrough:))` — the farm card and the
-secondary screens present as sheets at partial/full heights *over the live map*,
-and the map behind stays interactive up through a detent. The farm card also has a
-third mini-detent `.height(180)`.
+## Highlighted pin — static bitmap, no spring (S4 · MapScreen)
 
-**Android:** Compose has no detent API. `MainScreen` uses `BottomSheetScaffold` +
-`rememberStandardBottomSheetState(Hidden / PartiallyExpanded / Expanded,
-skipHiddenState = false)`:
-- The scaffold **body is the single shared map**.
-- `sheetPeekHeight` = the **partial detent** (screen × 0.55, or × 0.5 for Trips) — a
-  declared value.
-- **Expanded is now a declared value**, not emergent: the sheet content wrapper is
-  `fillMaxHeight(0.92f)`, so `BottomSheetScaffold`'s Expanded state settles at
-  exactly 0.92 of the screen (a strip of map stays visible, matching iOS `.large`).
-- **Background interaction is scoped (correct port — no re-label needed):** there is
-  no *built-in* modifier for iOS `.enabled(upThrough: partial)`, but the behavior is
-  **fully expressible** with Compose primitives and is **built faithfully**: a
-  touch-consuming blocker (`pointerInput` consuming all events) gated on the **live
-  drag offset** (`sheetState.requireOffset()` → block when visible height > partial
-  peek). Blocking engages mid-drag the instant the sheet passes the partial detent,
-  exactly matching `upThrough: partial` — interactive below, blocked above. A faithful
-  reproduction is not a divergence; manifest S3 background-interaction row is VERIFIED.
-  Auth (modal) is a `ModalBottomSheet` in RootNav whose scrim handles its own case.
-- Closing: dragging the sheet fully down → `SheetValue.Hidden` clears the route +
-  focus (returns the map to all-farms and reveals the pill).
-
-**180px farm-card mini-detent — DEFERRED (API: `AnchoredDraggable`).** Manifest S3 farm-card detent row stays OPEN. iOS's farm card
-has *three* stops `[.height(180), .fraction(0.55), .large]`. `BottomSheetScaffold`
-exposes exactly **one** intermediate stop — `sheetPeekHeight` (the PartiallyExpanded
-height) — plus Expanded. So `peekHeight` can express *either* the 180 mini-detent *or*
-the 0.55 partial, **not both**: it cannot add a second intermediate stop. Reproducing
-all three stops requires a custom `AnchoredDraggable` sheet with three anchors (out of
-scope for this change), so the mini-detent is dropped and the farm card uses
-`[0.55, 0.92]`.
-
-File: `features/main/MainScreen.kt` (class doc + inline).
-
-## focusPin fly / recenter (S4 · MapScreen)
-
-**Status: DEFERRED** (API: `Projection.visibleRegion` for the exact on-screen span +
-`CameraUpdateFactory.newLatLngZoom`). Manifest S4 focusPin-fly row stays OPEN.
-
-The behavior **is expressible** — there is no `MKCoordinateRegion` type, but the same
-information (the current on-screen lat/lng span) is available from
-`cameraPositionState.projection.visibleRegion`, so iOS's `span * 0.28` south-shift and
-"keep the user's zoom" can be reproduced exactly. The current code approximates: the
-south-shift reads the last settled `viewport` span (capped 0.15°, fallback 0.12°) —
-faithful — **but** the far-out case force-zooms with a `zoom < 11 → 12` heuristic
-instead of iOS's exact `span = min(current, 0.15)` logic. Expressible, not yet exact →
-DEFERRED. File: `features/map/MapScreen.kt` `LaunchedEffect(focusPin?.osmId)`.
-
-## Collapsed trip detent + dragUpHint (S18 · TripsScreen)
-
-**Status: DEFERRED → now IMPLEMENTED** via `SheetState.currentValue` (the earlier "Compose has no detent value to read" claim was wrong — the value exists and is used). Manifest S18 collapsed row stays OPEN pending on-device verification.
-
-**iOS:** `TripsView` reads `detent == .fraction(0.5)` to decide `collapsed`, tucks
-the overview list, and shows a `chevron.up` cue so the header + actions stay on
-screen at the small detent.
-
-**Android:** Compose has no detent value to read. `MainScreen` passes
-`collapsed = (sheetState.currentValue == PartiallyExpanded)` into `TripsScreen`,
-which shows the `KeyboardArrowUp` hint and tucks the overview list.
-
-File: `features/trips/TripsScreen.kt` (`collapsed` param) + `features/main/MainScreen.kt`.
-
-## Trip route widths — RESOLVED, not a divergence (removed)
-
-The former entry claimed `Polyline.width` "has no dp unit" as a missing API. That is
-not a real limitation: SwiftUI points ≈ Android dp, and `8.dp.toPx()` / `5.dp.toPx()`
-via `LocalDensity` renders the widths at the exact physical size of iOS's 8pt/5pt,
-preserving the 8:5 ratio at every density. This is a **correct, complete port** — the
-entry has been removed and manifest S4 route-width row is VERIFIED
-(`features/map/MapScreen.kt` `routeCasingPx` / `routeLinePx`).
+**Status: DEFERRED** (API: an animated `Marker` icon — swap `BitmapDescriptor`s across an
+`Animatable`/`animateFloatAsState` scale, or draw the highlighted pin as a Compose overlay
+positioned via `Projection.toScreenLocation` and spring its scale). iOS pops the
+highlighted farm pin with a spring scale; Android renders a single static highlight bitmap
+(`highlightedPinBitmap`). Expressible (per-scale bitmap regeneration is coarse but works; a
+Compose-overlay marker is smooth), unbuilt → DEFERRED. Manifest S4 highlight row stays OPEN.
+File: `features/map/MapScreen.kt` `highlightedPinBitmap`.
 
 ## Route aboveLabels ordering — ACCEPTED_DIVERGENCE (S4 · MapScreen)
 
@@ -109,66 +47,126 @@ labels. So `aboveLabels` **cannot be expressed** on Google Maps; the route rende
 correctly among the overlays but map labels can draw over it. File:
 `features/map/MapScreen.kt` (route block, inline PORT NOTE).
 
-## Sheet shadow (S3 pill)
+## ImageLightbox veil backdrop blur (S10 · ImageLightbox)
 
-**Status: DEFERRED (API: `Modifier.shadow(elevation, shape, ambientColor, spotColor)`)** — spot/ambient colour can match iOS's shadow colour more closely than `Surface.shadowElevation` (y-offset still not directly settable). Manifest S3 pill-shadow detail stays OPEN. Compose `Surface.shadowElevation` is a Material elevation — it cannot reproduce
-iOS's exact shadow (`color .14 / radius 12 / y-offset 3`). `12.dp` is the closest
-visual match. File: `features/main/MainScreen.kt`.
+**Status: DEFERRED** (API: `WindowManager.LayoutParams.FLAG_BLUR_BEHIND` +
+`WindowManager.LayoutParams.blurBehindRadius`, API **31+**). Manifest S10 Veil row stays
+OPEN for the blur.
 
-## Panel-item icon size (S3 pill)
+**iOS:** the veil is `Color.white.opacity(0.55).background(.ultraThinMaterial)`
+(`ImageLightbox.swift:42-43`) — a soft blur of the map/sheet behind, not just a white
+wash.
 
-**Status: DEFERRED** — reclassified from ACCEPTED_DIVERGENCE: this is a visual
-approximation, not a missing API. Compose icon size is a freely settable `Dp`
-(`Modifier.size(...)`), and the iOS point value can even be carried across as `17.dp`.
-SF Symbols carry optical sizing/weight that a Material glyph's bounding box doesn't
-reproduce 1:1, so `20.dp` is used as the closest visual match — a tuning gap, not an
-inexpressible one (API: `Modifier.size` + matched glyph). Manifest S3 pill-icon detail
-stays OPEN. iOS pill icons are SF Symbols at `system(17,.semibold)` (Compose default is
-24.dp). File: `features/main/MainScreen.kt` `PanelItem`.
+**Android:** the white@55% wash is exact. The **blur behind** the Dialog window is
+expressible on API 31+ via `FLAG_BLUR_BEHIND` + `blurBehindRadius` on the dialog's
+`window`, but it (a) has no equivalent below API 31 (minSdk is 26) and (b) also depends
+on the device/OS "allow blur" setting being on, so it can silently no-op even on 31+.
+Expressible-with-caveats but unbuilt → DEFERRED, not accepted. File:
+`features/detail/ImageLightbox.kt` `ImageLightbox`.
 
-## tapCard haptic (App/TapCard.swift · Components.kt) — RESOLVED
+## Drop-shadow radius + y-offset (S10 panel & arrows; also S3 pill)
 
-**Status: RESOLVED (implemented), not a divergence.** iOS `TapActivate` fires
-`Haptics.tap()` (`UIImpactFeedbackGenerator(.light)`) before the action. This is fully
-expressible: `Modifier.tapCard` now reads `LocalHapticFeedback` and calls
-`performHapticFeedback(HapticFeedbackType.TextHandleMove)` — Compose's light tick, the
-closest equivalent to a `.light` impact — before `onTap()`. `tapCard` became a
-`@Composable` modifier factory to read the composition-local. No divergence remains.
-File: `ui/theme/Components.kt` `Modifier.tapCard`.
+**Status: DEFERRED** (API: a custom shadow layer — `graphicsLayer`/`RenderNode`
+`setShadowColor` with an explicit translation, or a `drawBehind` blurred shape — since
+`Modifier.shadow` exposes `elevation`/`shape`/`ambientColor`/`spotColor` but **no blur
+radius or offset**). Manifest S10 panel/arrow shadow details stay OPEN. (The S3 pill's
+exact shadow was built this way — see `MainScreen.kt` `capsuleShadow`, a `drawBehind` +
+`BlurMaskFilter` that carries colour + blur radius + a real y-offset; the same technique
+would close S10's panel/arrow shadows, it is simply not built here since S10 is out of
+this session's scope.)
 
-## C7 ExpandableText — clamp/truncation measurement (Detail/FarmDetailView.swift · Components.kt)
+**iOS:** panel `shadow(color: .black.opacity(0.18), radius: 30, y: 12)`
+(`ImageLightbox.swift:95`); arrows `shadow(color: .black.opacity(0.15), radius: 6, y: 2)`
+(`:194`).
 
-**Status: DEFERRED** (API: `TextMeasurer` / `Paragraph` character-level binary search).
-iOS `ExpandableText` finds the longest prefix that still fits `lineLimit` lines by a
-**binary search over character count**, measuring each candidate with
-`UIFont(Geist-Regular,15)` + `NSString.boundingRect` against
-`font.lineHeight * lineLimit + 1`. The Android component instead detects truncation from
-`TextLayoutResult.hasVisualOverflow` and trims back to `getLineEnd(lineLimit-1)`. The
-visible result is equivalent (suffix sits at the end of the last visible line), but the
-exact prefix can differ by a character or two at the boundary because the mechanisms
-differ. The exact iOS approach **is** expressible with `rememberTextMeasurer` +
-per-candidate measurement, just not built — so this stays OPEN, not accepted. C7 is
-retained as a shared component for S7 FarmDetail (it is no longer used in C4).
-File: `ui/theme/Components.kt` `ExpandableText`.
+**Android:** the shadow **colour** is matched (`Modifier.shadow(spotColor/ambientColor =
+black@.18 / black@.15)`), and `elevation` approximates the blur (panel 20.dp, arrow
+4.dp). The exact **radius** and **downward y-offset** are not settable on
+`Modifier.shadow` — the spot-shadow direction is derived from the system light source,
+not a parameter. Reproducing radius 30 / y 12 exactly needs a custom shadow layer.
+Expressible, unbuilt → DEFERRED. File: `features/detail/ImageLightbox.kt` `Panel`/`Arrow`.
+(Same root cause as the S3 pill-shadow DEFERRED.)
 
-## C4 teaser — static clamp vs interactive C7 (Map/WhatsNewSheet.swift) — RESOLVED
+## lockedBlock faux-bars blur on API < 31 (S7 · FarmDetailView, Pass 2)
 
-**Status: RESOLVED (reverted to iOS), not a divergence.** A prior pass had C4's
-`MultiImageFarmCard` teaser use the interactive C7 `ExpandableText` (tap-to-expand
-inline, suffix on visual overflow). iOS C4 does **not**: it renders a **static** 3-line
-clamp with a purely decorative `"  … View more"` suffix appended only when
-`teaser.count > 140` (the card's own `tapCard` opens the farm; the text is inert). The
-Android C4 now matches — a `buildAnnotatedString` with the farmGreen/bold suffix gated on
-`teaser.length > 140`, `maxLines = 3`, `TextOverflow.Ellipsis`. No divergence remains.
-File: `features/whatsnew/WhatsNewSheet.kt` `MultiImageFarmCard`.
+**Status: DEFERRED** (API: `android.renderscript.ScriptIntrinsicBlur` — available API
+17–30, deprecated at 31 — blurs a `Bitmap`; the faux bars are static grey rectangles, so
+they can be rasterised to a bitmap, blurred, and drawn, or pre-rendered as a blurred
+drawable). `Modifier.blur` (the `RenderEffect` path used on API 31+) is 31-only, but it is
+**not** the only way to express this blur — so the platform CAN do it pre-31 and this is a
+DEFERRED (unbuilt), not an ACCEPTED_DIVERGENCE. Manifest §S7 lockedBlock row stays OPEN
+for the <31 blur. (Distinct from the S10 veil note, also DEFERRED, which blurs *behind* a
+Dialog window via `FLAG_BLUR_BEHIND`.)
 
-## C3 timeAgo — unit-letter localization (Discover/DiscoverFeedView.swift · strings) — RESOLVED
+**iOS:** `lockedBarsBackground.blur(radius: 7).opacity(0.6)` (`FarmDetailView.swift:566`)
+— the faux grey bars behind the membership ask are softly blurred so they read as
+"there is more here," never as real content.
 
-**Status: RESOLVED (reverted to iOS), not a divergence.** A prior pass localized the
-time-unit letters per locale (nl hour `u`, fr day `j`, de day `t`) and added a French
-`many` plural class. iOS localizes **only** `just now` (the `Localizable.xcstrings`
-catalog carries de/fr/nl for that key); the `%lldm` / `%lldh` / `%lldd` unit strings are
-`en`-only, so iOS renders `m` / `h` / `d` in **every** locale. The invented unit plurals
-were deleted from `values-nl` / `values-fr` / `values-de` (they now fall back to the
-default `values` — English `m/h/d`), and `time_just_now` stays localized in each. Matches
-iOS exactly. Files: `res/values*/strings_l10n.xml`.
+**Android:** `Modifier.blur(7.dp).alpha(0.6f)` is applied and renders correctly on
+API 31+. On API 26–30 `Modifier.blur` is a documented no-op, so the faux bars render
+*sharp* at 0.6 alpha instead of blurred. The bars are fake, empty placeholders
+(`inkMuted@0.14`), so even unblurred they stay faint behind the centred ask — graceful
+degradation, not a broken state. The <31 blur is expressible via `ScriptIntrinsicBlur`
+(above) but unbuilt → DEFERRED, row OPEN.
+File: `features/detail/FarmDetailScreen7.kt` `LockedBlock`.
+
+## Web claim (and other SafariView pages) use a plain Intent, not an in-app browser (S9 · S7)
+
+**Status: DEFERRED** — API that would do it: `androidx.browser.customtabs.CustomTabsIntent`
+(Chrome Custom Tabs), which requires adding the `androidx.browser:browser` dependency
+(NOT currently in `app/build.gradle.kts`). Manifest §Frameworks (:238) already tracks
+"SafariServices (SFSafariViewController) → Chrome Custom Tabs" as NOT_STARTED; this
+formalizes it.
+
+**iOS:** the claim link opens `https://www.farmsy.app/claim/<encoded osmId>` in a
+`SafariView` (SFSafariViewController) — an **in-app** browser overlay; the user taps
+Done to return (`FarmDetailView.swift:63,498-500`). The submit/claim web pages use the
+same wrapper. (Note: iOS's *other* outbound links — detailsList website/email/phone,
+reportLink — use `UIApplication.shared.open`, which is **external**; those map exactly
+to Android `Intent.ACTION_VIEW` and are NOT deferred.)
+
+**Android:** `openClaim` (and the reportLink) use `Intent.ACTION_VIEW` — the external
+browser, consistent with every other web link in the app (Settings terms/privacy,
+Trips map links). This is dependency-free and functional. The only gap vs iOS is
+in-app (Custom Tab) vs external browser for the *claim* URL specifically. Expressible
+with `androidx.browser`, unbuilt (a build-config decision left to the user) → DEFERRED.
+Files: `features/detail/FarmDetailScreen7.kt` `openClaim`, `features/detail/FarmMemberSections.kt` reportLink.
+
+
+## AuthField autofill hints (S16 · AuthView)
+
+**Status: DEFERRED** (API: `Modifier.semantics { contentType = ContentType.EmailAddress
+/ .Password / .NewPassword / .PersonName… }`, Compose Foundation **1.8+**; the current
+`compose-bom:2025.01.01` ships Compose 1.7.x, where this clean per-field autofill API is
+not available — only the older experimental `LocalAutofill` + `AutofillNode` wiring is,
+which is verbose and per-field). Manifest S16 rows 4/4b stay OPEN for autofill hints.
+
+**iOS:** each AuthField sets `.textContentType(...)` — `.emailAddress`, `.password` /
+`.newPassword`, `.givenName`/`.familyName`, `.fullStreetAddress`, `.addressCity`,
+`.postalCode`, `.countryName` (`AuthView.swift:124-164`) — so the keyboard/password manager
+offers the right autofill.
+
+**Android:** the fields carry keyboard type + capitalization + secure entry (all matched
+this session), but **no autofill content hints**. Expressible cleanly only after a Compose
+1.8 bump (`ContentType` semantics), or messily now via the experimental Autofill API →
+DEFERRED, not built. File: `features/auth/AuthSheet.kt` `AuthField`.
+
+## Place search provider — Photon, not iOS's MKLocalSearchCompleter (S19 · PlaceSearchSheet)
+
+**Status: DEFERRED** (API: **Google Places Autocomplete (New)** — `com.google.android.libraries.places` with session tokens, or the Places REST endpoint — which is the closest match to iOS `MKLocalSearchCompleter`'s type-ahead + quality; it needs "Places API (New)" enabled on the Cloud project + billing). Manifest S19 stays OPEN for exact-iOS-parity provider.
+
+**iOS:** `MKLocalSearchCompleter` — free, on-device, type-ahead, NL/BE-biased, with Apple's address/typo quality and a completer→`MKLocalSearch` resolve step (`PlaceSearch.swift`).
+
+**Android:** there is no free on-device autocomplete equivalent. The chosen provider is **Photon** (OSM-based, `photon.komoot.io/api`) — a plain Ktor GET, no key, no dependency, coordinates in the same response. Evaluated live (NL+BE towns rank #1, typos and `'s-Gravenhage`→Den Haag resolve, postcodes need the proximity bias that is applied). What is given up vs Google Places / iOS: no SLA (public instance, "extensive usage will be throttled", no published limit, no availability guarantee), and weaker fuzzy-matching than Apple/Google on very messy input. Photon is self-hostable (Apache-2.0) if the public instance throttles — the client code would not change. Google Places would restore exact parity but reintroduces the billing/Cloud-config Photon was chosen to avoid → DEFERRED, not built. Nominatim is **not** an option: its usage policy prohibits client-side autocomplete outright. File: `features/trips/PlaceSearchSheet.kt` `photonSearch`.
+
+## Survey arrow — standard Material arrow, not Aviah's hand-drawn one (Survey · MainScreen)
+
+**Status: ACCEPTED_DIVERGENCE** — not a missing-API divergence but a **deliberate design divergence from the written spec, made on Neil's direct instruction.** Recording it so the two authorities are visible and reconcilable.
+
+**Aviah's thread (2026-09-01 later):** "A hand-drawn arrow above the button… Drawn rather than taken from an icon set, and that is deliberate: a slightly uneven curve reads as a person pointing… It bounces ~9px… hidden from screen readers… holds still under reduced motion."
+
+**Neil's session brief (this session):** "It is a REGULAR DARK GREEN ARROW, positioned ABOVE the entry button and POINTING DOWN at it. iOS build 23 hand-drew a curved Path beside the button as an approximation; that was wrong on both shape and placement. Use a standard arrow… No custom Path."
+
+**Built (Android):** `Icons.Filled.ArrowDownward`, `farmGreen`, above the button, pointing down, size 22. **Bounces** ~9px / ~0.9s / eased (thread settles the animation), **hidden from a11y** (`clearAndSetSemantics {}`), **still under reduce-motion** (`ANIMATOR_DURATION_SCALE == 0`). Colour = `farmGreen` (the button is `--primary`; "dark green" per the brief distinguishes it from the lighter on-map `farmGreenMap`) — chosen and flagged rather than invented.
+
+**The divergence:** shape (standard icon vs hand-drawn curve) and placement (above vs beside) follow Neil, not the thread. The bounce, a11y-hiding, reduce-motion, and unanswered-only visibility follow the thread. **iOS build 23 differs from both** (hand-drawn Path, beside) and should be corrected to match this. File: `features/main/MainScreen.kt` `SurveyArrow`.
