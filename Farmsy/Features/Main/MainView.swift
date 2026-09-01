@@ -162,7 +162,14 @@ private struct SurveyEntry: ViewModifier {
                 }
                 .buttonStyle(.plain)
                 .padding(.trailing, 14)
-                .padding(.bottom, 66)
+                // Raised from 66: at 66 the button's bottom edge met the bottom pill's
+                // top (the pill spans ~safe-bottom+6 to +67), so it crowded the pill
+                // ("too low" on device). 120 clears the pill by ~50pt. The overlay is
+                // inset by the safe area (the pill at bottom 6 already clears the home
+                // indicator), so this sits well above it; both the 44pt button and the
+                // fixed-size-font pill ignore Dynamic Type, so the gap holds at large
+                // text too.
+                .padding(.bottom, 120)
             }
             .sheet(isPresented: $isPresented) {
                 SurveyView()

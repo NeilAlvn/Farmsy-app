@@ -32,6 +32,10 @@ struct SurveyView: View {
     @State private var submitting = false
     @State private var submitError: String?
 
+    /// DEBUG only: true when the gate said hide (admin / already answered) but a
+    /// Debug build showed the survey anyway for testing. Always false in Release.
+    @State private var gateWouldHide = false
+
     private var locale: String {
         SurveyAPI.clampLocale(language.current == .system
             ? (Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en")
@@ -55,11 +59,27 @@ struct SurveyView: View {
 
     private func load() async {
         phase = .loading
+        gateWouldHide = false
         let token = session.session?.accessToken
         // Gate first: an already-answered person or an admin must never see the
         // questions (an answer from us is indistinguishable from a real one later).
+        // A FAILED gate call is not a hide — `gate()` is best-effort and returns
+        // all-false on any error, so a network blip falls through to `.ready`/`.failed`
+        // below rather than silently dismissing.
         let gate = await SurveyAPI.gate(accessToken: token)
-        guard gate.shouldShow else { dismiss(); return }
+        if !gate.shouldShow {
+            #if DEBUG
+            // Debug builds render the survey anyway so a developer — whose account is
+            // `role = admin`, so the gate returns isAdmin:true and hides it (this is
+            // the build-20 "loads then closes" report) — can test the UI. RELEASE
+            // still excludes admins and already-answered users unchanged. Note the
+            // submit itself still returns `is_admin` for an admin account, so exercise
+            // the submit/thanks path with a non-admin account.
+            gateWouldHide = true
+            #else
+            dismiss(); return
+            #endif
+        }
         do {
             def = try await SurveyAPI.questions(locale: locale)
             phase = .ready
@@ -79,6 +99,21 @@ struct SurveyView: View {
         .padding(.horizontal, 24)
     }
 
+    /// DEBUG-only notice shown when the gate would have hidden the survey (admin or
+    /// already answered) but a Debug build rendered it for testing. Never compiled
+    /// into a Release build's reachable state (`gateWouldHide` stays false there).
+    private var debugGateBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hammer.fill").font(.system(size: 12))
+            Text("Debug: the gate would hide this (admin or already answered). Shown for testing — Release excludes it.")
+                .font(.geist(12, .medium))
+        }
+        .foregroundStyle(Color(hex: 0x9A6B00))
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(hex: 0xFEF3C7), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     // MARK: - The form
 
     private var form: some View {
@@ -86,6 +121,7 @@ struct SurveyView: View {
             header
             ScrollView {
                 VStack(alignment: .leading, spacing: 36) {
+                    if gateWouldHide { debugGateBanner }
                     if let def {
                         ForEach(Array(def.questions.enumerated()), id: \.element.id) { i, q in
                             questionBlock(number: i + 1, q: q)
