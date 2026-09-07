@@ -199,6 +199,14 @@ struct SettingsSheet: View {
                         .font(.geist(12))
                         .foregroundStyle(Color.inkMuted.opacity(0.7))
                         .padding(.top, 8)
+                    // OpenStreetMap attribution (P0-5). The farm records carry OSM ids,
+                    // so the ODbL credit has to be reachable in the app; here rather
+                    // than under the map, where it would compete with the controls.
+                    // Same wording as Android's osm_attribution.
+                    Text("Place data © OpenStreetMap contributors")
+                        .font(.geist(12))
+                        .foregroundStyle(Color.inkMuted.opacity(0.7))
+                        .padding(.top, 2)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)

@@ -19,11 +19,13 @@ struct ProUpsellSheet: View {
     // saving + trip-planning (both free since 29 Aug) and called the filters
     // "coming" when they've shipped; Aviah fixed both. Lead with open-now (the line
     // with numbers behind it).
-    private let features = [
-        "See what is open right now, not just open today",
-        "Filter by kind of place, and by how it is grown",
-        "An email when a farm you saved posts something new",
-        "Everything new we add to Pro, included",
+    // String(localized:) rather than bare literals: Text(String) does not look
+    // the catalog up, so these four lines were English in every language.
+    private let features: [String] = [
+        String(localized: "See what is open right now, not just open today"),
+        String(localized: "Filter by kind of place, and by how it is grown"),
+        String(localized: "An email when a farm you saved posts something new"),
+        String(localized: "Everything new we add to Pro, included"),
     ]
 
     /// Poll the profile after a purchase — the grant lands a few seconds after the
@@ -122,12 +124,15 @@ struct ProUpsellSheet: View {
             // (Aviah: never advertise a trial someone won't get). Copy = web gate keys.
             let trialDays = purchases.yearlyFreeTrialDays
             VStack(spacing: 8) {
+                // Every mention of the trial length reads from the store (P0-4b), as an
+                // interpolated argument — it sits in a different place in the sentence
+                // in each language. No offer means no trial sentence at all.
                 PlanButton(
-                    label: trialDays != nil ? String(localized: "Try free for 3 days")
-                                            : String(localized: "Get yearly"),
+                    label: trialDays.map { String(localized: "Try free for \($0) days") }
+                        ?? String(localized: "Get yearly"),
                     detail: purchases.yearlyPrice.map { price in
-                        trialDays == nil ? String(localized: "\(price) / year")
-                                         : String(localized: "3 days free · then \(price)/year")
+                        trialDays.map { String(localized: "\($0) days free · then \(price)/year") }
+                            ?? String(localized: "\(price) / year")
                     },
                     filled: true
                 ) {
