@@ -53,6 +53,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FarmDetail
 import app.farmsy.android.core.FarmDetailApi
 import app.farmsy.android.core.FarmDetailException
@@ -423,6 +427,10 @@ private fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit, onRecheck: suspe
     // Usually a no-op: prices are prefetched at launch. Only actually fetches if
     // that failed (offline at start, say).
     LaunchedEffect(Unit) { purchases.loadOffering() }
+    // The purchase sheet is on screen. Once per appearance, not per recomposition.
+    LaunchedEffect(Unit) {
+        Observability.capture(AnalyticsEvent.PAYWALL_VIEWED, mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.FARM_DETAIL.key))
+    }
 
     // Access is granted by the server after RevenueCat's webhook writes
     // subscription_status — which lands a few seconds *after* the purchase call

@@ -50,6 +50,8 @@ class FavoritesStore {
                         put("farm_osm_id", JsonPrimitive(osmId))
                     }
                 )
+            }.onSuccess {
+                Observability.capture(AnalyticsEvent.FARM_SAVED, mapOf(AnalyticsProp.OSM_ID to osmId))   // added, never on removal
             }.onFailure { _osmIds.value = _osmIds.value - osmId }
         }
     }

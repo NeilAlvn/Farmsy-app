@@ -50,6 +50,7 @@ final class FavoritesStore {
                     .from("favorites")
                     .insert(["user_id": userId.uuidString, "farm_osm_id": osmId])
                     .execute()
+                Observability.capture(.farmSaved, [AnalyticsProp.osmId: osmId])   // added, never on removal
             } catch {
                 osmIds.remove(osmId)
             }
