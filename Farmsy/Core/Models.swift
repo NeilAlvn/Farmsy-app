@@ -342,6 +342,9 @@ struct Profile: Decodable {
     /// Name for authoring posts/reviews (added to /api/profile/status by Aviah).
     let firstName: String?
     let lastName: String?
+    /// The onboarding answers (P0-3), or nil when never set. Applied to the map
+    /// by PreferencesSync; see Preferences.swift for the conflict rule.
+    let preferences: Preferences?
 
     enum CodingKeys: String, CodingKey {
         case subscriptionStatus = "subscription_status"
@@ -352,6 +355,7 @@ struct Profile: Decodable {
         case foundingMember = "founding_member"
         case firstName = "first_name"
         case lastName = "last_name"
+        case preferences
     }
 
     /// Same order as the web's `hasPaidAccess()`: admin → farmer → founding member

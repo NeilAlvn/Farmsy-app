@@ -5,6 +5,7 @@ import app.farmsy.android.core.FarmsStore
 import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FavoritesStore
 import app.farmsy.android.core.LocationHelper
+import app.farmsy.android.core.PreferencesSync
 import app.farmsy.android.core.PurchaseStore
 import app.farmsy.android.core.SessionStore
 import app.farmsy.android.core.TripStore
@@ -25,6 +26,10 @@ class FarmsyApp : Application() {
         private set
     lateinit var farms: FarmsStore
         private set
+    /// Applies the device's saved preferences before anything renders and keeps
+    /// them in step with the server from then on (the rule is in Preferences.kt).
+    lateinit var preferences: PreferencesSync
+        private set
     lateinit var favorites: FavoritesStore
         private set
     lateinit var locationHelper: LocationHelper
@@ -40,6 +45,7 @@ class FarmsyApp : Application() {
         PurchaseStore.configure(this)
         session = SessionStore(appScope)
         farms = FarmsStore(appScope)
+        preferences = PreferencesSync(this, appScope, session, farms).also { it.start() }
         favorites = FavoritesStore()
         locationHelper = LocationHelper(this)
         purchases = PurchaseStore()

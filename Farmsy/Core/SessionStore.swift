@@ -52,6 +52,9 @@ struct SignUpDetails {
 final class SessionStore {
     private(set) var session: Session?
     private(set) var profile: Profile?
+    /// Fires whenever a fresh profile is decoded from /profile/status.
+    /// PreferencesSync installs it to apply the server's preferences.
+    @ObservationIgnored var onProfileLoaded: ((Profile) -> Void)?
     private(set) var isBootstrapped = false
 
     /// Debug-only: lets the screenshot UI tour walk the signed-in screens
@@ -149,7 +152,9 @@ final class SessionStore {
                 }
                 return date
             }
-            profile = try decoder.decode(Profile.self, from: data)
+            let loaded = try decoder.decode(Profile.self, from: data)
+            profile = loaded
+            onProfileLoaded?(loaded)
         } catch {
             // Keep the last known profile on transient failures.
         }
