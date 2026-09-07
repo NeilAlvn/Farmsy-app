@@ -11748,6 +11748,370 @@
           }
         }
       }
+    },
+    "Try free for %lld days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Try free for %lld days"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Probeer %lld dagen gratis"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Essayez %lld jours gratuitement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld Tage kostenlos testen"
+          }
+        }
+      }
+    },
+    "%lld days free · then %@/year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld days free · then %@/year"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld dagen gratis · daarna %@/jaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld jours gratuits · puis %@/an"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld Tage kostenlos · dann %@/Jahr"
+          }
+        }
+      }
+    },
+    "Get yearly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Get yearly"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kies jaarlijks"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisir l’abonnement annuel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jährlich wählen"
+          }
+        }
+      }
+    },
+    "Buy lifetime access": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Buy lifetime access"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Koop levenslange toegang"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Acheter l’accès à vie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lebenslangen Zugang kaufen"
+          }
+        }
+      }
+    },
+    "One-time · no renewals": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "One-time · no renewals"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eenmalig · geen verlengingen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Une seule fois · sans renouvellement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einmalig · keine Verlängerung"
+          }
+        }
+      }
+    },
+    "Unlock Farmsy Pro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Unlock Farmsy Pro"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ontgrendel Farmsy Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Débloquez Farmsy Pro"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Farmsy Pro freischalten"
+          }
+        }
+      }
+    },
+    "Find what is open at this minute, and filter by the kind of place. Cancel anytime.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Find what is open at this minute, and filter by the kind of place. Cancel anytime."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zie wat nu open is en filter op soort plek. Opzeggen kan altijd."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voyez ce qui est ouvert en ce moment et filtrez par type de lieu. Résiliable à tout moment."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sieh, was gerade geöffnet ist, und filtere nach Art des Ortes. Jederzeit kündbar."
+          }
+        }
+      }
+    },
+    "Included in both plans": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Included in both plans"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inbegrepen in beide abonnementen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inclus dans les deux formules"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In beiden Tarifen enthalten"
+          }
+        }
+      }
+    },
+    "See what is open right now, not just open today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "See what is open right now, not just open today"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zie wat nu open is, niet alleen vandaag"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voyez ce qui est ouvert maintenant, pas seulement aujourd’hui"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sieh, was jetzt geöffnet ist, nicht nur heute"
+          }
+        }
+      }
+    },
+    "Filter by kind of place, and by how it is grown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Filter by kind of place, and by how it is grown"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Filter op soort plek en op hoe het geteeld wordt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Filtrez par type de lieu et par mode de culture"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Filtere nach Art des Ortes und nach Anbauweise"
+          }
+        }
+      }
+    },
+    "An email when a farm you saved posts something new": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "An email when a farm you saved posts something new"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een e-mail als een bewaarde boerderij iets nieuws plaatst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un e-mail quand une ferme enregistrée publie du nouveau"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eine E-Mail, wenn ein gespeicherter Hof etwas Neues postet"
+          }
+        }
+      }
+    },
+    "Everything new we add to Pro, included": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Everything new we add to Pro, included"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alles wat we aan Pro toevoegen, inbegrepen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tout ce que nous ajoutons à Pro, inclus"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alles Neue, das wir zu Pro hinzufügen, inklusive"
+          }
+        }
+      }
+    },
+    "Place data © OpenStreetMap contributors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Place data © OpenStreetMap contributors"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plaatsgegevens © OpenStreetMap-bijdragers"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Données des lieux © contributeurs d’OpenStreetMap"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ortsdaten © OpenStreetMap-Mitwirkende"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
