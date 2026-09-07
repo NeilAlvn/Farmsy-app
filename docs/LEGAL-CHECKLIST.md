@@ -38,6 +38,7 @@ Cover: subscription terms (billing happens on farmsy.app, renewal, cancellation)
 The app itself sets no trackers. The web dashboard/payment flow should keep its cookie banner GDPR-compliant since app users are sent there for subscribe/delete.
 
 ## 7. Before final App Store release
+- **Run the App Review account check** in the web repo and do not submit while it fails: `npm run check:review-accounts` (needs `.env.local`). It prints role, subscription state, `email_verified` and any claims for the three `appreview` accounts (the member demo `appreview@`, plus `.expired` and `.free`), computes access with the real rule, and exits non-zero if the expired or free account has access, the member demo has none, any review account has an approved claim, or a reviewer could not log in. An approved test claim silently makes an account a farmer, and farmers never see the paywall — that is the 2.1 rejection, and it has happened once already.
 - Replace the upscaled 377px app icon with a hi-res (1024px+) or vector export of the new barn logo.
 - Location permission text is already user-facing; translate it (done in the app's localization catalogs).
 - Confirm Supabase project region + Stripe DPA are documented in the privacy policy.

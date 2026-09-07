@@ -14,15 +14,17 @@ final class FarmsStore {
     var searchText = ""
     /// Categories are multi-select, like the web filter — a farm matches if it is
     /// in any selected category. Empty means "all".
-    var selectedCategories: Set<FarmCategory> = []
+    var selectedCategories: Set<FarmCategory> = [] {
+        didSet { if oldValue != selectedCategories { onPreferencesChanged?() } }
+    }
 
     // Quick filters — mirror the web's rail (Verified / Open now / Automaat /
     // Zelfpluk / Has photos). "Near me" is an action (locate), not a filter.
-    var filterVerified = false
-    var filterOpenToday = false
+    var filterVerified = false  { didSet { if oldValue != filterVerified  { onPreferencesChanged?() } } }
+    var filterOpenToday = false { didSet { if oldValue != filterOpenToday { onPreferencesChanged?() } } }
     var filterAutomaat = false
-    var filterZelfpluk = false
-    var filterHasPhotos = false
+    var filterZelfpluk = false  { didSet { if oldValue != filterZelfpluk  { onPreferencesChanged?() } } }
+    var filterHasPhotos = false { didSet { if oldValue != filterHasPhotos { onPreferencesChanged?() } } }
 
     // Pro time filters (Aviah's closed five-group set). Distinct from the FREE
     // `filterOpenToday` (day-based): these use the Amsterdam-clock parser —
@@ -39,6 +41,31 @@ final class FarmsStore {
     // not a method, until its dual-coverage is resolved server-side.
     var selectedPlaceTypes: Set<String> = []
     var selectedMethods: Set<String> = []
+
+    // MARK: - Preferences (P0-3)
+
+    /// Fires when one of the five persisted preference fields changes: the
+    /// categories and the Verified / Open today / Pick-your-own / Has photos
+    /// flags. PreferencesSync installs it; nothing else should.
+    @ObservationIgnored var onPreferencesChanged: (() -> Void)?
+
+    /// The five fields as the server stores them.
+    var preferences: Preferences {
+        Preferences(
+            categories: FarmCategory.allCases.filter { selectedCategories.contains($0) }.map(\.rawValue),
+            openToday: filterOpenToday, pickYourOwn: filterZelfpluk,
+            verified: filterVerified, hasPhotos: filterHasPhotos)
+    }
+
+    /// Applies stored preferences. An empty category list means no category
+    /// filter (every farm), and an unknown category is dropped, never an error.
+    func apply(_ p: Preferences) {
+        selectedCategories = p.knownCategories
+        filterOpenToday = p.openToday
+        filterZelfpluk = p.pickYourOwn
+        filterVerified = p.verified
+        filterHasPhotos = p.hasPhotos
+    }
 
     var anyQuickFilterOn: Bool {
         filterVerified || filterOpenToday || filterAutomaat || filterZelfpluk || filterHasPhotos

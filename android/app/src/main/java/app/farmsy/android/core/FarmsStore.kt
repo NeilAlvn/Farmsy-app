@@ -79,6 +79,25 @@ class FarmsStore(private val scope: CoroutineScope) {
     fun anyFilterOn(): Boolean =
         anyQuickFilterOn() || anyProFilterOn() || selectedCategories.value.isNotEmpty()
 
+    // ── Preferences (P0-3) — mirrors iOS FarmsStore.preferences / apply(_:) ──
+
+    /// The five persisted fields as the server stores them.
+    fun snapshotPreferences(): Preferences = Preferences(
+        categories = FarmCategory.entries.filter { it in selectedCategories.value }.map { it.raw },
+        openToday = filterOpenToday.value, pickYourOwn = filterZelfpluk.value,
+        verified = filterVerified.value, hasPhotos = filterHasPhotos.value,
+    )
+
+    /// Applies stored preferences. An empty category list means no category
+    /// filter (every farm), and an unknown category is dropped, never an error.
+    fun applyPreferences(p: Preferences) {
+        selectedCategories.value = p.knownCategories
+        filterOpenToday.value = p.openToday
+        filterZelfpluk.value = p.pickYourOwn
+        filterVerified.value = p.verified
+        filterHasPhotos.value = p.hasPhotos
+    }
+
     fun clearAllFilters() {
         selectedCategories.value = emptySet()
         filterVerified.value = false; filterOpenToday.value = false

@@ -224,6 +224,9 @@ data class Profile(
     /// Name for authoring posts/reviews (added to /api/profile/status by Aviah).
     @SerialName("first_name") val firstName: String? = null,
     @SerialName("last_name") val lastName: String? = null,
+    /// The onboarding answers (P0-3), or null when never set. Applied to the map
+    /// by PreferencesSync; see Preferences.kt for the conflict rule.
+    val preferences: Preferences? = null,
 ) {
     /// Same order as the web's `hasPaidAccess()`: admin → farmer → founding member
     /// → active/trialing → a canceled plan still inside its paid period.
