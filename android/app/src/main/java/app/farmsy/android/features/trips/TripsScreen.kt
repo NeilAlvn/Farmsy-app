@@ -103,7 +103,6 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val onRoads by trip.onRoads.collectAsState()
     val savedTrips by trip.savedTrips.collectAsState()
     val userSession by session.session.collectAsState()
-    val profile by session.profile.collectAsState()
 
     val uid = userSession?.user?.id
     val pinIndex = remember(pins) { pins.associateBy { it.osmId } }
@@ -264,7 +263,6 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
             } else {
                 MyTripsTab(
                     isAuthenticated = session.isAuthenticated,
-                    hasFullAccess = profile?.hasFullAccess == true,
                     draftCount = stopIds.size,
                     savedTrips = savedTrips,
                     armedDelete = armedDelete,
@@ -441,7 +439,6 @@ private fun OutlineAction(title: String, icon: ImageVector, modifier: Modifier, 
 @Composable
 private fun MyTripsTab(
     isAuthenticated: Boolean,
-    hasFullAccess: Boolean,
     draftCount: Int,
     savedTrips: List<SavedTrip>,
     armedDelete: String?,
@@ -452,7 +449,11 @@ private fun MyTripsTab(
     onOpenFarm: (FarmPin) -> Unit,
 ) {
     if (!isAuthenticated) { Gate(stringResource(R.string.sign_in_to_view_trips)); return }
-    if (!hasFullAccess) { Gate(stringResource(R.string.saved_trips_pro)); return }
+    // Saved trips are free for any signed-in user — parity with web, which un-gated
+    // them on 29 Aug (PanelLists.tsx has no isPro; FavoritesProvider: "Saving farms
+    // and trips are not Pro — they are free for anyone with an account"). Only the
+    // route planner stayed Pro. Android was a week behind; the `saved_trips_pro` wall
+    // was one the web does not have. Signed-out is still gated above.
 
     // Draft banner
     Box(
