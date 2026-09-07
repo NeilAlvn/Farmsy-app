@@ -934,6 +934,10 @@ struct LockedAccessView: View {
             }
             .padding(.horizontal, 20)
         }
+        .onAppear {
+            Observability.capture(.paywallViewed,
+                                  [AnalyticsProp.trigger: AnalyticsValue.Trigger.farmDetail.rawValue])
+        }
         .task { await purchases.loadOffering() }
     }
 }

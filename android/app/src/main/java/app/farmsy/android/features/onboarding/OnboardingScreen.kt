@@ -78,6 +78,10 @@ import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.features.auth.AuthSheet
@@ -123,10 +127,23 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val showsHeader = step != Step.WELCOME && step != Step.DONE
     val canGoBack = showsHeader
 
-    fun advance() { if (index < steps.lastIndex) step = steps[index + 1] }
+    /// Leaving a step forwards. Fires for the step being left, skipped or not — a
+    /// skipped welcome still reaches personalize, and the funnel should say so.
+    fun advance() {
+        Observability.capture(AnalyticsEvent.ONBOARDING_STEP_COMPLETED, mapOf(AnalyticsProp.STEP to step.name.lowercase()))
+        if (index < steps.lastIndex) step = steps[index + 1]
+    }
+    /// The two skip paths, welcome and details: recorded as a skip, then advanced
+    /// like any other step.
+    fun skip() {
+        Observability.capture(AnalyticsEvent.ONBOARDING_SKIPPED, mapOf(AnalyticsProp.STEP to step.name.lowercase()))
+        advance()
+    }
     fun goBack() { if (index > 0) step = steps[index - 1] }
 
     fun finish() {
+        // Leaving `done`, the seventh step, so the funnel reaches its last bar.
+        Observability.capture(AnalyticsEvent.ONBOARDING_STEP_COMPLETED, mapOf(AnalyticsProp.STEP to step.name.lowercase()))
         // Categories are multi-select now (iOS parity) — carry the whole chosen set.
         // Details prefs map onto the quick filters.
         farms.selectedCategories.value = selectedCats
@@ -196,7 +213,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             ) { s ->
                 Box(Modifier.fillMaxSize()) {
                     when (s) {
-                        Step.WELCOME -> WelcomeStep(onLogin = { showLogin = true }, onSkip = { advance() })
+                        Step.WELCOME -> WelcomeStep(onLogin = { showLogin = true }, onSkip = { skip() })
                         Step.PERSONALIZE -> PersonalizeStep(selectedCats, { selectedCats = it }) { advance() }
                         Step.LOCATION -> LocationStep(
                             resolvedLabel = chosenLabel ?: loc?.let { stringResource(R.string.your_current_location) },
@@ -207,7 +224,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Step.DETAILS -> DetailsStep(
                             prefs = prefs, onChange = { prefs = it },
                             onShowFarms = { applyPrefs = true; advance() },
-                            onSkip = { applyPrefs = false; advance() },
+                            onSkip = { applyPrefs = false; skip() },
                         )
                         Step.NEARBY -> NearbyStep(label = chosenLabel, onContinue = { advance() })
                         Step.NOTIFY -> NotifyStep(onContinue = { advance() })

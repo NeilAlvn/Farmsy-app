@@ -363,4 +363,27 @@
     <string name="survey_feedback_thanks">Thank you, we read every one.</string>
     <string name="survey_feedback_more">Add something else</string>
     <string name="survey_feedback_failed">Sending failed. Please try again.</string>
+
+    <!-- S8 LockedAccessView + S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
+    <string name="stat_thousands">1000s</string>
+    <string name="categories">categories</string>
+    <string name="coverage">coverage</string>
+    <string name="membership_expired_title">Your membership has expired</string>
+    <string name="unlock_every_farm">Unlock every farm</string>
+    <string name="lock_body_expired">Resubscribe to reopen opening hours, contact details, photos and more — for %1$s and every other farm on the map.</string>
+    <string name="lock_body_normal">Opening hours, contact details, photos and more — for %1$s and every other farm on the map.</string>
+    <string name="memberships_cant_load">Memberships can\'t be loaded right now.</string>
+    <string name="memberships_load_retry">Please check your connection and try again.</string>
+    <string name="start_from_my_location">Choose a starting point</string>
+    <string name="saved_trips_pro">Saved trips are a Farmsy Pro feature.</string>
+    <string name="pro_unlock_title">Unlock Farmsy Pro</string>
+    <string name="pro_unlock_sub">Find what is open at this minute, and filter by the kind of place. Cancel anytime.</string>
+    <string name="pro_included_in_both">Included in both plans</string>
+    <string name="pro_feature_open_now">See what is open right now, not just open today</string>
+    <string name="pro_feature_filter">Filter by kind of place, and by how it is grown</string>
+    <string name="pro_feature_email">An email when a farm you saved posts something new</string>
+    <string name="pro_feature_everything">Everything new we add to Pro, included</string>
+    <string name="pro_get_yearly">Get yearly</string>
+    <string name="pro_buy_lifetime">Buy lifetime access</string>
+    <string name="pro_lifetime_onetime">One-time · no renewals</string>
 </resources>
