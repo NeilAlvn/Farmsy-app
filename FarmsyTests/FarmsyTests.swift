@@ -75,7 +75,11 @@ struct AccessRuleTests {
             role: row.role,
             foundingMember: row.founding,
             firstName: nil,
-            lastName: nil
+            lastName: nil,
+            // P0-3 added this to Profile after this matrix was written. It is not
+            // part of the access rule and never should be — preferences are what
+            // someone wants to see, access is what they are allowed to see.
+            preferences: nil
         )
     }
 }
