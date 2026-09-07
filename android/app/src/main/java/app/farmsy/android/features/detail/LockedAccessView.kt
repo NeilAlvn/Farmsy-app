@@ -65,7 +65,7 @@ import kotlinx.coroutines.launch
 
 /// S8 · LockedAccessView — the paywall shown inside the FarmDetail gate when a
 /// non-member opens a farm. Ported 1:1 from iOS `LockedAccessView` (FarmDetailView.
-/// swift:716). Presented from `FarmDetailScreen7`'s `showPaywall` in a
+/// swift:716). Presented from `FarmDetailScreen`'s `showPaywall` in a
 /// ModalBottomSheet. Reads FarmsStore / PurchaseStore / SessionStore; presented in
 /// the detented sheet (no status-bar padding).
 ///

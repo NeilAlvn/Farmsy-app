@@ -76,7 +76,7 @@ import app.farmsy.android.R
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.SurveyApi
 import app.farmsy.android.core.SurveyGate
-import app.farmsy.android.features.detail.FarmDetailScreen7
+import app.farmsy.android.features.detail.FarmDetailScreen
 import app.farmsy.android.features.map.MapScreen
 import app.farmsy.android.features.survey.SurveyMode
 import app.farmsy.android.features.survey.SurveyScreen
@@ -249,13 +249,13 @@ fun MainScreen() {
             Box(Modifier.fillMaxWidth().fillMaxHeight(expandedFraction).navigationBarsPadding()) {
                 when (route) {
                     SheetRoute.FARM -> selectedPin?.let { pin ->
-                        FarmDetailScreen7(pin = pin, onBack = { route = null })
+                        FarmDetailScreen(pin = pin, onBack = { route = null })
                     }
                     // iOS routes the Discover pill to WhatsNewSheet (S6), not the feed.
                     SheetRoute.DISCOVER -> WhatsNewSheet(onOpenFarm = { openFarm(it) }, onClose = { route = null })
-                    SheetRoute.SAVED -> SavedScreen(onOpenFarm = { openFarm(it) }, onClose = { route = null })
+                    SheetRoute.SAVED -> SavedScreen(onOpenFarm = { openFarm(it) })
                     SheetRoute.TRIPS -> TripsScreen(collapsed = collapsed, onOpenFarm = { openFarm(it) })
-                    SheetRoute.SETTINGS -> SettingsScreen(onClose = { route = null })
+                    SheetRoute.SETTINGS -> SettingsScreen()
                     null -> Box(Modifier.size(1.dp))
                 }
             }
