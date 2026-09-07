@@ -125,8 +125,13 @@ final class PurchaseStore {
     func purchase(_ package: Package?, userId: UUID?) async -> Bool {
         guard let package else {
             purchaseError = String(localized: "Membership isn't available right now. Please try again later.")
+            Observability.capture(.purchaseFailed,
+                                  [AnalyticsProp.reason: AnalyticsValue.Reason.productUnavailable.rawValue])
             return false
         }
+        // The tap, before the store sheet appears.
+        let plan = Self.plan(for: package)
+        Observability.capture(.planTapped, [AnalyticsProp.plan: plan])
         if let userId, Purchases.shared.appUserID != userId.uuidString {
             _ = try? await Purchases.shared.logIn(userId.uuidString)
         }
@@ -136,15 +141,46 @@ final class PurchaseStore {
 
         do {
             let result = try await Purchases.shared.purchase(package: package)
-            return !result.userCancelled
+            if result.userCancelled {
+                Observability.capture(.purchaseFailed,
+                                      [AnalyticsProp.reason: AnalyticsValue.Reason.cancelled.rawValue])
+                return false
+            }
+            Observability.capture(.purchaseCompleted,
+                                  [AnalyticsProp.plan: plan,
+                                   AnalyticsProp.store: AnalyticsValue.Store.appStore.rawValue])
+            return true
         } catch {
             purchaseError = error.localizedDescription
+            Observability.capture(.purchaseFailed,
+                                  [AnalyticsProp.reason: Self.failureReason(error).rawValue])
             return false
+        }
+    }
+
+    /// `plan` for the analytics events: which of the two products this package is.
+    private static func plan(for package: Package) -> String {
+        package.storeProduct.productIdentifier == lifetimeProductId
+            ? AnalyticsValue.Plan.lifetime.rawValue
+            : AnalyticsValue.Plan.yearly.rawValue
+    }
+
+    /// A short code for `reason`, never `localizedDescription` — that string is
+    /// translated, and a German failure has to land in the same bucket as a Dutch one.
+    private static func failureReason(_ error: Error) -> AnalyticsValue.Reason {
+        let ns = error as NSError
+        guard ns.domain == ErrorCode.errorDomain else { return .storeError }
+        switch ErrorCode(rawValue: ns.code) {
+        case .purchaseCancelledError?: return .cancelled
+        case .networkError?, .offlineConnectionError?: return .network
+        case .productNotAvailableForPurchaseError?: return .productUnavailable
+        default: return .storeError
         }
     }
 
     /// Apple requires a visible restore path for non-consumables/subscriptions.
     func restore() async -> Bool {
+        Observability.capture(.restoreTapped)
         guard !Backend.revenueCatKey.isEmpty else { return false }
         isPurchasing = true
         purchaseError = nil

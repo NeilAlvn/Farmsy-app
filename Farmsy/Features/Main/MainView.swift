@@ -28,7 +28,7 @@ struct MainView: View {
     }
 
     var body: some View {
-        MapScreen(onOpenFarm: { openFarm($0) }, focusPin: flyTarget)
+        MapScreen(onOpenFarm: { openFarm($0, source: .mapPin) }, focusPin: flyTarget)
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
@@ -66,7 +66,7 @@ struct MainView: View {
             WhatsNewSheet(onOpenFarm: { pin in
                 flyTarget = pin          // fly the map straight to it
                 showWhatsNew = false
-                openFarm(pin)
+                openFarm(pin, source: .whatsNew)
             })
             .presentationDetents([.fraction(0.55), .fraction(0.92)])
             .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
@@ -76,7 +76,7 @@ struct MainView: View {
         .sheet(item: $accountRoute) { route in
             Group {
                 switch route {
-                case .saved:    SavedScreen { openFarm($0) }
+                case .saved:    SavedScreen { openFarm($0, source: .saved) }
                 case .settings: SettingsSheet()
                 }
             }
@@ -86,7 +86,7 @@ struct MainView: View {
                 .presentationCornerRadius(28)
         }
         .sheet(isPresented: $showTrips) {
-            TripsView(onOpenFarm: { openFarm($0) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
+            TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
                 .presentationDetents([.fraction(0.5), .fraction(0.92)], selection: $tripDetent)
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
                 .presentationDragIndicator(.visible)
@@ -98,10 +98,14 @@ struct MainView: View {
     /// Farm cards open for everyone, signed out included (MOBILE-SPEC-MAP §0) —
     /// the card shows the free content and locks the paid fields inside. Actions
     /// that need an account (save, subscribe) prompt for one from within the card.
-    private func openFarm(_ pin: FarmPin) {
+    private func openFarm(_ pin: FarmPin, source: AnalyticsValue.Source) {
         farmDetent = .fraction(0.55)   // always open at half
         flyTarget = pin                // fly the map to the farm, wherever it was opened from
         selectedPin = pin
+        // Fired here, where the pin is set, not in a view body that runs more than
+        // once. `source` is what tells whether the map or the feed sells.
+        Observability.capture(.farmOpened, [AnalyticsProp.osmId: pin.osmId,
+                                            AnalyticsProp.source: source.rawValue])
     }
 
     // MARK: - Bottom floating panel

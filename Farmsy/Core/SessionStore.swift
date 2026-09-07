@@ -58,6 +58,11 @@ final class SessionStore {
     /// without a real account. Never true in release builds.
     var isDemoSession = false
 
+    init() {
+        // `is_member` on every analytics event, read live from the profile.
+        Observability.isMemberProvider = { [weak self] in self?.hasFullAccess ?? false }
+    }
+
     var isAuthenticated: Bool {
         #if DEBUG
         if isDemoSession { return true }
@@ -86,8 +91,16 @@ final class SessionStore {
 
     func bootstrap() async {
         session = try? await supabase.auth.session
-        if session != nil { await refreshProfile() }
+        if let restored = session {
+            // Identify before the first event so app_opened lands on the person
+            // rather than on an anonymous id that only merges later.
+            Observability.identify(userId: restored.user.id.uuidString)
+            await refreshProfile()
+        }
         isBootstrapped = true
+        // Cold start, after the session and profile restored — any earlier and
+        // is_member is wrong on the very first event of every session.
+        Observability.capture(.appOpened)
 
         Task { [weak self] in
             for await state in supabase.auth.authStateChanges {
@@ -214,7 +227,11 @@ final class SessionStore {
 
         let (data, status) = try await postJSON(path: "auth/signup", body: body)
         switch status {
-        case 200, 201: return       // no session yet; caller shows "verify your email"
+        case 200, 201:
+            // No session yet — verification comes first — so this is not a login.
+            Observability.capture(.signupCompleted,
+                                  [AnalyticsProp.method: AnalyticsValue.Method.email.rawValue])
+            return
         case 409: throw AuthError.emailTaken
         case 429: throw AuthError.throttled
         case 400:
