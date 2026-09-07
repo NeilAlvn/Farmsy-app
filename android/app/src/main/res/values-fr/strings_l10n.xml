@@ -340,4 +340,29 @@
     <string name="survey_feedback_thanks">Merci, nous lisons tout.</string>
     <string name="survey_feedback_more">Ajouter autre chose</string>
     <string name="survey_feedback_failed">L’envoi a échoué. Réessayez.</string>
+
+    <!-- S8 LockedAccessView + S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
+    <string name="stat_thousands">Des milliers</string>
+    <string name="categories">catégories</string>
+    <string name="coverage">couverture</string>
+    <string name="membership_expired_title">Votre abonnement a expiré</string>
+    <string name="unlock_every_farm">Débloquez toutes les fermes</string>
+    <string name="lock_body_expired">Réabonnez-vous pour retrouver horaires, coordonnées, photos et plus — pour %1$s et toutes les autres fermes sur la carte.</string>
+    <string name="lock_body_normal">Horaires, coordonnées, photos et plus — pour %1$s et toutes les autres fermes sur la carte.</string>
+    <string name="memberships_cant_load">Les abonnements ne peuvent pas être chargés pour le moment.</string>
+    <string name="memberships_load_retry">Vérifiez votre connexion et réessayez.</string>
+    <string name="start_from_my_location">Choisissez un point de départ</string>
+    <string name="saved_trips_pro">Les trajets enregistrés sont une fonction Farmsy Pro.</string>
+    <string name="pro_unlock_title">Débloquez Farmsy Pro</string>
+    <string name="pro_unlock_sub">Trouvez ce qui est ouvert à la minute et filtrez par type de lieu. Annulable à tout moment.</string>
+    <string name="pro_included_in_both">Inclus dans les deux formules</string>
+    <string name="pro_feature_open_now">Voyez ce qui est ouvert maintenant, pas seulement aujourd\'hui</string>
+    <string name="pro_feature_filter">Filtrez par type de lieu et par mode de culture</string>
+    <string name="pro_feature_email">Un e-mail quand une ferme enregistrée publie du nouveau</string>
+    <string name="pro_feature_everything">Toutes les nouveautés que nous ajoutons à Pro, incluses</string>
+    <string name="pro_try_free_3">Essayez gratuitement pendant 3 jours</string>
+    <string name="pro_get_yearly">Prendre l\'annuel</string>
+    <string name="pro_buy_lifetime">Acheter l\'accès à vie</string>
+    <string name="pro_3days_then_year">3 jours gratuits · puis %1$s/an</string>
+    <string name="pro_lifetime_onetime">Paiement unique · sans renouvellement</string>
 </resources>

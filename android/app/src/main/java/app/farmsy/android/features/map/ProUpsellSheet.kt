@@ -36,12 +36,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalPurchases
 import app.farmsy.android.LocalSession
+import app.farmsy.android.R
 import app.farmsy.android.features.detail.PlanButton
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
@@ -56,7 +58,9 @@ import kotlinx.coroutines.launch
 /// option 2): unlike `LockedAccessView` it takes no farm. The plan buttons use the
 /// SAME native Play purchase flow (`purchases.purchase(activity, pkg, userId)`) those
 /// 19 Play purchases came through — NOT a web billing URL (Aviah later-8). Copy is the
-/// web's `account.gate*` keys, authored inline en (matching the survey chrome approach).
+/// web's `account.gate*` keys, localized in `pro_*` string resources (nl/fr/de) — P0-7.
+/// (iOS ProUpsellSheet still carries these same strings English-only in its catalog;
+/// flagged to Aviah so the canonical voice can be reconciled + backfilled there.)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProUpsellSheet(onDismiss: () -> Unit) {
@@ -92,10 +96,10 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
     // saving + trip-planning (both free since 29 Aug) and called the filters "coming"
     // when they've shipped; Aviah fixed both. Lead with open-now.
     val features = listOf(
-        "See what is open right now, not just open today",
-        "Filter by kind of place, and by how it is grown",
-        "An email when a farm you saved posts something new",
-        "Everything new we add to Pro, included",
+        stringResource(R.string.pro_feature_open_now),
+        stringResource(R.string.pro_feature_filter),
+        stringResource(R.string.pro_feature_email),
+        stringResource(R.string.pro_feature_everything),
     )
     val userId = session.session.collectAsState().value?.user?.id
     val productsUnavailable = didLoadOffering && yearlyPkg == null
@@ -110,10 +114,10 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
             // Header: "Farmsy" kicker + the reason title (a filter tap = unlock).
             Spacer(Modifier.size(4.dp))
             Kicker("Farmsy")
-            Text("Unlock Farmsy Pro", style = display(28.sp, FontWeight.SemiBold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.pro_unlock_title), style = display(28.sp, FontWeight.SemiBold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
             // Subheading (account.gateSubUnlock) — leads with open-now.
             Text(
-                "Find what is open at this minute, and filter by the kind of place. Cancel anytime.",
+                stringResource(R.string.pro_unlock_sub),
                 style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
             )
 
@@ -121,11 +125,11 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                 Text(it, style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.warnRed, textAlign = TextAlign.Center)
             }
 
-            val fallback = "Become a member"
+            val fallback = stringResource(R.string.become_a_member)
             when {
                 isPurchasing || isChecking -> CircularProgressIndicator(color = FarmsyColors.farmGreen)
                 productsUnavailable -> Text(
-                    "Memberships can't be loaded right now.",
+                    stringResource(R.string.memberships_cant_load),
                     style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
                     modifier = Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
                         scope.launch { purchases.loadOffering(force = true) }
@@ -139,8 +143,8 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                     val trialDays = purchases.yearlyFreeTrialDays
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         PlanButton(
-                            label = if (trialDays != null) "Try free for 3 days" else "Get yearly",
-                            detail = purchases.yearlyPrice?.let { if (trialDays != null) "3 days free · then $it/year" else "$it / year" },
+                            label = if (trialDays != null) stringResource(R.string.pro_try_free_3) else stringResource(R.string.pro_get_yearly),
+                            detail = purchases.yearlyPrice?.let { if (trialDays != null) stringResource(R.string.pro_3days_then_year, it) else stringResource(R.string.price_per_year_arg, it) },
                             filled = true, fallbackLabel = fallback,
                         ) {
                             val activity = context as? Activity ?: return@PlanButton
@@ -152,8 +156,8 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                             // in the shared single-button PlanButton; flagged as a
                             // follow-up (needs custom plan cards). Copy is correct here.
                             PlanButton(
-                                label = "Buy lifetime access",
-                                detail = "$price · One-time · no renewals",
+                                label = stringResource(R.string.pro_buy_lifetime),
+                                detail = "$price · ${stringResource(R.string.pro_lifetime_onetime)}",
                                 filled = false, fallbackLabel = fallback,
                             ) {
                                 val activity = context as? Activity ?: return@PlanButton
@@ -162,7 +166,7 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                         }
                     }
                     Text(
-                        "Restore purchases",
+                        stringResource(R.string.restore_purchases),
                         style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
                         modifier = Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
                             scope.launch { if (purchases.restore()) awaitGrant() }
@@ -175,7 +179,7 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
             // sheet is a third frame around something framed twice).
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 HorizontalDivider(color = FarmsyColors.hairline)
-                Text("Included in both plans", style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted)
+                Text(stringResource(R.string.pro_included_in_both), style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted)
                 features.forEach { line ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Filled.Check, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(13.dp).padding(top = 2.dp))

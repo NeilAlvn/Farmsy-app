@@ -340,4 +340,29 @@
     <string name="survey_feedback_thanks">Danke, wir lesen alles.</string>
     <string name="survey_feedback_more">Noch etwas hinzufügen</string>
     <string name="survey_feedback_failed">Senden fehlgeschlagen. Bitte noch einmal versuchen.</string>
+
+    <!-- S8 LockedAccessView + S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
+    <string name="stat_thousands">Tausende</string>
+    <string name="categories">Kategorien</string>
+    <string name="coverage">Abdeckung</string>
+    <string name="membership_expired_title">Deine Mitgliedschaft ist abgelaufen</string>
+    <string name="unlock_every_farm">Alle Höfe freischalten</string>
+    <string name="lock_body_expired">Schließe erneut ab, um Öffnungszeiten, Kontaktdaten, Fotos und mehr zu sehen — für %1$s und jeden anderen Hof auf der Karte.</string>
+    <string name="lock_body_normal">Öffnungszeiten, Kontaktdaten, Fotos und mehr — für %1$s und jeden anderen Hof auf der Karte.</string>
+    <string name="memberships_cant_load">Mitgliedschaften können gerade nicht geladen werden.</string>
+    <string name="memberships_load_retry">Prüfe deine Verbindung und versuch es erneut.</string>
+    <string name="start_from_my_location">Wähle einen Ausgangspunkt</string>
+    <string name="saved_trips_pro">Gespeicherte Touren sind eine Farmsy-Pro-Funktion.</string>
+    <string name="pro_unlock_title">Farmsy Pro freischalten</string>
+    <string name="pro_unlock_sub">Finde, was in dieser Minute geöffnet ist, und filtere nach Art des Orts. Jederzeit kündbar.</string>
+    <string name="pro_included_in_both">In beiden Tarifen enthalten</string>
+    <string name="pro_feature_open_now">Sieh, was gerade jetzt geöffnet ist, nicht nur heute</string>
+    <string name="pro_feature_filter">Filtere nach Art des Orts und nach Anbauweise</string>
+    <string name="pro_feature_email">Eine E-Mail, wenn ein gespeicherter Hof etwas Neues postet</string>
+    <string name="pro_feature_everything">Alles Neue, das wir zu Pro hinzufügen, inklusive</string>
+    <string name="pro_try_free_3">3 Tage kostenlos testen</string>
+    <string name="pro_get_yearly">Jährlich holen</string>
+    <string name="pro_buy_lifetime">Lebenslangen Zugang kaufen</string>
+    <string name="pro_3days_then_year">3 Tage gratis · dann %1$s/Jahr</string>
+    <string name="pro_lifetime_onetime">Einmalig · keine Verlängerung</string>
 </resources>
