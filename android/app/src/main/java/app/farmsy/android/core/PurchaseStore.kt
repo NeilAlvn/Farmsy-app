@@ -165,8 +165,12 @@ class PurchaseStore {
     suspend fun purchase(activity: Activity, pkg: Package?, userId: String?): Boolean {
         if (pkg == null) {
             _purchaseError.value = "unavailable"
+            Observability.capture(AnalyticsEvent.PURCHASE_FAILED, mapOf(AnalyticsProp.REASON to AnalyticsValue.Reason.PRODUCT_UNAVAILABLE.key))
             return false
         }
+        // The tap, before the Play sheet appears.
+        val plan = planOf(pkg)
+        Observability.capture(AnalyticsEvent.PLAN_TAPPED, mapOf(AnalyticsProp.PLAN to plan))
         if (enabled && userId != null && Purchases.sharedInstance.appUserID != userId) {
             runCatching { Purchases.sharedInstance.awaitLogIn(userId) }
         }
@@ -176,8 +180,13 @@ class PurchaseStore {
             Purchases.sharedInstance.awaitPurchase(
                 PurchaseParams.Builder(activity, pkg).build()
             )
+            Observability.capture(
+                AnalyticsEvent.PURCHASE_COMPLETED,
+                mapOf(AnalyticsProp.PLAN to plan, AnalyticsProp.STORE to AnalyticsValue.Store.PLAY_STORE.key),
+            )
             true
         } catch (e: Exception) {
+            Observability.capture(AnalyticsEvent.PURCHASE_FAILED, mapOf(AnalyticsProp.REASON to failureReason(e).key))
             // A user-cancelled purchase isn't an error worth surfacing.
             if (e is PurchasesException && e.code == PurchasesErrorCode.PurchaseCancelledError) {
                 false
@@ -190,8 +199,26 @@ class PurchaseStore {
         }
     }
 
+    /// `plan` for the analytics events: which of the two products this package is.
+    private fun planOf(pkg: Package): String =
+        if (pkg.product.id.startsWith(LIFETIME_PRODUCT_ID)) AnalyticsValue.Plan.LIFETIME.key
+        else AnalyticsValue.Plan.YEARLY.key
+
+    /// A short code for `reason`, never `e.message` — that string is translated,
+    /// and a German failure has to land in the same bucket as a Dutch one.
+    private fun failureReason(e: Exception): AnalyticsValue.Reason {
+        val code = (e as? PurchasesException)?.code ?: return AnalyticsValue.Reason.STORE_ERROR
+        return when (code) {
+            PurchasesErrorCode.PurchaseCancelledError -> AnalyticsValue.Reason.CANCELLED
+            PurchasesErrorCode.NetworkError -> AnalyticsValue.Reason.NETWORK
+            PurchasesErrorCode.ProductNotAvailableForPurchaseError -> AnalyticsValue.Reason.PRODUCT_UNAVAILABLE
+            else -> AnalyticsValue.Reason.STORE_ERROR
+        }
+    }
+
     /// Play requires a restore path for subscriptions too.
     suspend fun restore(): Boolean {
+        Observability.capture(AnalyticsEvent.RESTORE_TAPPED)
         if (!enabled) return false
         _isPurchasing.value = true
         _purchaseError.value = null
