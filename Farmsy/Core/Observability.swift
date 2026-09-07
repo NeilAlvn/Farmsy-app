@@ -51,9 +51,24 @@ enum Observability {
         if !Backend.sentryDSN.isEmpty { SentrySDK.configureScope { $0.setUser(nil) } }
     }
 
-    /// Fire-and-forget product event.
-    static func capture(_ event: String, _ props: [String: Any] = [:]) {
+    /// Answers "is this person a member right now?" for the `is_member` property.
+    /// Read at fire time, never cached at launch, so someone who buys mid-session
+    /// flips on their next event. SessionStore installs the real answer.
+    @MainActor static var isMemberProvider: @MainActor () -> Bool = { false }
+
+    private static let appVersion: String =
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+
+    /// Fire-and-forget product event. The name has to be an `AnalyticsEvent` —
+    /// there is no string overload, so a typo cannot create a new event — and
+    /// every event carries `is_member`, `platform` and `app_version`.
+    @MainActor
+    static func capture(_ event: AnalyticsEvent, _ props: [String: Any] = [:]) {
         guard !Backend.postHogKey.isEmpty else { return }
-        PostHogSDK.shared.capture(event, properties: props)
+        var all = props
+        all[AnalyticsProp.isMember] = isMemberProvider()
+        all[AnalyticsProp.platform] = "ios"
+        all[AnalyticsProp.appVersion] = appVersion
+        PostHogSDK.shared.capture(event.rawValue, properties: all)
     }
 }

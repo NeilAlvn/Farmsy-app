@@ -55,6 +55,18 @@ data class SignUpDetails(
 /// Supabase client session on-device.
 class SessionStore(private val scope: CoroutineScope) {
 
+    init {
+        // `is_member` on every analytics event, read live from the profile.
+        Observability.isMemberProvider = { hasFullAccess }
+    }
+
+    /// app_opened fires once per process, after the session restored (or the
+    /// bootstrap gave up waiting), so `is_member` is right on the first event.
+    private val appOpenedFired = java.util.concurrent.atomic.AtomicBoolean(false)
+    private fun fireAppOpened() {
+        if (appOpenedFired.compareAndSet(false, true)) Observability.capture(AnalyticsEvent.APP_OPENED)
+    }
+
     private val _session = MutableStateFlow<UserSession?>(null)
     val session: StateFlow<UserSession?> = _session.asStateFlow()
 
@@ -88,6 +100,7 @@ class SessionStore(private val scope: CoroutineScope) {
         scope.launch {
             delay(2500)
             _isBootstrapped.value = true
+            fireAppOpened()
         }
         scope.launch {
             // Mirror iOS: observe auth state; the Auth plugin loads the stored
@@ -104,6 +117,7 @@ class SessionStore(private val scope: CoroutineScope) {
                             Observability.identify(it)
                         }
                         refreshProfile()
+                        fireAppOpened()
                     }
                     is SessionStatus.NotAuthenticated -> {
                         _session.value = null
@@ -111,10 +125,11 @@ class SessionStore(private val scope: CoroutineScope) {
                         _isBootstrapped.value = true
                         PurchaseStore.signOut()
                         Observability.reset()
+                        fireAppOpened()
                     }
                     // RefreshFailure (offline, expired refresh token) and any
                     // other terminal state: stop blocking the UI.
-                    is SessionStatus.RefreshFailure -> _isBootstrapped.value = true
+                    is SessionStatus.RefreshFailure -> { _isBootstrapped.value = true; fireAppOpened() }
                     else -> Unit // Initializing / load from storage in flight
                 }
             }
@@ -225,7 +240,11 @@ class SessionStore(private val scope: CoroutineScope) {
         }
         val (body, status) = postJson("auth/signup", payload)
         when (status) {
-            200, 201 -> Unit // verify-email screen next; no session yet
+            // Verify-email screen next; no session yet, so this is not a login.
+            200, 201 -> Observability.capture(
+                AnalyticsEvent.SIGNUP_COMPLETED,
+                mapOf(AnalyticsProp.METHOD to AnalyticsValue.Method.EMAIL.key),
+            )
             409 -> throw AuthException.EmailTaken()
             429 -> throw AuthException.Throttled()
             400 -> when (errorCode(body)) {

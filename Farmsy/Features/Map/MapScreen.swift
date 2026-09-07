@@ -214,6 +214,7 @@ struct MapScreen: View {
             // Filters live on the search bar, web-style: tapping slides a sheet up.
             Button {
                 Haptics.tap()
+                Observability.capture(.filtersOpened)
                 showFilters = true
             } label: {
                 Image(systemName: filtersActive ? "line.3.horizontal.decrease.circle.fill"
@@ -768,18 +769,18 @@ struct FilterSheet: View {
                     // axis groups moved into Pro from the free rail.
                     divider
                     sectionHeader(String(localized: "Farmsy Pro"))
-                    proRow(icon: "clock.badge.checkmark", label: String(localized: "Open right now"),
+                    proRow(id: AnalyticsValue.Filter.openNow, icon: "clock.badge.checkmark", label: String(localized: "Open right now"),
                            isOn: farms.filterOpenNow) { farms.filterOpenNow.toggle() }
-                    proRow(icon: "calendar", label: String(localized: "Open Saturday"),
+                    proRow(id: AnalyticsValue.Filter.openSaturday, icon: "calendar", label: String(localized: "Open Saturday"),
                            isOn: farms.filterOpenSaturday) { farms.filterOpenSaturday.toggle() }
-                    proRow(icon: "calendar", label: String(localized: "Open Sunday"),
+                    proRow(id: AnalyticsValue.Filter.openSunday, icon: "calendar", label: String(localized: "Open Sunday"),
                            isOn: farms.filterOpenSunday) { farms.filterOpenSunday.toggle() }
 
                     // Type of place — an axis group, now Pro. Combines with categories.
                     divider
                     sectionHeader(String(localized: "Type of place"))
                     ForEach(FarmAxis.placeTypes) { v in
-                        proRow(icon: v.icon, label: v.label,
+                        proRow(id: v.id, icon: v.icon, label: v.label,
                                isOn: farms.selectedPlaceTypes.contains(v.id)) {
                             if farms.selectedPlaceTypes.contains(v.id) { farms.selectedPlaceTypes.remove(v.id) }
                             else { farms.selectedPlaceTypes.insert(v.id) }
@@ -789,7 +790,7 @@ struct FilterSheet: View {
                     divider
                     sectionHeader(String(localized: "How it's grown"))
                     ForEach(FarmAxis.methods) { v in
-                        proRow(icon: v.icon, label: v.label,
+                        proRow(id: v.id, icon: v.icon, label: v.label,
                                isOn: farms.selectedMethods.contains(v.id)) {
                             if farms.selectedMethods.contains(v.id) { farms.selectedMethods.remove(v.id) }
                             else { farms.selectedMethods.insert(v.id) }
@@ -814,12 +815,21 @@ struct FilterSheet: View {
     /// it renders dimmed with a lock and a tap opens the upsell (signed out → sign-in
     /// first) instead of toggling — "shown, not hidden" so people see what Pro buys.
     @ViewBuilder
-    private func proRow(icon: String, label: String, isOn: Bool, toggle: @escaping () -> Void) -> some View {
+    private func proRow(id: String, icon: String, label: String, isOn: Bool, toggle: @escaping () -> Void) -> some View {
         if proLocked {
             row(icon: icon, emoji: nil, tint: Color.inkMuted, label: label,
                 trailing: nil, isOn: false, lockedTrailing: true) {
                 Haptics.tap()
-                if session.isAuthenticated { showPro = true } else { requestAuth() }
+                if session.isAuthenticated {
+                    // A signed-in non-member on a locked row: the tap, then the sheet
+                    // it opens. A signed-out tap goes to sign-in, not to a paywall.
+                    Observability.capture(.proFilterTapped, [AnalyticsProp.filter: id])
+                    Observability.capture(.paywallViewed,
+                                          [AnalyticsProp.trigger: AnalyticsValue.Trigger.filterRow.rawValue])
+                    showPro = true
+                } else {
+                    requestAuth()
+                }
             }
             .opacity(0.5)
         } else {

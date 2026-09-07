@@ -62,6 +62,10 @@ import app.farmsy.android.ui.theme.card
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import app.farmsy.android.core.Observability
+import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsEvent
 
 /// S8 · LockedAccessView — the paywall shown inside the FarmDetail gate when a
 /// non-member opens a farm. Ported 1:1 from iOS `LockedAccessView` (FarmDetailView.
@@ -91,6 +95,20 @@ fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit = {}, onRecheck: suspend 
     val successHaptic: () -> Unit = {
         if (android.os.Build.VERSION.SDK_INT >= 30) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         else haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
+
+    // The purchase sheet is on screen. Once per appearance, not per recomposition.
+    //
+    // This lived in the private copy of this composable inside FarmDetailScreen,
+    // which was deleted as the duplicate it always was. Merging that deletion
+    // without carrying the event across would have lost farm_detail from the
+    // paywall funnel silently, which is the failure mode analytics has: nothing
+    // breaks, a number is just quietly wrong.
+    LaunchedEffect(Unit) {
+        Observability.capture(
+            AnalyticsEvent.PAYWALL_VIEWED,
+            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.FARM_DETAIL.key),
+        )
     }
     var isChecking by remember { mutableStateOf(false) }
 
