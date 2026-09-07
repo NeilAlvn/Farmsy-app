@@ -41,6 +41,33 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
 
+      # The unit tests (FarmsyTests) are hosted in the app, so they need a booted
+      # simulator. Pick whichever iPhone the runner's Xcode ships rather than
+      # hardcoding a model that the next Xcode renames.
+      # -only-testing:FarmsyTests, because the scheme also carries
+      # FarmsyUITests — the ScreenshotTour that drives the app to produce App
+      # Store screenshots. That tour needs a real environment and fails on a
+      # bare runner, which would leave every pull request red for a reason
+      # with nothing to do with the change under review. The unit tests are
+      # the gate. The tour is a tool you run on purpose.
+      - name: Test (FarmsyTests on a simulator)
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)['devices']
+          print(next(x['udid'] for k in sorted(d, reverse=True) if 'iOS' in k
+                     for x in d[k] if x['name'].startswith('iPhone')))")
+          xcodebuild test -quiet \
+            -project Farmsy.xcodeproj \
+            -scheme Farmsy \
+            -configuration Debug \
+            -destination "id=$UDID" \
+            -only-testing:FarmsyTests \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
   android:
     name: Android (assembleDebug)
     runs-on: ubuntu-latest
