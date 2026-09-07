@@ -1,13 +1,11 @@
 name: Compile check
 
-# Compiles both apps on every push to a non-main branch and on every PR.
+# Compiles both apps on every pull request (and on demand).
 # No signing, no secrets, no archive: keys stay empty and every feature that
 # needs one is a no-op without it, so this proves "it builds", not behaviour.
 # It exists so a change can be checked without anyone installing Xcode or
 # Android Studio. The TestFlight archive stays in testflight.yml.
 on:
-  push:
-    branches-ignore: [main]
   pull_request:
   workflow_dispatch:
 
@@ -63,9 +61,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # gradle.properties pins org.gradle.java.home to a Homebrew JDK path that
+      # only exists on a developer Mac. On the runner that path is invalid and
+      # Gradle refuses to start, so drop the line and let setup-java's JDK apply.
       - name: Build (Debug)
         working-directory: android
         run: |
+          sed -i '/^org\.gradle\.java\.home=/d' gradle.properties
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
