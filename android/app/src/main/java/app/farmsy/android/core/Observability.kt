@@ -55,9 +55,20 @@ object Observability {
         if (Backend.SENTRY_DSN.isNotEmpty()) Sentry.configureScope { it.user = null }
     }
 
-    /// Fire-and-forget product event.
-    fun capture(event: String, props: Map<String, Any> = emptyMap()) {
+    /// Answers "is this person a member right now?" for the `is_member` property.
+    /// Read at fire time, never cached at launch, so someone who buys mid-session
+    /// flips on their next event. SessionStore installs the real answer.
+    var isMemberProvider: () -> Boolean = { false }
+
+    /// Fire-and-forget product event. The name has to be an `AnalyticsEvent` —
+    /// there is no string overload, so a typo cannot create a new event — and
+    /// every event carries `is_member`, `platform` and `app_version`.
+    fun capture(event: AnalyticsEvent, props: Map<String, Any> = emptyMap()) {
         if (Backend.POSTHOG_KEY.isEmpty()) return
-        PostHog.capture(event, properties = props)
+        val all = HashMap<String, Any>(props)
+        all[AnalyticsProp.IS_MEMBER] = isMemberProvider()
+        all[AnalyticsProp.PLATFORM] = "android"
+        all[AnalyticsProp.APP_VERSION] = BuildConfig.VERSION_NAME
+        PostHog.capture(event.key, properties = all)
     }
 }

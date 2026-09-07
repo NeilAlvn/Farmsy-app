@@ -22,6 +22,9 @@ struct OnboardingView: View {
 
     enum Step: Int, CaseIterable {
         case welcome, personalize, location, details, nearby, notify, done
+
+        /// The `step` property on the onboarding events: the case name as-is.
+        var analyticsName: String { String(describing: self) }
     }
 
     @State private var step: Step = .welcome
@@ -96,7 +99,7 @@ struct OnboardingView: View {
     private func stepContent(for s: Step) -> some View {
         switch s {
         case .welcome:
-            WelcomeStep(onLogin: { showLogin = true }, onSkip: { advance() })
+            WelcomeStep(onLogin: { showLogin = true }, onSkip: { skip() })
         case .personalize:
             PersonalizeStep(selected: $selectedCats) { advance() }
         case .location:
@@ -108,7 +111,7 @@ struct OnboardingView: View {
         case .details:
             DetailsStep(prefs: $prefs,
                         onShowFarms: { applyPrefs = true; advance() },
-                        onSkip: { applyPrefs = false; advance() })
+                        onSkip: { applyPrefs = false; skip() })
         case .nearby:
             NearbyStep(coord: focusCoord, label: chosenLabel) { advance() }
         case .notify:
@@ -144,9 +147,19 @@ struct OnboardingView: View {
         return Double(step.rawValue) / Double(mid)
     }
 
+    /// Leaving a step forwards. Fires for the step being left, skipped or not — a
+    /// skipped welcome still reaches personalize, and the funnel should say so.
     private func advance() {
         Haptics.tap()
+        Observability.capture(.onboardingStepCompleted, [AnalyticsProp.step: step.analyticsName])
         if let next = Step(rawValue: step.rawValue + 1) { step = next }
+    }
+
+    /// The two skip paths, welcome and details: recorded as a skip, then advanced
+    /// like any other step.
+    private func skip() {
+        Observability.capture(.onboardingSkipped, [AnalyticsProp.step: step.analyticsName])
+        advance()
     }
 
     private func goBack() {
@@ -156,6 +169,8 @@ struct OnboardingView: View {
     /// Carry the user's choices into the map, then hand off.
     private func finish() {
         Haptics.success()
+        // Leaving `done`, the seventh step, so the funnel reaches its last bar.
+        Observability.capture(.onboardingStepCompleted, [AnalyticsProp.step: step.analyticsName])
         farms.selectedCategories = selectedCats
         if applyPrefs {
             farms.filterVerified  = prefs.verified

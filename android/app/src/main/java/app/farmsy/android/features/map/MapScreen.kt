@@ -103,6 +103,10 @@ import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FarmAxis
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
@@ -603,7 +607,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                         // Filter lives on the search bar, web-style — tap slides the sheet up.
                         Icon(
                             Icons.Filled.FilterList, null, tint = FarmsyColors.farmGreenMap,
-                            modifier = Modifier.size(22.dp).clickable { showFilters = true },
+                            modifier = Modifier.size(22.dp).clickable { Observability.capture(AnalyticsEvent.FILTERS_OPENED); showFilters = true },
                         )
                         if (filtersOn) {
                             Box(Modifier.size(7.dp).background(FarmsyColors.farmGreenMap, CircleShape))
@@ -719,9 +723,17 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
     val profile by session.profile.collectAsState()
     val proLocked = profile?.hasFullAccess != true
     var showPro by remember { mutableStateOf(false) }
-    fun onProTap(toggle: () -> Unit) {
+    fun onProTap(id: String, toggle: () -> Unit) {
         if (!proLocked) { toggle(); return }
-        if (session.isAuthenticated) showPro = true else requestAuth()
+        if (session.isAuthenticated) {
+            // A signed-in non-member on a locked row: the tap, then the sheet it
+            // opens. A signed-out tap goes to sign-in, not to a paywall.
+            Observability.capture(AnalyticsEvent.PRO_FILTER_TAPPED, mapOf(AnalyticsProp.FILTER to id))
+            Observability.capture(AnalyticsEvent.PAYWALL_VIEWED, mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.FILTER_ROW.key))
+            showPro = true
+        } else {
+            requestAuth()
+        }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = FarmsyColors.cream) {
@@ -770,15 +782,15 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
             FilterSectionHeader(stringResource(R.string.farmsy_pro))
             FilterRow(icon = Icons.Filled.Schedule, label = stringResource(R.string.pro_open_now),
                 isOn = fOpenNow, lockedTrailing = proLocked, dimmed = proLocked) {
-                onProTap { farms.filterOpenNow.value = !fOpenNow }
+                onProTap(AnalyticsValue.Filter.OPEN_NOW) { farms.filterOpenNow.value = !fOpenNow }
             }
             FilterRow(icon = Icons.Filled.CalendarMonth, label = stringResource(R.string.pro_open_saturday),
                 isOn = fOpenSat, lockedTrailing = proLocked, dimmed = proLocked) {
-                onProTap { farms.filterOpenSaturday.value = !fOpenSat }
+                onProTap(AnalyticsValue.Filter.OPEN_SATURDAY) { farms.filterOpenSaturday.value = !fOpenSat }
             }
             FilterRow(icon = Icons.Filled.CalendarMonth, label = stringResource(R.string.pro_open_sunday),
                 isOn = fOpenSun, lockedTrailing = proLocked, dimmed = proLocked) {
-                onProTap { farms.filterOpenSunday.value = !fOpenSun }
+                onProTap(AnalyticsValue.Filter.OPEN_SUNDAY) { farms.filterOpenSunday.value = !fOpenSun }
             }
 
             // Type of place — an axis group, now Pro. Combines with categories.
@@ -788,7 +800,7 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
                 val on = v.id in placeTypes
                 FilterRow(icon = axisIcon(v.id), label = stringResource(v.labelRes),
                     isOn = on, lockedTrailing = proLocked, dimmed = proLocked) {
-                    onProTap { farms.selectedPlaceTypes.value = placeTypes.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
+                    onProTap(v.id) { farms.selectedPlaceTypes.value = placeTypes.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
                 }
             }
 
@@ -798,7 +810,7 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
                 val on = v.id in methods
                 FilterRow(icon = axisIcon(v.id), label = stringResource(v.labelRes),
                     isOn = on, lockedTrailing = proLocked, dimmed = proLocked) {
-                    onProTap { farms.selectedMethods.value = methods.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
+                    onProTap(v.id) { farms.selectedMethods.value = methods.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
                 }
             }
 

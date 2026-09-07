@@ -1,0 +1,82 @@
+name: Compile check
+
+# Compiles both apps on every pull request (and on demand).
+# No signing, no secrets, no archive: keys stay empty and every feature that
+# needs one is a no-op without it, so this proves "it builds", not behaviour.
+# It exists so a change can be checked without anyone installing Xcode or
+# Android Studio. The TestFlight archive stays in testflight.yml.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ios:
+    name: iOS (Xcode 26, simulator, unsigned)
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XC" ]; then
+            echo "No Xcode 26 found on runner. Available Xcodes:"; ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+
+      # -quiet keeps only warnings and errors in the log, so a failure is
+      # readable without scrolling through thousands of lines of Xcode noise.
+      - name: Build (Debug, iOS Simulator)
+        run: |
+          xcodebuild build -quiet \
+            -project Farmsy.xcodeproj \
+            -scheme Farmsy \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
+  android:
+    name: Android (assembleDebug)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Installs the compileSdk (36) and accepts its licence; the runner's
+      # preinstalled SDK does not always carry the newest platform.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0 platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # gradle.properties pins org.gradle.java.home to a Homebrew JDK path that
+      # only exists on a developer Mac. On the runner that path is invalid and
+      # Gradle refuses to start, so drop the line and let setup-java's JDK apply.
+      - name: Build (Debug)
+        working-directory: android
+        run: |
+          sed -i '/^org\.gradle\.java\.home=/d' gradle.properties
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+  # One check for the P0-1 rule that the iOS and Android analytics constants
+  # never drift: same events, keys and values in the same order.
+  analytics-parity:
+    name: Analytics constants parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/analytics-parity.sh

@@ -73,6 +73,10 @@ import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.SurveyApi
 import app.farmsy.android.core.SurveyGate
@@ -164,10 +168,16 @@ fun MainScreen() {
     val scaffoldState = rememberBottomSheetScaffoldState(bottomSheetState = sheetState)
 
     /// Open a farm: fly the shared map + highlight the pin, and present the card.
-    fun openFarm(pin: FarmPin) {
+    fun openFarm(pin: FarmPin, source: AnalyticsValue.Source) {
         selectedPin = pin
         focusPin = pin
         route = SheetRoute.FARM
+        // Fired here, where the pin is set, not in a composable that recomposes.
+        // `source` is what tells whether the map or the feed sells.
+        Observability.capture(
+            AnalyticsEvent.FARM_OPENED,
+            mapOf(AnalyticsProp.OSM_ID to pin.osmId, AnalyticsProp.SOURCE to source.key),
+        )
     }
 
     fun requireAuth(then: SheetRoute) {
@@ -252,9 +262,9 @@ fun MainScreen() {
                         FarmDetailScreen(pin = pin, onBack = { route = null })
                     }
                     // iOS routes the Discover pill to WhatsNewSheet (S6), not the feed.
-                    SheetRoute.DISCOVER -> WhatsNewSheet(onOpenFarm = { openFarm(it) }, onClose = { route = null })
-                    SheetRoute.SAVED -> SavedScreen(onOpenFarm = { openFarm(it) })
-                    SheetRoute.TRIPS -> TripsScreen(collapsed = collapsed, onOpenFarm = { openFarm(it) })
+                    SheetRoute.DISCOVER -> WhatsNewSheet(onOpenFarm = { openFarm(it, AnalyticsValue.Source.WHATS_NEW) }, onClose = { route = null })
+                    SheetRoute.SAVED -> SavedScreen(onOpenFarm = { openFarm(it, AnalyticsValue.Source.SAVED) })
+                    SheetRoute.TRIPS -> TripsScreen(collapsed = collapsed, onOpenFarm = { openFarm(it, AnalyticsValue.Source.TRIPS) })
                     SheetRoute.SETTINGS -> SettingsScreen()
                     null -> Box(Modifier.size(1.dp))
                 }
@@ -263,7 +273,7 @@ fun MainScreen() {
     ) {
         // The single shared map (base layer) + the floating pill over it.
         Box(Modifier.fillMaxSize()) {
-            MapScreen(onOpenFarm = { openFarm(it) }, focusPin = focusPin, bottomInset = 104.dp)
+            MapScreen(onOpenFarm = { openFarm(it, AnalyticsValue.Source.MAP_PIN) }, focusPin = focusPin, bottomInset = 104.dp)
 
             // Background-interaction scope: iOS enables it `upThrough` the partial
             // detent (0.55 / 0.5) for every pill route, and blocks continuously above
