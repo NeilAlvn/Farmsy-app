@@ -321,18 +321,17 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             }
                         }
                         Spacer(Modifier.height(16.dp))
-                        // Claim link
-                        Row(
-                            Modifier.fillMaxWidth()
-                                .background(FarmsyColors.farmGreenSoft, RoundedCornerShape(14.dp))
-                                .clickable { showClaim = true }.padding(vertical = 13.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            FitText(
-                                stringResource(R.string.is_this_your_farm_claim_it),
-                                style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen
-                            )
-                        }
+                        // S9 · Member sections — the reviews block (summary + list +
+                        // your-own composer), the farm's What's-New posts (+ composer),
+                        // and the claim block. 1:1 with iOS FarmDetailView.detailSections.
+                        // Supersedes the old standalone claim link: FarmMemberSections
+                        // carries its own claim block, wired to the same native ClaimSheet
+                        // through showClaim.
+                        FarmMemberSections(
+                            pin = pin,
+                            detail = detail,
+                            onClaim = { showClaim = true },
+                        )
                     }
                     Spacer(Modifier.height(30.dp))
                 }
