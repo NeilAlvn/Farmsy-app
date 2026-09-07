@@ -11,7 +11,10 @@ import SwiftUI
 struct FarmsyApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: SessionStore
-    @State private var farms = FarmsStore()
+    @State private var farms: FarmsStore
+    /// Applies the device's saved preferences before the first render and keeps
+    /// them in step with the server from then on (the rule is in Preferences.swift).
+    @State private var preferencesSync: PreferencesSync
     @State private var favorites = FavoritesStore()
     @State private var locationManager = LocationManager()
     @State private var purchases = PurchaseStore()
@@ -35,6 +38,9 @@ struct FarmsyApp: App {
         store.isDemoSession = CommandLine.arguments.contains("--demo-session")
         #endif
         _session = State(initialValue: store)
+        let farmsStore = FarmsStore()
+        _farms = State(initialValue: farmsStore)
+        _preferencesSync = State(initialValue: PreferencesSync(farms: farmsStore, session: store))
     }
 
     var body: some Scene {
