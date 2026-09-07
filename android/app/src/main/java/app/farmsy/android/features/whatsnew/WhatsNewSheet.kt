@@ -53,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -66,6 +67,8 @@ import app.farmsy.android.R
 import app.farmsy.android.core.FarmContentApi
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.Ping
+import app.farmsy.android.features.detail.ImageLightbox
+import app.farmsy.android.features.detail.LightboxSource
 import app.farmsy.android.features.discover.RecommendationCarousel
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
@@ -91,6 +94,9 @@ fun WhatsNewSheet(onOpenFarm: (FarmPin) -> Unit, onClose: () -> Unit) {
 
     var pings by remember { mutableStateOf<List<Ping>>(emptyList()) }
     var loadingPings by remember { mutableStateOf(true) }
+    // S10 photo viewer, presented over the sheet when a post photo is tapped.
+    var lightbox by remember { mutableStateOf<LightboxSource?>(null) }
+    val fromAPost = stringResource(R.string.lightbox_from_a_post)
 
     LaunchedEffect(Unit) {
         pings = FarmContentApi.feedPosts(limit = 30)
@@ -140,10 +146,19 @@ fun WhatsNewSheet(onOpenFarm: (FarmPin) -> Unit, onClose: () -> Unit) {
                         ping = ping,
                         farmName = farm?.name,
                         onOpenFarm = { farm?.let { onOpenFarm(it) } },
-                        // PORT NOTE (S10 stub): iOS opens ImageLightbox on a photo tap.
-                        // S10 is not built this session, so the photo-tap target is
-                        // stubbed to open the farm instead. Tracked: S10 + wiring.
-                        onOpenImage = { farm?.let { onOpenFarm(it) } },
+                        // A post photo opens the S10 lightbox at that index — 1:1 with iOS
+                        // WhatsNewSheet.swift:59-64 (eyebrow "From a post", title author,
+                        // subtitle farm name, postText body).
+                        onOpenImage = { idx ->
+                            lightbox = LightboxSource(
+                                images = ping.images,
+                                startIndex = idx,
+                                eyebrow = fromAPost,
+                                title = ping.authorName,
+                                subtitle = farm?.name,
+                                postText = ping.body,
+                            )
+                        },
                     )
                 }
             }
@@ -172,6 +187,11 @@ fun WhatsNewSheet(onOpenFarm: (FarmPin) -> Unit, onClose: () -> Unit) {
             // Discovery carousel (C1 · reused RecommendationCarousel = iOS TripRecommendations).
             item { RecommendationCarousel(onOpenFarm = onOpenFarm, cardHeight = 156.dp) }
         }
+    }
+
+    // S10 photo viewer over the sheet — a Dialog (own window), so it adds no layout.
+    lightbox?.let { src ->
+        ImageLightbox(source = src, onClose = { lightbox = null })
     }
 }
 
@@ -232,7 +252,8 @@ fun PingCard(
                     Modifier.size(40.dp).background(FarmsyColors.farmGreen.copy(alpha = 0.12f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) { Text(initials, style = geist(14.sp, FontWeight.Bold), color = FarmsyColors.farmGreen) }
-                Column(Modifier.weight(1f)) {
+                // iOS author/farm VStack(spacing: 1) (DiscoverFeedView.swift:334).
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text(ping.authorName, style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.ink, maxLines = 1)
                     farmName?.let {
                         Text(it, style = geist(12.sp, FontWeight.Medium), color = FarmsyColors.farmGreenMap, maxLines = 1)
@@ -324,7 +345,8 @@ fun MultiImageFarmCard(pin: FarmPin, images: List<String>, teaser: String?, onOp
                     Text(pin.primaryCategory.emoji, fontSize = 18.sp)
                 }
             }
-            Column(Modifier.weight(1f)) {
+            // iOS VStack(spacing: 1) for name/city (WhatsNewSheet.swift:164).
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(pin.name, style = geist(14.sp, FontWeight.Bold), color = FarmsyColors.ink, maxLines = 1)
                 pin.city?.let { Text(it, style = geist(12.sp), color = FarmsyColors.inkMuted, maxLines = 1) }
             }
@@ -357,7 +379,18 @@ fun MultiImageFarmCard(pin: FarmPin, images: List<String>, teaser: String?, onOp
             }
             Text(
                 teaserText,
-                style = geist(13.sp).copy(lineHeight = 17.sp),
+                // iOS .lineSpacing(2) (WhatsNewSheet.swift:195): +2pt *between* lines only.
+                // Geist natural line height at 13sp = 16.90sp (typo metrics,
+                // includeFontPadding=false), so lineHeight = 16.90 + 2 = 18.9sp, with
+                // LineHeightStyle(Trim.Both) removing the leading above line 1 / below the
+                // last so the extra sits only between lines — exact match, not a near value.
+                style = geist(13.sp).copy(
+                    lineHeight = 18.9.sp,
+                    lineHeightStyle = LineHeightStyle(
+                        alignment = LineHeightStyle.Alignment.Center,
+                        trim = LineHeightStyle.Trim.Both,
+                    ),
+                ),
                 color = FarmsyColors.ink,
                 maxLines = 3, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth(),
@@ -379,7 +412,9 @@ fun FixedImageRow(urls: List<String>, height: Dp = 100.dp, onTap: ((Int) -> Unit
             Box(
                 Modifier.weight(1f).height(height)
                     .clip(RoundedCornerShape(10.dp)).background(Color(0xFFF3F4F6))
-                    .then(if (onTap != null) Modifier.clickable { onTap(i) } else Modifier),
+                    // iOS OptionalTap → tapCard when onTap is set (DiscoverFeedView.swift:431-435):
+                    // scroll-aware tap + light haptic, so a scroll ending on a photo doesn't fire.
+                    .then(if (onTap != null) Modifier.tapCard { onTap(i) } else Modifier),
             ) {
                 // Per-tile shimmer while the image loads, then the photo — matches iOS
                 // FixedImageRow (AsyncImage success else SkeletonBox).
