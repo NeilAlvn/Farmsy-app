@@ -360,9 +360,7 @@
     <string name="pro_feature_filter">Filter op soort plek en op hoe het geteeld wordt</string>
     <string name="pro_feature_email">Een e-mail wanneer een opgeslagen boerderij iets nieuws plaatst</string>
     <string name="pro_feature_everything">Alles wat we nieuw aan Pro toevoegen, inbegrepen</string>
-    <string name="pro_try_free_3">Probeer 3 dagen gratis</string>
     <string name="pro_get_yearly">Kies jaarlijks</string>
     <string name="pro_buy_lifetime">Koop levenslange toegang</string>
-    <string name="pro_3days_then_year">3 dagen gratis · daarna %1$s/jaar</string>
     <string name="pro_lifetime_onetime">Eenmalig · geen verlengingen</string>
 </resources>

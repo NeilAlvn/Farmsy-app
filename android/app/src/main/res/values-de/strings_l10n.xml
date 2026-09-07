@@ -360,9 +360,7 @@
     <string name="pro_feature_filter">Filtere nach Art des Orts und nach Anbauweise</string>
     <string name="pro_feature_email">Eine E-Mail, wenn ein gespeicherter Hof etwas Neues postet</string>
     <string name="pro_feature_everything">Alles Neue, das wir zu Pro hinzufügen, inklusive</string>
-    <string name="pro_try_free_3">3 Tage kostenlos testen</string>
     <string name="pro_get_yearly">Jährlich holen</string>
     <string name="pro_buy_lifetime">Lebenslangen Zugang kaufen</string>
-    <string name="pro_3days_then_year">3 Tage gratis · dann %1$s/Jahr</string>
     <string name="pro_lifetime_onetime">Einmalig · keine Verlängerung</string>
 </resources>

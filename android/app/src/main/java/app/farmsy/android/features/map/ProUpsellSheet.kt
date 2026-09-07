@@ -139,12 +139,16 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                 else -> {
                     // Trial only offered to someone who's never had one — ineligible is
                     // trialDays == null, so the free-days copy just doesn't show (Aviah:
-                    // never advertise a trial someone won't get). Copy = web gate keys.
+                    // never advertise a trial someone won't get, and per P0-4b never a
+                    // "0 days free" — no offer means no trial sentence at all). The trial
+                    // count is parameterised (free_trial_days_arg / then_price_per_year_arg
+                    // / trial_terms_arg, already translated nl/fr/de) so the number lands
+                    // in the right place per language — never a hardcoded "3".
                     val trialDays = purchases.yearlyFreeTrialDays
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         PlanButton(
-                            label = if (trialDays != null) stringResource(R.string.pro_try_free_3) else stringResource(R.string.pro_get_yearly),
-                            detail = purchases.yearlyPrice?.let { if (trialDays != null) stringResource(R.string.pro_3days_then_year, it) else stringResource(R.string.price_per_year_arg, it) },
+                            label = if (trialDays != null) stringResource(R.string.free_trial_days_arg, trialDays) else stringResource(R.string.pro_get_yearly),
+                            detail = purchases.yearlyPrice?.let { if (trialDays != null) stringResource(R.string.then_price_per_year_arg, it) else stringResource(R.string.price_per_year_arg, it) },
                             filled = true, fallbackLabel = fallback,
                         ) {
                             val activity = context as? Activity ?: return@PlanButton
@@ -164,6 +168,17 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                                 scope.launch { if (purchases.purchase(activity, lifetimePkg, userId)) awaitGrant() }
                             }
                         }
+                    }
+                    // Trial-terms disclosure (App Review 3.1.2) — only when there is an
+                    // actual offer; never rendered for a no-trial user (parity with iOS
+                    // ProUpsellSheet + LockedAccessView).
+                    val yPrice = purchases.yearlyPrice
+                    if (trialDays != null && yPrice != null) {
+                        Text(
+                            stringResource(R.string.trial_terms_arg, trialDays, yPrice),
+                            style = geist(12.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                     }
                     Text(
                         stringResource(R.string.restore_purchases),

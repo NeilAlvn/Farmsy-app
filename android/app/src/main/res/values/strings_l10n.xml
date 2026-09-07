@@ -383,9 +383,7 @@
     <string name="pro_feature_filter">Filter by kind of place, and by how it is grown</string>
     <string name="pro_feature_email">An email when a farm you saved posts something new</string>
     <string name="pro_feature_everything">Everything new we add to Pro, included</string>
-    <string name="pro_try_free_3">Try free for 3 days</string>
     <string name="pro_get_yearly">Get yearly</string>
     <string name="pro_buy_lifetime">Buy lifetime access</string>
-    <string name="pro_3days_then_year">3 days free · then %1$s/year</string>
     <string name="pro_lifetime_onetime">One-time · no renewals</string>
 </resources>

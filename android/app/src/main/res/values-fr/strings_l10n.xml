@@ -360,9 +360,7 @@
     <string name="pro_feature_filter">Filtrez par type de lieu et par mode de culture</string>
     <string name="pro_feature_email">Un e-mail quand une ferme enregistrée publie du nouveau</string>
     <string name="pro_feature_everything">Toutes les nouveautés que nous ajoutons à Pro, incluses</string>
-    <string name="pro_try_free_3">Essayez gratuitement pendant 3 jours</string>
     <string name="pro_get_yearly">Prendre l\'annuel</string>
     <string name="pro_buy_lifetime">Acheter l\'accès à vie</string>
-    <string name="pro_3days_then_year">3 jours gratuits · puis %1$s/an</string>
     <string name="pro_lifetime_onetime">Paiement unique · sans renouvellement</string>
 </resources>
