@@ -44,6 +44,12 @@ jobs:
       # The unit tests (FarmsyTests) are hosted in the app, so they need a booted
       # simulator. Pick whichever iPhone the runner's Xcode ships rather than
       # hardcoding a model that the next Xcode renames.
+      # -only-testing:FarmsyTests, because the scheme also carries
+      # FarmsyUITests — the ScreenshotTour that drives the app to produce App
+      # Store screenshots. That tour needs a real environment and fails on a
+      # bare runner, which would leave every pull request red for a reason
+      # with nothing to do with the change under review. The unit tests are
+      # the gate. The tour is a tool you run on purpose.
       - name: Test (FarmsyTests on a simulator)
         run: |
           UDID=$(xcrun simctl list devices available -j | python3 -c "
@@ -56,6 +62,7 @@ jobs:
             -scheme Farmsy \
             -configuration Debug \
             -destination "id=$UDID" \
+            -only-testing:FarmsyTests \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
