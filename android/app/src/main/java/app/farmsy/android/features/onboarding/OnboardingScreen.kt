@@ -97,7 +97,6 @@ import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
-import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 /// Seven-screen onboarding — a 1:1 rebuild of iOS OnboardingView: a full-bleed
