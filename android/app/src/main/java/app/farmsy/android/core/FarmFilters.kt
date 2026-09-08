@@ -60,7 +60,13 @@ object FarmFilters {
     /// Mirrors web OFF_RE.
     private val offRegex = Regex("""\b(off|gesloten|geschlossen|ferm[eé]|closed)\b""", RegexOption.IGNORE_CASE)
     private val timeToken = Regex("""\s+\d{1,2}:\d{2}""")
-    private val windowRegex = Regex("""(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})""")
+    // The separator between the two times is any of the three dashes, NOT just the
+    // ASCII hyphen. The Dutch imports write their TIME ranges with an en dash too
+    // (`09:00–17:00`), and matching only `-` left those windows unparsed — so a
+    // segment that named a day but whose hours did not parse fell through to the
+    // "day with no times = open" branch below, and isOpenNow (the paid filter)
+    // reported the farm open all day, at any hour. Same character class as `dashes`.
+    private val windowRegex = Regex("""(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})""")
 
     // The Pro time filters (and isOpenToday) read the wall clock in Amsterdam, NOT on
     // the device — every farm is in NL/BE, so a visitor in another timezone means open
