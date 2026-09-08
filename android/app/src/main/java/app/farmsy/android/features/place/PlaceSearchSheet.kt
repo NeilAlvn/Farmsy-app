@@ -227,9 +227,12 @@ private const val BIAS_LON = 4.7
 /// two countries client-side (Photon has no country param). Coordinates arrive in the
 /// same response — no second resolve call.
 private suspend fun photonSearch(query: String): List<PlacePrediction> {
+    // lang=en, not nl. Photon supports only default/de/en/fr and returns 400 for
+    // anything else — nl silently failed on web until Aviah caught it. `en` is safe and
+    // place names still come back local (Den Haag is Den Haag), so nothing reads wrong.
     val url = "https://photon.komoot.io/api" +
         "?q=${query.encodeURLQueryComponent()}" +
-        "&limit=8&lang=default&lat=$BIAS_LAT&lon=$BIAS_LON&location_bias_scale=0.6"
+        "&limit=8&lang=en&lat=$BIAS_LAT&lon=$BIAS_LON&location_bias_scale=0.6"
     val resp = httpClient.get(url) {
         // Identifiable UA + contact, per the Photon/OSM usage policy.
         header(HttpHeaders.UserAgent, "FarmsyAndroid/1.0 (app.farmsy.android; hello@farmsy.app)")
