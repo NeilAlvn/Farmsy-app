@@ -46,6 +46,9 @@ object FarmFilters {
     private fun dayKey(raw: String): String =
         raw.trim().split(' ', '\t', ':').firstOrNull().orEmpty()
             .lowercase().trimEnd('.', ',', ':')
+    /// Hyphen, en dash, em dash — all three separate a range in our data.
+    private val dashes = charArrayOf('-', '\u2013', '\u2014')
+
     /// What counts as "shut" in a segment.
     ///
     /// OSM writes `Su off`. Our data does not: it was imported from sources that
@@ -184,8 +187,12 @@ object FarmFilters {
         for (group in dayPart.split(',')) {
             val g = group.trim()
             if (g.isEmpty()) continue
-            if (g.contains('-')) {
-                val parts = g.split('-')
+            // An en dash is a range too. The Dutch imports write both their day
+            // ranges and their times with one, and splitting on the ASCII hyphen
+            // alone read `ma–vr` as a single unknown token — so the farm was open
+            // on no day at all. Mirrors web daysOf().
+            if (g.any { it in dashes }) {
+                val parts = g.split(*dashes)
                 if (parts.size != 2) continue
                 val a = dayTok[dayKey(parts[0])] ?: continue
                 val b = dayTok[dayKey(parts[1])] ?: continue

@@ -35,6 +35,9 @@ enum FarmFilters {
         "montag": 1, "dienstag": 2, "mittwoch": 3, "donnerstag": 4, "freitag": 5, "samstag": 6, "sonntag": 0,
     ]
 
+    /// Hyphen, en dash, em dash — all three separate a range in our data.
+    private static let dashes = CharacterSet(charactersIn: "-\u{2013}\u{2014}")
+
     /// What counts as "shut" in a segment.
     ///
     /// OSM writes `Su off`. Our data does not: it was imported from sources that
@@ -64,53 +67,18 @@ enum FarmFilters {
     /// True when the OSM opening_hours string has today's weekday open. Day-based
     /// (not time-of-day), matching the web's isOpenToday.
     static func isOpenToday(_ openingHours: String?) -> Bool {
-        guard let raw = openingHours?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty
-        else { return false }
-        if raw == "24/7" { return true }
-
-        // The weekday is read in Amsterdam, NOT on the device — every farm is in NL/BE,
-        // so "open today" means today where the farms are. Reading the device clock had
-        // the free filter and the paid open-now filter disagree for a visitor outside
-        // CET (Tokyo Monday morning = Sunday night in Amsterdam). Mirrors web a46ab4b.
-        let todayMon = todayInAmsterdam()
-
-        // A later `off` overrides an earlier open rule — "Mo-Su 09:00-17:00; Su off"
-        // is shut on Sunday. The loop below can only ever ADD an open day and it
-        // short-circuits on the first match, so a closure has to be collected and
-        // subtracted UP FRONT; the `continue` alone merely skips the off segment,
-        // which lets the broad rule above it win on exactly the day it said closed.
-        // Mirrors web src/lib/opening-hours.ts closedDays().
-        if closedDays(raw).contains(todayMon) { return false }
-
-        for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
-            let s = segment.trimmingCharacters(in: .whitespaces)
-            if s.isEmpty { continue }
-            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
-
-            // Day part is everything before the first HH:MM token.
-            let dayPart = s.range(of: "\\s+\\d{1,2}:\\d{2}", options: .regularExpression)
-                .map { String(s[s.startIndex..<$0.lowerBound]) } ?? s
-            let trimmedDayPart = dayPart.trimmingCharacters(in: .whitespaces)
-            if trimmedDayPart.isEmpty { continue }
-
-            for group in trimmedDayPart.components(separatedBy: ",") {
-                let g = group.trimmingCharacters(in: .whitespaces)
-                if g.contains("-") {
-                    let parts = g.components(separatedBy: "-")
-                    guard parts.count == 2,
-                          let ja = dayJS[dayKey(parts[0])], let jb = dayJS[dayKey(parts[1])],
-                          let startMon = dayMon[ja], let endMon = dayMon[jb] else { continue }
-                    if startMon <= endMon {
-                        if todayMon >= startMon && todayMon <= endMon { return true }
-                    } else {
-                        if todayMon >= startMon || todayMon <= endMon { return true }
-                    }
-                } else if let js = dayJS[dayKey(g)], dayMon[js] == todayMon {
-                    return true
-                }
-            }
-        }
-        return false
+        // One implementation, not two. This carried its own copy of the day
+        // matching, so the Dutch day names and the en dash both had to be fixed
+        // in two places — and the second place is how a filter and a planner come
+        // to disagree about the same farm. `isOpenToday` is exactly
+        // `isOpenOnDay` for today, so say that.
+        //
+        // The weekday is read in Amsterdam, NOT on the device: every farm is in
+        // NL/BE, so "open today" means today where the farms are. Reading the
+        // device clock had the free filter and the paid open-now filter disagree
+        // for a visitor outside CET (Tokyo Monday morning = Sunday night in
+        // Amsterdam). Mirrors web a46ab4b.
+        isOpenOnDay(openingHours, dayMon: todayInAmsterdam())
     }
 
     // MARK: - Amsterdam clock (Pro time filters + isOpenToday)
@@ -228,8 +196,12 @@ enum FarmFilters {
         for group in dayPart.components(separatedBy: ",") {
             let g = group.trimmingCharacters(in: .whitespaces)
             if g.isEmpty { continue }
-            if g.contains("-") {
-                let parts = g.components(separatedBy: "-")
+            // An en dash is a range too. The Dutch imports write both their day
+            // ranges and their times with one, and splitting on the ASCII hyphen
+            // alone read `ma–vr` as a single unknown token — so the farm was open
+            // on no day at all. Mirrors web daysOf().
+            if g.rangeOfCharacter(from: dashes) != nil {
+                let parts = g.components(separatedBy: dashes)
                 guard parts.count == 2,
                       let ja = dayJS[dayKey(parts[0])], let jb = dayJS[dayKey(parts[1])],
                       let startMon = dayMon[ja], let endMon = dayMon[jb] else { continue }

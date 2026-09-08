@@ -187,6 +187,35 @@ struct OpeningHoursTests {
                                                fromMinutes: Self.at(10), toMinutes: Self.at(11)) == .open)
     }
 
+    // MARK: - Ranges written with a dash that is not a hyphen
+
+    @Test("an en dash and an em dash are ranges too",
+          arguments: ["ma-vr", "ma\u{2013}vr", "ma\u{2014}vr", "Mo\u{2013}Fr", "Mo-Fr"])
+    func dashesInDayRanges(range: String) {
+        // The Dutch imports write both their day ranges and their times with an
+        // en dash. Splitting on the ASCII hyphen alone read `ma–vr` as one
+        // unknown token, so the farm was open on no day at all.
+        #expect(FarmFilters.isOpenOnDay("\(range) 09:00-17:00", dayMon: Self.mon))
+        #expect(FarmFilters.isOpenOnDay("\(range) 09:00-17:00", dayMon: Self.sat) == false)
+    }
+
+    @Test("isOpenToday is exactly isOpenOnDay for today")
+    func openTodayDelegates() {
+        // It carried its own copy of the day matching, so every fix had to be
+        // made twice — and the second place is how a filter and a planner come
+        // to disagree about the same farm. This is the invariant that keeps the
+        // two from drifting again.
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam")!
+        let js = cal.component(.weekday, from: Date()) - 1
+        let todayMon = [1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6][js]!
+
+        for hours in ["Mo-Fr 09:00-17:00", "za 09:00-13:00", "ma\u{2013}vr 09:00-17:00",
+                      "24/7", "Mo-Su 09:00-17:00; Su gesloten", "arbitrary text", ""] {
+            #expect(FarmFilters.isOpenToday(hours) == FarmFilters.isOpenOnDay(hours, dayMon: todayMon))
+        }
+    }
+
     @Test("the existing filters see the Dutch farms now too")
     func existingFiltersFixed() {
         // These returned false for every Dutch-format farm before the day table
