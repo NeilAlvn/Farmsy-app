@@ -164,6 +164,10 @@ final class TripStore {
     /// Starting point — leg zero. Survives clear().
     private(set) var originCoord: CLLocationCoordinate2D?
     private(set) var originLabel: String?
+    /// Where the drive ends (R1). Nil is the pre-R1 shape and stays legal: a
+    /// trip that is only a list of farms is still a trip.
+    private(set) var destinationCoord: CLLocationCoordinate2D?
+    private(set) var destinationLabel: String?
     /// Which trip is being edited (so save updates instead of duplicating).
     private(set) var editingTripId: String?
 
@@ -251,6 +255,7 @@ final class TripStore {
 
     private let stopsKey = "dlb_pending_trip"
     private let originKey = "dlb_trip_origin"
+    private let destinationKey = "dlb_trip_destination"
     private let ownerKey = "dlb_trip_owner"
     private let modeKey = "dlb_trip_mode"
     /// Route answers keyed by the stops they belong to (failures cached too).
@@ -261,6 +266,10 @@ final class TripStore {
         if let o = UserDefaults.standard.array(forKey: originKey) as? [Double], o.count >= 2 {
             originCoord = CLLocationCoordinate2D(latitude: o[0], longitude: o[1])
             originLabel = o.count >= 2 ? UserDefaults.standard.string(forKey: originKey + ".label") : nil
+        }
+        if let d = UserDefaults.standard.array(forKey: destinationKey) as? [Double], d.count >= 2 {
+            destinationCoord = CLLocationCoordinate2D(latitude: d[0], longitude: d[1])
+            destinationLabel = UserDefaults.standard.string(forKey: destinationKey + ".label")
         }
         if let m = UserDefaults.standard.string(forKey: modeKey).flatMap(TravelMode.init) { mode = m }
     }
@@ -305,6 +314,29 @@ final class TripStore {
         UserDefaults.standard.removeObject(forKey: originKey + ".label")
     }
 
+    func setDestination(_ coord: CLLocationCoordinate2D, label: String) {
+        destinationCoord = coord; destinationLabel = label
+        UserDefaults.standard.set([coord.latitude, coord.longitude], forKey: destinationKey)
+        UserDefaults.standard.set(label, forKey: destinationKey + ".label")
+        requestFit()
+    }
+
+    func clearDestination() {
+        destinationCoord = nil; destinationLabel = nil
+        UserDefaults.standard.removeObject(forKey: destinationKey)
+        UserDefaults.standard.removeObject(forKey: destinationKey + ".label")
+    }
+
+    /// The ends as they are stored (R1). One place builds them, so the insert,
+    /// the update and the Maps hand-off cannot disagree about what the trip is.
+    var endpoints: TripEndpoints {
+        TripEndpoints(
+            origin: originCoord.flatMap { TripPlace.make($0, label: originLabel) },
+            destination: destinationCoord.flatMap { TripPlace.make($0, label: destinationLabel) },
+            radiusKm: nil
+        )
+    }
+
     /// Wipe the draft if the account changed (a shared device must not carry the
     /// previous person's stops). Signed-out counts as owner "anon".
     func reconcileOwner(_ userId: String?) {
@@ -320,11 +352,21 @@ final class TripStore {
 
     // MARK: Ordering
 
-    /// The full leg list: origin then farms (or farms alone).
-    private func legs(pins: [String: FarmPin]) -> [CLLocationCoordinate2D] {
+    /// The full leg list: origin, then farms, then the destination (R1). Any of
+    /// the three may be absent — farms alone is still a drive.
+    ///
+    /// `includingDestination: false` is for the reordering below, and it is not a
+    /// convenience. `TripGeometry.optimise` pins only the first leg, so a
+    /// destination on the end would be shuffled in among the farms: the order
+    /// would be optimised for a road that ends somewhere it does not, and the
+    /// index-mapping underneath would then drop it, leaving a saved order that
+    /// belongs to a route nobody planned. Pinning the last leg as well is a
+    /// change to TripGeometry, and it belongs in its own commit.
+    private func legs(pins: [String: FarmPin], includingDestination: Bool = true) -> [CLLocationCoordinate2D] {
         var out: [CLLocationCoordinate2D] = []
         if let originCoord { out.append(originCoord) }
         out.append(contentsOf: stopIds.compactMap { pins[$0]?.coordinate })
+        if includingDestination, let destinationCoord { out.append(destinationCoord) }
         return out
     }
 
@@ -333,7 +375,7 @@ final class TripStore {
     func optimise(pins: [String: FarmPin]) -> Double {
         let farms = stopIds.compactMap { pins[$0] }
         guard farms.count > 2 else { return 0 }
-        let coords = legs(pins: pins)
+        let coords = legs(pins: pins, includingDestination: false)
         let before = TripGeometry.lengthKm(coords)
         let order = TripGeometry.optimise(coords)
         // Drop the origin (index 0) from the order if present, map back to farms.
@@ -345,7 +387,7 @@ final class TripStore {
         }
         stopIds = farmOrder
         persist()
-        let after = TripGeometry.lengthKm(legs(pins: pins))
+        let after = TripGeometry.lengthKm(legs(pins: pins, includingDestination: false))
         return before - after
     }
 
@@ -427,7 +469,48 @@ final class TripStore {
     /// Save the current draft as a trip (insert, or update when editing). Caches
     /// the farm name/coords/city/image on each stop row so a share link survives.
     func save(name: String, userId: String, pins: [String: FarmPin]) async {
-        struct TripRow: Encodable { let user_id: String; let name: String }
+        // R1: the ends travel with the row. Flattened rather than nested so the
+        // column names are the ones migration 058 added, and so the update below
+        // can carry exactly the same seven fields as the insert.
+        struct TripRow: Encodable {
+            let user_id: String
+            let name: String
+            let origin_lat: Double?
+            let origin_lng: Double?
+            let origin_label: String?
+            let destination_lat: Double?
+            let destination_lng: Double?
+            let destination_label: String?
+            let radius_km: Double?
+
+            init(user_id: String, name: String, ends: TripEndpointRow) {
+                self.user_id = user_id
+                self.name = name
+                origin_lat = ends.origin_lat
+                origin_lng = ends.origin_lng
+                origin_label = ends.origin_label
+                destination_lat = ends.destination_lat
+                destination_lng = ends.destination_lng
+                destination_label = ends.destination_label
+                radius_km = ends.radius_km
+            }
+        }
+
+        /// Editing an existing trip. Every one of the seven ends is written, so
+        /// removing a destination clears the column instead of leaving the old
+        /// one behind — a trip that keeps a start the user deleted is worse than
+        /// one that never had it.
+        struct TripUpdate: Encodable {
+            let name: String
+            let updated_at: String
+            let origin_lat: Double?
+            let origin_lng: Double?
+            let origin_label: String?
+            let destination_lat: Double?
+            let destination_lng: Double?
+            let destination_label: String?
+            let radius_km: Double?
+        }
         struct StopRow: Encodable {
             let trip_id: String; let farm_osm_id: String; let farm_name: String
             let farm_lat: Double; let farm_lng: Double
@@ -435,16 +518,24 @@ final class TripStore {
         }
         struct Inserted: Decodable { let id: String }
 
+        let ends = TripEndpointRow(endpoints)
+
         let tripId: String
         if let editingTripId {
             _ = try? await supabase.from("trips")
-                .update(["name": name, "updated_at": ISO8601DateFormatter().string(from: Date())])
+                .update(TripUpdate(
+                    name: name,
+                    updated_at: ISO8601DateFormatter().string(from: Date()),
+                    origin_lat: ends.origin_lat, origin_lng: ends.origin_lng, origin_label: ends.origin_label,
+                    destination_lat: ends.destination_lat, destination_lng: ends.destination_lng,
+                    destination_label: ends.destination_label,
+                    radius_km: ends.radius_km))
                 .eq("id", value: editingTripId).execute()
             _ = try? await supabase.from("trip_farms").delete().eq("trip_id", value: editingTripId).execute()
             tripId = editingTripId
         } else {
             guard let rows: [Inserted] = try? await supabase.from("trips")
-                .insert(TripRow(user_id: userId, name: name)).select("id").execute().value,
+                .insert(TripRow(user_id: userId, name: name, ends: ends)).select("id").execute().value,
                   let id = rows.first?.id else { return }
             tripId = id
         }
@@ -471,6 +562,18 @@ final class TripStore {
             .select("farm_osm_id, sort_order").eq("trip_id", value: id)
             .order("sort_order", ascending: true).execute().value) ?? []
         stopIds = stops.map(\.farm_osm_id)
+
+        // R1: put the drive back the way it was saved. Before this the ends were
+        // never written, so an opened trip started at its first farm rather than
+        // where the person actually set out from. A trip from before R1 decodes
+        // to no ends at all, which is a working plan and not a failure.
+        let rows: [TripEndpointRow] = (try? await supabase.from("trips")
+            .select(TripEndpointRow.columns).eq("id", value: id).limit(1)
+            .execute().value) ?? []
+        let ends = rows.first?.endpoints ?? .none
+        if let o = ends.origin { setOrigin(o.coordinate, label: o.label) } else { clearOrigin() }
+        if let d = ends.destination { setDestination(d.coordinate, label: d.label) } else { clearDestination() }
+
         editingTripId = id
         persist()
         requestFit()

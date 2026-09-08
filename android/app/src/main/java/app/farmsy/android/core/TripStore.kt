@@ -164,6 +164,8 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val stopsKey = "dlb_pending_trip"
     private val originKey = "dlb_trip_origin"
     private val originLabelKey = "dlb_trip_origin_label"
+    private val destinationKey = "dlb_trip_destination"
+    private val destinationLabelKey = "dlb_trip_destination_label"
     private val ownerKey = "dlb_trip_owner"
     private val modeKey = "dlb_trip_mode"
 
@@ -175,6 +177,13 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     val originCoord: StateFlow<LatLng?> = _originCoord.asStateFlow()
     private val _originLabel = MutableStateFlow<String?>(null)
     val originLabel: StateFlow<String?> = _originLabel.asStateFlow()
+
+    /// Where the drive ends (R1). Null is the pre-R1 shape and stays legal: a
+    /// trip that is only a list of farms is still a trip.
+    private val _destinationCoord = MutableStateFlow<LatLng?>(null)
+    val destinationCoord: StateFlow<LatLng?> = _destinationCoord.asStateFlow()
+    private val _destinationLabel = MutableStateFlow<String?>(null)
+    val destinationLabel: StateFlow<String?> = _destinationLabel.asStateFlow()
 
     private val _mode = MutableStateFlow(TravelMode.CAR)
     val mode: StateFlow<TravelMode> = _mode.asStateFlow()
@@ -221,6 +230,11 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         if (o != null && o.size >= 2) {
             _originCoord.value = LatLng(o[0], o[1])
             _originLabel.value = prefs.getString(originLabelKey, null)
+        }
+        val d = prefs.getString(destinationKey, null)?.split(",")?.mapNotNull { it.toDoubleOrNull() }
+        if (d != null && d.size >= 2) {
+            _destinationCoord.value = LatLng(d[0], d[1])
+            _destinationLabel.value = prefs.getString(destinationLabelKey, null)
         }
         TravelMode.fromRaw(prefs.getString(modeKey, null))?.let { _mode.value = it }
     }
@@ -321,6 +335,29 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         prefs.edit().remove(originKey).remove(originLabelKey).apply()
     }
 
+    fun setDestination(coord: LatLng, label: String) {
+        _destinationCoord.value = coord; _destinationLabel.value = label
+        prefs.edit()
+            .putString(destinationKey, "${coord.latitude},${coord.longitude}")
+            .putString(destinationLabelKey, label)
+            .apply()
+        requestFit()
+    }
+
+    fun clearDestination() {
+        _destinationCoord.value = null; _destinationLabel.value = null
+        prefs.edit().remove(destinationKey).remove(destinationLabelKey).apply()
+    }
+
+    /// The ends as they are stored (R1). One place builds them, so the insert,
+    /// the update and the Maps hand-off cannot disagree about what the trip is.
+    val endpoints: TripEndpoints
+        get() = TripEndpoints(
+            origin = TripPlace.make(_originCoord.value, _originLabel.value),
+            destination = TripPlace.make(_destinationCoord.value, _destinationLabel.value),
+            radiusKm = null,
+        )
+
     /// Wipe the draft if the account changed. Signed-out counts as owner "anon".
     fun reconcileOwner(userId: String?) {
         val owner = userId ?: "anon"
@@ -335,11 +372,21 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
 
     // MARK: Ordering
 
-    /// The full leg list: origin then farms (or farms alone).
-    private fun legs(pins: Map<String, FarmPin>): List<LatLng> {
+    /// The full leg list: origin, then farms, then the destination (R1). Any of
+    /// the three may be absent — farms alone is still a drive.
+    ///
+    /// `includingDestination = false` is for the reordering below, and it is not
+    /// a convenience. TripGeometry.optimise pins only the first leg, so a
+    /// destination on the end would be shuffled in among the farms: the order
+    /// would be optimised for a road that ends somewhere it does not, and the
+    /// index mapping underneath would then drop it, leaving a saved order that
+    /// belongs to a route nobody planned. Pinning the last leg as well is a
+    /// change to TripGeometry, and it belongs in its own commit.
+    private fun legs(pins: Map<String, FarmPin>, includingDestination: Boolean = true): List<LatLng> {
         val out = ArrayList<LatLng>()
         _originCoord.value?.let { out.add(it) }
         out.addAll(_stopIds.value.mapNotNull { pins[it]?.let { p -> LatLng(p.lat, p.lng) } })
+        if (includingDestination) _destinationCoord.value?.let { out.add(it) }
         return out
     }
 
@@ -347,7 +394,7 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     fun optimise(pins: Map<String, FarmPin>): Double {
         val farms = _stopIds.value.mapNotNull { pins[it] }
         if (farms.size <= 2) return 0.0
-        val coords = legs(pins)
+        val coords = legs(pins, includingDestination = false)
         val before = TripGeometry.lengthKm(coords)
         val order = TripGeometry.optimise(coords)
         val hasOrigin = _originCoord.value != null
@@ -357,7 +404,7 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         }
         _stopIds.value = farmOrder
         persist()
-        val after = TripGeometry.lengthKm(legs(pins))
+        val after = TripGeometry.lengthKm(legs(pins, includingDestination = false))
         return before - after
     }
 
@@ -443,11 +490,19 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     /// Save the current draft as a trip (insert, or update when editing). Caches
     /// the farm details on each stop row so a share link survives.
     suspend fun save(name: String, userId: String, pins: Map<String, FarmPin>) {
+        // R1: the ends travel with the row. Built once so the insert and the
+        // update cannot disagree about what the trip is.
+        val ends = TripEndpointRow.from(endpoints)
+
         val tripId: String = if (editingTripId != null) {
             val id = editingTripId!!
             runCatching {
                 supabase.from("trips").update(
-                    buildJsonObject { put("name", JsonPrimitive(name)); put("updated_at", JsonPrimitive(nowIso())) }
+                    buildJsonObject {
+                        put("name", JsonPrimitive(name))
+                        put("updated_at", JsonPrimitive(nowIso()))
+                        putEndpoints(ends)
+                    }
                 ) { filter { eq("id", id) } }
                 supabase.from("trip_farms").delete { filter { eq("trip_id", id) } }
             }
@@ -455,7 +510,11 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         } else {
             val inserted = runCatching {
                 supabase.from("trips").insert(
-                    buildJsonObject { put("user_id", JsonPrimitive(userId)); put("name", JsonPrimitive(name)) }
+                    buildJsonObject {
+                        put("user_id", JsonPrimitive(userId))
+                        put("name", JsonPrimitive(name))
+                        putEndpoints(ends)
+                    }
                 ) { select() }.decodeList<InsertedId>()
             }.getOrNull()
             inserted?.firstOrNull()?.id ?: return
@@ -494,6 +553,23 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
                 .decodeList<StopRow>()
         }.getOrDefault(emptyList())
         _stopIds.value = stops.map { it.farmOsmId }
+
+        // R1: put the drive back the way it was saved. Before this the ends were
+        // never written, so an opened trip started at its first farm rather than
+        // where the person actually set out from. A trip from before R1 decodes
+        // to no ends at all, which is a working plan and not a failure.
+        val ends = runCatching {
+            supabase.from("trips")
+                .select(Columns.list(TripEndpointRow.COLUMNS)) { filter { eq("id", id) } }
+                .decodeList<TripEndpointRow>()
+                .firstOrNull()
+        }.getOrNull()?.endpoints ?: TripEndpoints.NONE
+
+        val o = ends.origin
+        if (o != null) setOrigin(o.latLng, o.label) else clearOrigin()
+        val dest = ends.destination
+        if (dest != null) setDestination(dest.latLng, dest.label) else clearDestination()
+
         editingTripId = id
         persist()
         requestFit()
