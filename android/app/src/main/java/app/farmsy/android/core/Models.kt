@@ -139,8 +139,8 @@ data class FarmPin(
     val id: String,
     @SerialName("osm_id") val osmId: String,
     val name: String,
-    val lat: Double,
-    val lng: Double,
+    override val lat: Double,
+    override val lng: Double,
     val address: String? = null,
     val city: String? = null,
     @SerialName("postal_code") val postalCode: String? = null,
@@ -156,7 +156,7 @@ data class FarmPin(
     @SerialName("review_count") val reviewCount: Int = 0,
     @SerialName("has_description") val hasDescription: Boolean = false,
     @SerialName("is_verified") val isVerified: Boolean = false,
-) {
+) : Corridor.Point {
     val categories: List<FarmCategory>
         get() {
             // De-dupe: a farm tagged ["meat","beef"] resolves both to MEAT.
