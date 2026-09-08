@@ -34,7 +34,13 @@ object Observability {
             val config = PostHogAndroidConfig(
                 apiKey = Backend.POSTHOG_KEY,
                 host = Backend.POSTHOG_HOST,
-            )
+            ).apply {
+                // Automatic screen capture OFF — it names screens after their class and
+                // buries the thirteen events we name deliberately (and PostHog bills on
+                // volume). Lifecycle events (Application Opened / Backgrounded / Installed)
+                // stay on, matching iOS.
+                captureScreenViews = false
+            }
             PostHogAndroid.setup(context, config)
         }
     }
