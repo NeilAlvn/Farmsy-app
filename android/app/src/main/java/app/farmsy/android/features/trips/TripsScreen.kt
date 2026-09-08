@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.OpenInNew
@@ -69,6 +70,7 @@ import app.farmsy.android.core.SavedTrip
 import app.farmsy.android.core.TravelMode
 import app.farmsy.android.core.TripGeometry
 import app.farmsy.android.features.discover.RecommendationCarousel
+import app.farmsy.android.features.place.PlaceSearchSheet
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -114,6 +116,24 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     var tripName by remember { mutableStateOf("") }
     var armedDelete by remember { mutableStateOf<String?>(null) }
     var reorderNote by remember { mutableStateOf<String?>(null) }
+    // S19 origin picker (Photon). iOS OriginBar tap → showOriginSearch → PlaceSearchSheet.
+    var showOriginSearch by remember { mutableStateOf(false) }
+
+    // "Use my location" — GPS + reverse-geocode to a town label. Was inline in the
+    // OriginRow's onLocate; now shared with the PlaceSearchSheet's own "use my location".
+    fun useMyLocation() {
+        scope.launch {
+            if (!locationHelper.hasPermission()) { locationHelper.request(); return@launch }
+            val loc = locationHelper.location.value ?: return@launch
+            val label = withContext(Dispatchers.IO) {
+                runCatching {
+                    Geocoder(context).getFromLocation(loc.latitude, loc.longitude, 1)?.firstOrNull()?.locality
+                }.getOrNull()
+            } ?: "%.3f, %.3f".format(loc.latitude, loc.longitude)
+            trip.setOrigin(LatLng(loc.latitude, loc.longitude), label)
+            trip.refreshRoute(pinIndex)
+        }
+    }
 
     // Recompute the route whenever the stops change; load saved trips once signed in.
     LaunchedEffect(stopIds, originCoord) { trip.refreshRoute(pinIndex) }
@@ -151,20 +171,9 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                 // Origin row
                 OriginRow(
                     label = originLabel,
-                    onLocate = {
-                        scope.launch {
-                            if (!locationHelper.hasPermission()) { locationHelper.request(); return@launch }
-                            val loc = locationHelper.location.value ?: return@launch
-                            val label = withContext(Dispatchers.IO) {
-                                runCatching {
-                                    Geocoder(context).getFromLocation(loc.latitude, loc.longitude, 1)
-                                        ?.firstOrNull()?.locality
-                                }.getOrNull()
-                            } ?: "%.3f, %.3f".format(loc.latitude, loc.longitude)
-                            trip.setOrigin(LatLng(loc.latitude, loc.longitude), label)
-                            trip.refreshRoute(pinIndex)
-                        }
-                    },
+                    // iOS OriginBar: tapping the bar opens the search sheet (not GPS
+                    // directly). "Use my location" lives inside the sheet now.
+                    onOpenSearch = { showOriginSearch = true },
                     onClear = { trip.clearOrigin(); scope.launch { trip.refreshRoute(pinIndex) } },
                 )
 
@@ -308,6 +317,20 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
             dismissButton = { TextButton(onClick = { naming = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+
+    // S19 origin picker (Photon over the shared Ktor client — no SDK/key). onPick sets
+    // the chosen place as the trip origin + refreshes the route; onLocate uses GPS.
+    // iOS presents PlaceSearchSheet from the OriginBar.
+    if (showOriginSearch) {
+        PlaceSearchSheet(
+            onPick = { coord, label ->
+                trip.setOrigin(coord, label)
+                scope.launch { trip.refreshRoute(pinIndex) }
+            },
+            onLocate = { useMyLocation() },
+            onDismiss = { showOriginSearch = false },
+        )
+    }
 }
 
 
@@ -331,9 +354,9 @@ private fun TabButton(title: String, selected: Boolean, modifier: Modifier = Mod
 }
 
 @Composable
-private fun OriginRow(label: String?, onLocate: () -> Unit, onClear: () -> Unit) {
+private fun OriginRow(label: String?, onOpenSearch: () -> Unit, onClear: () -> Unit) {
     Surface(
-        Modifier.fillMaxWidth().clickable { if (label.isNullOrEmpty()) onLocate() },
+        Modifier.fillMaxWidth().clickable { if (label.isNullOrEmpty()) onOpenSearch() },
         shape = CircleShape, color = Color.White,
         border = androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.hairline),
     ) {
@@ -341,18 +364,27 @@ private fun OriginRow(label: String?, onLocate: () -> Unit, onClear: () -> Unit)
             Modifier.padding(vertical = 14.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(18.dp))
+            // iOS OriginBar (TripsView.swift:145): leading `magnifyingglass`(15) inkMuted —
+            // it's a search bar, not a "use my location" row (the GPS option lives inside
+            // the search sheet). SF magnifyingglass → Material Search (§7a).
+            Icon(Icons.Filled.Search, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(18.dp))
             Spacer(Modifier.size(10.dp))
             Text(
-                label?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.start_from_my_location),
+                label?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.choose_a_starting_point),
                 style = geist(15.sp), color = if (label.isNullOrEmpty()) FarmsyColors.inkMuted else FarmsyColors.ink,
                 maxLines = 1, modifier = Modifier.weight(1f),
             )
             if (!label.isNullOrEmpty()) {
+                // iOS: `xmark.circle.fill`(16) inkMuted → clearOrigin.
                 Icon(
                     Icons.Filled.Close, null, tint = FarmsyColors.inkMuted,
                     modifier = Modifier.size(18.dp).clickable { onClear() },
                 )
+            } else {
+                // iOS empty state: decorative `location.circle`(20) farmGreenMap. The
+                // MyLocation crosshair-circle is the closest Material glyph; no tap (the
+                // whole bar opens the search sheet).
+                Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
             }
         }
     }
