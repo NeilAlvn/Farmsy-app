@@ -9,7 +9,43 @@ object FarmFilters {
 
     // 1 = Sunday … 7 = Saturday (Java Calendar) → Monday-indexed 0..6.
     private val dayMon = mapOf(1 to 6, 2 to 0, 3 to 1, 4 to 2, 5 to 3, 6 to 4, 7 to 5)
-    private val dayTok = mapOf("Mo" to 0, "Tu" to 1, "We" to 2, "Th" to 3, "Fr" to 4, "Sa" to 5, "Su" to 6)
+    /// Day names to Monday-indexed weekdays (0 = Monday … 6 = Sunday), lowercased.
+    ///
+    /// OSM's own abbreviations, and then Dutch, because half our readable hours
+    /// are not in OSM's format at all: 2,762 of the 5,688 farms that have
+    /// opening hours carry them as `maandag: 09:00-17:00`, imported from sources
+    /// that wrote them the way a Dutch person would.
+    ///
+    /// Until this table grew, every one of those parsed to "not open", on every
+    /// day, forever — which quietly took half the hours data out of the free
+    /// open-today filter and out of the paid open-right-now one. A member was
+    /// paying for an answer missing half its data, and the failure was invisible
+    /// because it removes farms rather than adding wrong ones. The web fixed
+    /// this; the apps never got the fix. This is that fix. Mirrors web DAY_JS.
+    private val dayTok = mapOf(
+        // OSM
+        "mo" to 0, "tu" to 1, "we" to 2, "th" to 3, "fr" to 4, "sa" to 5, "su" to 6,
+        // Dutch, full and short
+        "maandag" to 0, "dinsdag" to 1, "woensdag" to 2, "donderdag" to 3,
+        "vrijdag" to 4, "zaterdag" to 5, "zondag" to 6,
+        "ma" to 0, "di" to 1, "wo" to 2, "do" to 3, "vr" to 4, "za" to 5, "zo" to 6,
+        // French
+        "lundi" to 0, "mardi" to 1, "mercredi" to 2, "jeudi" to 3,
+        "vendredi" to 4, "samedi" to 5, "dimanche" to 6,
+        // German
+        "montag" to 0, "dienstag" to 1, "mittwoch" to 2, "donnerstag" to 3,
+        "freitag" to 4, "samstag" to 5, "sonntag" to 6,
+    )
+
+    /// A day token, as written, reduced to something [dayTok] can answer.
+    ///
+    /// Strips the trailing colon of `maandag:`, takes the first word of
+    /// `maandag: 24 uur geopend`, and lowercases. Returns an empty string when
+    /// there is no word to take, so a caller can tell "no day here" from "a day
+    /// I do not recognise" — only one of those is a bug. Mirrors web dayKey.
+    private fun dayKey(raw: String): String =
+        raw.trim().split(' ', '\t', ':').firstOrNull().orEmpty()
+            .lowercase().trimEnd('.', ',', ':')
     private val offRegex = Regex("""\boff\b""", RegexOption.IGNORE_CASE)
     private val timeToken = Regex("""\s+\d{1,2}:\d{2}""")
     private val windowRegex = Regex("""(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})""")
@@ -142,8 +178,8 @@ object FarmFilters {
             if (g.contains('-')) {
                 val parts = g.split('-')
                 if (parts.size != 2) continue
-                val a = dayTok[parts[0].trim()] ?: continue
-                val b = dayTok[parts[1].trim()] ?: continue
+                val a = dayTok[dayKey(parts[0])] ?: continue
+                val b = dayTok[dayKey(parts[1])] ?: continue
                 if (a <= b) {
                     for (d in a..b) out += d
                 } else {
@@ -151,7 +187,7 @@ object FarmFilters {
                     for (d in 0..b) out += d
                 }
             } else {
-                dayTok[g]?.let { out += it }
+                dayTok[dayKey(g)]?.let { out += it }
             }
         }
         return out
@@ -161,6 +197,99 @@ object FarmFilters {
         "automaat", "automat", "melktap", "eierautomaat", "kaasautomaat",
         "aardappelautomaat", "vending", "zelfbediening", "self-service", "selfservice",
     )
+
+    // ── Open, shut, or unknown (R6) ──────────────────────────────────────────
+
+    /// Three answers, not two.
+    ///
+    /// [isOpenOnDay] returns false both for a farm shut on Tuesday and for one
+    /// whose hours nobody ever recorded. On a map that is tolerable. On a route
+    /// it is not: 2,745 of 8,433 farms carry no opening_hours at all, and
+    /// showing those as closed hides a third of the country from someone
+    /// planning a Saturday. Calling them open is worse — that is how somebody
+    /// drives forty minutes to a locked gate. Mirrors web DayStatus.
+    enum class DayStatus { OPEN, CLOSED, UNKNOWN }
+
+    /// Open, shut or unknown on a given weekday. Mirrors web statusOnDay.
+    fun statusOnDay(openingHours: String?, dayMonIndex: Int): DayStatus {
+        val raw = openingHours?.trim().orEmpty()
+        if (raw.isEmpty()) return DayStatus.UNKNOWN
+        if (raw == "24/7") return DayStatus.OPEN
+        if (isOpenOnDay(raw, dayMonIndex)) return DayStatus.OPEN
+
+        // Nothing matched, which is two situations. A string naming weekdays and
+        // not this one is a farm that is shut. A string we could not read a
+        // weekday out of tells us nothing, and must not be dressed up as a fact.
+        return if (mentionsAWeekday(raw)) DayStatus.CLOSED else DayStatus.UNKNOWN
+    }
+
+    private fun mentionsAWeekday(raw: String): Boolean =
+        raw.split('\n', ';').any { segment ->
+            val dayPart = dayPartOf(segment.trim())
+            dayPart.isNotEmpty() && daysOf(dayPart).isNotEmpty()
+        }
+
+    /// Every open window on a given weekday, as `[from, to)` minutes past
+    /// midnight.
+    ///
+    /// Separate from [windowsOf], which reads one segment and does not know what
+    /// day it belongs to. A farm can carry different hours per day —
+    /// `Mo-Fr 09:00-17:00; Sa 09:00-13:00` — and a Saturday trip must not be
+    /// measured against the weekday row.
+    ///
+    /// An empty result does not mean shut. `Mo-Fr` with no times is a farm we
+    /// know opens on Monday and whose hours nobody recorded; the caller has to
+    /// tell those apart, which is why this returns windows and not a verdict.
+    private fun windowsOnDay(raw: String, dayMonIndex: Int): List<Pair<Int, Int>> =
+        raw.split('\n', ';').flatMap { segment ->
+            val s = segment.trim()
+            if (s.isEmpty() || offRegex.containsMatchIn(s)) return@flatMap emptyList()
+            val dayPart = dayPartOf(s)
+            if (dayPart.isEmpty() || !daysOf(dayPart).contains(dayMonIndex)) return@flatMap emptyList()
+            windowsOf(s)
+        }
+
+    /// Open, shut or unknown on a given weekday, **between two times** (R6).
+    ///
+    /// [statusOnDay] answers "does this farm open at all on Saturday". That is
+    /// the wrong question for a route: a shop open Saturday 09:00-13:00 is shut
+    /// when you drive past at four, and a planner that lists it has sent someone
+    /// to a locked gate just as surely as one with no hours at all.
+    ///
+    /// Times are minutes past midnight and the window is half-open, `[from, to)`.
+    /// The same value twice asks about a single moment.
+    ///
+    /// The answer this exists to avoid: a farm whose day we know and whose hours
+    /// we do not — `Mo-Fr`, no times — is UNKNOWN, never open. Open there is a
+    /// guess dressed as a fact; closed would hide a farm that may be the one
+    /// they wanted. Mirrors web statusOnDayBetween.
+    fun statusOnDayBetween(
+        openingHours: String?,
+        dayMonIndex: Int,
+        fromMinutes: Int,
+        toMinutes: Int,
+    ): DayStatus {
+        val raw = openingHours?.trim().orEmpty()
+        if (raw.isEmpty()) return DayStatus.UNKNOWN
+        if (raw == "24/7") return DayStatus.OPEN
+
+        // The day comes first: a farm shut on Saturday is shut at every hour of
+        // it, and one whose hours are unreadable stays unreadable.
+        val day = statusOnDay(raw, dayMonIndex)
+        if (day != DayStatus.OPEN) return day
+
+        val windows = windowsOnDay(raw, dayMonIndex)
+        if (windows.isEmpty()) return DayStatus.UNKNOWN
+
+        // A zero-length ask is a moment, not a span, so give it a minute of width
+        // rather than answering "no overlap" for every farm on the map.
+        val from = minOf(fromMinutes, toMinutes)
+        val upper = maxOf(fromMinutes, toMinutes)
+        val end = if (upper == from) from + 1 else upper
+
+        return if (windows.any { (openFrom, openTo) -> openFrom < end && from < openTo })
+            DayStatus.OPEN else DayStatus.CLOSED
+    }
 
     fun looksLikeAutomaat(text: String?, openingHours: String? = null): Boolean {
         val t = (text ?: "").lowercase()
