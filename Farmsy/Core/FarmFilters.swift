@@ -109,7 +109,13 @@ enum FarmFilters {
     /// closing time means midnight at the END of the day (09:00-00:00 open at 21:00).
     /// Mirrors web `windowsOf`.
     private static func windowsOf(_ segment: String) -> [(from: Int, to: Int)] {
-        guard let re = try? NSRegularExpression(pattern: "(\\d{1,2}):(\\d{2})\\s*-\\s*(\\d{1,2}):(\\d{2})")
+        // The separator between the two times is any of the three dashes, not just the
+        // ASCII hyphen: the Dutch imports write their TIME ranges with an en dash
+        // (`09:00–17:00`) too. Matching only `-` left those windows unparsed, so a
+        // segment naming a day whose hours did not parse fell through to the "day with
+        // no times = open" branch and isOpenNow (the paid filter) reported it open all
+        // day, at any hour. Same three dashes as `dashes`.
+        guard let re = try? NSRegularExpression(pattern: "(\\d{1,2}):(\\d{2})\\s*[-\u{2013}\u{2014}]\\s*(\\d{1,2}):(\\d{2})")
         else { return [] }
         let ns = segment as NSString
         var out: [(Int, Int)] = []

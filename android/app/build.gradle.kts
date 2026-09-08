@@ -133,6 +133,11 @@ dependencies {
     // Crash reporting + product analytics
     implementation("io.sentry:sentry-android:7.20.0")
     implementation("com.posthog:posthog-android:3.11.1")
+
+    // Local JVM unit tests. FarmFilters is pure Kotlin (java.util.Calendar/TimeZone,
+    // no Android framework), so its parser runs on the JVM with no emulator — which is
+    // the whole point: the en-dash time bug shipped because Android had no such target.
+    testImplementation("junit:junit:4.13.2")
 }
 
 // ── Mojibake guard ───────────────────────────────────────────────────────────

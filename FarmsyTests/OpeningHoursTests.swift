@@ -153,6 +153,37 @@ struct OpeningHoursTests {
                                                fromMinutes: Self.at(10), toMinutes: Self.at(11)) == .closed)
     }
 
+    // The day-name fix landed but the TIME-range dash did not: the imports write both
+    // their day ranges AND their times with an en dash (`09:00–17:00`), and the window
+    // regex only accepted the ASCII hyphen. So the day parsed, the hours did not, and
+    // the segment fell through to "a day named with no times = open". Every test above
+    // uses a hyphen, which is exactly how this hid.
+    @Test("en-dash and em-dash TIME ranges parse — the imports write 09:00–17:00, not 09:00-17:00",
+          arguments: ["maandag: 09:00\u{2013}17:00", "maandag: 09:00\u{2014}17:00"])
+    func endashTimeRanges(hours: String) {
+        // Inside the window on Monday…
+        #expect(FarmFilters.statusOnDayBetween(hours, dayMon: Self.mon,
+                                               fromMinutes: Self.at(10), toMinutes: Self.at(11)) == .open)
+        // …and shut outside it. Before the fix the window was empty, which a route
+        // reads as `unknown` and the paid `isOpenNow` read as open-all-day.
+        #expect(FarmFilters.statusOnDayBetween(hours, dayMon: Self.mon,
+                                               fromMinutes: Self.at(3), toMinutes: Self.at(4)) == .closed)
+    }
+
+    @Test("isOpenNow with an en-dash time range is a real window, not open all day — the paid-filter inversion")
+    func isOpenNowEndashNotAllDay() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam")!
+        var c = DateComponents(); c.year = 2026; c.month = 6; c.day = 1  // any date — Mo-Su covers every weekday
+        c.hour = 3;  let at3am  = cal.date(from: c)!
+        c.hour = 12; let atNoon = cal.date(from: c)!
+        let hours = "Mo-Su 09:00\u{2013}17:00"   // en dash between the two times
+        // Before the fix this answered `true` at 03:00 — a member sent to a gate shut
+        // six hours ago, which is the one thing this filter exists to prevent.
+        #expect(FarmFilters.isOpenNow(hours, at: at3am)  == false)
+        #expect(FarmFilters.isOpenNow(hours, at: atNoon) == true)
+    }
+
     @Test("French and German parse — Belgium is bilingual and the German import shares the shape")
     func otherLanguages() {
         #expect(FarmFilters.statusOnDayBetween("samedi 09:00-13:00", dayMon: Self.sat,
