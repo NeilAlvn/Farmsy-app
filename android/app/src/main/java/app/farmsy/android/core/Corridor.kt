@@ -26,6 +26,9 @@ object Corridor {
 
     private data class Pt(override val lat: Double, override val lng: Double) : Point
 
+    /// A bare point from a lat/lng — for road polylines (which are LatLng, not Points).
+    fun point(lat: Double, lng: Double): Point = Pt(lat, lng)
+
     /// One farm found beside the drive.
     data class NearRoute<T>(
         val farm: T,

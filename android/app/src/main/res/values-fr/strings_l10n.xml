@@ -363,4 +363,19 @@
     <string name="pro_get_yearly">Prendre l\'annuel</string>
     <string name="pro_buy_lifetime">Acheter l\'accès à vie</string>
     <string name="pro_lifetime_onetime">Paiement unique · sans renouvellement</string>
+
+    <!-- R4 · route corridor (farms on the way) -->
+    <string name="route_on_my_way">Fermes sur ma route</string>
+    <string name="route_on_my_way_sub">Fermes croisées sur votre trajet</string>
+    <string name="route_within">Fermes à moins de</string>
+    <string name="route_none">Aucune ferme aussi près de la route. Essayez une distance plus grande ou retirez un filtre.</string>
+    <string name="route_count">%1$d fermes sur votre itinéraire</string>
+    <string name="route_leg_count">%1$d à moins de %2$d km</string>
+    <string name="route_leg_range">%1$d–%2$d km</string>
+    <string name="route_off_road">%1$s de l\'itinéraire</string>
+    <string name="route_add">Ajouter</string>
+    <string name="route_added">Sur le trajet</string>
+    <string name="route_show_all_arg">Afficher les %1$d</string>
+    <string name="route_enter_ends">Ajoutez un départ et une destination pour voir les fermes que vous frôleriez.</string>
+    <string name="closed">Fermé</string>
 </resources>

@@ -386,4 +386,19 @@
     <string name="pro_get_yearly">Get yearly</string>
     <string name="pro_buy_lifetime">Buy lifetime access</string>
     <string name="pro_lifetime_onetime">One-time · no renewals</string>
+
+    <!-- R4 · route corridor (farms on the way) -->
+    <string name="route_on_my_way">Farms on my way</string>
+    <string name="route_on_my_way_sub">Farms you would pass on this drive</string>
+    <string name="route_within">Farms within</string>
+    <string name="route_none">No farms this close to the road. Try a wider distance, or clear a filter.</string>
+    <string name="route_count">%1$d farms on your route</string>
+    <string name="route_leg_count">%1$d within %2$d km</string>
+    <string name="route_leg_range">%1$d–%2$d km</string>
+    <string name="route_off_road">%1$s off route</string>
+    <string name="route_add">Add</string>
+    <string name="route_added">On the drive</string>
+    <string name="route_show_all_arg">Show all %1$d</string>
+    <string name="route_enter_ends">Add a start and a destination to see the farms you would nearly drive past.</string>
+    <string name="closed">Closed</string>
 </resources>

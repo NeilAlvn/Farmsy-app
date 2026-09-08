@@ -97,8 +97,10 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val originCoord by trip.originCoord.collectAsState()
     val originLabel by trip.originLabel.collectAsState()
     val mode by trip.mode.collectAsState()
-    // routeLine / traceProgress / fitToken are no longer read here — the route now
-    // renders on the shared map (MapScreen); "Show route" calls trip.requestFit().
+    // traceProgress / fitToken are no longer read here — the route renders on the shared
+    // map (MapScreen); "Show route" calls trip.requestFit(). routeLine IS read again now,
+    // for R4: the corridor measures farms against this polyline.
+    val routeLine by trip.routeLine.collectAsState()
     val distanceMeters by trip.distanceMeters.collectAsState()
     val durationSeconds by trip.durationSeconds.collectAsState()
     val isRouting by trip.isRouting.collectAsState()
@@ -269,6 +271,23 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                     stringResource(R.string.open_in_google_maps), Icons.Filled.OpenInNew, Modifier.fillMaxWidth(),
                     enabled = stops.isNotEmpty(),
                 ) { openGoogleMaps(context, originCoord, stops, mode) }
+
+                // R4 · farms on the way. Shown once there's a road to measure against.
+                // Fed the FILTERED pin set (the map's own list) so it never offers a
+                // farm the map is hiding. Adding a farm toggles it onto the drive, which
+                // re-routes (LaunchedEffect(stopIds) above), so it re-positions against
+                // the new road for free.
+                if (routeLine.size >= 2) {
+                    Spacer(Modifier.height(4.dp))
+                    RouteCorridor(
+                        road = routeLine,
+                        tripKm = distanceMeters?.let { it / 1000.0 },
+                        filteredFarms = farms.filtered(),
+                        stopIds = stopIds.toSet(),
+                        onOpenFarm = onOpenFarm,
+                        onAddStop = { pin -> trip.toggle(pin.osmId); scope.launch { trip.refreshRoute(pinIndex) } },
+                    )
+                }
             } else {
                 MyTripsTab(
                     isAuthenticated = session.isAuthenticated,
