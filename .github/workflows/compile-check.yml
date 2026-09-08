@@ -10,8 +10,53 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Which halves of the repo this pull request actually touches.
+  #
+  # The iOS job runs on a macOS runner, which bills at ten times the Linux rate.
+  # A third of one afternoon's pull requests touched only Android or only docs
+  # and still spun one up, which is what emptied the month's allowance in a few
+  # hours. So the expensive job asks first.
+  #
+  # Deliberately generous: anything shared — the workflow itself, the parity
+  # script, the repo docs — counts as touching iOS, and anything unexpected
+  # (a manual run, a missing base) runs it too. A build that runs when it did
+  # not need to costs fifty cents. One that is skipped when it was needed costs
+  # a broken main nobody sees.
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ios: ${{ steps.filter.outputs.ios }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          if [ -z "$BASE" ] || [ -z "$HEAD" ]; then
+            echo "not a pull request — running everything"
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD" || true)
+          if [ -z "$CHANGED" ]; then
+            echo "could not read the diff — running everything"
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^(Farmsy/|FarmsyTests/|FarmsyUITests/|Farmsy.xcodeproj/|.github/|scripts/|docs/)'; then
+            echo "ios=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ios=false" >> "$GITHUB_OUTPUT"
+          fi
   ios:
     name: iOS (Xcode 26, simulator, unsigned)
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
     runs-on: macos-15
     timeout-minutes: 40
     steps:
