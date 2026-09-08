@@ -161,6 +161,32 @@ struct OpeningHoursTests {
                                                fromMinutes: Self.at(10), toMinutes: Self.at(11)) == .open)
     }
 
+    // MARK: - "Closed" written in a language OSM does not use
+
+    @Test("a day the farm calls closed is closed, in every word our data uses",
+          arguments: [
+            "Mo-Su 09:00-17:00; Su off",
+            "Mo-Su 09:00-17:00; Su gesloten",
+            "Mo-Su 09:00-17:00; zondag gesloten",
+            "Mo-Su 09:00-17:00; Su closed",
+          ])
+    func closedInAnyLanguage(hours: String) {
+        // Before the off pattern grew, only the first of these was read as shut.
+        // The other three still named a weekday and nothing marked them closed,
+        // so the app answered OPEN for a farm whose own hours say otherwise —
+        // the locked gate, actively caused rather than merely missed.
+        #expect(FarmFilters.isOpenOnDay(hours, dayMon: 6) == false)
+        #expect(FarmFilters.statusOnDay(hours, dayMon: 6) == .closed)
+    }
+
+    @Test("closing one day does not close the rest of the week")
+    func offIsPerDay() {
+        let hours = "Mo-Su 09:00-17:00; Su gesloten"
+        #expect(FarmFilters.isOpenOnDay(hours, dayMon: Self.sat))
+        #expect(FarmFilters.statusOnDayBetween(hours, dayMon: Self.sat,
+                                               fromMinutes: Self.at(10), toMinutes: Self.at(11)) == .open)
+    }
+
     @Test("the existing filters see the Dutch farms now too")
     func existingFiltersFixed() {
         // These returned false for every Dutch-format farm before the day table

@@ -35,6 +35,20 @@ enum FarmFilters {
         "montag": 1, "dienstag": 2, "mittwoch": 3, "donnerstag": 4, "freitag": 5, "samstag": 6, "sonntag": 0,
     ]
 
+    /// What counts as "shut" in a segment.
+    ///
+    /// OSM writes `Su off`. Our data does not: it was imported from sources that
+    /// wrote `zondag gesloten`, `So geschlossen`, `fermé`, or plain `closed`.
+    /// Matching only `off` did not merely miss those — it read them as OPEN,
+    /// because the segment still names a weekday and nothing marked it shut. A
+    /// farm whose own hours say it is closed on Sunday was being reported as
+    /// open on Sunday.
+    ///
+    /// That is the opposite of the day-name gap above and worse: that one
+    /// removed farms and was invisible, this one adds a wrong answer and sends
+    /// somebody to a locked gate. Mirrors web `OFF_RE`.
+    private static let offPattern = "\\b(off|gesloten|geschlossen|ferm[eé]|closed)\\b"
+
     /// A day token, as written, reduced to something `dayJS` can answer.
     ///
     /// Strips the trailing colon of `maandag:`, takes the first word of
@@ -71,7 +85,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
 
             // Day part is everything before the first HH:MM token.
             let dayPart = s.range(of: "\\s+\\d{1,2}:\\d{2}", options: .regularExpression)
@@ -157,7 +171,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
             let dayPart = dayPartOf(s)
             if dayPart.isEmpty || !daysOf(dayPart).contains(dayMon) { continue }
 
@@ -180,7 +194,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
             let dayPart = dayPartOf(s)
             if !dayPart.isEmpty && daysOf(dayPart).contains(dayMon) { return true }
         }
@@ -197,9 +211,9 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) == nil { continue }
+            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) == nil { continue }
             let dayPart = s.replacingOccurrences(
-                of: "\\boff\\b", with: "", options: [.regularExpression, .caseInsensitive]
+                of: offPattern, with: "", options: [.regularExpression, .caseInsensitive]
             ).trimmingCharacters(in: .whitespaces)
             if dayPart.isEmpty { continue }
             out.formUnion(daysOf(dayPart))
@@ -292,7 +306,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: "\\boff\\b", options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
             let dayPart = dayPartOf(s)
             if dayPart.isEmpty || !daysOf(dayPart).contains(dayMon) { continue }
             out.append(contentsOf: windowsOf(s))

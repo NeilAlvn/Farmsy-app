@@ -46,7 +46,16 @@ object FarmFilters {
     private fun dayKey(raw: String): String =
         raw.trim().split(' ', '\t', ':').firstOrNull().orEmpty()
             .lowercase().trimEnd('.', ',', ':')
-    private val offRegex = Regex("""\boff\b""", RegexOption.IGNORE_CASE)
+    /// What counts as "shut" in a segment.
+    ///
+    /// OSM writes `Su off`. Our data does not: it was imported from sources that
+    /// wrote `zondag gesloten`, `geschlossen`, `fermé`, or plain `closed`.
+    /// Matching only `off` did not merely miss those — it read them as OPEN,
+    /// because the segment still names a weekday and nothing marked it shut. A
+    /// farm whose own hours say it is closed on Sunday was reported open on
+    /// Sunday, which is the locked gate this whole file exists to avoid.
+    /// Mirrors web OFF_RE.
+    private val offRegex = Regex("""\b(off|gesloten|geschlossen|ferm[eé]|closed)\b""", RegexOption.IGNORE_CASE)
     private val timeToken = Regex("""\s+\d{1,2}:\d{2}""")
     private val windowRegex = Regex("""(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})""")
 
