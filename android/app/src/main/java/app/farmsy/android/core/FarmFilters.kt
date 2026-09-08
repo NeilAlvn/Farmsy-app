@@ -127,12 +127,15 @@ object FarmFilters {
     /// Open at this exact minute, in Amsterdam time (the Pro "open right now" filter).
     /// Distinct from `isOpenToday`, which only asks whether the day is one the farm
     /// opens at all. Mirrors web isOpenNow().
-    fun isOpenNow(openingHours: String?): Boolean {
+    ///
+    /// `cal` defaults to the Amsterdam wall clock now; it is a parameter only so a
+    /// test can pin a specific weekday and minute (iOS takes `at date:` for the same
+    /// reason). Every real caller uses the default.
+    fun isOpenNow(openingHours: String?, cal: Calendar = amsterdamCalendar()): Boolean {
         val raw = openingHours?.trim().orEmpty()
         if (raw.isEmpty()) return false
         if (raw == "24/7") return true
 
-        val cal = amsterdamCalendar()
         val minutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val today = todayInAmsterdam(cal)
 
