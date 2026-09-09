@@ -64,7 +64,13 @@ import app.farmsy.android.core.FarmDetailException
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmTeaser
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.res.pluralStringResource
 import app.farmsy.android.features.claim.ClaimSheet
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.card
@@ -149,14 +155,12 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     }
 
     Box(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
-        if (isLocked) {
-            // Signed out → the sign-up wall (teaser + "create a free account"), NOT the
-            // purchase paywall. Farm details are free for any signed-in account.
-            LockedSignUpContent(pin = pin, teaser = teaser, onSignIn = requestAuth, onBack = onBack)
-        } else if (loadFailed) {
-            // A signed-in transient failure — offer a retry, never a lock.
-            DetailLoadFailed(onRetry = { scope.launch { reload() } }, onBack = onBack)
-        } else {
+        // ONE scaffold for every state (iOS parity): the gallery, chips, name, town,
+        // rating, directions and add-to-trip are un-gated and always shown — only the
+        // MIDDLE block below switches (real details / sign-up wall / retry). The old
+        // build replaced the whole screen with a bare wall, which hid the photo, the
+        // add-to-trip and directions from a signed-out user.
+        run {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 // Gallery
                 val urls = (detail?.images?.takeIf { it.isNotEmpty() }
@@ -228,8 +232,28 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                     // Farm names run long ("Kerstbomen Van Ginhoven"); shrink rather
                     // than wrap under the chips.
                     FitText(pin.name, style = display(30.sp), color = FarmsyColors.ink)
-                    pin.city?.let {
-                        Text(it, style = geist(15.sp), color = FarmsyColors.inkMuted)
+
+                    // Rating + location, shown to everyone (iOS subHeader). The star row
+                    // is the farm's review status; the pin line is the public town +
+                    // country (the full street address stays in the members' details).
+                    Spacer(Modifier.height(6.dp))
+                    if (pin.reviewCount > 0 && pin.avgRating != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.Filled.Star, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(15.dp))
+                            Text(
+                                "%.1f".format(pin.avgRating) + "  ·  " +
+                                    pluralStringResource(R.plurals.reviews_count, pin.reviewCount, pin.reviewCount),
+                                style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.ink,
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    val locationLine = listOfNotNull(pin.city, pin.country).joinToString(", ")
+                    if (locationLine.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Filled.LocationOn, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(14.dp))
+                            Text(locationLine, style = geist(14.sp), color = FarmsyColors.inkMuted)
+                        }
                     }
                     Spacer(Modifier.height(16.dp))
 
@@ -290,11 +314,18 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                     }
                     Spacer(Modifier.height(16.dp))
 
-                    if (isLoading) {
-                        Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) {
+                    when {
+                        isLoading -> Box(Modifier.fillMaxWidth().padding(30.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = FarmsyColors.farmGreen)
                         }
-                    } else {
+                        // Signed out → the sign-up wall as a SECTION inside the scaffold
+                        // above (teaser + blurred faux-content bars + "See this farm,
+                        // free"), not a screen that replaces the photo and the buttons.
+                        // Details are free for any signed-in account — sign up, don't pay.
+                        isLocked -> LockedSections(pin = pin, teaser = teaser, onSignIn = requestAuth)
+                        // Signed-in transient failure — retry, never a lock.
+                        loadFailed -> InlineLoadError(onRetry = { scope.launch { reload() } })
+                        else -> {
                         detail?.description?.takeIf { it.isNotEmpty() }?.let {
                             Text(it, style = geist(16.sp), color = FarmsyColors.ink)
                             Spacer(Modifier.height(16.dp))
@@ -358,6 +389,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             detail = detail,
                             onClaim = { showClaim = true },
                         )
+                        }
                     }
                     Spacer(Modifier.height(30.dp))
                 }
@@ -430,37 +462,34 @@ private fun CircleIconButton(
     ) { Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp)) }
 }
 
-/// The sign-up wall shown when a signed-OUT user opens a farm — the Android port of
-/// iOS build 19 (FarmDetailView.lockedSections/lockedBlock). Teaser text if we have it,
-/// then an OPEN-padlock block: "See this farm, free" → create a free account. NOT the
-/// purchase paywall — details are free for any signed-in account, so the ask is to sign
-/// up, not to pay.
+/// The signed-out sign-up SECTION — the middle block of the detail scaffold, not a whole
+/// screen (iOS FarmDetailView.lockedSections/lockedBlock). Teaser text if we have it,
+/// then the membership ask floating over BLURRED faux-content bars, so the region reads
+/// as "there is more here". NOT the purchase paywall — details are free for any signed-in
+/// account, so the ask is to sign up, not to pay.
 @Composable
-private fun LockedSignUpContent(
-    pin: FarmPin,
-    teaser: FarmTeaser?,
-    onSignIn: () -> Unit,
-    onBack: () -> Unit,
-) {
-    Box(Modifier.fillMaxSize()) {
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Spacer(Modifier.height(40.dp))
-            Text(pin.name, style = display(24.sp, FontWeight.Bold), color = FarmsyColors.ink)
+private fun LockedSections(pin: FarmPin, teaser: FarmTeaser?, onSignIn: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        teaser?.let { t ->
+            Text(
+                t.text + if (t.truncated) " …" else "",
+                style = geist(15.sp).copy(lineHeight = 21.sp),
+                color = FarmsyColors.ink,
+            )
+        }
 
-            teaser?.let { t ->
-                Text(
-                    t.text + if (t.truncated) " …" else "",
-                    style = geist(15.sp).copy(lineHeight = 21.sp),
-                    color = FarmsyColors.ink,
-                )
-            }
-
-            // The open-padlock sign-up block (iOS lockedBlock).
+        // The ask sits in the middle of a blurred region — grey bars falling away above
+        // and below it, so the area reads as real (hidden) content, not an empty card.
+        // Nothing behind the blur is real: the paid values are never sent, so these are
+        // empty bars (iOS lockedBlock + lockedBarsBackground).
+        Box(Modifier.fillMaxWidth().heightIn(min = 300.dp), contentAlignment = Alignment.Center) {
+            LockedBarsBackground(
+                Modifier.matchParentSize()
+                    .blur(7.dp)
+                    .alpha(0.6f),
+            )
             Column(
-                Modifier.fillMaxWidth().card(22),
+                Modifier.padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -490,42 +519,49 @@ private fun LockedSignUpContent(
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(13.dp))
                 }
             }
-            Spacer(Modifier.height(30.dp))
-        }
-        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = onBack)
         }
     }
 }
 
-/// A signed-in transient load failure — a farm we couldn't reach, offered with a retry.
-/// Never a lock: a signed-in account is entitled to the details, so a network blip must
-/// not read as a paywall.
+/// Faux content behind the lock: uneven grey bars top and bottom, so the blurred area
+/// reads as "there is more here" around the centred ask (iOS lockedBarsBackground).
 @Composable
-private fun DetailLoadFailed(onRetry: () -> Unit, onBack: () -> Unit) {
-    Box(Modifier.fillMaxSize()) {
-        Column(
-            Modifier.fillMaxSize().padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(Modifier.weight(1f))
-            Text("🌾", fontSize = 34.sp)
-            Text(
-                stringResource(R.string.couldn_t_load_this_farm),
-                style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            Row(
-                Modifier.background(FarmsyColors.farmGreenSoft, RoundedCornerShape(14.dp))
-                    .clickable { onRetry() }.padding(horizontal = 24.dp, vertical = 12.dp),
-            ) {
-                Text(stringResource(R.string.try_again), style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen)
+private fun LockedBarsBackground(modifier: Modifier = Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(0.78f, 0.95f, 0.6f, 0.88f).forEach { fraction ->
+                Box(Modifier.fillMaxWidth(fraction).height(14.dp).background(FarmsyColors.hairline, RoundedCornerShape(4.dp)))
             }
-            Spacer(Modifier.weight(1f))
         }
-        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = onBack)
+        Spacer(Modifier.height(60.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(0.7f, 0.9f, 0.5f).forEach { fraction ->
+                Box(Modifier.fillMaxWidth(fraction).height(14.dp).background(FarmsyColors.hairline, RoundedCornerShape(4.dp)))
+            }
+        }
+    }
+}
+
+/// A signed-in transient load failure, as an inline section — a retry, never a lock: a
+/// signed-in account is entitled to the details, so a network blip must not read as a wall.
+@Composable
+private fun InlineLoadError(onRetry: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().card(20),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("🌾", fontSize = 34.sp)
+        Text(
+            stringResource(R.string.couldn_t_load_this_farm),
+            style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Row(
+            Modifier.background(FarmsyColors.farmGreenSoft, RoundedCornerShape(14.dp))
+                .clickable { onRetry() }.padding(horizontal = 24.dp, vertical = 12.dp),
+        ) {
+            Text(stringResource(R.string.try_again), style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen)
         }
     }
 }

@@ -225,7 +225,9 @@ fun AuthSheet(onDone: () -> Unit) {
                     AuthField(
                         stringResource(R.string.password), password, { password = it },
                         KeyboardType.Password, isSecure = true,
-                        placeholder = if (isSignUp) stringResource(R.string.auth_pw_placeholder) else "",
+                        // iOS shows this placeholder in both modes (AuthView:130). The
+                        // sign-in field was left blank on Android — give it the same hint.
+                        placeholder = stringResource(R.string.auth_pw_placeholder),
                     )
                     if (isSignUp) {
                         Spacer(Modifier.height(14.dp))
