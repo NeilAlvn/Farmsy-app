@@ -386,4 +386,10 @@
     <string name="pro_get_yearly">Get yearly</string>
     <string name="pro_buy_lifetime">Buy lifetime access</string>
     <string name="pro_lifetime_onetime">One-time · no renewals</string>
+
+    <!-- Farm-detail sign-up wall (iOS build 19 parity) -->
+    <string name="see_this_farm_free">See this farm, free</string>
+    <string name="one_free_account_opens_every_farm">Address, phone, opening times and what they sell. One free account opens every farm on the map.</string>
+    <string name="create_a_free_account">Create a free account</string>
+    <string name="couldn_t_load_this_farm">Couldn\'t load this farm.</string>
 </resources>

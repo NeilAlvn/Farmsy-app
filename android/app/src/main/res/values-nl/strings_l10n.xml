@@ -363,4 +363,10 @@
     <string name="pro_get_yearly">Kies jaarlijks</string>
     <string name="pro_buy_lifetime">Koop levenslange toegang</string>
     <string name="pro_lifetime_onetime">Eenmalig · geen verlengingen</string>
+
+    <!-- Farm-detail sign-up wall (iOS build 19 parity) -->
+    <string name="see_this_farm_free">Bekijk deze boerderij, gratis</string>
+    <string name="one_free_account_opens_every_farm">Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart.</string>
+    <string name="create_a_free_account">Maak een gratis account aan</string>
+    <string name="couldn_t_load_this_farm">Kon deze boerderij niet laden.</string>
 </resources>

@@ -15,7 +15,7 @@ import kotlinx.serialization.json.putJsonArray
 import java.net.URLEncoder
 
 sealed class FarmDetailException : Exception() {
-    class Locked : FarmDetailException()   // 401/403 — no active subscription
+    class Locked : FarmDetailException()   // 401 — no valid session (sign in required)
     class NotFound : FarmDetailException()
     class Other : FarmDetailException()
 }
@@ -40,7 +40,11 @@ object FarmDetailApi {
         }
         return when (resp.status.value) {
             200 -> lenientJson.decodeFromString<FarmDetail>(resp.bodyAsText())
-            401, 403 -> throw FarmDetailException.Locked()
+            // Details are a sign-up wall now — the farmsy.app route dropped the paid
+            // check (iOS build 19). 401 = no valid session (sign in). 403 no longer
+            // occurs here; if it ever did it must NOT read as "you can't have this" for a
+            // signed-in free account, so it falls through to Other (retry), never Locked.
+            401 -> throw FarmDetailException.Locked()
             404 -> throw FarmDetailException.NotFound()
             else -> throw FarmDetailException.Other()
         }

@@ -52,6 +52,7 @@ import app.farmsy.android.LocalTrip
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import app.farmsy.android.LocalSession
+import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.R
 import app.farmsy.android.core.AnalyticsEvent
 import app.farmsy.android.core.AnalyticsProp
@@ -61,6 +62,9 @@ import app.farmsy.android.core.FarmDetail
 import app.farmsy.android.core.FarmDetailApi
 import app.farmsy.android.core.FarmDetailException
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.core.FarmTeaser
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import app.farmsy.android.features.claim.ClaimSheet
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.card
@@ -93,43 +97,65 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     val tripStops by trip.stopIds.collectAsState()
     val inTrip = tripStops.contains(pin.osmId)
 
+    val requestAuth = LocalRequestAuth.current
     var detail by remember { mutableStateOf<FarmDetail?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    // `isLocked` now means SIGNED OUT (the sign-up wall), not "no subscription" — farm
+    // details are free for any signed-in account. loadFailed is a transient error for a
+    // signed-in user, which must NEVER read as locked (see reload). (Android port of the
+    // iOS build 19 sign-up-wall — this screen was still the old paywall.)
     var isLocked by remember { mutableStateOf(false) }
+    var loadFailed by remember { mutableStateOf(false) }
+    var teaser by remember { mutableStateOf<FarmTeaser?>(null) }
     var showClaim by remember { mutableStateOf(false) }
 
     suspend fun reload() {
-        isLoading = true; isLocked = false
+        isLoading = true; isLocked = false; loadFailed = false
+        session.refreshProfile()
+        // No session → the sign-up wall (a 401 from fetch means the same thing).
         val token = session.accessToken()
-        if (token == null) { isLocked = true; isLoading = false; return }
+        if (token == null) {
+            isLocked = true
+            teaser = runCatching { FarmDetailApi.teaser(pin.osmId) }.getOrNull()
+            isLoading = false
+            return
+        }
+        // The farmsy.app API is the source of truth — details are a sign-up wall now, so
+        // a signed-in account (free or paid) gets the data; only a 401 (no valid session)
+        // locks.
         try {
             detail = FarmDetailApi.fetch(pin.osmId, token)
+            isLocked = false
         } catch (e: FarmDetailException.Locked) {
             isLocked = true
+            teaser = runCatching { FarmDetailApi.teaser(pin.osmId) }.getOrNull()
         } catch (e: Exception) {
-            if (!session.hasFullAccess) isLocked = true
+            // A signed-in transient failure. NEVER a lock — every signed-in account is
+            // entitled to the details, so a network blip must not send a free user to a
+            // paywall they're past. Show a retry, whatever the subscription status.
+            loadFailed = true
         }
         isLoading = false
     }
 
-    LaunchedEffect(pin.osmId) { session.refreshProfile(); reload() }
+    LaunchedEffect(pin.osmId) { reload() }
 
-    // Open the farm the moment access is granted, however long that takes.
-    //
-    // The grant arrives from the server via RevenueCat's webhook some seconds after
-    // the purchase call returns, and polling for a fixed budget is a losing game: if
-    // the webhook is slower than the budget, the buyer is left sitting on the very
-    // paywall they just paid to leave, with no way forward but to back out and tap
-    // the farm again. Watching the profile instead means the screen unlocks itself
-    // whenever the grant lands — on time, late, or while they're still looking at it.
-    val profile by session.profile.collectAsState()
-    LaunchedEffect(profile?.hasFullAccess) {
-        if (profile?.hasFullAccess == true && isLocked) reload()
+    // Open the farm the moment the user signs in. Under the sign-up-wall contract
+    // `isLocked` means "signed out", so a session appearing (they came back from the
+    // auth sheet) is what unlocks it — the screen reloads itself and the details fill in.
+    val currentSession by session.session.collectAsState()
+    LaunchedEffect(currentSession?.user?.id) {
+        if (isLocked && currentSession != null) reload()
     }
 
     Box(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
         if (isLocked) {
-            LockedAccessView(pin = pin, onClaim = { showClaim = true }) { reload() }
+            // Signed out → the sign-up wall (teaser + "create a free account"), NOT the
+            // purchase paywall. Farm details are free for any signed-in account.
+            LockedSignUpContent(pin = pin, teaser = teaser, onSignIn = requestAuth, onBack = onBack)
+        } else if (loadFailed) {
+            // A signed-in transient failure — offer a retry, never a lock.
+            DetailLoadFailed(onRetry = { scope.launch { reload() } }, onBack = onBack)
         } else {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 // Gallery
@@ -402,4 +428,104 @@ private fun CircleIconButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) { Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp)) }
+}
+
+/// The sign-up wall shown when a signed-OUT user opens a farm — the Android port of
+/// iOS build 19 (FarmDetailView.lockedSections/lockedBlock). Teaser text if we have it,
+/// then an OPEN-padlock block: "See this farm, free" → create a free account. NOT the
+/// purchase paywall — details are free for any signed-in account, so the ask is to sign
+/// up, not to pay.
+@Composable
+private fun LockedSignUpContent(
+    pin: FarmPin,
+    teaser: FarmTeaser?,
+    onSignIn: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Spacer(Modifier.height(40.dp))
+            Text(pin.name, style = display(24.sp, FontWeight.Bold), color = FarmsyColors.ink)
+
+            teaser?.let { t ->
+                Text(
+                    t.text + if (t.truncated) " …" else "",
+                    style = geist(15.sp).copy(lineHeight = 21.sp),
+                    color = FarmsyColors.ink,
+                )
+            }
+
+            // The open-padlock sign-up block (iOS lockedBlock).
+            Column(
+                Modifier.fillMaxWidth().card(22),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    Modifier.size(48.dp).background(FarmsyColors.farmGreen.copy(alpha = 0.10f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Filled.LockOpen, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp)) }
+                Text(
+                    stringResource(R.string.see_this_farm_free),
+                    style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Text(
+                    stringResource(R.string.one_free_account_opens_every_farm),
+                    style = geist(14.sp).copy(lineHeight = 20.sp), color = FarmsyColors.inkMuted,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 4.dp)
+                        .background(FarmsyColors.farmGreenMap, RoundedCornerShape(16.dp))
+                        .clickable { onSignIn() }.padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.create_a_free_account), style = geist(15.sp, FontWeight.SemiBold), color = Color.White)
+                    Spacer(Modifier.size(8.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(13.dp))
+                }
+            }
+            Spacer(Modifier.height(30.dp))
+        }
+        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = onBack)
+        }
+    }
+}
+
+/// A signed-in transient load failure — a farm we couldn't reach, offered with a retry.
+/// Never a lock: a signed-in account is entitled to the details, so a network blip must
+/// not read as a paywall.
+@Composable
+private fun DetailLoadFailed(onRetry: () -> Unit, onBack: () -> Unit) {
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.fillMaxSize().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(Modifier.weight(1f))
+            Text("🌾", fontSize = 34.sp)
+            Text(
+                stringResource(R.string.couldn_t_load_this_farm),
+                style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Row(
+                Modifier.background(FarmsyColors.farmGreenSoft, RoundedCornerShape(14.dp))
+                    .clickable { onRetry() }.padding(horizontal = 24.dp, vertical = 12.dp),
+            ) {
+                Text(stringResource(R.string.try_again), style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen)
+            }
+            Spacer(Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            CircleIconButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = onBack)
+        }
+    }
 }
