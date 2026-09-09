@@ -369,4 +369,6 @@
     <string name="one_free_account_opens_every_farm">Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart.</string>
     <string name="create_a_free_account">Maak een gratis account aan</string>
     <string name="couldn_t_load_this_farm">Kon deze boerderij niet laden.</string>
+    <string name="farm_photo">Boerderijfoto</string>
+    <string name="share">Delen</string>
 </resources>

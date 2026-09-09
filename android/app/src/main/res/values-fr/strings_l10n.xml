@@ -369,4 +369,6 @@
     <string name="one_free_account_opens_every_farm">Adresse, téléphone, horaires et ce qu\'ils vendent. Un compte gratuit ouvre toutes les fermes de la carte.</string>
     <string name="create_a_free_account">Créer un compte gratuit</string>
     <string name="couldn_t_load_this_farm">Impossible de charger cette ferme.</string>
+    <string name="farm_photo">Photo de la ferme</string>
+    <string name="share">Partager</string>
 </resources>
