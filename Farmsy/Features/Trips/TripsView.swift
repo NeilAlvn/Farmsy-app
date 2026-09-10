@@ -535,20 +535,22 @@ struct TripsView: View {
         tab = .mine
     }
 
+    /// Hand the planned drive to Google Maps.
+    ///
+    /// The endpoints are the same ones a save writes, so what opens in Maps is
+    /// what reopening the trip would draw. Before R8 this built its own URL from
+    /// the origin and the stop list alone, which meant a drive planned towards a
+    /// destination opened as a drive ending at the last farm — the place the
+    /// user said they were going was simply absent. The rules now live in
+    /// `MapsHandoff`, alongside the web's `mapsHandoff.ts`.
     private func openGoogleMaps() {
-        let coords = ([trip.originCoord].compactMap { $0 }) + stops.map(\.coordinate)
-        guard coords.count >= 2 else {
-            if let f = stops.first, let url = URL(string: "https://www.google.com/maps/search/?api=1&query=\(f.lat),\(f.lng)") {
-                UIApplication.shared.open(url)
-            }
-            return
-        }
-        let origin = "\(coords.first!.latitude),\(coords.first!.longitude)"
-        let dest = "\(coords.last!.latitude),\(coords.last!.longitude)"
-        let mid = coords.dropFirst().dropLast().map { "\($0.latitude),\($0.longitude)" }.joined(separator: "|")
-        var s = "https://www.google.com/maps/dir/?api=1&origin=\(origin)&destination=\(dest)&travelmode=\(trip.mode.googleMode)"
-        if !mid.isEmpty { s += "&waypoints=\(mid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? mid)" }
-        if let url = URL(string: s) { UIApplication.shared.open(url) }
+        let url = MapsHandoff.googleMapsURL(.init(
+            origin: trip.originCoord,
+            stops: stops.map(\.coordinate),
+            destination: trip.destinationCoord,
+            travelMode: trip.mode.googleMode
+        ))
+        if let url { UIApplication.shared.open(url) }
     }
 }
 
