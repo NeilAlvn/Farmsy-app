@@ -43,6 +43,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import app.farmsy.android.core.TripEndpoints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,6 +74,7 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.MapsHandoff
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.SavedTrip
 import app.farmsy.android.core.TravelMode
@@ -95,6 +105,11 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val pins by farms.pins.collectAsState()
     val stopIds by trip.stopIds.collectAsState()
     val originCoord by trip.originCoord.collectAsState()
+    // R8: the drive has an end of its own. Read here so the Maps hand-off can
+    // tell a stop apart from the destination.
+    val destinationCoord by trip.destinationCoord.collectAsState()
+    // R7: the day this drive is for. Null until somebody picks one.
+    val tripDate by trip.tripDate.collectAsState()
     val originLabel by trip.originLabel.collectAsState()
     val mode by trip.mode.collectAsState()
     // traceProgress / fitToken are no longer read here — the route renders on the shared
@@ -177,6 +192,16 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                     // directly). "Use my location" lives inside the sheet now.
                     onOpenSearch = { showOriginSearch = true },
                     onClear = { trip.clearOrigin(); scope.launch { trip.refreshRoute(pinIndex) } },
+                )
+
+                Spacer(Modifier.size(14.dp))
+
+                // R7 · the day. Under the start, because a drive is a place and
+                // then a time, and that is the order it is decided in.
+                DayRow(
+                    date = tripDate,
+                    onPick = { trip.setTripDate(it) },
+                    onClear = { trip.clearTripDate() },
                 )
 
                 // Trip overview (numbered stops, 5-slot minimum). Tucked away at the
@@ -270,7 +295,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                 OutlineAction(
                     stringResource(R.string.open_in_google_maps), Icons.Filled.OpenInNew, Modifier.fillMaxWidth(),
                     enabled = stops.isNotEmpty(),
-                ) { openGoogleMaps(context, originCoord, stops, mode) }
+                ) { openGoogleMaps(context, originCoord, stops, destinationCoord, mode) }
 
                 // R4 · farms on the way. Shown once there's a road to measure against.
                 // Fed the FILTERED pin set (the map's own list) so it never offers a
@@ -370,6 +395,111 @@ private fun TabButton(title: String, selected: Boolean, modifier: Modifier = Mod
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DayRow(date: String?, onPick: (String) -> Unit, onClear: () -> Unit) {
+    var showPicker by remember { mutableStateOf(false) }
+    val clearTheDay = stringResource(R.string.clear_the_day)
+
+    Surface(
+        Modifier.fillMaxWidth().clickable { showPicker = true },
+        shape = CircleShape, color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, FarmsyColors.hairline),
+    ) {
+        Row(
+            Modifier.padding(vertical = 14.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.CalendarToday, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(10.dp))
+            Text(
+                date?.let { dayLabel(it) } ?: stringResource(R.string.choose_a_day),
+                style = geist(15.sp), color = if (date == null) FarmsyColors.inkMuted else FarmsyColors.ink,
+                maxLines = 1, modifier = Modifier.weight(1f),
+            )
+            if (date != null) {
+                Icon(
+                    Icons.Filled.Close, null, tint = FarmsyColors.inkMuted,
+                    modifier = Modifier.size(18.dp)
+                        .semantics { contentDescription = clearTheDay }
+                        .clickable { onClear() },
+                )
+            }
+        }
+    }
+
+    if (showPicker) {
+        // The platform picker, not one of our own. It already knows the
+        // reader's language, which day their week starts on, and how they
+        // expect a date to be written — three things worth more than a
+        // consistent brand colour on a control used once per trip.
+        //
+        // Seeded with the day already chosen, or the Saturday coming. That
+        // default is offered and never stored: tripDate stays null until
+        // somebody actually picks, so a trip that never had a day does not
+        // start claiming it was planned for one.
+        val seed = date ?: TripEndpoints.nextSaturday()
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = TripEndpoints.day(seed)
+                ?.atStartOfDay(java.time.ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
+            selectableDates = NotInThePast,
+        )
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    // The picker hands back UTC midnight for the day the user
+                    // tapped, so it is read back in UTC. Turning it into a local
+                    // date here would move it by a day for anyone west of
+                    // Greenwich, which is the classic version of this bug.
+                    state.selectedDateMillis?.let { millis ->
+                        val day = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                        onPick(TripEndpoints.dayString(day))
+                    }
+                    showPicker = false
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        ) {
+            DatePicker(state = state, title = { Text(stringResource(R.string.day_of_the_trip), Modifier.padding(24.dp)) })
+        }
+    }
+}
+
+/// A day, written the way this reader writes days. "Today" and "Tomorrow" are
+/// spelled out because a date somebody can count on their fingers reads slower
+/// than the word for it.
+@Composable
+private fun dayLabel(iso: String): String {
+    val day = TripEndpoints.day(iso) ?: return iso
+    val today = java.time.LocalDate.now(TripEndpoints.zone)
+    return when (day) {
+        today -> stringResource(R.string.today)
+        today.plusDays(1) -> stringResource(R.string.tomorrow)
+        else -> day.format(
+            java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+                .withLocale(java.util.Locale.getDefault())
+        )
+    }
+}
+
+/// A trip is planned, so it is in the future. Yesterday is not a plan.
+@OptIn(ExperimentalMaterial3Api::class)
+private object NotInThePast : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        val day = java.time.Instant.ofEpochMilli(utcTimeMillis)
+            .atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        return !day.isBefore(java.time.LocalDate.now(TripEndpoints.zone))
+    }
+
+    override fun isSelectableYear(year: Int) = year >= java.time.LocalDate.now(TripEndpoints.zone).year
 }
 
 @Composable
@@ -607,21 +737,31 @@ private fun legLabel(i: Int, stops: List<FarmPin>, originCoord: LatLng?, mode: T
     return "~%.0f km · %d min".format(km, mode.minutes(km))
 }
 
-private fun openGoogleMaps(context: android.content.Context, originCoord: LatLng?, stops: List<FarmPin>, mode: TravelMode) {
-    val coords = buildList {
-        originCoord?.let { add(it) }
-        stops.forEach { add(LatLng(it.lat, it.lng)) }
-    }
-    if (coords.size < 2) {
-        stops.firstOrNull()?.let {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${it.lat},${it.lng}")))
-        }
-        return
-    }
-    val origin = "${coords.first().latitude},${coords.first().longitude}"
-    val dest = "${coords.last().latitude},${coords.last().longitude}"
-    val mid = coords.drop(1).dropLast(1).joinToString("|") { "${it.latitude},${it.longitude}" }
-    var url = "https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$dest&travelmode=${mode.googleMode}"
-    if (mid.isNotEmpty()) url += "&waypoints=${Uri.encode(mid)}"
+/// R8 · hand the planned drive to Google Maps.
+///
+/// The URL itself is built in [MapsHandoff], shared with iOS and the web, so
+/// what opens here is the same route those two open for the same trip. This
+/// function is only the Android half: turning stops into coordinates and firing
+/// the intent.
+///
+/// Before R8 it built the URL inline from `[originCoord] + stops` and took the
+/// last of those as the destination, so a drive planned towards somewhere
+/// opened as a drive ending at the last farm.
+private fun openGoogleMaps(
+    context: android.content.Context,
+    originCoord: LatLng?,
+    stops: List<FarmPin>,
+    destinationCoord: LatLng?,
+    mode: TravelMode,
+) {
+    val url = MapsHandoff.googleMapsUrl(
+        MapsHandoff.Plan(
+            origin = originCoord,
+            stops = stops.map { LatLng(it.lat, it.lng) },
+            destination = destinationCoord,
+            travelMode = mode.googleMode,
+        )
+    )
+    if (url.isEmpty()) return
     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
 }

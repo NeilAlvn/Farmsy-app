@@ -308,6 +308,11 @@
     <string name="signup_wall_body">Adresse, Telefon, Öffnungszeiten und was verkauft wird. Ein kostenloses Konto öffnet jeden Hof auf der Karte.</string>
     <string name="signup_wall_cta">Kostenloses Konto erstellen</string>
     <string name="choose_a_starting_point">Wähle einen Ausgangspunkt</string>
+    <string name="choose_a_day">Wähle einen Tag</string>
+    <string name="day_of_the_trip">Tag der Fahrt</string>
+    <string name="clear_the_day">Tag löschen</string>
+    <string name="today">Heute</string>
+    <string name="tomorrow">Morgen</string>
     <string name="farmsy_for_android_arg">Farmsy für Android %1$s</string>
     <string name="farmsy_pro">Farmsy Pro</string>
     <string name="pro_open_now">Jetzt geöffnet</string>
