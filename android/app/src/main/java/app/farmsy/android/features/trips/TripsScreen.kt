@@ -307,6 +307,14 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                     RouteCorridor(
                         road = routeLine,
                         tripKm = distanceMeters?.let { it / 1000.0 },
+                        // R6 · the corridor asks "open when you pass", so it needs how
+                        // long the road takes, which day the drive is on and when it
+                        // sets off.
+                        tripMinutes = durationSeconds?.let { it / 60.0 },
+                        tripDate = tripDate,
+                        departMinutes = null,
+                        // R5b · what each farm sells. The map already fetched it.
+                        produceByOsm = farms.produceByOsm,
                         filteredFarms = farms.filtered(),
                         stopIds = stopIds.toSet(),
                         onOpenFarm = onOpenFarm,

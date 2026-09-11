@@ -116,7 +116,11 @@ class FarmsStore(private val scope: CoroutineScope) {
 
     // Flags maps (loaded once from /api/farms/flags).
     private var flagsLoaded = false
-    private var produceByOsm: Map<String, String> = emptyMap()
+    /// Lowercase produce text per OSM id, from the `p` flag. Read by the trip
+    /// corridor (R5b) so a row can say what a farm sells instead of naming its
+    /// town — public for that reason, and read-only from outside.
+    var produceByOsm: Map<String, String> = emptyMap()
+        private set
     private var locationTypesByOsm: Map<String, List<String>> = emptyMap()
     private var methodsByOsm: Map<String, List<String>> = emptyMap()
 

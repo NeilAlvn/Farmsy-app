@@ -309,6 +309,8 @@
     <string name="signup_wall_cta">Maak een gratis account aan</string>
     <string name="choose_a_starting_point">Kies een vertrekpunt</string>
     <string name="choose_a_day">Kies een dag</string>
+    <string name="route_open_when_you_pass">Open als je langskomt</string>
+    <string name="route_shut_when_you_pass">Dicht als je langskomt</string>
     <string name="day_of_the_trip">Dag van de rit</string>
     <string name="clear_the_day">Dag wissen</string>
     <string name="today">Vandaag</string>

@@ -1,6 +1,8 @@
 package app.farmsy.android.features.trips
 
 import androidx.compose.foundation.background
+import app.farmsy.android.core.TripEndpoints
+import java.time.LocalDate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +63,17 @@ private const val FREE_ROWS = 40   // a cap so a 1,000-farm corridor doesn't scr
 fun RouteCorridor(
     road: List<LatLng>,
     tripKm: Double?,
+    /// How long the road takes, in minutes. Null when the route has no duration —
+    /// the arrival estimate then falls back to the departure time itself, which
+    /// asks about the day rather than the moment (R6).
+    tripMinutes: Double?,
+    /// The day being planned for, `yyyy-mm-dd` (R7). Null means today.
+    tripDate: String?,
+    /// When the drive sets off, minutes past midnight. Null means 10:00, the same
+    /// default the web planner uses.
+    departMinutes: Int?,
+    /// Lowercase produce text per OSM id, from FarmsStore.produceByOsm (R5b).
+    produceByOsm: Map<String, String>,
     filteredFarms: List<FarmPin>,
     stopIds: Set<String>,
     onOpenFarm: (FarmPin) -> Unit,
@@ -129,6 +142,10 @@ fun RouteCorridor(
                 modifier = Modifier.padding(vertical = 4.dp),
             )
             else -> {
+                // R6 · which weekday the drive is on. Computed once for the whole list
+                // rather than per row: every row is the same drive on the same day.
+                val dayMon = dayMonOf(tripDate)
+
                 // Too many to hold in your head — cap the render and say so (R4-4).
                 val capped = near.size > FREE_ROWS
                 val shown = if (capped) near.take(FREE_ROWS) else near
@@ -152,6 +169,9 @@ fun RouteCorridor(
                         CorridorRow(
                             farm = n.farm,
                             offRouteM = n.offRoute,
+                            produce = produceByOsm[n.farm.osmId],
+                            arrivalMinutes = arrivalMinutes(departMinutes, tripMinutes, n.along),
+                            dayMon = dayMon,
                             onOpen = { onOpenFarm(n.farm) },
                             onAdd = { onAddStop(n.farm) },
                         )
@@ -176,6 +196,12 @@ fun RouteCorridor(
 private fun CorridorRow(
     farm: FarmPin,
     offRouteM: Double,
+    /// Comma-separated produce, lowercase, or null (R5b).
+    produce: String?,
+    /// Roughly when the drive gets here, minutes past midnight (R6).
+    arrivalMinutes: Int,
+    /// The weekday of the drive, Monday-indexed.
+    dayMon: Int,
     onOpen: () -> Unit,
     onAdd: () -> Unit,
 ) {
@@ -203,12 +229,25 @@ private fun CorridorRow(
 
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(farm.name, style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.ink, maxLines = 1)
+
+            // R5b · what it sells, falling back to the town. Four at most: the row is
+            // one line, and a list that truncates mid-word says less than a shorter
+            // one that does not.
+            Text(
+                sells(produce) ?: farm.city.orEmpty(),
+                style = geist(12.sp), color = FarmsyColors.inkMuted, maxLines = 1,
+            )
+
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                // R6 · open when you pass (today). Unknown draws nothing rather than a
-                // guess — calling an unknown farm open is how someone drives to a locked gate.
-                when (openTodayStatus(farm.openingHours)) {
-                    FarmFilters.DayStatus.OPEN -> OpenDot(FarmsyColors.farmGreen, stringResource(R.string.filter_open_today))
-                    FarmFilters.DayStatus.CLOSED -> OpenDot(FarmsyColors.inkMuted, stringResource(R.string.closed))
+                // R6 · open when you PASS, not open today. Unknown draws nothing rather
+                // than a guess — calling an unknown farm open is how someone drives to a
+                // locked gate. Half an hour of width covers stopping to look.
+                val status = FarmFilters.statusOnDayBetween(
+                    farm.openingHours, dayMon, arrivalMinutes, arrivalMinutes + 30,
+                )
+                when (status) {
+                    FarmFilters.DayStatus.OPEN -> OpenDot(FarmsyColors.farmGreen, stringResource(R.string.route_open_when_you_pass))
+                    FarmFilters.DayStatus.CLOSED -> OpenDot(FarmsyColors.inkMuted, stringResource(R.string.route_shut_when_you_pass))
                     FarmFilters.DayStatus.UNKNOWN -> {}
                 }
                 Text(
@@ -237,13 +276,37 @@ private fun OpenDot(color: Color, label: String) {
     }
 }
 
-/// R6 statusOnDay for TODAY in Amsterdam — "is it open the day you'd pass". The trip has
-/// no date UI yet (web's doesn't either), so today is the honest question to ask.
-private fun openTodayStatus(hours: String?): FarmFilters.DayStatus {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("Europe/Amsterdam"))
-    // Java Calendar: 1=Sun..7=Sat → Mon-indexed 0..6.
-    val dayMon = intArrayOf(6, 0, 1, 2, 3, 4, 5)[cal.get(Calendar.DAY_OF_WEEK) - 1]
-    return FarmFilters.statusOnDay(hours, dayMon)
+/// The weekday the drive is on, Monday-indexed, decided in Amsterdam.
+///
+/// The trip is planned against Dutch and Belgian opening hours, so the day is theirs
+/// and not the phone's. A device set to Los Angeles would otherwise ask about Friday
+/// for a Saturday drive.
+internal fun dayMonOf(tripDate: String?): Int {
+    val day = TripEndpoints.day(tripDate) ?: LocalDate.now(TripEndpoints.zone)
+    // java.time DayOfWeek is already 1=Mon..7=Sun.
+    return day.dayOfWeek.value - 1
+}
+
+/// Roughly when the drive reaches a farm, in minutes past midnight.
+///
+/// A farm two thirds of the way along a two hour drive is passed about eighty minutes
+/// in. It is an estimate and does not need to be better than one: it decides which of
+/// three words appears beside a name.
+///
+/// Without a duration there is no arrival, so it falls back to the departure time.
+/// "Open on Saturday" is weaker than "open when you arrive" and far better than nothing.
+internal fun arrivalMinutes(departMinutes: Int?, tripMinutes: Double?, along: Double): Int {
+    val depart = (departMinutes ?: 10 * 60).toDouble()
+    if (tripMinutes == null) return depart.roundToInt()
+    return (depart + along * tripMinutes).roundToInt()
+}
+
+/// The produce text as a row reads it: at most four things, separated the way the web
+/// separates them. Null when there is nothing to say, so the caller falls back to the
+/// town rather than printing an empty line.
+internal fun sells(produce: String?): String? {
+    val parts = produce.orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.take(4)
+    return if (parts.isEmpty()) null else parts.joinToString(" · ")
 }
 
 /// "800 m" under a kilometre, "3.2 km" over — the same shape the rest of the app uses.

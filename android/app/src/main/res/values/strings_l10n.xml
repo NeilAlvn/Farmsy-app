@@ -332,6 +332,8 @@
     <string name="signup_wall_cta">Create a free account</string>
     <string name="choose_a_starting_point">Choose a starting point</string>
     <string name="choose_a_day">Choose a day</string>
+    <string name="route_open_when_you_pass">Open when you pass</string>
+    <string name="route_shut_when_you_pass">Shut when you pass</string>
     <string name="day_of_the_trip">Day of the trip</string>
     <string name="clear_the_day">Clear the day</string>
     <string name="today">Today</string>
