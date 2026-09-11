@@ -258,3 +258,37 @@ struct OpeningHoursTests {
         #expect(FarmFilters.isOpenOnDay("Mo-Fr 09:00-17:00", dayMon: Self.mon))
     }
 }
+
+/// R5b · the row says what the farm sells.
+///
+/// The bug this closes is invisible: the produce line fell back to the town name, so a
+/// planner whose whole pitch is "cheese on your way" listed farms and named towns, and
+/// nobody reading "Utrecht" under a farm name thinks anything is missing.
+struct CorridorSellsTests {
+
+    @Test("a produce list becomes a row of things, not a sentence")
+    func fourAtMost() {
+        #expect(RouteCorridorSells.sells("cheese, milk") == "cheese · milk")
+        #expect(RouteCorridorSells.sells("cheese,milk,eggs") == "cheese · milk · eggs")
+    }
+
+    @Test("a long list is cut rather than truncated mid-word")
+    func cut() {
+        // The row is one line. Five things that get clipped by the layout say less
+        // than four that fit.
+        #expect(RouteCorridorSells.sells("a, b, c, d, e, f") == "a · b · c · d")
+    }
+
+    @Test("nothing to say returns nil, so the caller can fall back to the town")
+    func emptyIsNil() {
+        #expect(RouteCorridorSells.sells(nil) == nil)
+        #expect(RouteCorridorSells.sells("") == nil)
+        #expect(RouteCorridorSells.sells("   ") == nil)
+        #expect(RouteCorridorSells.sells(",,, ,") == nil)
+    }
+
+    @Test("spacing in the stored text does not reach the screen")
+    func trimmed() {
+        #expect(RouteCorridorSells.sells("  cheese ,   milk  ") == "cheese · milk")
+    }
+}

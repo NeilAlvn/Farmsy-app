@@ -258,6 +258,14 @@ struct TripsView: View {
                             RouteCorridorView(
                                 road: trip.routeLine,
                                 tripKm: trip.distanceMeters.map { $0 / 1000 },
+                                // R6 · the corridor asks "open when you pass", so it
+                                // needs how long the road takes, which day the drive is
+                                // on and when it sets off.
+                                tripMinutes: trip.durationSeconds.map { $0 / 60 },
+                                tripDate: trip.tripDate,
+                                departMinutes: trip.departMinutes,
+                                // R5b · what each farm sells. The map already fetched it.
+                                produceByOsm: farms.produceByOsm,
                                 filteredFarms: farms.filtered,
                                 stopIds: Set(trip.stopIds),
                                 onOpenFarm: { pin in onOpenFarm(pin) },
