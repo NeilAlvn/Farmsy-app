@@ -179,6 +179,12 @@ final class TripStore {
     private(set) var onRoads = false
     /// Chosen travel mode — affects the time estimate and the Google Maps link.
     private(set) var mode: TravelMode = .car
+
+    /// R5 — the product chips picked for the corridor (agreed-term keys, e.g.
+    /// "strawberries"). On the TRIP, not the corridor view, so editing the route
+    /// does not silently clear the picks. Empty = no product filter (show all
+    /// farms on the way). Several picked means ANY of them, never all.
+    private(set) var selectedProducts: Set<String> = []
     /// The line as it draws itself, sliced by the trace animation (0→1). The map
     /// renders this, not `routeLine`, so the route traces along the road.
     private(set) var traceProgress: Double = 1
@@ -281,6 +287,16 @@ final class TripStore {
         mode = m
         UserDefaults.standard.set(m.rawValue, forKey: modeKey)
     }
+
+    // MARK: R5 — corridor product filter
+
+    /// Toggle a product chip. Kept on the trip so a re-route (add/reorder/origin
+    /// change) leaves the picks in place.
+    func toggleProduct(_ key: String) {
+        if selectedProducts.contains(key) { selectedProducts.remove(key) }
+        else { selectedProducts.insert(key) }
+    }
+    func clearProducts() { selectedProducts.removeAll() }
 
     // MARK: Draft
 

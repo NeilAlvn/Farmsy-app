@@ -188,6 +188,13 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val _mode = MutableStateFlow(TravelMode.CAR)
     val mode: StateFlow<TravelMode> = _mode.asStateFlow()
 
+    // R5 — the product chips picked for the corridor (agreed-term keys, e.g.
+    // "strawberries"). On the TRIP, not the corridor view, so editing the route does
+    // not silently clear the picks. Empty = no product filter. Several picked means
+    // ANY of them, never all. Mirrors iOS TripStore.selectedProducts.
+    private val _selectedProducts = MutableStateFlow<Set<String>>(emptySet())
+    val selectedProducts: StateFlow<Set<String>> = _selectedProducts.asStateFlow()
+
     var editingTripId: String? = null
         private set
 
@@ -295,6 +302,15 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         _mode.value = m
         prefs.edit().putString(modeKey, m.name).apply()
     }
+
+    // R5 — corridor product filter. Kept on the trip so a re-route leaves the picks
+    // in place.
+    fun toggleProduct(key: String) {
+        _selectedProducts.value = _selectedProducts.value.toMutableSet().apply {
+            if (!add(key)) remove(key)
+        }
+    }
+    fun clearProducts() { _selectedProducts.value = emptySet() }
 
     // MARK: Draft
 
