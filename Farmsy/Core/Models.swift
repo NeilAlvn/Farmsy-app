@@ -197,13 +197,32 @@ struct FarmDetail: Decodable {
     let instagram: String?
     let organic: Bool?
     let produce: String?
+    /// What we read out of the farm's own description, kept separate from the
+    /// curated `produce`. The API ships both raw and never merges them; see
+    /// `displayProduce`.
+    let produceInferred: String?
     let operatorName: String?
     let images: [String]
 
     enum CodingKeys: String, CodingKey {
         case osmId = "osm_id", phone, website, address, postalCode = "postal_code"
         case country, openingHours = "opening_hours", image, description, email
-        case facebook, instagram, organic, produce, operatorName = "operator", images
+        case facebook, instagram, organic, produce, produceInferred = "produce_inferred"
+        case operatorName = "operator", images
+    }
+
+    /// The produce list to show. What the farm told us (`produce`) wins; failing
+    /// that, what we inferred from its description (`produce_inferred`). The API
+    /// ships the two separately and never merges — and for roughly five in six
+    /// farms with any product data the only value is the inferred one, so reading
+    /// `produce` alone shows those farms nothing. Mirrors the web's
+    /// `produce || produce_inferred`, curated winning. Empty/whitespace = absent.
+    var displayProduce: String? {
+        if let curated = produce?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !curated.isEmpty { return curated }
+        if let inferred = produceInferred?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !inferred.isEmpty { return inferred }
+        return nil
     }
 
     init(from decoder: Decoder) throws {
@@ -229,6 +248,7 @@ struct FarmDetail: Decodable {
             organic = nil
         }
         produce = try? c.decodeIfPresent(String.self, forKey: .produce)
+        produceInferred = try? c.decodeIfPresent(String.self, forKey: .produceInferred)
         operatorName = try? c.decodeIfPresent(String.self, forKey: .operatorName)
         images = (try? c.decodeIfPresent([String].self, forKey: .images)) ?? []
     }

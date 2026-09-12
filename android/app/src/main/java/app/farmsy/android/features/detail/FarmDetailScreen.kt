@@ -289,7 +289,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             },
                             detail?.email?.let { stringResource(R.string.email) to it },
                             detail?.operatorName?.let { stringResource(R.string.run_by) to it },
-                            detail?.produce?.takeIf { it.isNotEmpty() }
+                            detail?.displayProduce
                                 ?.let { stringResource(R.string.produce) to it },
                         )
 
