@@ -379,6 +379,10 @@
     <string name="route_count">%1$d boerderijen op je route</string>
     <string name="route_leg_count">%1$d binnen %2$d km</string>
     <string name="route_leg_range">%1$d–%2$d km</string>
+    <string name="route_open_when_pass">Open als je langskomt</string>
+    <string name="route_closed_then">Dan gesloten</string>
+    <string name="route_going">Op</string>
+    <string name="route_at">om</string>
     <string name="route_off_road">%1$s van de route</string>
     <string name="route_add">Toevoegen</string>
     <string name="route_added">Op de rit</string>

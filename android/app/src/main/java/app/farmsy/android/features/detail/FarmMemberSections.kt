@@ -295,7 +295,7 @@ private fun detailRowsOf(pin: FarmPin, detail: FarmDetail?): List<DetailRow> {
     if (detail?.organic == true) {
         out += DetailRow(Icons.Filled.Eco, stringResource(R.string.organic), stringResource(R.string.organic_yes))
     }
-    detail?.produce?.takeIf { it.isNotEmpty() }?.let {
+    detail?.displayProduce?.let {
         out += DetailRow(Icons.Filled.ShoppingBasket, stringResource(R.string.produce), it)
     }
     return out
