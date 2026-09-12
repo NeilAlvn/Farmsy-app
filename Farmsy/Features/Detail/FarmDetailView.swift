@@ -564,6 +564,11 @@ struct FarmDetailView: View {
                 }
             }
 
+            // Signed out too. Reading is public by design — asking somebody to
+            // make an account before they can learn the shop was shut on Saturday
+            // is the toll this app spent a release removing.
+            FarmStatusSection(osmId: pin.osmId, onNeedsSignIn: { showSignIn = true })
+
             lockedBlock
         }
     }
@@ -652,6 +657,10 @@ struct FarmDetailView: View {
             if let description = detail?.description, !description.isEmpty {
                 ExpandableText(text: description)
             }
+            // Reading is public, so this sits outside the member sections: a
+            // farm three people found shut this week is exactly what somebody
+            // deciding whether to drive needs to know, account or not.
+            FarmStatusSection(osmId: pin.osmId, onNeedsSignIn: { showSignIn = true })
             FarmMemberSections(pin: pin, detail: detail, onClaim: { showClaim = true })
         }
     }

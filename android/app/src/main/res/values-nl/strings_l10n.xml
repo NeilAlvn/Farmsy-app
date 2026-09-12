@@ -378,4 +378,11 @@
     <string name="route_show_all_arg">Toon alle %1$d</string>
     <string name="route_enter_ends">Voeg een start en bestemming toe om te zien langs welke boerderijen je bijna rijdt.</string>
     <string name="closed">Gesloten</string>
+    <string name="status_ask">Was het open?</string>
+    <string name="status_open">Open</string>
+    <string name="status_closed">Gesloten</string>
+    <string name="status_sold_out">Uitverkocht</string>
+    <string name="status_recent_open_arg">%1$d bezoekers konden terecht, laatst %2$d dagen geleden</string>
+    <string name="status_recent_trouble_arg">%1$d bezoekers stonden voor een dichte deur of een lege kraam, laatst %2$d dagen geleden</string>
+    <string name="status_recent_mixed_arg">%1$d konden terecht, %2$d niet, de afgelopen weken</string>
 </resources>

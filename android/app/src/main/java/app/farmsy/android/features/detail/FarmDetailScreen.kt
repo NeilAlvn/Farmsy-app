@@ -122,6 +122,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     // paywall they just paid to leave, with no way forward but to back out and tap
     // the farm again. Watching the profile instead means the screen unlocks itself
     // whenever the grant lands — on time, late, or while they're still looking at it.
+    val requestAuth = app.farmsy.android.LocalRequestAuth.current
     val profile by session.profile.collectAsState()
     LaunchedEffect(profile?.hasFullAccess) {
         if (profile?.hasFullAccess == true && isLocked) reload()
@@ -320,6 +321,12 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                                 )
                             }
                         }
+                        Spacer(Modifier.height(16.dp))
+                        // "Was it open?" — reading is public, reporting needs an
+                        // account. Sits above the member sections because it is the
+                        // one thing on this card that is not about what we know,
+                        // but about what visitors found.
+                        FarmStatusSection(osmId = pin.osmId, onNeedsSignIn = requestAuth)
                         Spacer(Modifier.height(16.dp))
                         // S9 · Member sections — the reviews block (summary + list +
                         // your-own composer), the farm's What's-New posts (+ composer),

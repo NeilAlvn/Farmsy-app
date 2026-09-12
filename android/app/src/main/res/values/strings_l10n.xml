@@ -401,4 +401,11 @@
     <string name="route_show_all_arg">Show all %1$d</string>
     <string name="route_enter_ends">Add a start and a destination to see the farms you would nearly drive past.</string>
     <string name="closed">Closed</string>
+    <string name="status_ask">Was it open?</string>
+    <string name="status_open">Open</string>
+    <string name="status_closed">Closed</string>
+    <string name="status_sold_out">Sold out</string>
+    <string name="status_recent_open_arg">%1$d visitors got in, most recently %2$d days ago</string>
+    <string name="status_recent_trouble_arg">%1$d visitors found it shut or sold out, most recently %2$d days ago</string>
+    <string name="status_recent_mixed_arg">%1$d got in, %2$d did not, in the last few weeks</string>
 </resources>

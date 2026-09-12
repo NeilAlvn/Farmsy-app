@@ -378,4 +378,11 @@
     <string name="route_show_all_arg">Afficher les %1$d</string>
     <string name="route_enter_ends">Ajoutez un départ et une destination pour voir les fermes que vous frôleriez.</string>
     <string name="closed">Fermé</string>
+    <string name="status_ask">C\'était ouvert ?</string>
+    <string name="status_open">Ouvert</string>
+    <string name="status_closed">Fermé</string>
+    <string name="status_sold_out">Épuisé</string>
+    <string name="status_recent_open_arg">%1$d visiteurs ont pu entrer, le dernier il y a %2$d jours</string>
+    <string name="status_recent_trouble_arg">%1$d visiteurs ont trouvé porte close ou étal vide, le dernier il y a %2$d jours</string>
+    <string name="status_recent_mixed_arg">%1$d ont pu entrer, %2$d non, ces dernières semaines</string>
 </resources>
