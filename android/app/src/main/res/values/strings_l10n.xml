@@ -387,6 +387,13 @@
     <string name="pro_buy_lifetime">Buy lifetime access</string>
     <string name="pro_lifetime_onetime">One-time · no renewals</string>
 
+    <!-- Farm-detail sign-up wall (iOS build 19 parity) -->
+    <string name="see_this_farm_free">See this farm, free</string>
+    <string name="one_free_account_opens_every_farm">Address, phone, opening times and what they sell. One free account opens every farm on the map.</string>
+    <string name="create_a_free_account">Create a free account</string>
+    <string name="couldn_t_load_this_farm">Couldn\'t load this farm.</string>
+    <string name="farm_photo">Farm photo</string>
+    <string name="share">Share</string>
     <!-- R4 · route corridor (farms on the way) -->
     <string name="route_on_my_way">Farms on my way</string>
     <string name="route_on_my_way_sub">Farms you would pass on this drive</string>

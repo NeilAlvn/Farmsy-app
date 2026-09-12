@@ -16,14 +16,11 @@ struct FarmDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: FarmDetail?
-    @State private var teaser: FarmTeaser?
     @State private var isLoading = true
-    @State private var isLocked = false
-    /// A transient fetch failure for a SIGNED-IN user — never a lock (a lock is a
-    /// permission statement; this is a network failure). Shows an error + retry.
+    /// A transient fetch failure — never a lock (details are public; this is a network
+    /// failure). Shows an error + retry.
     @State private var loadFailed = false
     @State private var showClaim = false
-    @State private var showPaywall = false
     @State private var showSignIn = false
     @State private var lightbox: LightboxSource?
     /// Public gallery photos, so multiple images show even for non-members (the
@@ -44,16 +41,14 @@ struct FarmDetailView: View {
                     photoStrip
                         .padding(.horizontal, 14)
 
-                    if isLoading && detail == nil && teaser == nil {
+                    if isLoading && detail == nil {
                         cardSkeleton
                             .padding(.horizontal, 14)
                     } else if loadFailed {
                         loadErrorView
                             .padding(.horizontal, 14)
-                    } else if isLocked {
-                        lockedSections
-                            .padding(.horizontal, 14)
                     } else {
+                        // Details are public now — no signed-out lock. Everyone sees them.
                         detailSections
                             .padding(.horizontal, 14)
                     }
@@ -70,49 +65,31 @@ struct FarmDetailView: View {
             if let url = claimURL { SafariView(url: url).ignoresSafeArea() }
         }
         .sheet(isPresented: $showSignIn) { AuthView() }
-        .sheet(isPresented: $showPaywall) {
-            LockedAccessView(pin: pin, onClaim: { showPaywall = false; showClaim = true }) {
-                await reload()
-            }
-        }
         .fullScreenCover(item: $lightbox) { src in
             ImageLightbox(source: src) { closeLightbox() }
                 .presentationBackground(.clear)
         }
         .task { await reload() }
         .task { await loadGallery() }
-        // Open the farm the moment access is granted, however long that takes —
-        // the grant lands seconds after the purchase call via RevenueCat's webhook.
-        .onChange(of: session.profile?.hasFullAccess ?? false) { _, granted in
-            if granted && isLocked {
-                showPaywall = false
-                Task { await reload() }
-            }
+        // Re-fetch when the account changes (sign in / out) — a signed-in account may
+        // see a fuller payload than an anonymous one, so the screen fills in on sign-in.
+        .onChange(of: session.session?.user.id) { _, _ in
+            Task { await reload() }
         }
     }
 
     private func reload() async {
         isLoading = true
-        isLocked = false
         loadFailed = false
         defer { isLoading = false }
 
         await session.refreshProfile()
-        // No session → the sign-up wall (401 from fetch means the same thing).
-        guard let token = session.session?.accessToken else {
-            isLocked = true
-            await loadTeaser()
-            return
-        }
-        // The farmsy.app API is the source of truth — details are a sign-up wall
-        // now, so a signed-in account (free or paid) gets the data; only a 401
-        // (no valid session) locks.
+        // Details are PUBLIC now — the farmsy.app route dropped the check (12 Sep), so
+        // everyone, signed in or not, gets them. Send the token if we have one (a
+        // signed-in account may get a richer payload), but never require it and never
+        // gate the screen behind sign-in. Save + trips still prompt on tap; details do not.
         do {
-            detail = try await FarmDetailAPI.fetch(osmId: pin.osmId, accessToken: token)
-            isLocked = false
-        } catch FarmDetailError.locked {
-            isLocked = true
-            await loadTeaser()
+            detail = try await FarmDetailAPI.fetch(osmId: pin.osmId, accessToken: session.session?.accessToken)
         } catch {
             // A signed-in transient failure. NEVER a lock — every signed-in account
             // is entitled to the details, so a network blip must not read as "you
@@ -124,10 +101,6 @@ struct FarmDetailView: View {
 
     /// The public description opener, shown to non-members above the locked block.
     /// Fetched once and cached in @State so a re-check after purchase doesn't refetch.
-    private func loadTeaser() async {
-        if teaser == nil { teaser = await FarmDetailAPI.teaser(osmId: pin.osmId) }
-    }
-
     /// The farm's gallery photos. `farm_images` is NOT anon-readable (RLS blocks
     /// it — confirmed with Aviah), so the public gallery comes from the flags
     /// endpoint's `g` array instead, which the store caches. This is what lets a
@@ -208,22 +181,17 @@ struct FarmDetailView: View {
     }
 
     private var ratingRow: some View {
-        Button {
-            // Reviews are a detail behind the sign-up wall now, not Pro — signed
-            // out → sign-in (was paywall).
-            if isLocked { Haptics.tap(); showSignIn = true }
-        } label: {
-            HStack(spacing: 6) {
-                if let rating = pin.avgRating {
-                    Image(systemName: "star.fill").font(.system(size: 13)).foregroundStyle(Color.star)
-                    Text(String(format: "%.1f", rating)).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
-                    Text("(\(pin.reviewCount))").font(.geist(12)).foregroundStyle(Color.inkMuted)
-                } else {
-                    Text("No reviews yet").font(.geist(13)).foregroundStyle(Color.inkMuted)
-                }
+        // Just the rating (or "No reviews yet") — shown to everyone. Reviews are public
+        // details now, so there is nothing to gate behind sign-in here.
+        HStack(spacing: 6) {
+            if let rating = pin.avgRating {
+                Image(systemName: "star.fill").font(.system(size: 13)).foregroundStyle(Color.star)
+                Text(String(format: "%.1f", rating)).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
+                Text("(\(pin.reviewCount))").font(.geist(12)).foregroundStyle(Color.inkMuted)
+            } else {
+                Text("No reviews yet").font(.geist(13)).foregroundStyle(Color.inkMuted)
             }
         }
-        .buttonStyle(.plain)
     }
 
     /// Category chips (in their colours), then verified, then open-now — one line
@@ -280,7 +248,7 @@ struct FarmDetailView: View {
 
     @ViewBuilder
     private var tripButton: some View {
-        if isLoading && detail == nil && teaser == nil {
+        if isLoading && detail == nil {
             SkeletonBox(cornerRadius: 16).frame(height: 44)
         } else {
             // Trips are free now — no Pro-locked prompt. Everyone sees add/remove;
@@ -408,11 +376,10 @@ struct FarmDetailView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            // Directions is free-with-account now — no shut padlock (web open-lock
-            // intent). Always the nav icon; a signed-out tap prompts sign-in.
+            // Directions is public — just opens Maps, signed in or not.
             footerButton(icon: "location.fill",
                          label: String(localized: "Directions"), filled: false) {
-                if isLocked { gateLocked() } else { openDirections() }
+                openDirections()
             }
             if let phone = detail?.phone,
                let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
@@ -491,25 +458,12 @@ struct FarmDetailView: View {
     }
 
     private func saveTapped() {
-        // Saving is free now — it only needs a session. Signed out → sign-in
-        // (was `showPaywall`, a feature→paywall path).
-        if isLocked { showSignIn = true; return }
-        guard let userId = session.session?.user.id else { return }
+        // Saving needs a session. Signed out → sign-in.
+        guard let userId = session.session?.user.id else { showSignIn = true; return }
         Task { await favorites.toggle(pin.osmId, userId: userId) }
     }
 
     private var isSignedIn: Bool { session.session?.user.id != nil }
-
-    /// A members-only action was tapped: present sign-in first if the user is
-    /// signed out, otherwise show the membership paywall. Both sheets are
-    /// presented from within this view so they show over the open farm card.
-    private func gateLocked() {
-        // Under the sign-up-wall contract `isLocked` means "signed out", and the
-        // features this guards (directions, trips, the wall CTA) are no longer Pro —
-        // so the only thing to ask for is a session. Always sign-in; never the paywall
-        // (that was a feature→LockedAccessView path, removed with the un-gating).
-        showSignIn = true
-    }
 
     /// The web claim page for this farm. The route is a catch-all, so the osm_id
     /// works raw or percent-encoded — encoding keeps the URL string valid.
@@ -539,113 +493,11 @@ struct FarmDetailView: View {
         withTransaction(t) { lightbox = nil }
     }
 
-    // MARK: - Locked content (non-member: teaser + one membership block)
+    // MARK: - Detail content
 
-    @ViewBuilder
-    private var lockedSections: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if let teaser {
-                VStack(alignment: .leading, spacing: 6) {
-                    (Text(teaser.text) + Text(teaser.truncated ? " …" : ""))
-                        .font(.geist(15))
-                        .foregroundStyle(Color.ink)
-                        .lineSpacing(3)
-                    if teaser.truncated {
-                        Button {
-                            Haptics.tap()
-                            gateLocked()
-                        } label: {
-                            Text("View more")
-                                .font(.geist(14, .semibold))
-                                .foregroundStyle(Color.farmGreen)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-
-            lockedBlock
-        }
-    }
-
-    /// The membership ask sits in the *middle* of the blurred region, with grey
-    /// bars falling away above and below it (per the reference). Nothing behind
-    /// the blur is real — the paid values are never sent, so these are empty bars.
-    private var lockedBlock: some View {
-        ZStack {
-            lockedBarsBackground
-                .blur(radius: 7)
-                .opacity(0.6)
-                .allowsHitTesting(false)
-
-            VStack(spacing: 10) {
-                // Sign-up wall, not a paywall — an OPEN padlock (a shut lock beside
-                // "free" reads as a catch). Web uses lucide Unlock.
-                Image(systemName: "lock.open.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.farmGreen)
-                    .frame(width: 48, height: 48)
-                    .background(Color.farmGreen.opacity(0.10), in: Circle())
-                Text("See this farm, free")
-                    .font(.geist(16, .bold))
-                    .foregroundStyle(Color.ink)
-                    .multilineTextAlignment(.center)
-                Text("Address, phone, opening times and what they sell. One free account opens every farm on the map.")
-                    .font(.geist(14))
-                    .foregroundStyle(Color.inkMuted)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(2)
-                Button {
-                    Haptics.tap()
-                    gateLocked()
-                } label: {
-                    HStack(spacing: 8) {
-                        Text("Create a free account")
-                            .font(.geist(15, .semibold))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.farmGreenMap, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 4)
-            }
-            .padding(.horizontal, 8)
-        }
-        .frame(minHeight: 300)
-        .frame(maxWidth: .infinity)
-    }
-
-    /// Faux content behind the lock: uneven grey bars top and bottom, so the
-    /// blurred area reads as "there is more here" around the centred ask.
-    private var lockedBarsBackground: some View {
-        GeometryReader { geo in
-            VStack {
-                bars(geo.size.width, [0.78, 0.95, 0.6, 0.88])
-                Spacer(minLength: 60)
-                bars(geo.size.width, [0.7, 0.9, 0.5])
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        }
-    }
-
-    private func bars(_ width: CGFloat, _ fractions: [Double]) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ForEach(Array(fractions.enumerated()), id: \.offset) { _, fraction in
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.inkMuted.opacity(0.14))
-                    .frame(width: width * fraction, height: 13)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// Member content: the description, then all the member-only sections in the
-    /// web's order (what people are saying → details → what's new → reviews →
-    /// claim → report).
+    /// The description, then all the detail sections in the web's order (what
+    /// people are saying → details → what's new → reviews → claim → report).
+    /// Public now — shown to everyone, signed in or not (the wall is gone).
     @ViewBuilder
     private var detailSections: some View {
         VStack(alignment: .leading, spacing: 20) {

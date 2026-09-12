@@ -364,6 +364,13 @@
     <string name="pro_buy_lifetime">Acheter l\'accès à vie</string>
     <string name="pro_lifetime_onetime">Paiement unique · sans renouvellement</string>
 
+    <!-- Farm-detail sign-up wall (iOS build 19 parity) -->
+    <string name="see_this_farm_free">Voir cette ferme, gratuitement</string>
+    <string name="one_free_account_opens_every_farm">Adresse, téléphone, horaires et ce qu\'ils vendent. Un compte gratuit ouvre toutes les fermes de la carte.</string>
+    <string name="create_a_free_account">Créer un compte gratuit</string>
+    <string name="couldn_t_load_this_farm">Impossible de charger cette ferme.</string>
+    <string name="farm_photo">Photo de la ferme</string>
+    <string name="share">Partager</string>
     <!-- R4 · route corridor (farms on the way) -->
     <string name="route_on_my_way">Fermes sur ma route</string>
     <string name="route_on_my_way_sub">Fermes croisées sur votre trajet</string>
