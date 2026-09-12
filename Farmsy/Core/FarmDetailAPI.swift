@@ -1,11 +1,8 @@
 import Foundation
 
 enum FarmDetailError: Error {
-    case locked      // 401 — no valid session (sign in required). Details are a
-                     // sign-up wall now, not a paywall: the server dropped the paid
-                     // check, so 403 no longer occurs on this route.
     case notFound
-    case other
+    case other       // any non-200/404 — transient, offered with a retry, never a wall.
 }
 
 /// Full farm detail comes only from the farmsy.app API, which verifies the
@@ -23,23 +20,24 @@ enum FarmDetailAPI {
         return URL(string: "\(Backend.webAPI.absoluteString)/farm/\(encoded)\(suffix)")
     }
 
-    static func fetch(osmId: String, accessToken: String) async throws -> FarmDetail {
+    /// Farm details are PUBLIC now — the farmsy.app route dropped the check entirely
+    /// (12 Sep): an anonymous GET returns 200 with the address and phone. So the token is
+    /// optional; we send it when we have one (a signed-in account may get a richer
+    /// payload), but never require it. No more sign-up wall on the details themselves.
+    static func fetch(osmId: String, accessToken: String?) async throws -> FarmDetail {
         guard let url = farmURL(osmId) else { throw FarmDetailError.other }
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        if let accessToken { request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization") }
 
         let (data, response) = try await URLSession.shared.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200:
             return try JSONDecoder().decode(FarmDetail.self, from: data)
-        case 401:
-            // Details are a sign-up wall now — 403 (paid gate) is gone from the
-            // route; 401 means no valid session.
-            throw FarmDetailError.locked
         case 404:
             throw FarmDetailError.notFound
         default:
+            // 401/403 no longer occur on this public route; a failure here is transient.
             throw FarmDetailError.other
         }
     }
