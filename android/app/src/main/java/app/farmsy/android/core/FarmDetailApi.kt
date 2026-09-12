@@ -34,18 +34,19 @@ object FarmDetailApi {
     private fun encodeOsmId(osmId: String): String =
         URLEncoder.encode(osmId, "UTF-8").replace("+", "%20")
 
-    suspend fun fetch(osmId: String, accessToken: String): FarmDetail {
+    /// Farm details are PUBLIC now — the farmsy.app route dropped the check entirely
+    /// (12 Sep): an anonymous GET returns 200 with the address and phone. So the token is
+    /// optional; we send it when we have one (a signed-in account may get a richer
+    /// payload), but never require it. No more sign-up wall on the details themselves.
+    suspend fun fetch(osmId: String, accessToken: String?): FarmDetail {
         val resp = httpClient.get("${Backend.WEB_API}/farm/${encodeOsmId(osmId)}") {
-            header(HttpHeaders.Authorization, "Bearer $accessToken")
+            if (accessToken != null) header(HttpHeaders.Authorization, "Bearer $accessToken")
         }
         return when (resp.status.value) {
             200 -> lenientJson.decodeFromString<FarmDetail>(resp.bodyAsText())
-            // Details are a sign-up wall now — the farmsy.app route dropped the paid
-            // check (iOS build 19). 401 = no valid session (sign in). 403 no longer
-            // occurs here; if it ever did it must NOT read as "you can't have this" for a
-            // signed-in free account, so it falls through to Other (retry), never Locked.
-            401 -> throw FarmDetailException.Locked()
             404 -> throw FarmDetailException.NotFound()
+            // 401/403 no longer occur on this public route; if one ever did it's a
+            // transient server issue, not a permission wall — surface a retry, not a lock.
             else -> throw FarmDetailException.Other()
         }
     }

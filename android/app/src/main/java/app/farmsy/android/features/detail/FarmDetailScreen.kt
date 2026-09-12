@@ -63,20 +63,14 @@ import app.farmsy.android.core.FarmDetail
 import app.farmsy.android.core.FarmDetailApi
 import app.farmsy.android.core.FarmDetailException
 import app.farmsy.android.core.FarmPin
-import app.farmsy.android.core.FarmTeaser
 import app.farmsy.android.core.FarmFilters
-import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.Dp
@@ -125,39 +119,21 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     var detail by remember { mutableStateOf<FarmDetail?>(null) }
     var lightbox by remember { mutableStateOf<LightboxSource?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    // `isLocked` now means SIGNED OUT (the sign-up wall), not "no subscription" — farm
-    // details are free for any signed-in account. loadFailed is a transient error for a
-    // signed-in user, which must NEVER read as locked (see reload). (Android port of the
-    // iOS build 19 sign-up-wall — this screen was still the old paywall.)
-    var isLocked by remember { mutableStateOf(false) }
+    // No sign-up wall on the details any more: the farmsy.app route is fully public
+    // (12 Sep), so everyone — signed in or not — gets the address, hours, phone and
+    // photos. `loadFailed` is a transient network error, offered with a retry, never a
+    // lock. (Save + trips still prompt sign-in on tap; the DETAILS do not.)
     var loadFailed by remember { mutableStateOf(false) }
-    var teaser by remember { mutableStateOf<FarmTeaser?>(null) }
     var showClaim by remember { mutableStateOf(false) }
 
     suspend fun reload() {
-        isLoading = true; isLocked = false; loadFailed = false
+        isLoading = true; loadFailed = false
         session.refreshProfile()
-        // No session → the sign-up wall (a 401 from fetch means the same thing).
-        val token = session.accessToken()
-        if (token == null) {
-            isLocked = true
-            teaser = runCatching { FarmDetailApi.teaser(pin.osmId) }.getOrNull()
-            isLoading = false
-            return
-        }
-        // The farmsy.app API is the source of truth — details are a sign-up wall now, so
-        // a signed-in account (free or paid) gets the data; only a 401 (no valid session)
-        // locks.
+        // Public route — send the token if we have one (a signed-in account may get a
+        // richer payload), but never require it. Any failure is transient → a retry.
         try {
-            detail = FarmDetailApi.fetch(pin.osmId, token)
-            isLocked = false
-        } catch (e: FarmDetailException.Locked) {
-            isLocked = true
-            teaser = runCatching { FarmDetailApi.teaser(pin.osmId) }.getOrNull()
+            detail = FarmDetailApi.fetch(pin.osmId, session.accessToken())
         } catch (e: Exception) {
-            // A signed-in transient failure. NEVER a lock — every signed-in account is
-            // entitled to the details, so a network blip must not send a free user to a
-            // paywall they're past. Show a retry, whatever the subscription status.
             loadFailed = true
         }
         isLoading = false
@@ -165,12 +141,11 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
 
     LaunchedEffect(pin.osmId) { reload() }
 
-    // Open the farm the moment the user signs in. Under the sign-up-wall contract
-    // `isLocked` means "signed out", so a session appearing (they came back from the
-    // auth sheet) is what unlocks it — the screen reloads itself and the details fill in.
+    // Re-fetch when the account changes (sign in / out) — a signed-in account may see a
+    // fuller payload than an anonymous one, so the screen fills in on sign-in.
     val currentSession by session.session.collectAsState()
     LaunchedEffect(currentSession?.user?.id) {
-        if (isLocked && currentSession != null) reload()
+        if (!isLoading) reload()
     }
 
     // Photos to show: the members' payload if we have it, else the public gallery, else
@@ -283,7 +258,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
 
             // Trip button — outlined "Add to trip" / filled "In your trip" (iOS tripButton).
             Box(Modifier.padding(horizontal = 14.dp)) {
-                if (isLoading && detail == null && teaser == null) {
+                if (isLoading && detail == null) {
                     SkeletonBox(16.dp, Modifier.fillMaxWidth().height(44.dp))
                 } else {
                     Row(
@@ -328,10 +303,8 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
             Column(Modifier.padding(horizontal = 14.dp)) {
                 when {
                     isLoading -> CardSkeleton()
-                    // Signed out → the sign-up wall SECTION (teaser + blurred faux bars +
-                    // "See this farm, free"). Details are free for any signed-in account.
-                    isLocked -> LockedSections(pin = pin, teaser = teaser, onSignIn = requestAuth)
-                    // Signed-in transient failure — retry, never a lock.
+                    // A transient network failure — a retry, never a wall. Details are
+                    // public now, so there is no signed-out lock state at all.
                     loadFailed -> InlineLoadError(onRetry = { scope.launch { reload() } })
                     else -> {
                         // iOS detailSections = description + FarmMemberSections, nothing
@@ -363,8 +336,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FooterButton(Icons.Filled.NearMe, stringResource(R.string.directions), filled = false, modifier = Modifier.weight(1f)) {
-                if (isLocked) requestAuth()
-                else context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:${pin.lat},${pin.lng}?q=${pin.lat},${pin.lng}(${pin.name})")))
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:${pin.lat},${pin.lng}?q=${pin.lat},${pin.lng}(${pin.name})")))
             }
             if (phone != null) {
                 FooterButton(Icons.Filled.Call, stringResource(R.string.call), filled = true, modifier = Modifier.weight(1f)) {
@@ -476,87 +448,7 @@ private fun FooterButton(icon: androidx.compose.ui.graphics.vector.ImageVector, 
     }
 }
 
-/// The signed-out sign-up SECTION — the middle block of the detail scaffold, not a whole
-/// screen (iOS FarmDetailView.lockedSections/lockedBlock). Teaser text if we have it,
-/// then the membership ask floating over BLURRED faux-content bars, so the region reads
-/// as "there is more here". NOT the purchase paywall — details are free for any signed-in
-/// account, so the ask is to sign up, not to pay.
-@Composable
-private fun LockedSections(pin: FarmPin, teaser: FarmTeaser?, onSignIn: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        teaser?.let { t ->
-            Text(
-                t.text + if (t.truncated) " …" else "",
-                style = geist(15.sp).copy(lineHeight = 21.sp),
-                color = FarmsyColors.ink,
-            )
-        }
-
-        // The ask sits in the middle of a blurred region — grey bars falling away above
-        // and below it, so the area reads as real (hidden) content, not an empty card.
-        // Nothing behind the blur is real: the paid values are never sent, so these are
-        // empty bars (iOS lockedBlock + lockedBarsBackground).
-        Box(Modifier.fillMaxWidth().heightIn(min = 300.dp), contentAlignment = Alignment.Center) {
-            LockedBarsBackground(
-                Modifier.matchParentSize()
-                    .blur(7.dp)
-                    .alpha(0.6f),
-            )
-            Column(
-                Modifier.padding(horizontal = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Box(
-                    Modifier.size(48.dp).background(FarmsyColors.farmGreen.copy(alpha = 0.10f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Filled.LockOpen, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp)) }
-                Text(
-                    stringResource(R.string.see_this_farm_free),
-                    style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                Text(
-                    stringResource(R.string.one_free_account_opens_every_farm),
-                    style = geist(14.sp).copy(lineHeight = 20.sp), color = FarmsyColors.inkMuted,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 4.dp)
-                        .background(FarmsyColors.farmGreenMap, RoundedCornerShape(16.dp))
-                        .clickable { onSignIn() }.padding(vertical = 14.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(stringResource(R.string.create_a_free_account), style = geist(15.sp, FontWeight.SemiBold), color = Color.White)
-                    Spacer(Modifier.size(8.dp))
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(13.dp))
-                }
-            }
-        }
-    }
-}
-
-/// Faux content behind the lock: uneven grey bars top and bottom, so the blurred area
-/// reads as "there is more here" around the centred ask (iOS lockedBarsBackground).
-@Composable
-private fun LockedBarsBackground(modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf(0.78f, 0.95f, 0.6f, 0.88f).forEach { fraction ->
-                Box(Modifier.fillMaxWidth(fraction).height(14.dp).background(FarmsyColors.hairline, RoundedCornerShape(4.dp)))
-            }
-        }
-        Spacer(Modifier.height(60.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf(0.7f, 0.9f, 0.5f).forEach { fraction ->
-                Box(Modifier.fillMaxWidth(fraction).height(14.dp).background(FarmsyColors.hairline, RoundedCornerShape(4.dp)))
-            }
-        }
-    }
-}
-
-/// A signed-in transient load failure, as an inline section — a retry, never a lock: a
+/// A transient load failure, as an inline section — a retry, never a lock: a
 /// signed-in account is entitled to the details, so a network blip must not read as a wall.
 @Composable
 private fun InlineLoadError(onRetry: () -> Unit) {
