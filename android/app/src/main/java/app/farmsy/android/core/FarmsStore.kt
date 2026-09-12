@@ -117,6 +117,10 @@ class FarmsStore(private val scope: CoroutineScope) {
     // Flags maps (loaded once from /api/farms/flags).
     private var flagsLoaded = false
     private var produceByOsm: Map<String, String> = emptyMap()
+
+    /// Lowercase `produce` text for one farm, or null when it never said what it
+    /// sells. Read by the shopping-list planner, which matches against it.
+    fun produceFor(osmId: String): String? = produceByOsm[osmId]
     private var locationTypesByOsm: Map<String, List<String>> = emptyMap()
     private var methodsByOsm: Map<String, List<String>> = emptyMap()
 
@@ -299,14 +303,17 @@ class FarmsStore(private val scope: CoroutineScope) {
     private fun filteredForAI(ai: SmartSearchIntent): List<FarmPin> {
         var result = _pins.value
         val cats = ai.categories.mapNotNull { FarmCategory.from(it) }.toSet()
-        val prods = ai.products.map { it.lowercase() }
+        val prods = ai.products.map { ProductMatch.fold(it) }
         // What they sell: category OR produce text (OR'd — thin produce coverage
         // must not drop farms the category already accounts for).
         if (cats.isNotEmpty() || prods.isNotEmpty()) {
             result = result.filter { pin ->
                 val catMatch = cats.isNotEmpty() && pin.categories.any { it in cats }
                 val prodMatch = prods.isNotEmpty() &&
-                    (produceByOsm[pin.osmId]?.let { txt -> prods.any { txt.contains(it) } } ?: false)
+                    // Same rule as the shopping list: short terms must match a
+                    // whole word, or `ui` finds every farm with `fruit` in its
+                    // text. The web fixed this; the apps had not.
+                    (produceByOsm[pin.osmId]?.let { txt -> ProductMatch.matches(txt, prods) } ?: false)
                 catMatch || prodMatch
             }
         }

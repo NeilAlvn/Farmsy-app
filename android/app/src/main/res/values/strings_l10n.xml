@@ -401,4 +401,13 @@
     <string name="route_show_all_arg">Show all %1$d</string>
     <string name="route_enter_ends">Add a start and a destination to see the farms you would nearly drive past.</string>
     <string name="closed">Closed</string>
+    <string name="shop_from_a_list">Shop from a list</string>
+    <string name="shopping_list">Shopping list</string>
+    <string name="shopping_list_sub">We pick the farms, you drive once</string>
+    <string name="shopping_list_plan">Plan my trip</string>
+    <string name="shopping_list_add_stops_arg">Add %1$d stops to my trip</string>
+    <string name="shopping_list_clear">Clear list</string>
+    <string name="shopping_list_none">No farm within 25 km lists any of this.</string>
+    <string name="shopping_list_missing_arg">Not found nearby: %1$s</string>
+    <string name="shopping_list_catalogue_failed">The product list couldn\'t be loaded. Check your connection and try again.</string>
 </resources>

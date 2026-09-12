@@ -12112,6 +12112,314 @@
           }
         }
       }
+    },
+    "Shop from a list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Shop from a list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Boodschappenlijst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Faire une liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nach Einkaufsliste"
+          }
+        }
+      }
+    },
+    "Shopping list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Shopping list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Boodschappenlijst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Liste de courses"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einkaufsliste"
+          }
+        }
+      }
+    },
+    "We pick the farms, you drive once": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "We pick the farms, you drive once"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wij kiezen de boerderijen, jij rijdt één rondje"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nous choisissons les fermes, vous ne roulez qu’une fois"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wir wählen die Höfe, du fährst einmal"
+          }
+        }
+      }
+    },
+    "Plan my trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Plan my trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plan mijn rit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Planifier mon trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Route planen"
+          }
+        }
+      }
+    },
+    "Add %lld stops to my trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Add %lld stops to my trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voeg %lld stops toe aan mijn rit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter %lld arrêts à mon trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld Stopps zur Route hinzufügen"
+          }
+        }
+      }
+    },
+    "Clear list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Clear list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lijst wissen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vider la liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Liste leeren"
+          }
+        }
+      }
+    },
+    "No farm within 25 km lists any of this.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No farm within 25 km lists any of this."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geen boerderij binnen 25 km noemt hier iets van."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucune ferme dans un rayon de 25 km ne mentionne cela."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kein Hof im Umkreis von 25 km nennt davon etwas."
+          }
+        }
+      }
+    },
+    "Not found nearby: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Not found nearby: %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Niet gevonden in de buurt: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introuvable à proximité : %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In der Nähe nicht gefunden: %@"
+          }
+        }
+      }
+    },
+    "Choose a starting point first": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Choose a starting point first"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kies eerst een startpunt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisissez d’abord un point de départ"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wähle zuerst einen Startpunkt"
+          }
+        }
+      }
+    },
+    "A shopping trip is planned from somewhere — pick a starting point, or let the app use your location.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "A shopping trip is planned from somewhere — pick a starting point, or let the app use your location."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een boodschappenrit begint ergens — kies een startpunt, of laat de app je locatie gebruiken."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un trajet de courses part de quelque part — choisissez un point de départ, ou laissez l’app utiliser votre position."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eine Einkaufsfahrt beginnt irgendwo — wähle einen Startpunkt, oder lass die App deinen Standort verwenden."
+          }
+        }
+      }
+    },
+    "The product list couldn't be loaded. Check your connection and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The product list couldn't be loaded. Check your connection and try again."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De productlijst kon niet worden geladen. Controleer je verbinding en probeer opnieuw."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La liste des produits n’a pas pu être chargée. Vérifiez votre connexion et réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Produktliste konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

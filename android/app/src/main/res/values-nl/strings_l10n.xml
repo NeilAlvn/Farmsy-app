@@ -378,4 +378,13 @@
     <string name="route_show_all_arg">Toon alle %1$d</string>
     <string name="route_enter_ends">Voeg een start en bestemming toe om te zien langs welke boerderijen je bijna rijdt.</string>
     <string name="closed">Gesloten</string>
+    <string name="shop_from_a_list">Boodschappenlijst</string>
+    <string name="shopping_list">Boodschappenlijst</string>
+    <string name="shopping_list_sub">Wij kiezen de boerderijen, jij rijdt één rondje</string>
+    <string name="shopping_list_plan">Plan mijn rit</string>
+    <string name="shopping_list_add_stops_arg">Voeg %1$d stops toe aan mijn rit</string>
+    <string name="shopping_list_clear">Lijst wissen</string>
+    <string name="shopping_list_none">Geen boerderij binnen 25 km noemt hier iets van.</string>
+    <string name="shopping_list_missing_arg">Niet gevonden in de buurt: %1$s</string>
+    <string name="shopping_list_catalogue_failed">De productlijst kon niet worden geladen. Controleer je verbinding en probeer opnieuw.</string>
 </resources>

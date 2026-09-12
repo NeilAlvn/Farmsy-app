@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -120,6 +122,8 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     var reorderNote by remember { mutableStateOf<String?>(null) }
     // S19 origin picker (Photon). iOS OriginBar tap → showOriginSearch → PlaceSearchSheet.
     var showOriginSearch by remember { mutableStateOf(false) }
+    var showShoppingList by remember { mutableStateOf(false) }
+    val wantedProducts by trip.wantedProducts.collectAsState()
 
     // "Use my location" — GPS + reverse-geocode to a town label. Was inline in the
     // OriginRow's onLocate; now shared with the PlaceSearchSheet's own "use my location".
@@ -178,6 +182,40 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                     onOpenSearch = { showOriginSearch = true },
                     onClear = { trip.clearOrigin(); scope.launch { trip.refreshRoute(pinIndex) } },
                 )
+
+                // Fill the trip from a shopping list rather than pin by pin. Sits
+                // under the starting point because it needs one, and because that
+                // is the order the trip is built in.
+                if (!collapsed) {
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(16.dp))
+                            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp))
+                            .clickable {
+                                // A list is worth nothing without somewhere to drive
+                                // from; fall back to the phone when no origin is set.
+                                val from = originCoord
+                                    ?: locationHelper.location.value?.let { LatLng(it.latitude, it.longitude) }
+                                if (from == null) locationHelper.request() else showShoppingList = true
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.List, null, tint = FarmsyColors.ink, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.shop_from_a_list), style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
+                        if (wantedProducts.isNotEmpty()) {
+                            Box(
+                                Modifier.background(FarmsyColors.farmGreenMap, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 7.dp, vertical = 2.dp),
+                            ) {
+                                Text("${wantedProducts.size}", style = geist(12.sp, FontWeight.Bold), color = Color.White)
+                            }
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(18.dp))
+                    }
+                }
 
                 // Trip overview (numbered stops, 5-slot minimum). Tucked away at the
                 // collapsed (0.5) detent so the header + actions stay on screen — this
@@ -350,8 +388,18 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
             onDismiss = { showOriginSearch = false },
         )
     }
-}
 
+    // Fill the trip from a shopping list. Needs somewhere to drive from: the
+    // chosen origin, else the phone.
+    if (showShoppingList) {
+        val from = originCoord ?: locationHelper.location.value?.let { LatLng(it.latitude, it.longitude) }
+        if (from != null) {
+            ShoppingListSheet(origin = from, onDismiss = { showShoppingList = false })
+        } else {
+            showShoppingList = false
+        }
+    }
+}
 
 // MARK: - Rows / controls
 

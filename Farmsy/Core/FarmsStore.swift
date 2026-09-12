@@ -254,7 +254,7 @@ final class FarmsStore {
         if let ai = aiIntent {
             var result = pins
             let cats = Set(ai.categories.compactMap { FarmCategory.from($0) })
-            let prods = ai.products.map { $0.lowercased() }
+            let prods = ai.products.map { ProductMatch.fold($0) }
             // "What they sell": a farm matches its category OR its produce text —
             // OR'd so thin produce-field coverage doesn't drop farms the category
             // already accounts for.
@@ -262,7 +262,10 @@ final class FarmsStore {
                 result = result.filter { pin in
                     let catMatch = !cats.isEmpty && pin.categories.contains { cats.contains($0) }
                     let prodMatch = !prods.isEmpty
-                        && (produceByOsm[pin.osmId].map { txt in prods.contains { txt.contains($0) } } ?? false)
+                        // Same rule as the shopping list: short terms must match a
+                        // whole word, or `ui` finds every farm with `fruit` in its
+                        // text. The web fixed this; the apps had not.
+                        && (produceByOsm[pin.osmId].map { ProductMatch.matches($0, terms: prods) } ?? false)
                     return catMatch || prodMatch
                 }
             }

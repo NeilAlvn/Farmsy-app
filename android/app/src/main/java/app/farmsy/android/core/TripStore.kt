@@ -168,6 +168,7 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val destinationLabelKey = "dlb_trip_destination_label"
     private val ownerKey = "dlb_trip_owner"
     private val modeKey = "dlb_trip_mode"
+    private val wantedKey = "dlb_shopping_list"
 
     // Draft (local).
     private val _stopIds = MutableStateFlow<List<String>>(emptyList())
@@ -187,6 +188,13 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
 
     private val _mode = MutableStateFlow(TravelMode.CAR)
     val mode: StateFlow<TravelMode> = _mode.asStateFlow()
+
+    /// The shopping list: `ShoppingItem` ids, in the order they were picked.
+    /// Ids rather than words, because the label is presentation and the terms
+    /// that match it are served. Lives with the draft because it is how the
+    /// draft gets filled.
+    private val _wantedProducts = MutableStateFlow<List<String>>(emptyList())
+    val wantedProducts: StateFlow<List<String>> = _wantedProducts.asStateFlow()
 
     var editingTripId: String? = null
         private set
@@ -237,7 +245,44 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
             _destinationLabel.value = prefs.getString(destinationLabelKey, null)
         }
         TravelMode.fromRaw(prefs.getString(modeKey, null))?.let { _mode.value = it }
+        _wantedProducts.value = readWanted()
     }
+
+    // MARK: Shopping list
+
+    /// On or off. Picking keeps the order things were chosen in, which is the
+    /// order the answer lists them back.
+    fun toggleProduct(id: String) {
+        val cur = _wantedProducts.value
+        _wantedProducts.value = if (id in cur) cur - id else cur + id
+        persistWanted()
+    }
+
+    fun removeProduct(id: String) {
+        _wantedProducts.value = _wantedProducts.value.filterNot { it == id }
+        persistWanted()
+    }
+
+    fun clearProducts() {
+        _wantedProducts.value = emptyList()
+        persistWanted()
+    }
+
+    /// Add planned stops to the draft, keeping the planner's order and skipping
+    /// farms already on the trip — filling a list twice must not duplicate stops.
+    fun addStops(osmIds: List<String>) {
+        _stopIds.value = _stopIds.value + osmIds.filterNot { it in _stopIds.value }
+        persist()
+    }
+
+    private fun persistWanted() {
+        prefs.edit().putString(wantedKey, lenientJson.encodeToString(_wantedProducts.value)).apply()
+    }
+
+    private fun readWanted(): List<String> =
+        prefs.getString(wantedKey, null)?.let {
+            runCatching { lenientJson.decodeFromString<List<String>>(it) }.getOrNull()
+        } ?: emptyList()
 
     /// The visible portion of the route while it traces in — cut at the exact
     /// distance the progress represents, with an interpolated tip. Read reactively
@@ -364,8 +409,9 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         val stored = prefs.getString(ownerKey, null)
         if (stored != null && stored != owner) {
             _stopIds.value = emptyList(); editingTripId = null
+            _wantedProducts.value = emptyList()
             setRouteLine(emptyList()); _distanceMeters.value = null; _durationSeconds.value = null
-            persist()
+            persist(); persistWanted()
         }
         prefs.edit().putString(ownerKey, owner).apply()
     }

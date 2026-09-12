@@ -26,6 +26,7 @@ struct TripsView: View {
     @State private var armedDelete: String?
     @State private var reorderNote: String?
     @State private var showOriginSearch = false
+    @State private var showShoppingList = false
 
     enum Tab { case plan, mine }
 
@@ -82,6 +83,39 @@ struct TripsView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showShoppingList) {
+            // Plans from the trip's starting point, falling back to where the
+            // phone is — a list is worth nothing without somewhere to drive from.
+            if let from = trip.originCoord ?? locationManager.location?.coordinate {
+                ShoppingListSheet(origin: from)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            } else {
+                needsOrigin
+            }
+        }
+    }
+
+    /// No starting point and no location permission: say which, and offer the
+    /// one control that fixes it.
+    private var needsOrigin: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "location.slash").font(.system(size: 28)).foregroundStyle(Color.inkMuted)
+            Text("Choose a starting point first")
+                .font(.geist(16, .bold)).foregroundStyle(Color.ink)
+            Text("A shopping trip is planned from somewhere — pick a starting point, or let the app use your location.")
+                .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+            Button("Choose a starting point") {
+                Haptics.tap(); showShoppingList = false; showOriginSearch = true
+            }
+            .font(.geist(14, .semibold)).foregroundStyle(Color.farmGreen)
+            .buttonStyle(.plain)
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.cream.ignoresSafeArea())
+        .presentationDetents([.medium])
     }
 
     private var uid: String? { session.session?.user.id.uuidString.lowercased() }
@@ -160,6 +194,36 @@ struct TripsView: View {
                 .overlay(Capsule().stroke(Color.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
+
+            // Fill the trip from a shopping list rather than pin by pin. Sits
+            // under the starting point because it needs one, and because that is
+            // the order the trip is built in.
+            if !collapsed {
+                Button {
+                    Haptics.tap()
+                    showShoppingList = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "list.bullet").font(.system(size: 13, weight: .semibold))
+                        Text("Shop from a list").font(.geist(14, .semibold))
+                        if !trip.wantedProducts.isEmpty {
+                            // verbatim: a bare count is a number, not a phrase to translate.
+                            Text(verbatim: "\(trip.wantedProducts.count)")
+                                .font(.geist(12, .bold)).foregroundStyle(.white)
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(Color.farmGreenMap, in: Capsule())
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.inkMuted)
+                    }
+                    .foregroundStyle(Color.ink)
+                    .padding(.vertical, 12).padding(.horizontal, 16)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
 
             if collapsed {
                 // On the small detent the list is tucked away entirely to keep the
