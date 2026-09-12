@@ -9,6 +9,18 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Cancel a run the moment a newer commit supersedes it. The iOS job below runs on
+# a macOS runner, billed at ten times the Linux rate, so re-running it for a commit
+# that was immediately followed by another is pure waste — an active pull request
+# with several quick pushes spun up one macOS runner PER commit, which is what
+# emptied the month's macOS allowance (34 macOS runs in eleven days, most of them
+# superseded seconds later). Group per pull request (fall back to the ref for a
+# manual run) and keep only the newest in flight: the latest commit is still fully
+# checked, the superseded ones are dropped before they cost a runner.
+concurrency:
+  group: compile-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Which halves of the repo this pull request actually touches.
   #
