@@ -15,8 +15,31 @@ struct RouteCorridorView: View {
     let tripKm: Double?
     let filteredFarms: [FarmPin]
     let stopIds: Set<String>
+    /// R6 — the chosen day (0=Mon…6=Sun), the departure (minutes past midnight) and
+    /// the drive's total duration. Together they answer "open *when you pass*, on
+    /// the day you're going" instead of "open at all today".
+    let dayMon: Int
+    let departMinutes: Int
+    let durationSeconds: Double?
     let onOpenFarm: (FarmPin) -> Void
     let onAddStop: (FarmPin) -> Void
+
+    /// A farm's open/closed status at the moment the drive reaches it. Arrival is
+    /// `depart + along · duration` (R6): `along` is the fraction of the drive at
+    /// which the farm sits, so a shop 80% of the way along is asked about late in
+    /// the trip, not at the start. A 30-minute visit window. With no duration
+    /// (straight-line fallback) we can't place the arrival, so we fall back to
+    /// "open at all on the chosen day" — the honest weaker answer.
+    private func passStatus(_ n: Corridor.NearRoute<FarmPin>) -> FarmFilters.DayStatus {
+        guard let durationSeconds, durationSeconds > 0 else {
+            return FarmFilters.statusOnDay(n.farm.openingHours, dayMon: dayMon)
+        }
+        let arrival = departMinutes + Int((n.along * durationSeconds / 60).rounded())
+        return FarmFilters.statusOnDayBetween(
+            n.farm.openingHours, dayMon: dayMon,
+            fromMinutes: arrival, toMinutes: arrival + 30
+        )
+    }
 
     /// nil = follow the drive; a value = the user has taken the slider over.
     @State private var chosenKm: Int? = nil
@@ -119,6 +142,7 @@ struct RouteCorridorView: View {
                     }
                     ForEach(leg.farms, id: \.farm.osmId) { n in
                         CorridorRow(farm: n.farm, offRouteM: n.offRoute,
+                                    status: passStatus(n),
                                     onOpen: { onOpenFarm(n.farm) },
                                     onAdd: { onAddStop(n.farm) })
                     }
@@ -143,6 +167,8 @@ struct RouteCorridorView: View {
 private struct CorridorRow: View {
     let farm: FarmPin
     let offRouteM: Double
+    /// Open/closed at the arrival time, computed by the parent (R6).
+    let status: FarmFilters.DayStatus
     let onOpen: () -> Void
     let onAdd: () -> Void
 
@@ -165,11 +191,12 @@ private struct CorridorRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(farm.name).font(.geist(14, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
                 HStack(spacing: 6) {
-                    // R6 · open when you pass (today). Unknown draws nothing rather than
-                    // a guess — an unknown farm called open is a locked gate 40 min away.
-                    switch FarmFilters.statusOnDay(farm.openingHours, dayMon: Self.todayMon) {
-                    case .open: openDot(Color.farmGreen, String(localized: "Open today"))
-                    case .closed: openDot(Color.inkMuted, String(localized: "Closed"))
+                    // R6 · open when you pass, on the day you're going. Unknown draws
+                    // nothing rather than a guess — an unknown farm called open is a
+                    // locked gate 40 min away.
+                    switch status {
+                    case .open: openDot(Color.farmGreen, String(localized: "Open when you pass"))
+                    case .closed: openDot(Color.inkMuted, String(localized: "Closed then"))
                     case .unknown: EmptyView()
                     }
                     Text("\(Self.formatDistance(offRouteM)) " + String(localized: "off route"))
@@ -199,15 +226,6 @@ private struct CorridorRow: View {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label).font(.geist(12, .medium)).foregroundStyle(color)
         }
-    }
-
-    /// R6 statusOnDay for TODAY in Amsterdam — the trip has no date UI yet (web's doesn't
-    /// either), so today is the honest question to ask.
-    private static var todayMon: Int {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam") ?? .current
-        let js = cal.component(.weekday, from: Date()) - 1   // 0=Sun … 6=Sat
-        return [6, 0, 1, 2, 3, 4, 5][js]
     }
 
     private static func formatDistance(_ m: Double) -> String {

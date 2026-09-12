@@ -146,7 +146,7 @@ struct FarmMemberSections: View {
         if detail?.organic == true {
             out.append(DetailRow(icon: "leaf", label: String(localized: "Organic"), value: String(localized: "Yes 🌱")))
         }
-        if let produce = detail?.produce, !produce.isEmpty {
+        if let produce = detail?.displayProduce {
             out.append(DetailRow(icon: "basket", label: String(localized: "Produce"), value: produce))
         }
         return out

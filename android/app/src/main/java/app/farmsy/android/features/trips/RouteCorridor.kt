@@ -45,8 +45,6 @@ import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.model.LatLng
-import java.util.Calendar
-import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /// R4 — "farms on my way". The screen half of the corridor: it shows the farms the
@@ -67,6 +65,12 @@ fun RouteCorridor(
     tripKm: Double?,
     filteredFarms: List<FarmPin>,
     stopIds: Set<String>,
+    // R6 — the chosen day (0=Mon…6=Sun), the departure (minutes past midnight) and
+    // the drive's total duration: together they answer "open when you pass, on the
+    // day you're going" instead of "open at all today".
+    dayMon: Int,
+    departMinutes: Int,
+    durationSeconds: Double?,
     onOpenFarm: (FarmPin) -> Unit,
     onAddStop: (FarmPin) -> Unit,
     modifier: Modifier = Modifier,
@@ -175,6 +179,7 @@ fun RouteCorridor(
                         CorridorRow(
                             farm = n.farm,
                             offRouteM = n.offRoute,
+                            status = passStatus(n, dayMon, departMinutes, durationSeconds),
                             onOpen = { onOpenFarm(n.farm) },
                             onAdd = { onAddStop(n.farm) },
                         )
@@ -199,6 +204,7 @@ fun RouteCorridor(
 private fun CorridorRow(
     farm: FarmPin,
     offRouteM: Double,
+    status: FarmFilters.DayStatus,
     onOpen: () -> Unit,
     onAdd: () -> Unit,
 ) {
@@ -227,11 +233,12 @@ private fun CorridorRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(farm.name, style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.ink, maxLines = 1)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                // R6 · open when you pass (today). Unknown draws nothing rather than a
-                // guess — calling an unknown farm open is how someone drives to a locked gate.
-                when (openTodayStatus(farm.openingHours)) {
-                    FarmFilters.DayStatus.OPEN -> OpenDot(FarmsyColors.farmGreen, stringResource(R.string.filter_open_today))
-                    FarmFilters.DayStatus.CLOSED -> OpenDot(FarmsyColors.inkMuted, stringResource(R.string.closed))
+                // R6 · open when you pass, on the day you're going. Unknown draws nothing
+                // rather than a guess — calling an unknown farm open is how someone drives
+                // to a locked gate.
+                when (status) {
+                    FarmFilters.DayStatus.OPEN -> OpenDot(FarmsyColors.farmGreen, stringResource(R.string.route_open_when_pass))
+                    FarmFilters.DayStatus.CLOSED -> OpenDot(FarmsyColors.inkMuted, stringResource(R.string.route_closed_then))
                     FarmFilters.DayStatus.UNKNOWN -> {}
                 }
                 Text(
@@ -260,13 +267,22 @@ private fun OpenDot(color: Color, label: String) {
     }
 }
 
-/// R6 statusOnDay for TODAY in Amsterdam — "is it open the day you'd pass". The trip has
-/// no date UI yet (web's doesn't either), so today is the honest question to ask.
-private fun openTodayStatus(hours: String?): FarmFilters.DayStatus {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("Europe/Amsterdam"))
-    // Java Calendar: 1=Sun..7=Sat → Mon-indexed 0..6.
-    val dayMon = intArrayOf(6, 0, 1, 2, 3, 4, 5)[cal.get(Calendar.DAY_OF_WEEK) - 1]
-    return FarmFilters.statusOnDay(hours, dayMon)
+/// A farm's open/closed status at the moment the drive reaches it. Arrival is
+/// `depart + along · duration` (R6): `along` is the fraction of the drive at which the
+/// farm sits, so a shop 80% of the way along is asked about late in the trip, not at
+/// the start. A 30-minute visit window. With no duration (straight-line fallback) we
+/// can't place the arrival, so we fall back to "open at all on the chosen day" — the
+/// honest weaker answer. Mirrors iOS RouteCorridorView.passStatus.
+private fun passStatus(
+    n: Corridor.NearRoute<FarmPin>,
+    dayMon: Int,
+    departMinutes: Int,
+    durationSeconds: Double?,
+): FarmFilters.DayStatus {
+    if (durationSeconds == null || durationSeconds <= 0.0)
+        return FarmFilters.statusOnDay(n.farm.openingHours, dayMon)
+    val arrival = departMinutes + (n.along * durationSeconds / 60.0).roundToInt()
+    return FarmFilters.statusOnDayBetween(n.farm.openingHours, dayMon, arrival, arrival + 30)
 }
 
 /// "800 m" under a kilometre, "3.2 km" over — the same shape the rest of the app uses.
