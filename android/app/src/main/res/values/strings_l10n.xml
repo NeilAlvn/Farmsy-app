@@ -395,6 +395,10 @@
     <string name="route_count">%1$d farms on your route</string>
     <string name="route_leg_count">%1$d within %2$d km</string>
     <string name="route_leg_range">%1$d–%2$d km</string>
+    <string name="route_open_when_pass">Open when you pass</string>
+    <string name="route_closed_then">Closed then</string>
+    <string name="route_going">Going</string>
+    <string name="route_at">at</string>
     <string name="route_off_road">%1$s off route</string>
     <string name="route_add">Add</string>
     <string name="route_added">On the drive</string>
