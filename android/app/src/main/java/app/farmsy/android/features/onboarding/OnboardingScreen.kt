@@ -84,7 +84,12 @@ import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.core.FarmDetailApi
 import app.farmsy.android.features.auth.AuthSheet
+import app.farmsy.android.features.place.PlaceSearchSheet
+import app.farmsy.android.features.whatsnew.MultiImageFarmCard
+import app.farmsy.android.features.whatsnew.SkeletonBox
+import com.google.android.gms.maps.model.LatLng
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.Fraunces
@@ -92,7 +97,6 @@ import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
-import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 /// Seven-screen onboarding — a 1:1 rebuild of iOS OnboardingView: a full-bleed
@@ -118,6 +122,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var prefs by remember { mutableStateOf(QuickPrefs()) }
     var applyPrefs by remember { mutableStateOf(false) }
     var chosenLabel by remember { mutableStateOf<String?>(null) }
+    // The point "farms near you" is measured from: an explicit town pick wins over
+    // GPS (iOS focusCoord = chosenCoord ?? loc; OnboardingView.swift:36-38).
+    var chosenCoord by remember { mutableStateOf<LatLng?>(null) }
+    // S2.3: the real place-search sheet (S19, Photon) replaces the TownPicker chips.
+    var showPlaceSearch by remember { mutableStateOf(false) }
     var showLogin by remember { mutableStateOf(false) }
 
     val loc by locationHelper.location.collectAsState()
@@ -218,7 +227,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Step.LOCATION -> LocationStep(
                             resolvedLabel = chosenLabel ?: loc?.let { stringResource(R.string.your_current_location) },
                             onUseLocation = { if (locationHelper.hasPermission()) locationHelper.request() },
-                            onPickTown = { chosenLabel = it },
+                            onSearch = { showPlaceSearch = true },
                             onContinue = { advance() },
                         )
                         Step.DETAILS -> DetailsStep(
@@ -226,7 +235,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             onShowFarms = { applyPrefs = true; advance() },
                             onSkip = { applyPrefs = false; skip() },
                         )
-                        Step.NEARBY -> NearbyStep(label = chosenLabel, onContinue = { advance() })
+                        // focusCoord = chosenCoord ?? loc (iOS precedence: a picked town
+                        // wins over GPS). Passed to NearbyStep so it centres on it.
+                        Step.NEARBY -> NearbyStep(
+                            coord = chosenCoord ?: loc?.let { LatLng(it.latitude, it.longitude) },
+                            label = chosenLabel,
+                            onContinue = { advance() },
+                        )
                         Step.NOTIFY -> NotifyStep(onContinue = { advance() })
                         Step.DONE -> DoneStep(onStart = { finish() })
                     }
@@ -236,6 +251,17 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     }
 
     if (showLogin) AuthSheet(onDone = { showLogin = false })
+
+    // S2.3 place-search (S19, reused as-is). iOS onboarding: onPick sets chosenCoord +
+    // chosenLabel; onLocate requests GPS. The picked town flows to NearbyStep as the
+    // focus coord, so "farms near you" measures from where they chose, not just GPS.
+    if (showPlaceSearch) {
+        PlaceSearchSheet(
+            onPick = { coord, label -> chosenCoord = coord; chosenLabel = label },
+            onLocate = { locationHelper.request() },
+            onDismiss = { showPlaceSearch = false },
+        )
+    }
 }
 
 @Composable
@@ -396,8 +422,7 @@ private fun RadarPulse() {
 // MARK: - Step 3: location
 
 @Composable
-private fun LocationStep(resolvedLabel: String?, onUseLocation: () -> Unit, onPickTown: (String) -> Unit, onContinue: () -> Unit) {
-    var showTowns by remember { mutableStateOf(false) }
+private fun LocationStep(resolvedLabel: String?, onUseLocation: () -> Unit, onSearch: () -> Unit, onContinue: () -> Unit) {
     Column(Modifier.fillMaxSize().navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
         Column(
@@ -412,11 +437,9 @@ private fun LocationStep(resolvedLabel: String?, onUseLocation: () -> Unit, onPi
         Spacer(Modifier.height(28.dp))
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             LocationRow(Icons.Filled.LocationOn, stringResource(R.string.use_my_location), filled = true) { onUseLocation() }
-            LocationRow(Icons.Filled.Search, stringResource(R.string.search_a_town), filled = false) { showTowns = !showTowns }
-        }
-        if (showTowns) {
-            Spacer(Modifier.height(12.dp))
-            TownPicker(onPick = { onPickTown(it) })
+            // iOS: "Search a town instead" → onSearch → PlaceSearchSheet (S19). Was an
+            // inline TownPicker (8 hardcoded chips), now the real Photon-backed search.
+            LocationRow(Icons.Filled.Search, stringResource(R.string.search_a_town), filled = false) { onSearch() }
         }
         resolvedLabel?.let {
             Row(Modifier.padding(top = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -426,27 +449,6 @@ private fun LocationStep(resolvedLabel: String?, onUseLocation: () -> Unit, onPi
         }
         Spacer(Modifier.weight(1f))
         PrimaryButton(stringResource(R.string.continue_), Modifier.padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 12.dp)) { onContinue() }
-    }
-}
-
-private val presetTowns = listOf("Amsterdam", "Rotterdam", "Utrecht", "Den Haag", "Eindhoven", "Antwerpen", "Gent", "Brussel")
-
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun TownPicker(onPick: (String) -> Unit) {
-    androidx.compose.foundation.layout.FlowRow(
-        Modifier.padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        presetTowns.forEach { town ->
-            Text(
-                town, style = geist(15.sp, FontWeight.Medium), color = FarmsyColors.ink,
-                modifier = Modifier.background(FarmsyColors.creamCard, CircleShape)
-                    .border(1.dp, FarmsyColors.hairline, CircleShape)
-                    .clickable { onPick(town) }.padding(vertical = 9.dp, horizontal = 16.dp),
-            )
-        }
     }
 }
 
@@ -532,17 +534,49 @@ private fun PrefRow(emoji: String, title: String, subtitle: String, isOn: Boolea
 // MARK: - Step 5: nearby (farm shelf)
 
 @Composable
-private fun NearbyStep(label: String?, onContinue: () -> Unit) {
+private fun NearbyStep(coord: LatLng?, label: String?, onContinue: () -> Unit) {
     val farms = LocalFarms.current
-    val locationHelper = LocalLocationHelper.current
     val pins by farms.pins.collectAsState()
-    val loc by locationHelper.location.collectAsState()
+    val galleries by farms.galleries.collectAsState()
+    val galleriesLoaded by farms.galleriesLoaded.collectAsState()
+    val featuredTeasers by farms.featuredTeasers.collectAsState()
 
     var shown by remember { mutableStateOf<List<FarmPin>>(emptyList()) }
     var built by remember { mutableStateOf(false) }
-    LaunchedEffect(pins.size, loc?.latitude) {
-        if (pins.isNotEmpty()) { shown = farms.recommendations(loc, limit = 10); built = true }
+    var nearbyCount by remember { mutableStateOf(0) }
+    var extraTeasers by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+
+    // iOS build() + fetchTeasers, keyed like iOS buildKey (pins / galleriesLoaded /
+    // coord). Pool = photo'd farms within 100 km (nearest first) of the focus coord
+    // (a picked town or GPS), else 30 popular picks. Split described (has a gallery) /
+    // plain, take 6 + 8, shuffle so described cards don't cluster by distance, show ≤10.
+    LaunchedEffect(pins.size, galleriesLoaded, coord?.latitude, coord?.longitude) {
+        if (pins.isEmpty()) return@LaunchedEffect
+        farms.loadGalleriesIfNeeded()
+        val base = coord?.let { farms.nearbyWithImages(it.latitude, it.longitude, 100.0) }
+            ?: farms.feedPicks(null, 30)
+        nearbyCount = base.size
+        val g = farms.galleries.value
+        val described = base.filter { g[it.osmId]?.isNotEmpty() == true }
+        val plain = base.filter { g[it.osmId].isNullOrEmpty() }
+        shown = (described.take(6) + plain.take(8)).shuffled()
+        built = true
+        // Batch-fetch teasers for the cover-only cards that don't already carry one.
+        val targets = shown.take(10).map { it.osmId }
+            .filter { farms.featuredTeasers.value[it] == null && extraTeasers[it] == null }
+        if (targets.isNotEmpty()) {
+            val result = FarmDetailApi.teasers(targets)
+            if (result.isNotEmpty()) extraTeasers = extraTeasers + result
+        }
     }
+
+    // Photos for a card: the featured gallery when we have it, else the cover.
+    fun imagesFor(pin: FarmPin): List<String> {
+        galleries[pin.osmId]?.takeIf { it.isNotEmpty() }?.let { return it }
+        pin.image?.let { return listOf(it) }
+        return emptyList()
+    }
+    fun teaserFor(pin: FarmPin): String? = featuredTeasers[pin.osmId] ?: extraTeasers[pin.osmId]
 
     Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         Column(
@@ -551,11 +585,12 @@ private fun NearbyStep(label: String?, onContinue: () -> Unit) {
         ) {
             Kicker(stringResource(R.string.ob_great_choice))
             DisplayTitle(stringResource(R.string.ob_here_are_farms), stringResource(R.string.ob_near), stringResource(R.string.ob_you), 30.sp)
+            // Count is the POOL size (iOS nearbyCount = base.count), not the ≤10 shown.
             val headline = when {
                 !built -> stringResource(R.string.finding_farms_near_you)
-                loc == null && label == null -> stringResource(R.string.popular_farm_shops)
-                label != null -> stringResource(R.string.farms_within_100km_of_arg, shown.size, label)
-                else -> stringResource(R.string.farms_within_100km_of_you, shown.size)
+                coord == null -> stringResource(R.string.popular_farm_shops)
+                label != null -> stringResource(R.string.farms_within_100km_of_arg, nearbyCount, label)
+                else -> stringResource(R.string.farms_within_100km_of_you, nearbyCount)
             }
             Text(headline, style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
         }
@@ -564,28 +599,16 @@ private fun NearbyStep(label: String?, onContinue: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (!built) {
-                repeat(3) { Box(Modifier.fillMaxWidth().height(180.dp).background(FarmsyColors.creamCard, RoundedCornerShape(16.dp))) }
+                // Same skeleton the What's New "Featured farms" shelf uses (iOS SkeletonBox).
+                repeat(3) { SkeletonBox(16.dp, Modifier.fillMaxWidth().height(180.dp)) }
             } else {
-                shown.forEach { pin -> NearbyCard(pin) }
+                // C4 MultiImageFarmCard (reused as-is), like iOS. onOpen → advance.
+                shown.take(10).forEach { pin ->
+                    MultiImageFarmCard(pin = pin, images = imagesFor(pin), teaser = teaserFor(pin), onOpen = onContinue)
+                }
             }
         }
         PrimaryButton(stringResource(R.string.see_all_on_map), Modifier.padding(horizontal = 20.dp).padding(top = 14.dp, bottom = 12.dp)) { onContinue() }
-    }
-}
-
-@Composable
-private fun NearbyCard(pin: FarmPin) {
-    Box(
-        Modifier.fillMaxWidth().height(180.dp).background(Color(0xFFEDE7DD), RoundedCornerShape(16.dp)),
-    ) {
-        if (pin.image != null) {
-            AsyncImage(pin.image, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().background(Color.Transparent))
-        }
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)))))
-        Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
-            Text(pin.name, style = geist(16.sp, FontWeight.Bold), color = Color.White, maxLines = 1)
-            pin.city?.let { Text(it, style = geist(13.sp), color = Color.White.copy(alpha = 0.85f), maxLines = 1) }
-        }
     }
 }
 

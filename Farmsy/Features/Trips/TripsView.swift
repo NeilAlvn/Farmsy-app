@@ -182,6 +182,25 @@ struct TripsView: View {
                                 if i < rows - 1 { Divider().padding(.leading, 60) }
                             }
                         }
+                        // R4 · farms on the way. Shown once there's a road to measure
+                        // against. Fed the FILTERED pin set (farms.filtered) so it never
+                        // offers a farm the map is hiding; adding a farm re-routes, so it
+                        // re-positions against the new road for free.
+                        if trip.routeLine.count >= 2 {
+                            Divider()
+                            RouteCorridorView(
+                                road: trip.routeLine,
+                                tripKm: trip.distanceMeters.map { $0 / 1000 },
+                                filteredFarms: farms.filtered,
+                                stopIds: Set(trip.stopIds),
+                                onOpenFarm: { pin in onOpenFarm(pin) },
+                                // toggle changes stopIds, and .onChange(of: trip.stopIds)
+                                // above re-routes — so the farm re-sorts against the new
+                                // road without an explicit refresh here.
+                                onAddStop: { pin in trip.toggle(pin.osmId) }
+                            )
+                            .padding(14)
+                        }
                     }
                 }
                 .frame(maxHeight: .infinity)

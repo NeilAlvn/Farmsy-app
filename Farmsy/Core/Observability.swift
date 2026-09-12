@@ -31,6 +31,13 @@ enum Observability {
         if !Backend.postHogKey.isEmpty {
             let config = PostHogConfig(apiKey: Backend.postHogKey, host: Backend.postHogHost)
             config.captureApplicationLifecycleEvents = true
+            // Automatic screen capture is OFF. In SwiftUI every sheet is hosted in the
+            // same PresentationHostingController<AnyView>, so the SDK's autocapture
+            // reports that one meaningless class name for every screen — it floods the
+            // feed and buries the thirteen events we name deliberately (and PostHog
+            // bills on volume). Lifecycle events stay: "Application Opened" is one
+            // useful session marker, not one-per-sheet.
+            config.captureScreenViews = false
             PostHogSDK.shared.setup(config)
         }
     }

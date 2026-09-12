@@ -371,4 +371,18 @@
     <string name="couldn_t_load_this_farm">Kon deze boerderij niet laden.</string>
     <string name="farm_photo">Boerderijfoto</string>
     <string name="share">Delen</string>
+    <!-- R4 · route corridor (farms on the way) -->
+    <string name="route_on_my_way">Boerderijen onderweg</string>
+    <string name="route_on_my_way_sub">Boerderijen waar je onderweg langs komt</string>
+    <string name="route_within">Boerderijen binnen</string>
+    <string name="route_none">Geen boerderijen zo dicht bij de weg. Probeer een grotere afstand of wis een filter.</string>
+    <string name="route_count">%1$d boerderijen op je route</string>
+    <string name="route_leg_count">%1$d binnen %2$d km</string>
+    <string name="route_leg_range">%1$d–%2$d km</string>
+    <string name="route_off_road">%1$s van de route</string>
+    <string name="route_add">Toevoegen</string>
+    <string name="route_added">Op de rit</string>
+    <string name="route_show_all_arg">Toon alle %1$d</string>
+    <string name="route_enter_ends">Voeg een start en bestemming toe om te zien langs welke boerderijen je bijna rijdt.</string>
+    <string name="closed">Gesloten</string>
 </resources>
