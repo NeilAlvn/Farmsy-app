@@ -201,6 +201,9 @@ struct TripsView: View {
                                 dayMon: trip.resolvedDayMon,
                                 departMinutes: trip.resolvedDepartMinutes,
                                 durationSeconds: trip.durationSeconds,
+                                produceByOsm: farms.produceByOsm,
+                                selectedProducts: trip.selectedProducts,
+                                onToggleProduct: { trip.toggleProduct($0) },
                                 onOpenFarm: { pin in onOpenFarm(pin) },
                                 // toggle changes stopIds, and .onChange(of: trip.stopIds)
                                 // above re-routes — so the farm re-sorts against the new

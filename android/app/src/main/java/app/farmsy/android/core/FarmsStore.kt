@@ -116,7 +116,11 @@ class FarmsStore(private val scope: CoroutineScope) {
 
     // Flags maps (loaded once from /api/farms/flags).
     private var flagsLoaded = false
-    private var produceByOsm: Map<String, String> = emptyMap()
+    // Merged product text per farm from the flags `p` (produce folded to
+    // produce_inferred server-side). Read by the smart-search product match and,
+    // R5, by the corridor product chips.
+    var produceByOsm: Map<String, String> = emptyMap()
+        private set
     private var locationTypesByOsm: Map<String, List<String>> = emptyMap()
     private var methodsByOsm: Map<String, List<String>> = emptyMap()
 

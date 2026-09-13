@@ -109,6 +109,8 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     // R6 — the day + departure the corridor answers about (null → resolved default).
     val tripDate by trip.tripDate.collectAsState()
     val departMinutes by trip.departMinutes.collectAsState()
+    // R5 — the product chips picked for the corridor.
+    val selectedProducts by trip.selectedProducts.collectAsState()
     val isRouting by trip.isRouting.collectAsState()
     val onRoads by trip.onRoads.collectAsState()
     val savedTrips by trip.savedTrips.collectAsState()
@@ -304,6 +306,9 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                         dayMon = TripStore.dayMon(resolvedDate),
                         departMinutes = resolvedDepart,
                         durationSeconds = durationSeconds,
+                        produceByOsm = farms.produceByOsm,
+                        selectedProducts = selectedProducts,
+                        onToggleProduct = { trip.toggleProduct(it) },
                         onOpenFarm = onOpenFarm,
                         onAddStop = { pin -> trip.toggle(pin.osmId); scope.launch { trip.refreshRoute(pinIndex) } },
                     )
