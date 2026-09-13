@@ -142,7 +142,7 @@ final class PreferencesSync {
         request.httpMethod = "PUT"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONEncoder().encode(p)
+        request.httpBody = Self.body(p, locale: Self.currentLocale)
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             let ok = (response as? HTTPURLResponse)?.statusCode == 200
@@ -150,6 +150,33 @@ final class PreferencesSync {
         } catch {
             UserDefaults.standard.set(true, forKey: Self.pendingKey)  // rule 2
         }
+    }
+
+    // MARK: - Locale (P2, Aviah 2026-09-11)
+
+    /// The language the app is actually rendering in — the in-app override when the
+    /// user picked one (`AppleLanguages`), otherwise the device language resolved
+    /// against our bundle. `preferredLocalizations.first` is exactly that resolved
+    /// choice, and it returns our short `.lproj` codes (`en`/`nl`/`fr`/`de`); Aviah's
+    /// endpoint folds `nl`/`nl-NL`/`nl_NL` alike, so no normalising is needed here.
+    private static var currentLocale: String {
+        Bundle.main.preferredLocalizations.first ?? "en"
+    }
+
+    /// The PUT body: the five preference fields, plus an optional `locale` sibling.
+    /// The server stores it on the profile so lifecycle mail — sent by crons and
+    /// webhooks with no request to read a language off — goes out in the reader's
+    /// language. Merged at the top level rather than added to `Preferences`, so the
+    /// device mirror and the server-diff stay exactly the five fields and a locale
+    /// change never reads as a preferences edit. Locale is a nice-to-have: if the
+    /// merge fails for any reason we fall back to the plain preferences body rather
+    /// than drop the write.
+    private static func body(_ p: Preferences, locale: String) -> Data? {
+        guard let base = try? JSONEncoder().encode(p),
+              var obj = try? JSONSerialization.jsonObject(with: base) as? [String: Any]
+        else { return try? JSONEncoder().encode(p) }
+        obj["locale"] = locale
+        return (try? JSONSerialization.data(withJSONObject: obj)) ?? (try? JSONEncoder().encode(p))
     }
 
     // MARK: - Device mirror

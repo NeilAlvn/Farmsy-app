@@ -198,9 +198,23 @@ data class FarmDetail(
     @Serializable(with = FlexibleBoolSerializer::class)
     val organic: Boolean? = null,
     val produce: String? = null,
+    /// What we read out of the farm's own description, kept separate from the
+    /// curated `produce`. The API ships both raw and never merges them; see
+    /// [displayProduce].
+    @SerialName("produce_inferred") val produceInferred: String? = null,
     @SerialName("operator") val operatorName: String? = null,
     val images: List<String> = emptyList(),
-)
+) {
+    /// The produce list to show. What the farm told us (`produce`) wins; failing
+    /// that, what we inferred from its description (`produce_inferred`). The API
+    /// ships the two separately and never merges — and for roughly five in six
+    /// farms with any product data the only value is the inferred one, so reading
+    /// `produce` alone shows those farms nothing. Mirrors the web's
+    /// `produce || produce_inferred`, curated winning. Empty/whitespace = absent.
+    val displayProduce: String?
+        get() = produce?.trim()?.takeIf { it.isNotEmpty() }
+            ?: produceInferred?.trim()?.takeIf { it.isNotEmpty() }
+}
 
 // MARK: Profile (subscription state via /api/profile/status)
 

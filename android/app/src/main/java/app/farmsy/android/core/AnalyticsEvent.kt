@@ -30,6 +30,16 @@ enum class AnalyticsEvent(val key: String) {
     PURCHASE_COMPLETED("purchase_completed"),
     PURCHASE_FAILED("purchase_failed"),
     RESTORE_TAPPED("restore_tapped"),
+    // The four outcome events — did the farm open lead to a real intent? They fire
+    // on the TAP, not a result: the OS is already taking the user to Maps, the
+    // dialler or a browser and this screen is about to go, so the capture is queued
+    // before the hand-off. No membership check on any of them — a free visitor
+    // driving out to a farm shop is the product working, and gating them would
+    // measure a different question.
+    FARM_DIRECTIONS("farm_directions"),
+    FARM_CALLED("farm_called"),
+    FARM_WEBSITE("farm_website"),
+    ROUTE_PLANNED("route_planned"),
 }
 
 /// Property keys.
@@ -43,6 +53,9 @@ object AnalyticsProp {
     const val PLAN = "plan"
     const val STORE = "store"
     const val REASON = "reason"
+    /// `route_planned`: how many farms the corridor found, and the radius it used.
+    const val COUNT = "count"
+    const val RADIUS_KM = "radius_km"
     // On every event, added by Observability.capture.
     const val IS_MEMBER = "is_member"
     const val PLATFORM = "platform"

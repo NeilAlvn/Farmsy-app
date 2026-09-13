@@ -364,6 +364,13 @@
     <string name="pro_buy_lifetime">Lebenslangen Zugang kaufen</string>
     <string name="pro_lifetime_onetime">Einmalig · keine Verlängerung</string>
 
+    <!-- Farm-detail sign-up wall (iOS build 19 parity) -->
+    <string name="see_this_farm_free">Diesen Hof ansehen, kostenlos</string>
+    <string name="one_free_account_opens_every_farm">Adresse, Telefon, Öffnungszeiten und was verkauft wird. Ein kostenloses Konto öffnet jeden Hof auf der Karte.</string>
+    <string name="create_a_free_account">Kostenloses Konto erstellen</string>
+    <string name="couldn_t_load_this_farm">Dieser Hof konnte nicht geladen werden.</string>
+    <string name="farm_photo">Hoffoto</string>
+    <string name="share">Teilen</string>
     <!-- R4 · route corridor (farms on the way) -->
     <string name="route_on_my_way">Höfe auf meinem Weg</string>
     <string name="route_on_my_way_sub">Höfe, an denen Sie unterwegs vorbeikommen</string>
@@ -372,6 +379,10 @@
     <string name="route_count">%1$d Höfe auf Ihrer Route</string>
     <string name="route_leg_count">%1$d im Umkreis von %2$d km</string>
     <string name="route_leg_range">%1$d–%2$d km</string>
+    <string name="route_open_when_pass">Offen, wenn du vorbeikommst</string>
+    <string name="route_closed_then">Dann geschlossen</string>
+    <string name="route_going">Am</string>
+    <string name="route_at">um</string>
     <string name="route_off_road">%1$s von der Route</string>
     <string name="route_add">Hinzufügen</string>
     <string name="route_added">Auf der Fahrt</string>

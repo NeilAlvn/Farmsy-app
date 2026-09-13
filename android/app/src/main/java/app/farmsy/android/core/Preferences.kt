@@ -16,6 +16,11 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 
 /// The onboarding answers, kept (P0-3) — mirrors iOS Preferences.swift.
 ///
@@ -62,6 +67,7 @@ class PreferencesSync(
     private val farms: FarmsStore,
 ) {
     private val prefs = context.getSharedPreferences("farmsy", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
 
     /// What was last applied from the device or the server. A change that only
     /// echoes it (applying server values makes the flows emit too) is not a
@@ -131,11 +137,40 @@ class PreferencesSync(
             httpClient.put("${Backend.WEB_API}/profile/preferences") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 contentType(ContentType.Application.Json)
-                setBody(lenientJson.encodeToString(p))
+                setBody(body(p, currentLocale()))
             }.status.value == 200
         }.getOrDefault(false)
         setPending(!ok)                                    // rule 2 when !ok
     }
+
+    // ── Locale (P2, Aviah 2026-09-11) ─────────────────────────────────────────
+
+    /// The language the app is actually rendering in — the in-app override when the
+    /// user picked one, otherwise the device language folded to a language we ship
+    /// (anything else → "en", the base bundle). Mirrors iOS Preferences.currentLocale;
+    /// Aviah's endpoint folds nl/nl-NL/nl_NL alike and ignores anything unrecognised.
+    private fun currentLocale(): String {
+        val override = LanguageStore.current(appContext).code
+        if (override.isNotEmpty()) return override
+        val device = appContext.resources.configuration.locales[0].language
+        return if (device in SUPPORTED) device else "en"
+    }
+
+    /// The PUT body: the five preference fields, plus an optional `locale` sibling.
+    /// The server stores it on the profile so lifecycle mail — sent by crons and
+    /// webhooks with no request to read a language off — goes out in the reader's
+    /// language. Merged at the top level rather than added to `Preferences`, so the
+    /// device mirror and the server-diff stay exactly the five fields and a locale
+    /// change never reads as a preferences edit. If the merge fails for any reason
+    /// we fall back to the plain preferences body rather than drop the write.
+    private fun body(p: Preferences, locale: String): String =
+        runCatching {
+            val base = lenientJson.encodeToJsonElement(p).jsonObject
+            buildJsonObject {
+                base.forEach { (k, v) -> put(k, v) }
+                put("locale", JsonPrimitive(locale))
+            }.toString()
+        }.getOrDefault(lenientJson.encodeToString(p))
 
     // ── Device mirror ────────────────────────────────────────────────────────
 
@@ -155,5 +190,8 @@ class PreferencesSync(
     private companion object {
         const val DEVICE_KEY = "preferences"
         const val PENDING_KEY = "preferences_pending"
+        /// The languages Farmsy ships a bundle for — the fold target for a device
+        /// locale we do not translate (matches LanguageStore.Lang's codes).
+        val SUPPORTED = setOf("en", "nl", "fr", "de")
     }
 }

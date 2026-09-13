@@ -15,11 +15,40 @@ struct RouteCorridorView: View {
     let tripKm: Double?
     let filteredFarms: [FarmPin]
     let stopIds: Set<String>
+    /// R6 — the chosen day (0=Mon…6=Sun), the departure (minutes past midnight) and
+    /// the drive's total duration. Together they answer "open *when you pass*, on
+    /// the day you're going" instead of "open at all today".
+    let dayMon: Int
+    let departMinutes: Int
+    let durationSeconds: Double?
     let onOpenFarm: (FarmPin) -> Void
     let onAddStop: (FarmPin) -> Void
 
+    /// A farm's open/closed status at the moment the drive reaches it. Arrival is
+    /// `depart + along · duration` (R6): `along` is the fraction of the drive at
+    /// which the farm sits, so a shop 80% of the way along is asked about late in
+    /// the trip, not at the start. A 30-minute visit window. With no duration
+    /// (straight-line fallback) we can't place the arrival, so we fall back to
+    /// "open at all on the chosen day" — the honest weaker answer.
+    private func passStatus(_ n: Corridor.NearRoute<FarmPin>) -> FarmFilters.DayStatus {
+        guard let durationSeconds, durationSeconds > 0 else {
+            return FarmFilters.statusOnDay(n.farm.openingHours, dayMon: dayMon)
+        }
+        let arrival = departMinutes + Int((n.along * durationSeconds / 60).rounded())
+        return FarmFilters.statusOnDayBetween(
+            n.farm.openingHours, dayMon: dayMon,
+            fromMinutes: arrival, toMinutes: arrival + 30
+        )
+    }
+
     /// nil = follow the drive; a value = the user has taken the slider over.
     @State private var chosenKm: Int? = nil
+
+    /// The place-pair we've already counted a `route_planned` for. The event is
+    /// once per pair of places, not once per radius drag — so it keys on the
+    /// drive's ends, which hold steady when a waypoint is added mid-route and only
+    /// change when the origin or destination does.
+    @State private var plannedKey: String? = nil
 
     private static let freeRows = 40
 
@@ -32,6 +61,27 @@ struct RouteCorridorView: View {
         return max(2, min(20, Int((tripKm * 0.05).rounded())))
     }
     private var radiusKm: Int { chosenKm ?? suggestedKm }
+
+    /// A stable id for "this pair of places": origin + destination, rounded so a
+    /// re-route that only nudges the polyline doesn't read as a new plan. nil until
+    /// there's a real two-point road.
+    private var routeKey: String? {
+        guard let a = road.first, let b = road.last, road.count >= 2 else { return nil }
+        return String(format: "%.3f,%.3f>%.3f,%.3f", a.latitude, a.longitude, b.latitude, b.longitude)
+    }
+
+    /// Fire `route_planned` once for a newly-planned pair of places, carrying the
+    /// farms found and the radius they were found at. No membership check — the
+    /// corridor is free. Adding a stop keeps the same ends, so it does not re-fire;
+    /// changing origin or destination does.
+    private func fireRoutePlannedIfNew(_ count: Int) {
+        guard let key = routeKey, key != plannedKey else { return }
+        plannedKey = key
+        Observability.capture(.routePlanned, [
+            AnalyticsProp.count: count,
+            AnalyticsProp.radiusKm: radiusKm,
+        ])
+    }
 
     private var near: [Corridor.NearRoute<FarmPin>] {
         guard road.count >= 2 else { return [] }
@@ -92,6 +142,7 @@ struct RouteCorridorView: View {
                     }
                     ForEach(leg.farms, id: \.farm.osmId) { n in
                         CorridorRow(farm: n.farm, offRouteM: n.offRoute,
+                                    status: passStatus(n),
                                     onOpen: { onOpenFarm(n.farm) },
                                     onAdd: { onAddStop(n.farm) })
                     }
@@ -104,6 +155,9 @@ struct RouteCorridorView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Count the plan once the pair of places is set (and again if the ends
+        // change), never on a radius drag. `near` is already computed above.
+        .onChange(of: routeKey, initial: true) { _, _ in fireRoutePlannedIfNew(near.count) }
     }
 }
 
@@ -113,6 +167,8 @@ struct RouteCorridorView: View {
 private struct CorridorRow: View {
     let farm: FarmPin
     let offRouteM: Double
+    /// Open/closed at the arrival time, computed by the parent (R6).
+    let status: FarmFilters.DayStatus
     let onOpen: () -> Void
     let onAdd: () -> Void
 
@@ -135,11 +191,12 @@ private struct CorridorRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(farm.name).font(.geist(14, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
                 HStack(spacing: 6) {
-                    // R6 · open when you pass (today). Unknown draws nothing rather than
-                    // a guess — an unknown farm called open is a locked gate 40 min away.
-                    switch FarmFilters.statusOnDay(farm.openingHours, dayMon: Self.todayMon) {
-                    case .open: openDot(Color.farmGreen, String(localized: "Open today"))
-                    case .closed: openDot(Color.inkMuted, String(localized: "Closed"))
+                    // R6 · open when you pass, on the day you're going. Unknown draws
+                    // nothing rather than a guess — an unknown farm called open is a
+                    // locked gate 40 min away.
+                    switch status {
+                    case .open: openDot(Color.farmGreen, String(localized: "Open when you pass"))
+                    case .closed: openDot(Color.inkMuted, String(localized: "Closed then"))
                     case .unknown: EmptyView()
                     }
                     Text("\(Self.formatDistance(offRouteM)) " + String(localized: "off route"))
@@ -169,15 +226,6 @@ private struct CorridorRow: View {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label).font(.geist(12, .medium)).foregroundStyle(color)
         }
-    }
-
-    /// R6 statusOnDay for TODAY in Amsterdam — the trip has no date UI yet (web's doesn't
-    /// either), so today is the honest question to ask.
-    private static var todayMon: Int {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam") ?? .current
-        let js = cal.component(.weekday, from: Date()) - 1   // 0=Sun … 6=Sat
-        return [6, 0, 1, 2, 3, 4, 5][js]
     }
 
     private static func formatDistance(_ m: Double) -> String {
