@@ -379,16 +379,20 @@ struct FarmDetailView: View {
             // Directions is public — just opens Maps, signed in or not.
             footerButton(icon: "location.fill",
                          label: String(localized: "Directions"), filled: false) {
+                // Fire before the hand-off — the OS is about to take the screen to Maps.
+                Observability.capture(.farmDirections, [AnalyticsProp.osmId: pin.osmId])
                 openDirections()
             }
             if let phone = detail?.phone,
                let url = URL(string: "tel:\(phone.filter { !$0.isWhitespace })") {
                 footerButton(icon: "phone.fill", label: String(localized: "Call"), filled: true) {
+                    Observability.capture(.farmCalled, [AnalyticsProp.osmId: pin.osmId])
                     UIApplication.shared.open(url)
                 }
             } else if let site = detail?.website,
                       let url = URL(string: site.hasPrefix("http") ? site : "https://\(site)") {
                 footerButton(icon: "globe", label: String(localized: "Website"), filled: true) {
+                    Observability.capture(.farmWebsite, [AnalyticsProp.osmId: pin.osmId])
                     UIApplication.shared.open(url)
                 }
             }

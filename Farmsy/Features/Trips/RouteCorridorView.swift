@@ -44,6 +44,12 @@ struct RouteCorridorView: View {
     /// nil = follow the drive; a value = the user has taken the slider over.
     @State private var chosenKm: Int? = nil
 
+    /// The place-pair we've already counted a `route_planned` for. The event is
+    /// once per pair of places, not once per radius drag — so it keys on the
+    /// drive's ends, which hold steady when a waypoint is added mid-route and only
+    /// change when the origin or destination does.
+    @State private var plannedKey: String? = nil
+
     private static let freeRows = 40
 
     // The radius follows the drive until the slider is touched: ~1/20th of the trip,
@@ -55,6 +61,27 @@ struct RouteCorridorView: View {
         return max(2, min(20, Int((tripKm * 0.05).rounded())))
     }
     private var radiusKm: Int { chosenKm ?? suggestedKm }
+
+    /// A stable id for "this pair of places": origin + destination, rounded so a
+    /// re-route that only nudges the polyline doesn't read as a new plan. nil until
+    /// there's a real two-point road.
+    private var routeKey: String? {
+        guard let a = road.first, let b = road.last, road.count >= 2 else { return nil }
+        return String(format: "%.3f,%.3f>%.3f,%.3f", a.latitude, a.longitude, b.latitude, b.longitude)
+    }
+
+    /// Fire `route_planned` once for a newly-planned pair of places, carrying the
+    /// farms found and the radius they were found at. No membership check — the
+    /// corridor is free. Adding a stop keeps the same ends, so it does not re-fire;
+    /// changing origin or destination does.
+    private func fireRoutePlannedIfNew(_ count: Int) {
+        guard let key = routeKey, key != plannedKey else { return }
+        plannedKey = key
+        Observability.capture(.routePlanned, [
+            AnalyticsProp.count: count,
+            AnalyticsProp.radiusKm: radiusKm,
+        ])
+    }
 
     private var near: [Corridor.NearRoute<FarmPin>] {
         guard road.count >= 2 else { return [] }
@@ -128,6 +155,9 @@ struct RouteCorridorView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Count the plan once the pair of places is set (and again if the ends
+        // change), never on a radius drag. `near` is already computed above.
+        .onChange(of: routeKey, initial: true) { _, _ in fireRoutePlannedIfNew(near.count) }
     }
 }
 

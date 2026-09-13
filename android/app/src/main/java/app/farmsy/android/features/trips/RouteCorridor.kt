@@ -21,6 +21,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,9 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.Corridor
 import app.farmsy.android.core.FarmFilters
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.core.Observability
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
@@ -91,6 +95,25 @@ fun RouteCorridor(
             filteredFarms,
             radiusKm * 1000.0,
         ).filter { it.farm.osmId !in stopIds }
+    }
+
+    // route_planned, once per pair of places — not once per radius drag. Keyed on
+    // the drive's ends (origin + destination, rounded), which hold steady when a
+    // waypoint is added and only change when an end does, so the effect relaunches
+    // exactly when a new route is planned. No membership check — the corridor is free.
+    val routeKey = remember(road) {
+        if (road.size < 2) null
+        else road.first().let { a -> road.last().let { b ->
+            "%.3f,%.3f>%.3f,%.3f".format(a.latitude, a.longitude, b.latitude, b.longitude)
+        } }
+    }
+    LaunchedEffect(routeKey) {
+        if (routeKey != null) {
+            Observability.capture(
+                AnalyticsEvent.ROUTE_PLANNED,
+                mapOf(AnalyticsProp.COUNT to near.size, AnalyticsProp.RADIUS_KM to radiusKm),
+            )
+        }
     }
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {

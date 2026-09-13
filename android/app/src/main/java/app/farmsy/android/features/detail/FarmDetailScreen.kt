@@ -336,14 +336,18 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FooterButton(Icons.Filled.NearMe, stringResource(R.string.directions), filled = false, modifier = Modifier.weight(1f)) {
+                // Fire before the hand-off — the OS is about to take the screen to Maps.
+                Observability.capture(AnalyticsEvent.FARM_DIRECTIONS, mapOf(AnalyticsProp.OSM_ID to pin.osmId))
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:${pin.lat},${pin.lng}?q=${pin.lat},${pin.lng}(${pin.name})")))
             }
             if (phone != null) {
                 FooterButton(Icons.Filled.Call, stringResource(R.string.call), filled = true, modifier = Modifier.weight(1f)) {
+                    Observability.capture(AnalyticsEvent.FARM_CALLED, mapOf(AnalyticsProp.OSM_ID to pin.osmId))
                     context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
                 }
             } else if (site != null) {
                 FooterButton(Icons.Filled.Public, stringResource(R.string.website), filled = true, modifier = Modifier.weight(1f)) {
+                    Observability.capture(AnalyticsEvent.FARM_WEBSITE, mapOf(AnalyticsProp.OSM_ID to pin.osmId))
                     val u = if (site.startsWith("http")) site else "https://$site"
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u)))
                 }
