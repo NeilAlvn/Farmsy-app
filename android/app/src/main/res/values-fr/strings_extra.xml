@@ -165,4 +165,23 @@
     <string name="pro_feature_filter">Depuis quand une ferme est confirmée ouverte, et par combien de personnes</string>
     <string name="pro_feature_email">Une alerte quand un produit que vous suivez apparaît dans votre rayon</string>
     <string name="pro_feature_everything">Toutes les nouveautés de Plus, incluses</string>
+
+    <!-- Five-tab redesign. -->
+    <string name="products">Produits</string>
+    <string name="products_likely">probable</string>
+    <string name="add_all_to_shopping">Tout ajouter à la liste</string>
+    <string name="on_your_list">Sur votre liste</string>
+    <string name="products_tap_hint">Touchez un produit pour l\'ajouter à votre liste de courses.</string>
+    <string name="report_what_is_wrong">Qu\'est-ce qui ne va pas ?</string>
+    <string name="report_reason_closed">Fermé définitivement</string>
+    <string name="report_reason_hours">Les horaires sont faux</string>
+    <string name="report_reason_products">Les produits sont faux</string>
+    <string name="report_reason_location">Mauvais emplacement</string>
+    <string name="report_reason_duplicate">Ferme en double</string>
+    <string name="report_reason_other">Autre chose</string>
+    <string name="report_note_placeholder">Autre chose à nous signaler ? (facultatif)</string>
+    <string name="report_send">Envoyer le signalement</string>
+    <string name="report_send_failed">Envoi impossible. Vérifiez votre connexion et réessayez.</string>
+    <string name="thank_you">Merci</string>
+    <string name="report_thank_you_body">Nous vérifions chaque signalement à la main et corrigeons la fiche.</string>
 </resources>

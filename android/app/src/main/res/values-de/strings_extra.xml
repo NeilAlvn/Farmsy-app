@@ -165,4 +165,23 @@
     <string name="pro_feature_filter">Wie aktuell ein Hof als geöffnet bestätigt wurde, und von wie vielen Personen</string>
     <string name="pro_feature_email">Eine Benachrichtigung, wenn ein Produkt, dem du folgst, in deinem Umkreis auftaucht</string>
     <string name="pro_feature_everything">Alles Neue in Plus, inklusive</string>
+
+    <!-- Five-tab redesign. -->
+    <string name="products">Produkte</string>
+    <string name="products_likely">wahrscheinlich</string>
+    <string name="add_all_to_shopping">Alles auf die Liste</string>
+    <string name="on_your_list">Auf deiner Liste</string>
+    <string name="products_tap_hint">Tippe auf ein Produkt, um es auf deine Einkaufsliste zu setzen.</string>
+    <string name="report_what_is_wrong">Was stimmt nicht?</string>
+    <string name="report_reason_closed">Dauerhaft geschlossen</string>
+    <string name="report_reason_hours">Öffnungszeiten stimmen nicht</string>
+    <string name="report_reason_products">Produkte stimmen nicht</string>
+    <string name="report_reason_location">Falscher Standort</string>
+    <string name="report_reason_duplicate">Doppelter Hof</string>
+    <string name="report_reason_other">Etwas anderes</string>
+    <string name="report_note_placeholder">Sonst noch etwas, das wir wissen sollten? (optional)</string>
+    <string name="report_send">Meldung senden</string>
+    <string name="report_send_failed">Senden fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="thank_you">Danke</string>
+    <string name="report_thank_you_body">Wir prüfen jede Meldung von Hand und korrigieren den Eintrag.</string>
 </resources>

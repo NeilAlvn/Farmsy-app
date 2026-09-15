@@ -165,4 +165,23 @@
     <string name="pro_feature_filter">Hoe recent een boerderij open is bevestigd, en door hoeveel mensen</string>
     <string name="pro_feature_email">Een melding als een product dat je volgt binnen je straal opduikt</string>
     <string name="pro_feature_everything">Alles wat we aan Plus toevoegen, inbegrepen</string>
+
+    <!-- Five-tab redesign. -->
+    <string name="products">Producten</string>
+    <string name="products_likely">waarschijnlijk</string>
+    <string name="add_all_to_shopping">Alles op de lijst</string>
+    <string name="on_your_list">Op je lijst</string>
+    <string name="products_tap_hint">Tik op een product om het op je boodschappenlijst te zetten.</string>
+    <string name="report_what_is_wrong">Wat klopt er niet?</string>
+    <string name="report_reason_closed">Permanent gesloten</string>
+    <string name="report_reason_hours">Openingstijden kloppen niet</string>
+    <string name="report_reason_products">Producten kloppen niet</string>
+    <string name="report_reason_location">Verkeerde locatie</string>
+    <string name="report_reason_duplicate">Dubbele boerderij</string>
+    <string name="report_reason_other">Iets anders</string>
+    <string name="report_note_placeholder">Nog iets wat we moeten weten? (optioneel)</string>
+    <string name="report_send">Melding versturen</string>
+    <string name="report_send_failed">Versturen mislukt. Controleer je verbinding en probeer het opnieuw.</string>
+    <string name="thank_you">Bedankt</string>
+    <string name="report_thank_you_body">We controleren elke melding met de hand en passen de vermelding aan.</string>
 </resources>
