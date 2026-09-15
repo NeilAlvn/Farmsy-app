@@ -65,11 +65,13 @@ import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmsStore
 import app.farmsy.android.core.ProductNearby
 import app.farmsy.android.core.SearchRadius
+import app.farmsy.android.core.Seasons
 import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.features.main.AppTab
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
 import app.farmsy.android.ui.theme.AtmosphereBand
+import app.farmsy.android.ui.theme.Badge
 import app.farmsy.android.ui.theme.CardShape
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.IconButton
@@ -143,6 +145,10 @@ fun HomeScreen() {
 
     LaunchedEffect(Unit) { ShoppingItems.loadIfNeeded() }
     LaunchedEffect(Unit) { farms.loadFlagsIfNeeded() }
+    LaunchedEffect(Unit) { Seasons.loadIfNeeded() }
+    val seasonItems by Seasons.items.collectAsState()
+    val seasonMonth by Seasons.month.collectAsState()
+    val seasonPicks = remember(seasonItems, seasonMonth) { Seasons.thisMonth(seasonItems, seasonMonth).take(6) }
     LaunchedEffect(Unit) { if (location == null && locationHelper.hasPermission()) locationHelper.request() }
     LaunchedEffect(location, radiusKm, items.size, flagsLoaded, pins.size) {
         val loc = location ?: return@LaunchedEffect
@@ -246,7 +252,7 @@ fun HomeScreen() {
                         Column(
                             Modifier.width(172.dp).background(FarmsyColors.surface, TileShape).tapCard {
                                 scope.launch {
-                                    farms.showProduct(p.item, location, radiusKm, language)
+                                    farms.showProduct(p.item.label(language), p.item.terms, location, radiusKm)
                                     shell.showTab(AppTab.MAP)
                                 }
                             }.padding(Space.s4),
@@ -258,6 +264,33 @@ fun HomeScreen() {
                                 stringResource(R.string.home_farms_km_arg, p.count, String.format("%.1f", p.nearestKm)),
                                 style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted, maxLines = 1,
                             )
+                        }
+                    }
+                }
+            }
+
+            // MARK: This week — season news. Renders nothing until the calendar has
+            // loaded, so a missing endpoint costs a section, not a screen.
+            if (seasonPicks.isNotEmpty()) {
+                SectionHeader(stringResource(R.string.in_season_now), stringResource(R.string.see_all) to { shell.showTab(AppTab.DISCOVER) })
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    seasonPicks.forEach { item ->
+                        Column(
+                            Modifier.width(172.dp).background(FarmsyColors.farmGreenSoft, TileShape).tapCard {
+                                scope.launch {
+                                    farms.showProduct(item.label(language), item.terms, location, radiusKm)
+                                    shell.showTab(AppTab.MAP)
+                                }
+                            }.padding(Space.s4),
+                            verticalArrangement = Arrangement.spacedBy(Space.s2),
+                        ) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(item.emoji, fontSize = 28.sp)
+                                Spacer(Modifier.weight(1f))
+                                if (item.isPeak(seasonMonth)) Badge(stringResource(R.string.peak), fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
+                            }
+                            Text(item.label(language), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(stringResource(R.string.find_it_nearby), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)
                         }
                     }
                 }

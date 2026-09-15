@@ -208,12 +208,10 @@ class FarmsStore(private val scope: CoroutineScope) {
             return _featuredOrder.value.mapNotNull { byId[it] }
         }
 
-    /// Show the map filtered on one list item near the user — the same path an
+    /// Show the map filtered on one product near the user — the same path an
     /// AI search takes, so ranking, radius and the summary bar come for free.
-    suspend fun showProduct(item: ShoppingItem, userLocation: Location?, radiusKm: Double, language: String) {
-        val intent = SmartSearchIntent(
-            products = item.terms, nearMe = userLocation != null, radiusKm = radiusKm, summary = item.label(language),
-        )
+    suspend fun showProduct(label: String, terms: List<String>, userLocation: Location?, radiusKm: Double) {
+        val intent = SmartSearchIntent(products = terms, nearMe = userLocation != null, radiusKm = radiusKm, summary = label)
         applyAISearch(intent, userLocation)
     }
 
