@@ -29,8 +29,8 @@ android {
         applicationId = "app.farmsy.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 28
-        versionName = "1.0.3"
+        versionCode = 29
+        versionName = "1.0.4"
 
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
         buildConfigField("String", "REVENUECAT_KEY", "\"${secrets.getProperty("REVENUECAT_KEY", "")}\"")
