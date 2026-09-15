@@ -46,7 +46,8 @@ import app.farmsy.android.core.Corridor
 import app.farmsy.android.core.FarmFilters
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.Observability
-import app.farmsy.android.core.ProductVocabulary
+import app.farmsy.android.core.ProductMatch
+import app.farmsy.android.core.ShoppingItem
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
@@ -78,8 +79,11 @@ fun RouteCorridor(
     departMinutes: Int,
     durationSeconds: Double?,
     // R5 — merged product text per farm (flags `p`, folds produce → produce_inferred
-    // server-side), the chips the trip has picked, and the toggle. Empty = no filter.
+    // server-side), the product chips served from GET /api/shopping/items (the single
+    // runtime source shared with the shopping list, no bundled table), the picks, and
+    // the toggle. Empty selection = no filter.
     produceByOsm: Map<String, String>,
+    chips: List<ShoppingItem>,
     selectedProducts: Set<String>,
     onToggleProduct: (String) -> Unit,
     onOpenFarm: (FarmPin) -> Unit,
@@ -87,7 +91,7 @@ fun RouteCorridor(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val chips = remember { ProductVocabulary.chips(context) }
+    val language = context.resources.configuration.locales[0].language
     // The radius follows the drive until the user touches the slider: a share of the
     // trip (~1/20th), floored at 2km so a short hop still finds something and capped at
     // 20km because past that "near the drive" stops meaning anything (R4-4). Once they
@@ -114,12 +118,12 @@ fun RouteCorridor(
     // against the merged product text). Counts on the chips are measured against
     // `near` (the whole corridor), never this filtered set, so a pick never rewrites
     // the other numbers.
-    val nearShown = remember(near, selectedProducts) {
+    val nearShown = remember(near, selectedProducts, chips) {
         if (selectedProducts.isEmpty()) near
         else near.filter { n ->
             val text = produceByOsm[n.farm.osmId] ?: return@filter false
-            val hay = ProductVocabulary.normalise(text)
-            chips.any { it.id in selectedProducts && ProductVocabulary.matches(it, hay) }
+            // LIST rule (ProductMatch.covers) — same "sells this" the shopping planner uses.
+            chips.any { it.id in selectedProducts && ProductMatch.covers(text, it.terms) }
         }
     }
 
@@ -179,16 +183,16 @@ fun RouteCorridor(
         // don't wrap into a wall.
         if (chips.isNotEmpty() && near.isNotEmpty()) {
             val haystacks = remember(near) {
-                near.mapNotNull { n -> produceByOsm[n.farm.osmId]?.let { ProductVocabulary.normalise(it) } }
+                near.mapNotNull { n -> produceByOsm[n.farm.osmId] }
             }
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 chips.forEach { chip ->
-                    val count = haystacks.count { ProductVocabulary.matches(chip, it) }
+                    val count = haystacks.count { ProductMatch.covers(it, chip.terms) }
                     ProductChipView(
-                        label = ProductVocabulary.label(chip, context),
+                        label = chip.label(language),
                         count = count,
                         selected = chip.id in selectedProducts,
                         onClick = { onToggleProduct(chip.id) },

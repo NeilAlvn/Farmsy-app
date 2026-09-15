@@ -27,6 +27,9 @@ struct TripsView: View {
     @State private var reorderNote: String?
     @State private var showOriginSearch = false
     @State private var showShoppingList = false
+    /// R5 corridor chips read the same served catalogue as the shopping list
+    /// (GET /api/shopping/items) — one runtime source, no bundled table.
+    @State private var catalogue = ShoppingItems.shared
 
     enum Tab { case plan, mine }
 
@@ -66,6 +69,7 @@ struct TripsView: View {
         .background(Color.cream.ignoresSafeArea())
         .task { await trip.refreshRoute(pins: pinIndex) }
         .task { if let uid { await trip.loadTrips(userId: uid) } }
+        .task { await catalogue.loadIfNeeded() }
         .onChange(of: trip.stopIds) { _, _ in Task { await trip.refreshRoute(pins: pinIndex) } }
         .alert("Name your trip", isPresented: $naming) {
             TextField("My weekend trip", text: $tripName)
@@ -331,6 +335,7 @@ struct TripsView: View {
                                 departMinutes: trip.resolvedDepartMinutes,
                                 durationSeconds: trip.durationSeconds,
                                 produceByOsm: farms.produceByOsm,
+                                chips: catalogue.items,
                                 selectedProducts: trip.selectedProducts,
                                 onToggleProduct: { trip.toggleCorridorProduct($0) },
                                 onOpenFarm: { pin in onOpenFarm(pin) },

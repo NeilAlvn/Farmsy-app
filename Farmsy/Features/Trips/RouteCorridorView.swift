@@ -25,19 +25,23 @@ struct RouteCorridorView: View {
     /// produce → produce_inferred server-side), the chips the trip has picked, and
     /// the toggle. Empty selection = no product filter.
     let produceByOsm: [String: String]
+    /// The product chips, served from GET /api/shopping/items (ShoppingItems) — the
+    /// single runtime source shared with the shopping list, so the corridor and the
+    /// list agree on what a farm sells and there is no bundled table to drift.
+    let chips: [ShoppingItem]
     let selectedProducts: Set<String>
     let onToggleProduct: (String) -> Void
     let onOpenFarm: (FarmPin) -> Void
     let onAddStop: (FarmPin) -> Void
 
-    /// Does a farm sell any of the picked products? Whole-word match against its
-    /// normalised product text, per Aviah's rule — see ProductVocabulary.
+    /// Does a farm sell any of the picked products? Uses the shopping list's LIST
+    /// rule (ProductMatch.covers — whole word, the web's coverageOf), so the
+    /// corridor filter and the shopping planner answer "sells this" identically.
     private func matchesSelection(_ osmId: String) -> Bool {
         guard !selectedProducts.isEmpty else { return true }
         guard let text = produceByOsm[osmId] else { return false }
-        let hay = ProductVocabulary.normalise(text)
-        return ProductVocabulary.chips.contains { chip in
-            selectedProducts.contains(chip.id) && ProductVocabulary.matches(chip, normalisedHaystack: hay)
+        return chips.contains { chip in
+            selectedProducts.contains(chip.id) && ProductMatch.covers(text, terms: chip.terms)
         }
     }
 
@@ -195,17 +199,14 @@ struct RouteCorridorView: View {
     /// 29 chips don't wrap into a wall.
     @ViewBuilder
     private func productChips(in near: [Corridor.NearRoute<FarmPin>]) -> some View {
-        // Precompute each near-farm's normalised product text once, then count per
-        // chip — O(farms + farms·chips) rather than normalising inside the loop.
-        let haystacks: [String] = near.compactMap { n in
-            produceByOsm[n.farm.osmId].map { ProductVocabulary.normalise($0) }
-        }
-        let chips = ProductVocabulary.chips
+        // Each near-farm's product text; count per chip with the LIST rule
+        // (ProductMatch.covers), the same the shopping list uses.
+        let haystacks: [String] = near.compactMap { produceByOsm[$0.farm.osmId] }
         if !chips.isEmpty && !haystacks.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(chips) { chip in
-                        let count = haystacks.filter { ProductVocabulary.matches(chip, normalisedHaystack: $0) }.count
+                        let count = haystacks.filter { ProductMatch.covers($0, terms: chip.terms) }.count
                         productChip(chip, count: count)
                     }
                 }
@@ -215,7 +216,7 @@ struct RouteCorridorView: View {
     }
 
     @ViewBuilder
-    private func productChip(_ chip: ProductChip, count: Int) -> some View {
+    private func productChip(_ chip: ShoppingItem, count: Int) -> some View {
         let selected = selectedProducts.contains(chip.id)
         let enabled = count > 0
         Button {

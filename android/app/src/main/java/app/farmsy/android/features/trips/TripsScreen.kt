@@ -83,6 +83,7 @@ import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.SavedTrip
 import app.farmsy.android.core.TravelMode
 import app.farmsy.android.core.TripGeometry
+import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.core.TripStore
 import app.farmsy.android.features.discover.RecommendationCarousel
 import app.farmsy.android.features.place.PlaceSearchSheet
@@ -120,6 +121,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     // traceProgress / fitToken are no longer read here — the route renders on the shared
     // map (MapScreen); "Show route" calls trip.requestFit(). routeLine IS read again now,
     // for R4: the corridor measures farms against this polyline.
+    val shoppingChips by ShoppingItems.items.collectAsState()
     val routeLine by trip.routeLine.collectAsState()
     val distanceMeters by trip.distanceMeters.collectAsState()
     val durationSeconds by trip.durationSeconds.collectAsState()
@@ -164,6 +166,9 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     // Recompute the route whenever the stops change; load saved trips once signed in.
     LaunchedEffect(stopIds, originCoord) { trip.refreshRoute(pinIndex) }
     LaunchedEffect(uid) { uid?.let { trip.loadTrips(it) } }
+    // R5 corridor chips read the same served catalogue as the shopping list
+    // (GET /api/shopping/items) — one runtime source, no bundled table.
+    LaunchedEffect(Unit) { ShoppingItems.loadIfNeeded() }
 
     // TripsScreen is now sheet content over the ONE shared map (owned by MainScreen);
     // it no longer embeds its own GoogleMap. The route + numbered stops render on the
@@ -363,6 +368,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                         departMinutes = 600,
                         durationSeconds = durationSeconds,
                         produceByOsm = farms.produceByOsm,
+                        chips = shoppingChips,
                         selectedProducts = selectedProducts,
                         onToggleProduct = { trip.toggleCorridorProduct(it) },
                         onOpenFarm = onOpenFarm,
