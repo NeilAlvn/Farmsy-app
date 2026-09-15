@@ -193,4 +193,25 @@
     <string name="pick_your_own_weekend">Zelf plukken dit weekend</string>
     <string name="open_this_weekend">Dit weekend open</string>
     <string name="from_the_community">Uit de community</string>
+
+    <!-- Live availability. -->
+    <string name="status_what_did_you_find">Wat heb je gevonden?</string>
+    <string name="status_what_was_still_there">Wat was er nog?</string>
+    <string name="on_the_shelf_arg">In het schap: %1$s</string>
+    <string name="status_confirmed_today_plus">Vandaag bevestigd — zie wanneer met Plus</string>
+    <string name="status_fresh_line_arg">%1$s · %2$s bevestigd door %3$s</string>
+    <string name="fresh_when_min_arg">%1$d min geleden</string>
+    <string name="fresh_when_h_arg">%1$d u geleden</string>
+    <string name="min_ago_arg">%1$d min geleden</string>
+    <string name="h_ago_arg">%1$d u geleden</string>
+    <string name="d_ago_arg">%1$d d geleden</string>
+    <string name="confirmed_arg">Bevestigd %1$s</string>
+    <string name="one_person">1 persoon</string>
+    <string name="n_people_arg">%1$d mensen</string>
+    <string name="visitor_report">Bezoekersmelding</string>
+    <string name="confirm">Bevestigen</string>
+    <string name="confirmed">Bevestigd</string>
+    <string name="report_today">vandaag</string>
+    <string name="report_yesterday">gisteren</string>
+    <string name="report_days_ago_arg">%1$d dagen geleden</string>
 </resources>

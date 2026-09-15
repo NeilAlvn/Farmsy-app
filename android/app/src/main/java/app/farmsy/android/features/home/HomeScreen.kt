@@ -64,10 +64,13 @@ import app.farmsy.android.core.FarmFilters
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmsStore
 import app.farmsy.android.core.ProductNearby
+import app.farmsy.android.core.RecentReports
+import app.farmsy.android.core.ReportStatus
 import app.farmsy.android.core.SearchRadius
 import app.farmsy.android.core.Seasons
 import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.features.main.AppTab
+import app.farmsy.android.features.detail.minutesAgoLabel
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
 import app.farmsy.android.ui.theme.AtmosphereBand
@@ -96,6 +99,8 @@ import app.farmsy.android.ui.theme.ui
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Duration
+import java.time.Instant
 import java.util.Calendar
 
 /// "Where am I" for a screen: asks for the permission when it is missing, takes
@@ -146,6 +151,14 @@ fun HomeScreen() {
     LaunchedEffect(Unit) { ShoppingItems.loadIfNeeded() }
     LaunchedEffect(Unit) { farms.loadFlagsIfNeeded() }
     LaunchedEffect(Unit) { Seasons.loadIfNeeded() }
+    // Plus: the recent-reports feed, for "confirmed 18 min ago" on a tile.
+    val plus = session.hasFullAccess
+    LaunchedEffect(plus) { if (plus) RecentReports.refresh() }
+    val recentReports by RecentReports.reports.collectAsState()
+    val nearReports = remember(recentReports, plus, location, radiusKm, pins) {
+        if (!plus || location == null) emptyList()
+        else RecentReports.near(location, radiusKm, pins.associateBy { it.osmId })
+    }
     val seasonItems by Seasons.items.collectAsState()
     val seasonMonth by Seasons.month.collectAsState()
     val seasonPicks = remember(seasonItems, seasonMonth) { Seasons.thisMonth(seasonItems, seasonMonth).take(6) }
@@ -264,6 +277,21 @@ fun HomeScreen() {
                                 stringResource(R.string.home_farms_km_arg, p.count, String.format("%.1f", p.nearestKm)),
                                 style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted, maxLines = 1,
                             )
+                            // Plus: the newest "open" report within the radius that names
+                            // this product. Free tiles say nothing about timing.
+                            val hit = nearReports
+                                .filter { it.status == ReportStatus.OPEN.wire && p.item.id in it.products }
+                                .mapNotNull { it.report.instant }.maxOrNull()
+                            if (hit != null) {
+                                val mins = maxOf(0L, Duration.between(hit, Instant.now()).toMinutes()).toInt()
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Box(Modifier.size(6.dp).background(FarmsyColors.vividPositive, CircleShape))
+                                    Text(
+                                        stringResource(R.string.confirmed_arg, minutesAgoLabel(mins)),
+                                        style = role(TextRole.CAPTION), color = FarmsyColors.positive, maxLines = 1,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

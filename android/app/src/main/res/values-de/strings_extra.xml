@@ -193,4 +193,25 @@
     <string name="pick_your_own_weekend">Selbstpflücken dieses Wochenende</string>
     <string name="open_this_weekend">Dieses Wochenende geöffnet</string>
     <string name="from_the_community">Aus der Community</string>
+
+    <!-- Live availability. The fresh line takes the bare duration ("18 Min."). -->
+    <string name="status_what_did_you_find">Was hast du gefunden?</string>
+    <string name="status_what_was_still_there">Was war noch da?</string>
+    <string name="on_the_shelf_arg">Im Regal: %1$s</string>
+    <string name="status_confirmed_today_plus">Heute bestätigt — mit Plus siehst du wann</string>
+    <string name="status_fresh_line_arg">%1$s · vor %2$s bestätigt von %3$s</string>
+    <string name="fresh_when_min_arg">%1$d Min.</string>
+    <string name="fresh_when_h_arg">%1$d Std.</string>
+    <string name="min_ago_arg">vor %1$d Min.</string>
+    <string name="h_ago_arg">vor %1$d Std.</string>
+    <string name="d_ago_arg">vor %1$d T.</string>
+    <string name="confirmed_arg">Bestätigt %1$s</string>
+    <string name="one_person">1 Person</string>
+    <string name="n_people_arg">%1$d Personen</string>
+    <string name="visitor_report">Besuchermeldung</string>
+    <string name="confirm">Bestätigen</string>
+    <string name="confirmed">Bestätigt</string>
+    <string name="report_today">heute</string>
+    <string name="report_yesterday">gestern</string>
+    <string name="report_days_ago_arg">vor %1$d Tagen</string>
 </resources>

@@ -9,8 +9,13 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -45,10 +50,36 @@ enum class ReportStatus(val wire: String) {
 data class FarmReport(
     val status: String = "open",
     @SerialName("created_at") val createdAt: String = "",
+    /// Shopping-list item ids the visitor found in stock. Empty = did not say,
+    /// never "had nothing".
+    val products: List<String> = emptyList(),
 ) {
     val reportStatus: ReportStatus? get() = ReportStatus.fromWire(status)
     val instant: Instant? get() = FarmStatus.parseTimestamp(createdAt)
 }
+
+/// One row of GET /api/status/recent: a report with the farm it is about.
+@Serializable
+data class RecentReport(
+    @SerialName("farm_osm_id") val farmOsmId: String = "",
+    val status: String = "open",
+    val products: List<String> = emptyList(),
+    @SerialName("created_at") val createdAt: String = "",
+) {
+    val report: FarmReport get() = FarmReport(status, createdAt, products)
+    val id: String get() = "$farmOsmId|$createdAt"
+}
+
+/// The Plus half of a report: not just "3 people this month" but "18 minutes
+/// ago, and 3 people today agree".
+data class Freshness(
+    val status: ReportStatus,
+    val minutesAgo: Int,
+    /// Reports with the same status in the last 24 hours, the newest included.
+    val confirmations: Int,
+    /// Item ids seen in those same reports, newest first, unique.
+    val products: List<String>,
+)
 
 @Serializable
 data class FarmStatusLoaded(
@@ -138,6 +169,28 @@ object FarmStatus {
         )
     }
 
+    /// The newest report within the last 24 hours, with how many agreed and what
+    /// they found. Null when the freshest word is older than a day: "confirmed 26
+    /// hours ago" is not confirmation, it is history, and the day-level summary
+    /// already says it.
+    fun freshness(reports: List<FarmReport>, now: Instant = Instant.now()): Freshness? {
+        val dayAgo = now.minus(1, ChronoUnit.DAYS)
+        val tomorrow = now.plus(1, ChronoUnit.DAYS)
+        val recent = reports.mapNotNull { r ->
+            val at = r.instant ?: return@mapNotNull null
+            val status = r.reportStatus ?: return@mapNotNull null
+            if (at.isBefore(dayAgo) || at.isAfter(tomorrow)) null else Triple(r, at, status)
+        }.sortedByDescending { it.second }
+        val (_, at, status) = recent.firstOrNull() ?: return null
+        val agreeing = recent.filter { it.third == status }
+        return Freshness(
+            status = status,
+            minutesAgo = maxOf(0L, Duration.between(at, now).toMinutes()).toInt(),
+            confirmations = agreeing.size,
+            products = agreeing.flatMap { it.first.products }.distinct(),
+        )
+    }
+
     /// Whether this person already reported today, and what they said.
     ///
     /// The table allows one row per person per farm per Amsterdam day, so the
@@ -192,13 +245,27 @@ object FarmStatusApi {
 
     /// Report what you found. Sending the same status twice is a correction, not
     /// a second vote — the caller clears instead.
-    suspend fun report(osmId: String, status: ReportStatus, token: String): Boolean = runCatching {
+    suspend fun report(osmId: String, status: ReportStatus, products: List<String> = emptyList(), token: String): Boolean = runCatching {
         httpClient.post(url(osmId)) {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
-            setBody("""{"status":"${status.wire}"}""")
+            setBody(lenientJson.encodeToString(ReportBody(status.wire, products)))
         }.status.value == 200
     }.getOrDefault(false)
+
+    @Serializable
+    private data class ReportBody(val status: String, val products: List<String>)
+
+    @Serializable
+    private data class RecentPayload(val reports: List<RecentReport> = emptyList())
+
+    /// Every report from the last `days` days across all farms, newest first.
+    /// No geography on the wire: the caller holds every pin and filters itself.
+    suspend fun recent(days: Int = 7): List<RecentReport> = runCatching {
+        val resp = httpClient.get("${Backend.WEB_API}/status/recent?days=$days")
+        if (resp.status.value != 200) emptyList()
+        else lenientJson.decodeFromString<RecentPayload>(resp.bodyAsText()).reports
+    }.getOrDefault(emptyList())
 
     /// Take back today's report.
     suspend fun clear(osmId: String, token: String): Boolean = runCatching {
@@ -206,4 +273,29 @@ object FarmStatusApi {
             header(HttpHeaders.Authorization, "Bearer $token")
         }.status.value == 200
     }.getOrDefault(false)
+}
+
+/// The recent-reports feed, fetched once a minute at most and shared by Home,
+/// Community and the farm card, so three screens do not ask three times.
+object RecentReports {
+    private val _reports = MutableStateFlow<List<RecentReport>>(emptyList())
+    val reports: StateFlow<List<RecentReport>> = _reports.asStateFlow()
+    private var loadedAt: Instant? = null
+
+    suspend fun refresh(force: Boolean = false) {
+        val at = loadedAt
+        if (!force && at != null && Duration.between(at, Instant.now()).seconds < 60) return
+        _reports.value = FarmStatusApi.recent()
+        loadedAt = Instant.now()
+    }
+
+    /// Reports about farms within `radiusKm` of `location`, using the pins the
+    /// store already holds. No location means everywhere.
+    fun near(location: android.location.Location?, radiusKm: Double, pins: Map<String, FarmPin>): List<RecentReport> {
+        if (location == null) return _reports.value
+        return _reports.value.filter { r ->
+            val pin = pins[r.farmOsmId] ?: return@filter false
+            pin.distanceMeters(location.latitude, location.longitude) / 1000 <= radiusKm
+        }
+    }
 }
