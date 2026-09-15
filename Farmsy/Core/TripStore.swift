@@ -180,6 +180,12 @@ final class TripStore {
     /// Chosen travel mode — affects the time estimate and the Google Maps link.
     private(set) var mode: TravelMode = .car
 
+    /// R5 — the product chips picked for the corridor (agreed-term keys, e.g.
+    /// "strawberries"). On the TRIP, not the corridor view, so editing the route
+    /// does not silently clear the picks. Empty = no product filter (show all
+    /// farms on the way). Several picked means ANY of them, never all.
+    private(set) var selectedProducts: Set<String> = []
+
     /// R6 — the day and departure the corridor answers "open when you pass" about.
     /// Both nullable, and deliberately NOT persisted: nil means "resolve the default
     /// at render" (never a frozen date), so a trip planned today and reopened next
@@ -290,6 +296,16 @@ final class TripStore {
         mode = m
         UserDefaults.standard.set(m.rawValue, forKey: modeKey)
     }
+
+    // MARK: R5 — corridor product filter
+
+    /// Toggle a product chip. Kept on the trip so a re-route (add/reorder/origin
+    /// change) leaves the picks in place.
+    func toggleProduct(_ key: String) {
+        if selectedProducts.contains(key) { selectedProducts.remove(key) }
+        else { selectedProducts.insert(key) }
+    }
+    func clearProducts() { selectedProducts.removeAll() }
 
     // MARK: R6 — trip day + departure
 

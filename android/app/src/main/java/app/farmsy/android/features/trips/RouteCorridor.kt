@@ -1,7 +1,10 @@
 package app.farmsy.android.features.trips
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +31,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +46,7 @@ import app.farmsy.android.core.Corridor
 import app.farmsy.android.core.FarmFilters
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.Observability
+import app.farmsy.android.core.ProductVocabulary
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import coil.compose.AsyncImage
@@ -71,10 +77,17 @@ fun RouteCorridor(
     dayMon: Int,
     departMinutes: Int,
     durationSeconds: Double?,
+    // R5 — merged product text per farm (flags `p`, folds produce → produce_inferred
+    // server-side), the chips the trip has picked, and the toggle. Empty = no filter.
+    produceByOsm: Map<String, String>,
+    selectedProducts: Set<String>,
+    onToggleProduct: (String) -> Unit,
     onOpenFarm: (FarmPin) -> Unit,
     onAddStop: (FarmPin) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val chips = remember { ProductVocabulary.chips(context) }
     // The radius follows the drive until the user touches the slider: a share of the
     // trip (~1/20th), floored at 2km so a short hop still finds something and capped at
     // 20km because past that "near the drive" stops meaning anything (R4-4). Once they
@@ -95,6 +108,19 @@ fun RouteCorridor(
             filteredFarms,
             radiusKm * 1000.0,
         ).filter { it.farm.osmId !in stopIds }
+    }
+
+    // R5 · the list narrows to farms selling any picked product (whole-word match
+    // against the merged product text). Counts on the chips are measured against
+    // `near` (the whole corridor), never this filtered set, so a pick never rewrites
+    // the other numbers.
+    val nearShown = remember(near, selectedProducts) {
+        if (selectedProducts.isEmpty()) near
+        else near.filter { n ->
+            val text = produceByOsm[n.farm.osmId] ?: return@filter false
+            val hay = ProductVocabulary.normalise(text)
+            chips.any { it.id in selectedProducts && ProductVocabulary.matches(it, hay) }
+        }
     }
 
     // route_planned, once per pair of places — not once per radius drag. Keyed on
@@ -121,8 +147,8 @@ fun RouteCorridor(
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(R.string.route_on_my_way), style = geist(17.sp, FontWeight.Bold), color = FarmsyColors.ink)
             Text(
-                if (near.isEmpty()) stringResource(R.string.route_on_my_way_sub)
-                else stringResource(R.string.route_count, near.size),
+                if (nearShown.isEmpty()) stringResource(R.string.route_on_my_way_sub)
+                else stringResource(R.string.route_count, nearShown.size),
                 style = geist(13.sp), color = FarmsyColors.inkMuted,
             )
         }
@@ -147,18 +173,42 @@ fun RouteCorridor(
             )
         }
 
+        // R5 · product chips. Count on each chip BEFORE it's tapped, measured against
+        // the whole corridor `near`: a chip reading 12 is an offer, a 0 an honest
+        // absence — greyed and disabled, not hidden. Horizontal scroll so 29 chips
+        // don't wrap into a wall.
+        if (chips.isNotEmpty() && near.isNotEmpty()) {
+            val haystacks = remember(near) {
+                near.mapNotNull { n -> produceByOsm[n.farm.osmId]?.let { ProductVocabulary.normalise(it) } }
+            }
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                chips.forEach { chip ->
+                    val count = haystacks.count { ProductVocabulary.matches(chip, it) }
+                    ProductChipView(
+                        label = ProductVocabulary.label(chip, context),
+                        count = count,
+                        selected = chip.id in selectedProducts,
+                        onClick = { onToggleProduct(chip.id) },
+                    )
+                }
+            }
+        }
+
         when {
             // Nothing this close to the road — say what to do (widen / clear a filter),
             // never a spinner or a blank (R4-4 empty state).
-            near.isEmpty() -> Text(
+            nearShown.isEmpty() -> Text(
                 stringResource(R.string.route_none),
                 style = geist(14.sp), color = FarmsyColors.inkMuted,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
             else -> {
                 // Too many to hold in your head — cap the render and say so (R4-4).
-                val capped = near.size > FREE_ROWS
-                val shown = if (capped) near.take(FREE_ROWS) else near
+                val capped = nearShown.size > FREE_ROWS
+                val shown = if (capped) nearShown.take(FREE_ROWS) else nearShown
                 val legs = if (tripKm != null && tripKm > 0)
                     Corridor.legsAlongRoute(shown, tripKm)
                 else listOf(Corridor.RouteLeg(0.0, 0.0, shown))   // no distance yet: one flat list
@@ -187,13 +237,49 @@ fun RouteCorridor(
                 }
                 if (capped) {
                     Text(
-                        stringResource(R.string.route_show_all_arg, near.size),
+                        stringResource(R.string.route_show_all_arg, nearShown.size),
                         style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
             }
         }
+    }
+}
+
+/// R5 · one product chip — label + count. Filled green when picked; white when it
+/// has farms to offer; greyed and disabled when its count is zero (an honest
+/// absence, not a hidden chip).
+@Composable
+private fun ProductChipView(label: String, count: Int, selected: Boolean, onClick: () -> Unit) {
+    val enabled = count > 0
+    val bg = when {
+        selected -> FarmsyColors.farmGreen
+        enabled -> Color.White
+        else -> Color(0xFFF2F1EE)
+    }
+    val fg = when {
+        selected -> Color.White
+        enabled -> FarmsyColors.ink
+        else -> FarmsyColors.inkMuted
+    }
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(bg, RoundedCornerShape(50))
+            .then(if (selected) Modifier else Modifier.border(1.dp, FarmsyColors.hairline, RoundedCornerShape(50)))
+            .clickable(enabled = enabled) { onClick() }
+            .padding(horizontal = 12.dp, vertical = 7.dp)
+            .alpha(if (enabled) 1f else 0.5f),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Text(label, style = geist(13.sp, if (selected) FontWeight.Bold else FontWeight.Medium), color = fg)
+        Text(
+            "$count",
+            style = geist(12.sp, FontWeight.SemiBold),
+            color = if (selected) Color.White.copy(alpha = 0.85f) else FarmsyColors.inkMuted,
+        )
     }
 }
 

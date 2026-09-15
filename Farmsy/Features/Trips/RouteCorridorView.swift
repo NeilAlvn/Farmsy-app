@@ -21,8 +21,25 @@ struct RouteCorridorView: View {
     let dayMon: Int
     let departMinutes: Int
     let durationSeconds: Double?
+    /// R5 — the merged product text per farm (flags `p`, which already folds
+    /// produce → produce_inferred server-side), the chips the trip has picked, and
+    /// the toggle. Empty selection = no product filter.
+    let produceByOsm: [String: String]
+    let selectedProducts: Set<String>
+    let onToggleProduct: (String) -> Void
     let onOpenFarm: (FarmPin) -> Void
     let onAddStop: (FarmPin) -> Void
+
+    /// Does a farm sell any of the picked products? Whole-word match against its
+    /// normalised product text, per Aviah's rule — see ProductVocabulary.
+    private func matchesSelection(_ osmId: String) -> Bool {
+        guard !selectedProducts.isEmpty else { return true }
+        guard let text = produceByOsm[osmId] else { return false }
+        let hay = ProductVocabulary.normalise(text)
+        return ProductVocabulary.chips.contains { chip in
+            selectedProducts.contains(chip.id) && ProductVocabulary.matches(chip, normalisedHaystack: hay)
+        }
+    }
 
     /// A farm's open/closed status at the moment the drive reaches it. Arrival is
     /// `depart + along · duration` (R6): `along` is the fraction of the drive at
@@ -93,14 +110,20 @@ struct RouteCorridorView: View {
     }
 
     var body: some View {
+        // The whole corridor at this radius, before any product filter — the chip
+        // counts are measured against THIS, so picking one product never rewrites
+        // the other numbers.
         let near = self.near
+        // What the list shows: the whole corridor, or just the farms selling a
+        // picked product (any of them).
+        let nearShown = selectedProducts.isEmpty ? near : near.filter { matchesSelection($0.farm.osmId) }
         VStack(alignment: .leading, spacing: 12) {
             // Header — title + count.
             VStack(alignment: .leading, spacing: 2) {
                 Text("Farms on my way").font(.geist(17, .bold)).foregroundStyle(Color.ink)
-                Text(near.isEmpty
+                Text(nearShown.isEmpty
                      ? String(localized: "Farms you would pass on this drive")
-                     : String(localized: "\(near.count) farms on your route"))
+                     : String(localized: "\(nearShown.count) farms on your route"))
                     .font(.geist(13)).foregroundStyle(Color.inkMuted)
             }
 
@@ -120,15 +143,20 @@ struct RouteCorridorView: View {
                 .tint(Color.farmGreen)
             }
 
-            if near.isEmpty {
+            // R5 · product chips. Count on each chip BEFORE it's tapped, measured
+            // against the whole corridor: a chip reading 12 is an offer, a 0 is an
+            // honest absence — shown greyed and disabled rather than hidden.
+            productChips(in: near)
+
+            if nearShown.isEmpty {
                 // Say what to do — widen, or clear a filter — never a spinner or a blank.
                 Text("No farms this close to the road. Try a wider distance, or clear a filter.")
                     .font(.geist(14)).foregroundStyle(Color.inkMuted)
                     .padding(.vertical, 4)
             } else {
                 // Too many to hold in your head — cap the render and say so.
-                let capped = near.count > Self.freeRows
-                let shown = capped ? Array(near.prefix(Self.freeRows)) : near
+                let capped = nearShown.count > Self.freeRows
+                let shown = capped ? Array(nearShown.prefix(Self.freeRows)) : nearShown
                 let legs: [Corridor.RouteLeg<FarmPin>] = (tripKm != nil && tripKm! > 0)
                     ? Corridor.legsAlongRoute(shown, tripKm: tripKm!)
                     : [Corridor.RouteLeg(fromKm: 0, toKm: 0, farms: shown)]
@@ -148,7 +176,7 @@ struct RouteCorridorView: View {
                     }
                 }
                 if capped {
-                    Text("Show all \(near.count)")
+                    Text("Show all \(nearShown.count)")
                         .font(.geist(13, .semibold)).foregroundStyle(Color.farmGreen)
                         .padding(.top, 6)
                 }
@@ -158,6 +186,58 @@ struct RouteCorridorView: View {
         // Count the plan once the pair of places is set (and again if the ends
         // change), never on a radius drag. `near` is already computed above.
         .onChange(of: routeKey, initial: true) { _, _ in fireRoutePlannedIfNew(near.count) }
+    }
+
+    /// The product chip row. Each chip carries its count against the whole
+    /// corridor `near` (not the filtered list), so numbers hold steady as picks
+    /// change. A chip that matches nothing here is greyed and disabled — an honest
+    /// zero beats a chip that silently returns an empty list. Horizontal scroll so
+    /// 29 chips don't wrap into a wall.
+    @ViewBuilder
+    private func productChips(in near: [Corridor.NearRoute<FarmPin>]) -> some View {
+        // Precompute each near-farm's normalised product text once, then count per
+        // chip — O(farms + farms·chips) rather than normalising inside the loop.
+        let haystacks: [String] = near.compactMap { n in
+            produceByOsm[n.farm.osmId].map { ProductVocabulary.normalise($0) }
+        }
+        let chips = ProductVocabulary.chips
+        if !chips.isEmpty && !haystacks.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(chips) { chip in
+                        let count = haystacks.filter { ProductVocabulary.matches(chip, normalisedHaystack: $0) }.count
+                        productChip(chip, count: count)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func productChip(_ chip: ProductChip, count: Int) -> some View {
+        let selected = selectedProducts.contains(chip.id)
+        let enabled = count > 0
+        Button {
+            Haptics.tap(); onToggleProduct(chip.id)
+        } label: {
+            HStack(spacing: 5) {
+                Text(chip.label).font(.geist(13, selected ? .bold : .medium))
+                Text("\(count)")
+                    .font(.geist(12, .semibold))
+                    .foregroundStyle(selected ? Color.white.opacity(0.85) : Color.inkMuted)
+            }
+            .foregroundStyle(selected ? Color.white : (enabled ? Color.ink : Color.inkMuted))
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(
+                Capsule().fill(selected ? Color.farmGreen
+                               : (enabled ? Color.white : Color(hex: 0xF2F1EE)))
+            )
+            .overlay(Capsule().stroke(selected ? Color.clear : Color.hairline, lineWidth: 1))
+            .opacity(enabled ? 1 : 0.5)
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
     }
 }
 
