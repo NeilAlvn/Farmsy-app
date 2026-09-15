@@ -7,7 +7,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,21 +18,16 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -41,14 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -59,17 +48,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalFavorites
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
-import app.farmsy.android.core.FarmContentApi
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.Ping
-import app.farmsy.android.features.detail.ImageLightbox
-import app.farmsy.android.features.detail.LightboxSource
-import app.farmsy.android.features.discover.RecommendationCarousel
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
 import app.farmsy.android.ui.theme.tapCard
@@ -79,144 +63,9 @@ import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 
-/// S6 · WhatsNewSheet — 1:1 with iOS: the farms' posts, then a shelf of featured
-/// farms (2+ photos), then the recommendation carousel. Presented as a detented
-/// sheet over the shared map (MainScreen owns the sheet); opening a farm flies the
-/// map and closes the sheet. Reads: FarmsStore (featuredFarms via galleries +
-/// featuredOrder + teasers). Writes: pings, loadingPings (local).
-@Composable
-fun WhatsNewSheet(onOpenFarm: (FarmPin) -> Unit, onClose: () -> Unit) {
-    val farms = LocalFarms.current
-    val galleries by farms.galleries.collectAsState()
-    val galleriesLoaded by farms.galleriesLoaded.collectAsState()
-    val featuredTeasers by farms.featuredTeasers.collectAsState()
-    val pins by farms.pins.collectAsState()
-
-    var pings by remember { mutableStateOf<List<Ping>>(emptyList()) }
-    var loadingPings by remember { mutableStateOf(true) }
-    // S10 photo viewer, presented over the sheet when a post photo is tapped.
-    var lightbox by remember { mutableStateOf<LightboxSource?>(null) }
-    val fromAPost = stringResource(R.string.lightbox_from_a_post)
-
-    LaunchedEffect(Unit) {
-        pings = FarmContentApi.feedPosts(limit = 30)
-        loadingPings = false
-    }
-    LaunchedEffect(Unit) { farms.loadGalleriesIfNeeded() }
-
-    // Featured farms — the store's frozen once-shuffled order (galleriesLoaded gates
-    // it), resolved to pins, capped at 10. Mirrors iOS multiImageFarms.
-    val featured = remember(galleriesLoaded, pins) {
-        if (galleriesLoaded) farms.featuredFarms.take(10) else emptyList()
-    }
-
-    Column(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
-        // Header: eyebrow + circular close (iOS S6 row 1).
-        Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.whats_new), style = geist(11.sp, FontWeight.SemiBold),
-                letterSpacing = 1.2.sp, color = FarmsyColors.inkMuted,
-            )
-            Spacer(Modifier.weight(1f))
-            Box(
-                Modifier.size(32.dp).background(Color(0xFFF3F4F6), CircleShape).clickable { onClose() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.Close, null, tint = Color(0xFF6B7280), modifier = Modifier.size(13.dp))
-            }
-        }
-
-        LazyColumn(
-            Modifier.fillMaxSize().padding(horizontal = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
-        ) {
-            // Posts — loading / empty / list.
-            if (loadingPings) {
-                items(2) { SkeletonBox(cornerRadius = 16.dp, modifier = Modifier.fillMaxWidth().height(150.dp)) }
-            } else if (pings.isEmpty()) {
-                item { EmptyPosts() }
-            } else {
-                items(pings, key = { it.id }) { ping ->
-                    val farm = farms.pinForOsmId(ping.farmOsmId)
-                    PingCard(
-                        ping = ping,
-                        farmName = farm?.name,
-                        onOpenFarm = { farm?.let { onOpenFarm(it) } },
-                        // A post photo opens the S10 lightbox at that index — 1:1 with iOS
-                        // WhatsNewSheet.swift:59-64 (eyebrow "From a post", title author,
-                        // subtitle farm name, postText body).
-                        onOpenImage = { idx ->
-                            lightbox = LightboxSource(
-                                images = ping.images,
-                                startIndex = idx,
-                                eyebrow = fromAPost,
-                                title = ping.authorName,
-                                subtitle = farm?.name,
-                                postText = ping.body,
-                            )
-                        },
-                    )
-                }
-            }
-
-            // Featured farms — eyebrow + skeleton / cards.
-            item {
-                Text(
-                    stringResource(R.string.featured_farms), style = geist(11.sp, FontWeight.SemiBold),
-                    letterSpacing = 1.2.sp, color = FarmsyColors.inkMuted,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                )
-            }
-            if (!galleriesLoaded) {
-                items(3) { SkeletonBox(cornerRadius = 16.dp, modifier = Modifier.fillMaxWidth().height(180.dp)) }
-            } else {
-                items(featured, key = { it.osmId }) { pin ->
-                    MultiImageFarmCard(
-                        pin = pin,
-                        images = galleries[pin.osmId] ?: emptyList(),
-                        teaser = featuredTeasers[pin.osmId],
-                        onOpen = { onOpenFarm(pin) },
-                    )
-                }
-            }
-
-            // Discovery carousel (C1 · reused RecommendationCarousel = iOS TripRecommendations).
-            item { RecommendationCarousel(onOpenFarm = onOpenFarm, cardHeight = 156.dp) }
-        }
-    }
-
-    // S10 photo viewer over the sheet — a Dialog (own window), so it adds no layout.
-    lightbox?.let { src ->
-        ImageLightbox(source = src, onClose = { lightbox = null })
-    }
-}
-
-@Composable
-private fun EmptyPosts() {
-    val stroke = Color(0xFFE5E7EB)
-    Text(
-        stringResource(R.string.no_posts_yet),
-        style = geist(12.sp), color = FarmsyColors.inkMuted,
-        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-            // Dashed 1px border (iOS StrokeStyle(dash: [4])) via drawBehind + a
-            // dashPathEffect on a rounded-rect stroke.
-            .drawBehind {
-                val w = 1.dp.toPx()
-                val r = 16.dp.toPx()
-                drawRoundRect(
-                    color = stroke,
-                    cornerRadius = CornerRadius(r, r),
-                    style = Stroke(width = w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))),
-                )
-            }
-            .padding(vertical = 16.dp),
-    )
-}
+// The feed cards (iOS PingCard.swift / FeaturedFarmCard.swift) and the shared
+// skeleton. The What's New sheet they used to sit in is gone: Community holds
+// the posts, Discover the featured farms.
 
 // MARK: - C3 · PingCard
 
@@ -236,8 +85,8 @@ fun PingCard(
 
     Column(
         Modifier.fillMaxWidth()
-            .background(FarmsyColors.creamCard, RoundedCornerShape(16.dp))
-            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp))
+            .background(FarmsyColors.surface, RoundedCornerShape(20.dp))
+            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(20.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -325,8 +174,8 @@ fun MultiImageFarmCard(pin: FarmPin, images: List<String>, teaser: String?, onOp
 
     Column(
         Modifier.fillMaxWidth()
-            .background(FarmsyColors.creamCard, RoundedCornerShape(16.dp))
-            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(16.dp))
+            .background(FarmsyColors.surface, RoundedCornerShape(20.dp))
+            .border(1.dp, FarmsyColors.hairline, RoundedCornerShape(20.dp))
             // tapCard opening the farm, excluding the top-right 52dp so the save heart
             // there doesn't also open it (iOS `.tapCard(excludeTopTrailing: 52)`).
             .tapCard(excludeTopTrailing = 52.dp) { onOpen() }

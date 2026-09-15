@@ -1,13 +1,46 @@
 package app.farmsy.android.features.main
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.ShoppingBasket
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import app.farmsy.android.features.community.CommunityScreen
+import app.farmsy.android.features.discover.DiscoverScreen
+import app.farmsy.android.features.home.HomeScreen
+import app.farmsy.android.features.map.ProUpsellSheet
+import app.farmsy.android.features.profile.ProfileScreen
+import app.farmsy.android.features.shopping.ShoppingScreen
+import app.farmsy.android.ui.theme.Radius
+import app.farmsy.android.ui.theme.Space
+import app.farmsy.android.ui.theme.TabBarInset
+import app.farmsy.android.ui.theme.rememberTapHaptic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,18 +60,12 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Newspaper
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
@@ -58,7 +85,6 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -66,10 +92,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
@@ -84,30 +108,74 @@ import app.farmsy.android.features.detail.FarmDetailScreen
 import app.farmsy.android.features.map.MapScreen
 import app.farmsy.android.features.survey.SurveyMode
 import app.farmsy.android.features.survey.SurveyScreen
-import app.farmsy.android.features.whatsnew.WhatsNewSheet
-import app.farmsy.android.features.saved.SavedScreen
-import app.farmsy.android.features.settings.SettingsScreen
 import app.farmsy.android.features.trips.TripsScreen
 import app.farmsy.android.ui.theme.FarmsyColors
-import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 
-/// Map-first shell — a 1:1 port of iOS MainView: "the map is the app". There is
-/// one shared live map (owned here, rendered by MapScreen — the only GoogleMap in
-/// the app). The farm card and the secondary surfaces (Discover / Saved / Trips /
-/// Settings) present as detented bottom sheets OVER that live map; the map stays
-/// interactive behind them. Selecting a farm flies the shared map and drops a
-/// highlighted pin (focusPin).
+/// Five tabs, one floating pill: Home · Shopping · Map · Discover · Community
+/// (iOS AppShell). Profile opens from the Home header. Sheets that any tab can
+/// raise — the farm card, sign-in, the trip planner, the membership sheet — live
+/// here once, and screens reach them through `LocalShell`.
 ///
-/// PORT NOTE (detents): iOS uses `.presentationDetents([.fraction(0.55), .large])`
-/// with `.presentationBackgroundInteraction` so the map behind stays usable.
-/// Compose has no detent API; `BottomSheetScaffold` + a `StandardBottomSheetState`
-/// (Hidden / PartiallyExpanded / Expanded) is the closest primitive — its body (the
-/// map) is interactive by default (no scrim), the peek height gives the partial
-/// detent (0.55, or 0.5 for Trips), and the expanded state is capped at 0.92 of the
-/// screen so a sliver of map stays visible. The iOS farm-card's third mini-detent
-/// (180px) is not reproduced — Compose offers only peek + expanded.
-private enum class SheetRoute { FARM, DISCOVER, SAVED, TRIPS, SETTINGS }
+/// PORT NOTE (detents): the farm card and the trip planner stay detented sheets
+/// over the live content (`BottomSheetScaffold`, peek = the partial detent, the
+/// expanded state capped at 0.92 so a strip of the tab stays visible), exactly as
+/// before the redesign; Profile and Plus are modal sheets.
+private enum class SheetRoute { FARM, TRIPS }
+
+enum class AppTab(@StringRes val titleRes: Int, val icon: ImageVector, val filledIcon: ImageVector) {
+    HOME(R.string.home, Icons.Outlined.Home, Icons.Filled.Home),
+    SHOPPING(R.string.shopping, Icons.Outlined.ShoppingBasket, Icons.Filled.ShoppingBasket),
+    MAP(R.string.map, Icons.Outlined.Map, Icons.Filled.Map),
+    DISCOVER(R.string.discover, Icons.Outlined.Eco, Icons.Filled.Eco),
+    COMMUNITY(R.string.community, Icons.Outlined.Group, Icons.Filled.Group),
+}
+
+/// What a screen can ask the shell to do.
+class ShellActions(
+    val openFarm: (FarmPin) -> Unit = {},
+    val showTab: (AppTab) -> Unit = {},
+    val openTrips: () -> Unit = {},
+    val openProfile: () -> Unit = {},
+    val openPlus: () -> Unit = {},
+)
+
+val LocalShell = staticCompositionLocalOf { ShellActions() }
+
+/// Detached 64dp pill above the gesture bar, icons only (labels are for
+/// accessibility). Active = ink + filled symbol, inactive = muted + outline.
+@Composable
+fun FloatingTabBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {
+    val tap = rememberTapHaptic()
+    Row(
+        modifier
+            .capsuleShadow(FarmsyColors.ink.copy(alpha = 0.10f), blurRadius = 12.dp, offsetY = 8.dp)
+            .height(TabBarInset.height)
+            .background(FarmsyColors.surface, CircleShape)
+            .border(1.dp, FarmsyColors.hairline, CircleShape)
+            .padding(horizontal = Space.s3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppTab.entries.forEach { tab ->
+            val on = tab == selected
+            val label = stringResource(tab.titleRes)
+            Box(
+                Modifier.size(56.dp, 44.dp)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        if (!on) tap()
+                        onSelect(tab)
+                    }
+                    .semantics { contentDescription = label; this.selected = on },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (on) tab.filledIcon else tab.icon, null,
+                    tint = if (on) FarmsyColors.ink else FarmsyColors.inkMuted, modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,9 +183,12 @@ fun MainScreen() {
     val session = LocalSession.current
     val requestAuth = LocalRequestAuth.current
 
+    var tab by rememberSaveable { mutableStateOf(AppTab.HOME) }
     var route by remember { mutableStateOf<SheetRoute?>(null) }
     var selectedPin by remember { mutableStateOf<FarmPin?>(null) }
     var focusPin by remember { mutableStateOf<FarmPin?>(null) }
+    var showProfile by remember { mutableStateOf(false) }
+    var showPlus by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -167,8 +238,11 @@ fun MainScreen() {
     )
     val scaffoldState = rememberBottomSheetScaffoldState(bottomSheetState = sheetState)
 
-    /// Open a farm: fly the shared map + highlight the pin, and present the card.
+    /// Farm cards open for everyone, signed out included. Opening a farm from
+    /// another tab switches to the map and flies to it, so "where is it" is
+    /// always one tap from "what is it".
     fun openFarm(pin: FarmPin, source: AnalyticsValue.Source) {
+        tab = AppTab.MAP
         selectedPin = pin
         focusPin = pin
         route = SheetRoute.FARM
@@ -180,14 +254,24 @@ fun MainScreen() {
         )
     }
 
-    fun requireAuth(then: SheetRoute) {
-        if (session.isAuthenticated) route = then else requestAuth()
+    fun requireAuth(then: () -> Unit) {
+        if (session.isAuthenticated) then() else requestAuth()
+    }
+
+    val shell = remember {
+        ShellActions(
+            openFarm = { openFarm(it, AnalyticsValue.Source.WHATS_NEW) },
+            showTab = { tab = it },
+            openTrips = { requireAuth { route = SheetRoute.TRIPS } },
+            openProfile = { showProfile = true },
+            openPlus = { requireAuth { showPlus = true } },
+        )
     }
 
     // Partial-detent height per route (fraction of the screen), matching iOS.
     val partialFraction = when (route) {
         SheetRoute.TRIPS -> 0.5f
-        SheetRoute.FARM, SheetRoute.DISCOVER, SheetRoute.SAVED, SheetRoute.SETTINGS -> 0.55f
+        SheetRoute.FARM -> 0.55f
         null -> 0f
     }
     val peek = screenHeight * partialFraction
@@ -238,8 +322,8 @@ fun MainScreen() {
     // of leaving the app. Only enabled while a sheet is up, so on the bare map back
     // still exits. At API 36 predictive back is on by default, so this also drives the
     // predictive dismiss animation for the sheet rather than the app-exit animation.
-    BackHandler(enabled = route != null) {
-        route = null; selectedPin = null; focusPin = null
+    BackHandler(enabled = route != null || tab != AppTab.HOME) {
+        if (route != null) { route = null; selectedPin = null; focusPin = null } else tab = AppTab.HOME
     }
 
     BottomSheetScaffold(
@@ -261,19 +345,31 @@ fun MainScreen() {
                     SheetRoute.FARM -> selectedPin?.let { pin ->
                         FarmDetailScreen(pin = pin, onBack = { route = null })
                     }
-                    // iOS routes the Discover pill to WhatsNewSheet (S6), not the feed.
-                    SheetRoute.DISCOVER -> WhatsNewSheet(onOpenFarm = { openFarm(it, AnalyticsValue.Source.WHATS_NEW) }, onClose = { route = null })
-                    SheetRoute.SAVED -> SavedScreen(onOpenFarm = { openFarm(it, AnalyticsValue.Source.SAVED) })
                     SheetRoute.TRIPS -> TripsScreen(collapsed = collapsed, onOpenFarm = { openFarm(it, AnalyticsValue.Source.TRIPS) })
-                    SheetRoute.SETTINGS -> SettingsScreen()
                     null -> Box(Modifier.size(1.dp))
                 }
             }
         },
     ) {
-        // The single shared map (base layer) + the floating pill over it.
-        Box(Modifier.fillMaxSize()) {
-            MapScreen(onOpenFarm = { openFarm(it, AnalyticsValue.Source.MAP_PIN) }, focusPin = focusPin, bottomInset = 104.dp)
+        // The five tabs + the floating pill. A pager with scrolling off keeps every
+        // tab composed (iOS TabView): each keeps its scroll position, camera and
+        // loaded state across switches, which a `when` would drop.
+        val pager = rememberPagerState(initialPage = tab.ordinal) { AppTab.entries.size }
+        LaunchedEffect(tab) { pager.scrollToPage(tab.ordinal) }
+        CompositionLocalProvider(LocalShell provides shell) {
+        Box(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
+            HorizontalPager(
+                state = pager, userScrollEnabled = false, beyondViewportPageCount = AppTab.entries.size - 1,
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                when (AppTab.entries[page]) {
+                    AppTab.HOME -> HomeScreen()
+                    AppTab.SHOPPING -> ShoppingScreen()
+                    AppTab.MAP -> MapScreen(onOpenFarm = { openFarm(it, AnalyticsValue.Source.MAP_PIN) }, focusPin = focusPin, bottomInset = TabBarInset.content)
+                    AppTab.DISCOVER -> DiscoverScreen()
+                    AppTab.COMMUNITY -> CommunityScreen()
+                }
+            }
 
             // Background-interaction scope: iOS enables it `upThrough` the partial
             // detent (0.55 / 0.5) for every pill route, and blocks continuously above
@@ -294,33 +390,20 @@ fun MainScreen() {
                 )
             }
 
-            // Floating bottom pill: Discover / Saved / Trips / Settings.
-            // iOS shadow is `black.opacity(0.14), radius 12, y 3`. Drawn exactly via
-            // `capsuleShadow` (a BlurMaskFilter carries colour + blur radius + a real
-            // downward y-offset — all three, which Material `shadowElevation` can't),
-            // so `shadowElevation` is dropped.
-            Surface(
-                Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                    .padding(start = 14.dp, end = 14.dp, bottom = 6.dp)
-                    .capsuleShadow(Color.Black.copy(alpha = 0.14f), blurRadius = 12.dp, offsetY = 3.dp),
-                shape = CircleShape, color = Color.White,
-            ) {
-                Row(Modifier.padding(6.dp)) {
-                    PanelItem(Icons.Filled.Newspaper, stringResource(R.string.discover), Modifier.weight(1f)) { route = SheetRoute.DISCOVER }
-                    PanelItem(Icons.Filled.Favorite, stringResource(R.string.saved), Modifier.weight(1f)) { requireAuth(SheetRoute.SAVED) }
-                    PanelItem(Icons.Filled.Map, stringResource(R.string.trips), Modifier.weight(1f)) { requireAuth(SheetRoute.TRIPS) }
-                    PanelItem(Icons.Filled.Settings, stringResource(R.string.settings), Modifier.weight(1f)) { requireAuth(SheetRoute.SETTINGS) }
-                }
-            }
+            FloatingTabBar(
+                selected = tab, onSelect = { tab = it },
+                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = Space.s3),
+            )
 
             // Floating survey entry button — bottom-trailing, above the pill (which
             // spans ~safe-bottom+6 to +67), so it clears it. Shown for every role
             // (Neil). A down-arrow points at it while the survey is unanswered. iOS SF
             // `text.bubble.fill` → Material Chat. The button never goes away: it opens
             // the questions while unanswered, the feedback box once answered.
-            Column(
+            // Only over the map: on scrolling tabs it would cover content.
+            if (tab == AppTab.MAP) Column(
                 Modifier.align(Alignment.BottomEnd).navigationBarsPadding()
-                    .padding(end = 14.dp, bottom = 120.dp),
+                    .padding(end = 14.dp, bottom = TabBarInset.content + 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
@@ -343,7 +426,22 @@ fun MainScreen() {
                 }
             }
         }
+        }
     }
+
+    if (showProfile) {
+        ModalBottomSheet(
+            onDismissRequest = { showProfile = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = FarmsyColors.cream,
+            shape = RoundedCornerShape(topStart = Radius.sheet, topEnd = Radius.sheet),
+        ) {
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.96f).navigationBarsPadding()) {
+                ProfileScreen(onClose = { showProfile = false }, onOpenPlus = { showProfile = false; showPlus = true })
+            }
+        }
+    }
+    if (showPlus) ProUpsellSheet(onDismiss = { showPlus = false })
 
     // The survey presents as a modal over the map (iOS `.sheet` at 0.92), like the
     // other secondary surfaces. The gate hides its button for admins; the screen also
@@ -430,24 +528,6 @@ object SurveyAutoOpen {
     private fun today(): String {
         val f = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
         return f.format(java.util.Date())
-    }
-}
-
-@Composable
-private fun PanelItem(icon: ImageVector, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Column(
-        modifier
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onClick() }
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        // iOS pill icon is SF Symbol `system(17,.semibold)`. Compose icon size is a
-        // freely settable Dp, so the iOS point value is carried across as 17.dp
-        // (Compose default would be 24.dp). SF optical sizing/weight still isn't 1:1,
-        // but the size itself is now exact, not a 20.dp guess.
-        Icon(icon, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(17.dp))
-        Text(label, style = geist(10.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreenMap)
     }
 }
 

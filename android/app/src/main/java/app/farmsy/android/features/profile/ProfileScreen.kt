@@ -1,10 +1,48 @@
-package app.farmsy.android.features.settings
+package app.farmsy.android.features.profile
 
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Article
+import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextAlign
+import app.farmsy.android.core.SearchRadius
+import app.farmsy.android.features.survey.SurveyMode
+import app.farmsy.android.features.survey.SurveyScreen
+import app.farmsy.android.ui.theme.Badge
+import app.farmsy.android.ui.theme.IconButton
+import app.farmsy.android.ui.theme.ListRow
+import app.farmsy.android.ui.theme.PillButton
+import app.farmsy.android.ui.theme.PillSize
+import app.farmsy.android.ui.theme.PillVariant
+import app.farmsy.android.ui.theme.RowGroup
+import app.farmsy.android.ui.theme.ScreenHeader
+import app.farmsy.android.ui.theme.Space
+import app.farmsy.android.ui.theme.TextRole
+import app.farmsy.android.ui.theme.card
+import app.farmsy.android.ui.theme.rememberTapHaptic
+import app.farmsy.android.ui.theme.role
+import app.farmsy.android.ui.theme.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,14 +59,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,10 +73,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,38 +82,36 @@ import app.farmsy.android.BuildConfig
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
-import app.farmsy.android.ui.theme.CardShape
 import app.farmsy.android.ui.theme.FarmsyColors
-import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
-import java.util.Locale
 import app.farmsy.android.ui.theme.FitText
 import androidx.compose.material3.CircularProgressIndicator
-import app.farmsy.android.ui.theme.PrimaryButton
-import app.farmsy.android.ui.theme.PlanCard
-import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Language
 import app.farmsy.android.core.LanguageStore
 
-/// Settings — mirrors iOS SettingsSheet (account/guest card, rows, legal,
-/// sign out + delete account, version footer).
+/// Profile — opened from the Home header (iOS ProfileScreen). Identity,
+/// membership, what Farmsy knows about you (radius, alerts), preferences, legal,
+/// and the way out.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
     val context = LocalContext.current
     val session = LocalSession.current
     val requestAuth = LocalRequestAuth.current
     val scope = rememberCoroutineScope()
+    val tap = rememberTapHaptic()
 
     val currentSession by session.session.collectAsState()
     val profile by session.profile.collectAsState()
     val isAuthenticated = currentSession != null
+    val radiusKm by SearchRadius.km.collectAsState()
 
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showDeleteInfo by remember { mutableStateOf(false) }
     var showLanguage by remember { mutableStateOf(false) }
+    var showSurvey by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
     var deleteFailed by remember { mutableStateOf(false) }
     // After the server confirms the erase we replace the whole screen with a plain
@@ -108,172 +134,152 @@ fun SettingsScreen() {
         return
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(FarmsyColors.cream)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 24.dp)
-    ) {
-        Text(
-            stringResource(R.string.settings),
-            style = display(26.sp), color = FarmsyColors.ink,
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 10.dp, bottom = 18.dp)
-        )
+    // Key the badge off *access*, not the raw status word. A "canceled" status whose
+    // period has already lapsed still reads "canceled" in the DB, but the user has no
+    // access — labelling them Canceled while the section below says "no membership"
+    // is a contradiction on one screen. hasFullAccess is the truth both halves share.
+    val access = profile?.hasFullAccess == true
+    val (badgeRes, badgeColor) = when {
+        // A lapsed sub is not the same as never having subscribed — flag it in red.
+        !access && profile?.subscriptionStatus in setOf("canceled", "expired") -> R.string.expired to FarmsyColors.warnRed
+        !access -> R.string.free to FarmsyColors.inkMuted
+        profile?.subscriptionStatus == "trialing" -> R.string.trial to FarmsyColors.farmGreen
+        profile?.subscriptionStatus == "canceled" -> R.string.canceled to FarmsyColors.inkMuted
+        else -> R.string.member to FarmsyColors.farmGreen
+    }
+    val initials = session.displayName.split(" ").mapNotNull { it.firstOrNull() }.take(2)
+        .joinToString("").uppercase().ifEmpty { "?" }
 
-        // Account / guest card
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().background(FarmsyColors.creamCard, CardShape).padding(16.dp)
+    Column(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
+        Box(Modifier.padding(top = Space.s2)) {
+            ScreenHeader(stringResource(R.string.profile), compact = true) {
+                IconButton(Icons.Filled.Close, stringResource(R.string.close), small = true, onClick = onClose)
+            }
+        }
+
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.s4).padding(top = Space.s4, bottom = Space.s8),
+            verticalArrangement = Arrangement.spacedBy(Space.s8),
         ) {
-            Image(painterResource(R.drawable.farmsy_logo), null, Modifier.height(42.dp))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                // These are one-line identity labels sitting next to a fixed avatar
-                // and badge — if they wrap, the whole card grows and the badge drifts.
-                // FitText shrinks them to fit instead (see Components.FitText).
-                if (isAuthenticated) {
-                    FitText(
-                        session.email.ifEmpty { stringResource(R.string.signed_in) },
-                        style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink
-                    )
-                    // Only name a plan while it actually grants access. After a lapsed
-                    // cancellation the DB still carries subscription_plan='yearly', but
-                    // the person isn't on a yearly plan any more — showing "Yearly plan"
-                    // there is the same stale-state lie as the badge.
-                    val plan = profile?.subscriptionPlan?.takeIf { profile?.hasFullAccess == true }
-                    FitText(
-                        if (plan != null)
-                            stringResource(
-                                R.string.arg_plan,
-                                plan.replaceFirstChar { it.titlecase(Locale.getDefault()) }
-                            )
-                        else stringResource(R.string.farmsy_account),
-                        style = geist(13.sp), color = FarmsyColors.inkMuted
-                    )
-                } else {
-                    FitText(
-                        stringResource(R.string.you_re_browsing_as_a_guest),
-                        style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink
-                    )
-                    FitText(
-                        stringResource(R.string.sign_in_to_save_farms_and_see_details),
-                        style = geist(13.sp), color = FarmsyColors.inkMuted
-                    )
-                }
-            }
+            // MARK: Identity
             if (isAuthenticated) {
-                // Key the badge off *access*, not the raw status word. A "canceled"
-                // status whose period has already lapsed still reads as "canceled" in
-                // the DB — but the user has no access, so labelling them Canceled while
-                // the section below correctly says "no membership" is a contradiction
-                // on one screen. hasFullAccess is the same truth both halves should use.
-                val access = profile?.hasFullAccess == true
-                val (badgeRes, badgeColor) = when {
-                    !access -> R.string.free to FarmsyColors.inkMuted
-                    profile?.subscriptionStatus == "trialing" -> R.string.trial to FarmsyColors.farmGreen
-                    profile?.subscriptionStatus == "canceled" -> R.string.canceled to FarmsyColors.inkMuted
-                    else -> R.string.member to FarmsyColors.farmGreen
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+                        // Two dashed rings around the initials (iOS StrokeStyle dash).
+                        Canvas(Modifier.size(96.dp)) {
+                            val w = 2.dp.toPx()
+                            drawCircle(FarmsyColors.vivid.copy(alpha = 0.9f), radius = (96.dp.toPx() - w) / 2,
+                                style = Stroke(w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))))
+                            drawCircle(FarmsyColors.farmGreen.copy(alpha = 0.35f), radius = (84.dp.toPx() - w) / 2,
+                                style = Stroke(w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 6.dp.toPx()))))
+                        }
+                        Box(Modifier.size(72.dp).background(FarmsyColors.surface, CircleShape), contentAlignment = Alignment.Center) {
+                            Text(initials, style = ui(26.sp, FontWeight.Bold), color = FarmsyColors.farmGreen)
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
+                        Text(session.displayName, style = role(TextRole.HEADING), color = FarmsyColors.ink)
+                        Badge(stringResource(badgeRes), fill = badgeColor)
+                    }
+                    if (session.email.isNotEmpty()) Text(session.email, style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)
                 }
-                Text(
-                    stringResource(badgeRes),
-                    style = geist(12.sp, FontWeight.Bold), color = Color.White,
-                    modifier = Modifier.background(badgeColor, CircleShape)
-                        .padding(vertical = 5.dp, horizontal = 10.dp)
-                )
             } else {
-                Text(
-                    stringResource(R.string.sign_in),
-                    style = geist(13.sp, FontWeight.Bold), color = Color.White,
-                    modifier = Modifier
-                        .background(FarmsyColors.farmGreen, CircleShape)
-                        .clickable { requestAuth() }
-                        .padding(vertical = 7.dp, horizontal = 12.dp)
-                )
-            }
-        }
-
-        // Membership. Only for signed-in users — a guest has no subscription to
-        // manage, and the paywall is where they'd start one.
-        if (isAuthenticated) {
-            Spacer(Modifier.height(14.dp))
-            MembershipSection(profile = profile)
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // General rows
-        SettingsCard {
-            SettingsRow(Icons.Filled.Notifications, Color(0xFFF5B301), stringResource(R.string.notifications)) {
-                context.startActivity(
-                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                )
-            }
-            // Refer friends, for signed-in users only — a guest has no code to
-            // share. Opens the web invite page rather than duplicating the whole
-            // referral dashboard natively; the signup-side code capture (the part
-            // that actually earns referrals) stays in the app.
-            if (isAuthenticated) {
-                HorizontalDivider(Modifier.padding(start = 62.dp))
-                SettingsRow(Icons.Filled.CardGiftcard, Color(0xFFEC4899), stringResource(R.string.refer_friends)) {
-                    open("https://www.farmsy.app/invite")
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    Icon(Icons.Outlined.AccountCircle, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(56.dp))
+                    Text(stringResource(R.string.you_re_browsing_as_a_guest), style = role(TextRole.HEADING), color = FarmsyColors.ink, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.guest_sign_in_sub), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
+                    PillButton(stringResource(R.string.sign_in), PillVariant.PRIMARY, PillSize.MEDIUM) { onClose(); requestAuth() }
                 }
             }
-            HorizontalDivider(Modifier.padding(start = 62.dp))
-            SettingsRow(Icons.Filled.Email, Color(0xFF38BDF8), stringResource(R.string.contact_us)) {
-                open("https://www.farmsy.app/messages")
+
+            // Membership. Only for signed-in users — a guest has no subscription to
+            // manage, and the paywall is where they'd start one.
+            if (isAuthenticated) MembershipSection(profile = profile)
+
+            RowGroup(stringResource(R.string.farmsy)) {
+                var menu by remember { mutableStateOf(false) }
+                Box {
+                    ListRow(Icons.Outlined.LocationOn, stringResource(R.string.search_radius), value = "${radiusKm.toInt()} km", chevron = false) { menu = true }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = FarmsyColors.surface) {
+                        SearchRadius.choices.forEach { km ->
+                            DropdownMenuItem(
+                                text = { Text("${km.toInt()} km", style = ui(16.sp), color = FarmsyColors.ink) },
+                                onClick = { SearchRadius.set(context, km); menu = false },
+                            )
+                        }
+                    }
+                }
+                ListRow(
+                    Icons.Outlined.Notifications, stringResource(R.string.product_alerts),
+                    subtitle = if (session.hasFullAccess) null else stringResource(R.string.farmsy_plus),
+                ) {
+                    if (session.hasFullAccess) open("https://www.farmsy.app/alerts") else onOpenPlus()
+                }
+            }
+
+            // Language — lets a user on a differently-set phone run the app in one of
+            // the languages Farmsy is translated into (or back to the system default).
+            val currentLang = LanguageStore.current(context)
+            RowGroup(stringResource(R.string.preferences)) {
+                ListRow(
+                    Icons.Outlined.Language, stringResource(R.string.language),
+                    value = if (currentLang == LanguageStore.Lang.SYSTEM) stringResource(R.string.system_default) else currentLang.displayName,
+                ) { showLanguage = true }
+                ListRow(Icons.Outlined.NotificationsActive, stringResource(R.string.notifications)) {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    )
+                }
+            }
+
+            RowGroup(stringResource(R.string.community)) {
+                ListRow(Icons.AutoMirrored.Outlined.Chat, stringResource(R.string.give_feedback)) { showSurvey = true }
+                // Refer friends, for signed-in users only — a guest has no code to
+                // share. Opens the web invite page rather than duplicating the whole
+                // referral dashboard natively.
+                if (isAuthenticated) {
+                    ListRow(Icons.Outlined.CardGiftcard, stringResource(R.string.refer_friends)) { open("https://www.farmsy.app/invite") }
+                }
+                ListRow(Icons.Outlined.Email, stringResource(R.string.contact_us)) { open("https://www.farmsy.app/messages") }
+            }
+
+            RowGroup(stringResource(R.string.legal)) {
+                ListRow(Icons.Outlined.PrivacyTip, stringResource(R.string.privacy_policy)) { open("https://farmsy.app/privacy") }
+                ListRow(Icons.Outlined.Article, stringResource(R.string.terms_of_service)) { open("https://farmsy.app/terms") }
+            }
+
+            if (isAuthenticated) {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    PillButton(stringResource(R.string.sign_out), PillVariant.GHOST, PillSize.MEDIUM, block = true) { showSignOutConfirm = true }
+                    Text(
+                        stringResource(R.string.delete_account), style = ui(15.sp, FontWeight.SemiBold), color = FarmsyColors.critical,
+                        modifier = Modifier.clickable { tap(); showDeleteInfo = true }.padding(Space.s2),
+                    )
+                }
+            }
+
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Farmsy for Android ${BuildConfig.VERSION_NAME}", style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint)
+                // OpenStreetMap attribution (P0-5): the farm records carry OSM ids,
+                // so the ODbL credit has to be reachable in the app.
+                Text(stringResource(R.string.osm_attribution), style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint)
             }
         }
+    }
 
-        Spacer(Modifier.height(14.dp))
-
-        // Language — lets a user on a differently-set phone run the app in one of
-        // the languages Farmsy is translated into (or back to the system default).
-        val currentLang = LanguageStore.current(context)
-        SettingsCard {
-            SettingsRow(
-                Icons.Filled.Language, Color(0xFF3F5E3A), stringResource(R.string.language),
-                trailing = if (currentLang == LanguageStore.Lang.SYSTEM)
-                    stringResource(R.string.system_default) else currentLang.displayName,
-            ) { showLanguage = true }
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // Legal
-        SettingsCard {
-            SettingsRow(Icons.Filled.PrivacyTip, Color(0xFF8B5CF6), stringResource(R.string.privacy_policy)) {
-                open("https://farmsy.app/privacy")
-            }
-            HorizontalDivider(Modifier.padding(start = 62.dp))
-            SettingsRow(Icons.Filled.Article, Color(0xFF64748B), stringResource(R.string.terms_of_service)) {
-                open("https://farmsy.app/terms")
+    // Feedback opens the survey in feedback mode, as a modal over the profile.
+    if (showSurvey) {
+        ModalBottomSheet(
+            onDismissRequest = { showSurvey = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = FarmsyColors.cream,
+        ) {
+            Box(Modifier.fillMaxWidth().fillMaxHeight(0.92f).navigationBarsPadding()) {
+                SurveyScreen(mode = SurveyMode.FEEDBACK, onClose = { showSurvey = false })
             }
         }
-
-        if (isAuthenticated) {
-            Spacer(Modifier.height(14.dp))
-            SettingsCard {
-                SettingsRow(
-                    Icons.AutoMirrored.Filled.Logout, FarmsyColors.farmGreen,
-                    stringResource(R.string.sign_out)
-                ) { showSignOutConfirm = true }
-                HorizontalDivider(Modifier.padding(start = 62.dp))
-                SettingsRow(
-                    Icons.Filled.Delete, FarmsyColors.warnRed,
-                    stringResource(R.string.delete_account), tint = FarmsyColors.warnRed
-                ) { showDeleteInfo = true }
-            }
-        }
-
-        Spacer(Modifier.height(14.dp))
-        Text(
-            "Farmsy for Android ${BuildConfig.VERSION_NAME}",
-            style = geist(12.sp), color = FarmsyColors.inkMuted.copy(alpha = 0.7f),
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
-        )
     }
 
     if (showLanguage) {
@@ -318,7 +324,7 @@ fun SettingsScreen() {
             confirmButton = {
                 TextButton(onClick = {
                     showSignOutConfirm = false
-                    scope.launch { session.signOut() }
+                    scope.launch { session.signOut(); onClose() }
                 }) { Text(stringResource(R.string.sign_out), color = FarmsyColors.warnRed) }
             },
             dismissButton = {
@@ -406,7 +412,7 @@ private fun AccountDeletedScreen(state: DeletedState) {
         Spacer(Modifier.height(18.dp))
         Text(
             stringResource(R.string.account_deleted_title),
-            style = display(24.sp), color = FarmsyColors.ink,
+            style = ui(24.sp, FontWeight.Bold), color = FarmsyColors.ink,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(Modifier.height(10.dp))
@@ -433,41 +439,6 @@ private fun AccountDeletedScreen(state: DeletedState) {
                     FarmsyColors.creamCard, RoundedCornerShape(14.dp)
                 ).padding(16.dp)
             )
-        }
-    }
-}
-
-@Composable
-private fun SettingsCard(content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().background(FarmsyColors.creamCard, RoundedCornerShape(18.dp)).padding(4.dp)
-    ) { content() }
-}
-
-@Composable
-private fun SettingsRow(
-    icon: ImageVector,
-    iconTint: Color,
-    label: String,
-    tint: Color = FarmsyColors.ink,
-    trailing: String? = null,
-    onClick: () -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(12.dp)
-    ) {
-        Box(
-            Modifier.size(34.dp).background(iconTint.copy(alpha = 0.14f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = iconTint, modifier = Modifier.size(16.dp))
-        }
-        Spacer(Modifier.width(14.dp))
-        Text(label, style = geist(16.sp, FontWeight.Medium), color = tint)
-        if (trailing != null) {
-            Spacer(Modifier.weight(1f))
-            Text(trailing, style = geist(14.sp), color = FarmsyColors.inkMuted)
         }
     }
 }
@@ -504,14 +475,17 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
-    Text(
-        stringResource(R.string.membership),
-        style = geist(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted,
-        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-    )
+    // Had a membership that has now lapsed (canceled/expired past its end date).
+    // "You don't have a membership yet" is wrong for them — they had one, it ended.
+    val isExpired = !hasAccess && (status == "canceled" || status == "expired")
 
-    SettingsCard {
-        Column(Modifier.padding(16.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            stringResource(R.string.membership),
+            style = ui(13.sp, FontWeight.SemiBold), color = FarmsyColors.inkMuted,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        Column(Modifier.fillMaxWidth().card()) {
             when {
                 // Top of the ladder. Nothing to sell, and nothing to cancel — but say
                 // so plainly: an empty section reads as broken, a clear statement
@@ -569,6 +543,18 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         stringResource(R.string.manage_subscription),
                         style = geist(14.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen,
                         modifier = Modifier.clickable { openBilling() }
+                    )
+                }
+
+                isExpired -> {
+                    FitText(
+                        stringResource(R.string.membership_expired),
+                        style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.renew_to_unlock),
+                        style = geist(14.sp), color = FarmsyColors.inkMuted
                     )
                 }
 
