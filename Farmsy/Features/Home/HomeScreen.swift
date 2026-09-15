@@ -17,6 +17,7 @@ struct HomeScreen: View {
     static let radiusChoices: [Double] = [5, 10, 15, 25, 50]
 
     @State private var catalogue = ShoppingItems.shared
+    @State private var seasons = Seasons.shared
     @State private var query = ""
     @State private var nearby: [ProductNearby] = []
     @State private var nearbyReady = false
@@ -45,6 +46,7 @@ struct HomeScreen: View {
                 VStack(alignment: .leading, spacing: 0) {
                     greetingCard.padding(.top, -Space.s2)
                     availableSection
+                    thisWeekSection
                     yourFarmsSection
                     forYouSection
                 }
@@ -55,6 +57,7 @@ struct HomeScreen: View {
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(edges: .top)
         .task { await catalogue.loadIfNeeded() }
+        .task { await seasons.loadIfNeeded() }
         .task { await farms.loadFlagsIfNeeded() }
         .task(id: nearbyKey) { await computeNearby() }
         .onAppear { if location == nil { locationManager.request() } }
@@ -179,7 +182,7 @@ struct HomeScreen: View {
         Button {
             Haptics.tap()
             Task {
-                await farms.showProduct(p.item, userLocation: location, radiusKm: radiusKm)
+                await farms.showProduct(label: p.item.label, terms: p.item.terms, userLocation: location, radiusKm: radiusKm)
                 shell.showTab(.map)
             }
         } label: {
@@ -211,6 +214,54 @@ struct HomeScreen: View {
                 .buttonStyle(PillButtonStyle(.primary, size: .small))
         }
         .card()
+    }
+
+    // MARK: - This week
+
+    /// Season news. Renders nothing until the calendar has loaded, so a missing
+    /// endpoint costs a section, not a screen.
+    @ViewBuilder
+    private var thisWeekSection: some View {
+        let picks = Array(seasons.thisMonth.prefix(6))
+        if !picks.isEmpty {
+            SectionHeader(title: String(localized: "In season now"),
+                          action: (String(localized: "See all"), { shell.showTab(.discover) }))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Space.s3) {
+                    ForEach(picks) { item in
+                        seasonTile(item)
+                    }
+                }
+                .padding(.trailing, Space.s4)
+            }
+            .padding(.trailing, -Space.s4)
+        }
+    }
+
+    private func seasonTile(_ item: SeasonalItem) -> some View {
+        Button {
+            Haptics.tap()
+            Task {
+                await farms.showProduct(label: item.label, terms: item.terms, userLocation: location, radiusKm: radiusKm)
+                shell.showTab(.map)
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: Space.s2) {
+                HStack {
+                    Text(item.emoji).font(.system(size: 28))
+                    Spacer()
+                    if item.isPeak(month: seasons.month) {
+                        Badge(text: String(localized: "PEAK"), fill: .vivid, ink: .ink)
+                    }
+                }
+                Text(item.label).role(.subheading).lineLimit(1)
+                Text(String(localized: "Find it nearby")).role(.caption, .inkMuted)
+            }
+            .frame(width: 140, alignment: .leading)
+            .padding(Space.s4)
+            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Your farms

@@ -202,14 +202,14 @@ final class FarmsStore {
         .sorted { $0.count > $1.count }
     }
 
-    /// Show the map filtered on one list item near the user — the same path an
+    /// Show the map filtered on one product near the user — the same path an
     /// AI search takes, so ranking, radius and the summary bar come for free.
-    func showProduct(_ item: ShoppingItem, userLocation: CLLocation?, radiusKm: Double) async {
+    func showProduct(label: String, terms: [String], userLocation: CLLocation?, radiusKm: Double) async {
         var intent = SmartSearchIntent()
-        intent.products = item.terms
+        intent.products = terms
         intent.nearMe = userLocation != nil
         intent.radiusKm = radiusKm
-        intent.summary = item.label
+        intent.summary = label
         await applyAISearch(intent, userLocation: userLocation)
     }
 
