@@ -84,6 +84,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -370,6 +371,17 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
         cameraPositionState.animate(
             CameraUpdateFactory.newLatLngZoom(LatLng(c.first, c.second), zoom)
         )
+    }
+
+    // First fix: a search or product tap from another tab may already be waiting
+    // (aiPlaceToken handles that); otherwise open on the user rather than on the
+    // whole country. Once only, so a later fix never yanks the camera back.
+    var didCenterOnUser by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(userLocation) {
+        val loc = userLocation ?: return@LaunchedEffect
+        if (didCenterOnUser || farms.aiIntent.value != null) return@LaunchedEffect
+        didCenterOnUser = true
+        cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 9.5f))
     }
 
     // Snapshot the viewport only once the camera settles. Reading the camera
@@ -717,11 +729,9 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
     val methods by farms.selectedMethods.collectAsState()
     val pins by farms.pins.collectAsState()
 
-    // The five Pro groups are gated when the account isn't a member — paid on both,
-    // no exception (Aviah later-8). A locked tap opens the upsell (signed out →
-    // sign-in first) instead of toggling. proLocked reads profile; recompose on it.
-    val profile by session.profile.collectAsState()
-    val proLocked = profile?.hasFullAccess != true
+    // Time and place-type filters are free now: opening hours are the farm's own
+    // information, not intelligence. Plus sells matching, routing and alerts.
+    val proLocked = false
     var showPro by remember { mutableStateOf(false) }
     fun onProTap(id: String, toggle: () -> Unit) {
         if (!proLocked) { toggle(); return }
@@ -774,12 +784,9 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
             FilterRow(icon = Icons.Filled.Eco, label = stringResource(R.string.filter_zelfpluk), isOn = fZelfpluk) { farms.filterZelfpluk.value = !fZelfpluk }
             FilterRow(icon = Icons.Filled.PhotoCamera, label = stringResource(R.string.filter_has_photos), isOn = fPhotos) { farms.filterHasPhotos.value = !fPhotos }
 
-            // FARMSY PRO — five groups (Aviah's closed set, paid on both). Shown to
-            // everyone, dimmed + a lock when the account isn't a member; a locked tap
-            // opens the upsell rather than toggling. The three time filters were never
-            // free; the two axis groups moved here from the free rail.
+            // When and what kind — the three time filters and the two axis groups.
             FilterDivider()
-            FilterSectionHeader(stringResource(R.string.farmsy_pro))
+            FilterSectionHeader(stringResource(R.string.filter_when_and_what))
             FilterRow(icon = Icons.Filled.Schedule, label = stringResource(R.string.pro_open_now),
                 isOn = fOpenNow, lockedTrailing = proLocked, dimmed = proLocked) {
                 onProTap(AnalyticsValue.Filter.OPEN_NOW) { farms.filterOpenNow.value = !fOpenNow }

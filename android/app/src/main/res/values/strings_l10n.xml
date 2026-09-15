@@ -384,10 +384,10 @@
     <string name="pro_unlock_title">Unlock Farmsy Pro</string>
     <string name="pro_unlock_sub">Find what is open at this minute, and filter by the kind of place. Cancel anytime.</string>
     <string name="pro_included_in_both">Included in both plans</string>
-    <string name="pro_feature_open_now">See what is open right now, not just open today</string>
-    <string name="pro_feature_filter">Filter by kind of place, and by how it is grown</string>
-    <string name="pro_feature_email">An email when a farm you saved posts something new</string>
-    <string name="pro_feature_everything">Everything new we add to Pro, included</string>
+    <string name="pro_feature_open_now">The fewest farms that cover your shopping list, and the route between them</string>
+    <string name="pro_feature_filter">How recently a farm was confirmed open, and by how many people</string>
+    <string name="pro_feature_email">An alert when a product you follow turns up within your radius</string>
+    <string name="pro_feature_everything">Everything new we add to Plus, included</string>
     <string name="pro_get_yearly">Get yearly</string>
     <string name="pro_buy_lifetime">Buy lifetime access</string>
     <string name="pro_lifetime_onetime">One-time · no renewals</string>

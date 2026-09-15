@@ -361,10 +361,6 @@
     <string name="pro_unlock_title">Ontgrendel Farmsy Pro</string>
     <string name="pro_unlock_sub">Vind wat op dit moment open is en filter op het soort plek. Altijd opzegbaar.</string>
     <string name="pro_included_in_both">Inbegrepen bij beide abonnementen</string>
-    <string name="pro_feature_open_now">Zie wat er nu open is, niet alleen vandaag</string>
-    <string name="pro_feature_filter">Filter op soort plek en op hoe het geteeld wordt</string>
-    <string name="pro_feature_email">Een e-mail wanneer een opgeslagen boerderij iets nieuws plaatst</string>
-    <string name="pro_feature_everything">Alles wat we nieuw aan Pro toevoegen, inbegrepen</string>
     <string name="pro_get_yearly">Kies jaarlijks</string>
     <string name="pro_buy_lifetime">Koop levenslange toegang</string>
     <string name="pro_lifetime_onetime">Eenmalig · geen verlengingen</string>
