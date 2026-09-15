@@ -401,4 +401,13 @@
     <string name="status_recent_open_arg">%1$d visiteurs ont pu entrer, le dernier il y a %2$d jours</string>
     <string name="status_recent_trouble_arg">%1$d visiteurs ont trouvé porte close ou étal vide, le dernier il y a %2$d jours</string>
     <string name="status_recent_mixed_arg">%1$d ont pu entrer, %2$d non, ces dernières semaines</string>
+    <string name="shop_from_a_list">Faire une liste</string>
+    <string name="shopping_list">Liste de courses</string>
+    <string name="shopping_list_sub">Nous choisissons les fermes, vous ne roulez qu’une fois</string>
+    <string name="shopping_list_plan">Planifier mon trajet</string>
+    <string name="shopping_list_add_stops_arg">Ajouter %1$d arrêts à mon trajet</string>
+    <string name="shopping_list_clear">Vider la liste</string>
+    <string name="shopping_list_none">Aucune ferme dans un rayon de 25 km ne mentionne cela.</string>
+    <string name="shopping_list_missing_arg">Introuvable à proximité : %1$s</string>
+    <string name="shopping_list_catalogue_failed">La liste des produits n’a pas pu être chargée. Vérifiez votre connexion et réessayez.</string>
 </resources>

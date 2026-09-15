@@ -269,7 +269,14 @@ final class TripStore {
     private(set) var fitToken = 0
     func requestFit() { fitToken += 1 }
 
+    /// The shopping list: `ShoppingItem` ids, in the order they were picked.
+    /// Ids rather than words, because the label is presentation and the terms
+    /// that match it are served. Lives with the draft because it is how the
+    /// draft gets filled.
+    private(set) var wantedProducts: [String] = []
+
     private let stopsKey = "dlb_pending_trip"
+    private let wantedKey = "dlb_shopping_list"
     private let originKey = "dlb_trip_origin"
     private let destinationKey = "dlb_trip_destination"
     private let ownerKey = "dlb_trip_owner"
@@ -295,7 +302,37 @@ final class TripStore {
         tripDate = TripEndpoints.validDate(UserDefaults.standard.string(forKey: whenKey))
         departMinutes = UserDefaults.standard.object(forKey: whenKey + ".depart") as? Int
         departMinutes = TripEndpoints.validDepartMinutes(departMinutes)
+        wantedProducts = UserDefaults.standard.stringArray(forKey: wantedKey) ?? []
     }
+
+    // MARK: Shopping list
+
+    /// On or off. Picking keeps the order things were chosen in, which is the
+    /// order the answer lists them back.
+    func toggleProduct(_ id: String) {
+        if let i = wantedProducts.firstIndex(of: id) { wantedProducts.remove(at: i) }
+        else { wantedProducts.append(id) }
+        persistWanted()
+    }
+
+    func removeProduct(_ id: String) {
+        wantedProducts.removeAll { $0 == id }
+        persistWanted()
+    }
+
+    func clearProducts() {
+        wantedProducts = []
+        persistWanted()
+    }
+
+    /// Add planned stops to the draft, keeping the planner's order and skipping
+    /// farms already on the trip — filling a list twice must not duplicate stops.
+    func addStops(_ osmIds: [String]) {
+        for id in osmIds where !stopIds.contains(id) { stopIds.append(id) }
+        persist()
+    }
+
+    private func persistWanted() { UserDefaults.standard.set(wantedProducts, forKey: wantedKey) }
 
     /// Switch travel mode. The road geometry is cached by stops and unchanged by
     /// mode, so the caller just re-runs `refreshRoute` to re-derive the estimate.
@@ -306,14 +343,16 @@ final class TripStore {
     }
 
     // MARK: R5 — corridor product filter
+    // Named distinctly from the shopping list's toggleProduct/clearProducts (which
+    // act on `wantedProducts`): these act on `selectedProducts`, the corridor chips.
 
-    /// Toggle a product chip. Kept on the trip so a re-route (add/reorder/origin
-    /// change) leaves the picks in place.
-    func toggleProduct(_ key: String) {
+    /// Toggle a corridor product chip. Kept on the trip so a re-route (add/reorder/
+    /// origin change) leaves the picks in place.
+    func toggleCorridorProduct(_ key: String) {
         if selectedProducts.contains(key) { selectedProducts.remove(key) }
         else { selectedProducts.insert(key) }
     }
-    func clearProducts() { selectedProducts.removeAll() }
+    func clearCorridorProducts() { selectedProducts.removeAll() }
 
     // MARK: R6 — corridor day/departure bridge
 
@@ -428,8 +467,9 @@ final class TripStore {
         let stored = UserDefaults.standard.string(forKey: ownerKey)
         if let stored, stored != owner {
             stopIds = []; editingTripId = nil
+            wantedProducts = []
             setRouteLine([]); distanceMeters = nil; durationSeconds = nil
-            persist()
+            persist(); persistWanted()
         }
         UserDefaults.standard.set(owner, forKey: ownerKey)
     }

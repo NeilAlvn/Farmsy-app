@@ -424,4 +424,13 @@
     <string name="status_recent_open_arg">%1$d visitors got in, most recently %2$d days ago</string>
     <string name="status_recent_trouble_arg">%1$d visitors found it shut or sold out, most recently %2$d days ago</string>
     <string name="status_recent_mixed_arg">%1$d got in, %2$d did not, in the last few weeks</string>
+    <string name="shop_from_a_list">Shop from a list</string>
+    <string name="shopping_list">Shopping list</string>
+    <string name="shopping_list_sub">We pick the farms, you drive once</string>
+    <string name="shopping_list_plan">Plan my trip</string>
+    <string name="shopping_list_add_stops_arg">Add %1$d stops to my trip</string>
+    <string name="shopping_list_clear">Clear list</string>
+    <string name="shopping_list_none">No farm within 25 km lists any of this.</string>
+    <string name="shopping_list_missing_arg">Not found nearby: %1$s</string>
+    <string name="shopping_list_catalogue_failed">The product list couldn\'t be loaded. Check your connection and try again.</string>
 </resources>
