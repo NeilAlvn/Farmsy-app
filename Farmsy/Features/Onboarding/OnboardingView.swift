@@ -226,15 +226,15 @@ private struct WelcomeStep: View {
                         .background(Color.cream, in: Circle())
                         .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
                     Text("Farmsy")
-                        .font(.displayItalic(52, weight: .medium))
+                        .font(.ui(52, .medium))
                         .foregroundStyle(.white)
                 }
                 Text("Local food, close to you.")
-                    .font(.display(26, weight: .medium))
+                    .font(.ui(26, .medium))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                 Text("Find farm shops, pick-your-own farms and honest food straight from the people who grow it.")
-                    .font(.geist(16))
+                    .font(.ui(16))
                     .foregroundStyle(.white.opacity(0.9))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 12)
@@ -248,7 +248,7 @@ private struct WelcomeStep: View {
                     onLogin()
                 } label: {
                     Text("Log in / Sign up")
-                        .font(.geist(18, .semibold))
+                        .font(.ui(18, .semibold))
                         .foregroundStyle(Color.farmGreen)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 17)
@@ -261,7 +261,7 @@ private struct WelcomeStep: View {
                     onSkip()
                 } label: {
                     Text("Skip for now")
-                        .font(.geist(17, .semibold))
+                        .font(.ui(17, .semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
@@ -293,7 +293,7 @@ private struct PersonalizeStep: View {
                 Kicker(text: String(localized: "Personalize"))
                 DisplayTitle(String(localized: "What are you *looking* for?"), size: 32)
                 Text("Pick a few — or none. You can change this anytime.")
-                    .font(.geist(15))
+                    .font(.ui(15))
                     .foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
             }
@@ -331,9 +331,9 @@ private struct CategoryTile: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 10) {
-                Text(cat.emoji).font(.geist(24))
+                Text(cat.emoji).font(.ui(24))
                 Text(cat.label)
-                    .font(.geist(16, .semibold))
+                    .font(.ui(16, .semibold))
                     .foregroundStyle(isOn ? Color.farmGreen : Color.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -453,7 +453,7 @@ private struct LocationStep: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.farmGreen)
                     Text(resolved)
-                        .font(.geist(15, .semibold))
+                        .font(.ui(15, .semibold))
                         .foregroundStyle(Color.ink)
                 }
                 .padding(.top, 20)
@@ -478,7 +478,7 @@ private struct LocationStep: View {
                 .frame(width: 44, height: 44)
                 .background(filled ? Color.farmGreenMap : Color.farmGreenSoft, in: Circle())
             Text(title)
-                .font(.geist(17, .semibold))
+                .font(.ui(17, .semibold))
                 .foregroundStyle(Color.ink)
             Spacer()
             Image(systemName: "chevron.right")
@@ -505,7 +505,7 @@ private struct DetailsStep: View {
                 Kicker(text: String(localized: "Optional"))
                 DisplayTitle(String(localized: "Anything else we should *know*?"), size: 30)
                 Text("Fine-tune what shows up. All optional.")
-                    .font(.geist(15))
+                    .font(.ui(15))
                     .foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
             }
@@ -531,7 +531,7 @@ private struct DetailsStep: View {
                 Button("Show me farms", action: onShowFarms)
                     .buttonStyle(PrimaryButtonStyle())
                 Button("I'll explore on my own", action: onSkip)
-                    .font(.geist(16, .semibold))
+                    .font(.ui(16, .semibold))
                     .foregroundStyle(Color.inkMuted)
             }
             .padding(.horizontal, 20)
@@ -553,10 +553,10 @@ private struct PrefRow: View {
             isOn.toggle()
         } label: {
             HStack(spacing: 12) {
-                Text(emoji).font(.geist(22))
+                Text(emoji).font(.ui(22))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.geist(16, .semibold)).foregroundStyle(Color.ink)
-                    Text(subtitle).font(.geist(13)).foregroundStyle(Color.inkMuted)
+                    Text(title).font(.ui(16, .semibold)).foregroundStyle(Color.ink)
+                    Text(subtitle).font(.ui(13)).foregroundStyle(Color.inkMuted)
                 }
                 Spacer()
                 ZStack {
@@ -662,7 +662,7 @@ private struct NearbyStep: View {
                 Kicker(text: String(localized: "Great choice"))
                 DisplayTitle(String(localized: "Here are farms *near* you"), size: 30)
                 Text(headline)
-                    .font(.geist(15, .semibold))
+                    .font(.ui(15, .semibold))
                     .foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
             }
@@ -735,13 +735,13 @@ private struct NotifyStep: View {
                 .buttonStyle(PrimaryButtonStyle())
 
                 Button("Maybe later") { onContinue() }
-                    .font(.geist(16, .semibold))
+                    .font(.ui(16, .semibold))
                     .foregroundStyle(Color.inkMuted)
             }
             .padding(.horizontal, 20)
 
             Text("New farm shops join Farmsy every week.")
-                .font(.geist(15).italic())
+                .font(.ui(15).italic())
                 .foregroundStyle(Color.inkMuted)
                 .padding(.top, 14)
                 .padding(.bottom, 12)
@@ -792,11 +792,11 @@ private struct DoneBullet: View {
     let text: String
     var body: some View {
         HStack(spacing: 14) {
-            Text(emoji).font(.geist(22))
+            Text(emoji).font(.ui(22))
                 .frame(width: 44, height: 44)
                 .background(Color.farmGreenSoft, in: Circle())
             Text(text)
-                .font(.geist(16, .medium))
+                .font(.ui(16, .medium))
                 .foregroundStyle(Color.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }

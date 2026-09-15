@@ -34,7 +34,7 @@ struct FarmStatusSection: View {
             if summary.total > 0 { headline }
             HStack(spacing: 8) {
                 Text("Was it open?")
-                    .font(.geist(11, .semibold))
+                    .font(.ui(11, .semibold))
                     .textCase(.uppercase)
                     .foregroundStyle(Color.inkMuted)
                 Spacer(minLength: 0)
@@ -68,7 +68,7 @@ struct FarmStatusSection: View {
                 EmptyView()
             }
         }
-        .font(.geist(12))
+        .font(.ui(12))
         .foregroundStyle(summary.lead == .trouble ? Color.warnRed : Color.inkMuted)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -82,7 +82,7 @@ struct FarmStatusSection: View {
             HStack(spacing: 5) {
                 Image(systemName: on ? "checkmark" : icon)
                     .font(.system(size: 11, weight: .semibold))
-                Text(label).font(.geist(12, .semibold))
+                Text(label).font(.ui(12, .semibold))
             }
             .foregroundStyle(on ? Color.farmGreen : Color.inkMuted)
             .padding(.vertical, 7).padding(.horizontal, 11)

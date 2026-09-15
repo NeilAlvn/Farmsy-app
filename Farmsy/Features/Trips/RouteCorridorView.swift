@@ -124,18 +124,18 @@ struct RouteCorridorView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header — title + count.
             VStack(alignment: .leading, spacing: 2) {
-                Text("Farms on my way").font(.geist(17, .bold)).foregroundStyle(Color.ink)
+                Text("Farms on my way").font(.ui(17, .bold)).foregroundStyle(Color.ink)
                 Text(nearShown.isEmpty
                      ? String(localized: "Farms you would pass on this drive")
                      : String(localized: "\(nearShown.count) farms on your route"))
-                    .font(.geist(13)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(13)).foregroundStyle(Color.inkMuted)
             }
 
             // Radius control.
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text("Farms within").font(.geist(13, .medium)).foregroundStyle(Color.inkMuted)
-                    Text("\(radiusKm) km").font(.geist(13, .bold)).foregroundStyle(Color.ink)
+                    Text("Farms within").font(.ui(13, .medium)).foregroundStyle(Color.inkMuted)
+                    Text("\(radiusKm) km").font(.ui(13, .bold)).foregroundStyle(Color.ink)
                 }
                 Slider(
                     value: Binding(
@@ -155,7 +155,7 @@ struct RouteCorridorView: View {
             if nearShown.isEmpty {
                 // Say what to do — widen, or clear a filter — never a spinner or a blank.
                 Text("No farms this close to the road. Try a wider distance, or clear a filter.")
-                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(14)).foregroundStyle(Color.inkMuted)
                     .padding(.vertical, 4)
             } else {
                 // Too many to hold in your head — cap the render and say so.
@@ -169,7 +169,7 @@ struct RouteCorridorView: View {
                     if leg.toKm > leg.fromKm {
                         Text("\(Int(leg.fromKm.rounded()))–\(Int(leg.toKm.rounded())) km · "
                              + String(localized: "\(leg.farms.count) within \(radiusKm) km"))
-                            .font(.geist(12, .semibold)).foregroundStyle(Color.inkMuted)
+                            .font(.ui(12, .semibold)).foregroundStyle(Color.inkMuted)
                             .padding(.top, 4)
                     }
                     ForEach(leg.farms, id: \.farm.osmId) { n in
@@ -181,7 +181,7 @@ struct RouteCorridorView: View {
                 }
                 if capped {
                     Text("Show all \(nearShown.count)")
-                        .font(.geist(13, .semibold)).foregroundStyle(Color.farmGreen)
+                        .font(.ui(13, .semibold)).foregroundStyle(Color.farmGreen)
                         .padding(.top, 6)
                 }
             }
@@ -223,9 +223,9 @@ struct RouteCorridorView: View {
             Haptics.tap(); onToggleProduct(chip.id)
         } label: {
             HStack(spacing: 5) {
-                Text(chip.label).font(.geist(13, selected ? .bold : .medium))
+                Text(chip.label).font(.ui(13, selected ? .bold : .medium))
                 Text("\(count)")
-                    .font(.geist(12, .semibold))
+                    .font(.ui(12, .semibold))
                     .foregroundStyle(selected ? Color.white.opacity(0.85) : Color.inkMuted)
             }
             .foregroundStyle(selected ? Color.white : (enabled ? Color.ink : Color.inkMuted))
@@ -270,7 +270,7 @@ private struct CorridorRow: View {
             .frame(width: 48, height: 48)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(farm.name).font(.geist(14, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
+                Text(farm.name).font(.ui(14, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
                 HStack(spacing: 6) {
                     // R6 · open when you pass, on the day you're going. Unknown draws
                     // nothing rather than a guess — an unknown farm called open is a
@@ -281,7 +281,7 @@ private struct CorridorRow: View {
                     case .unknown: EmptyView()
                     }
                     Text("\(Self.formatDistance(offRouteM)) " + String(localized: "off route"))
-                        .font(.geist(12)).foregroundStyle(Color.inkMuted).lineLimit(1)
+                        .font(.ui(12)).foregroundStyle(Color.inkMuted).lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
@@ -305,7 +305,7 @@ private struct CorridorRow: View {
     private func openDot(_ color: Color, _ label: String) -> some View {
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
-            Text(label).font(.geist(12, .medium)).foregroundStyle(color)
+            Text(label).font(.ui(12, .medium)).foregroundStyle(color)
         }
     }
 

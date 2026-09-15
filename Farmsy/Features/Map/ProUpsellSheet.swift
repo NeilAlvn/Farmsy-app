@@ -22,10 +22,10 @@ struct ProUpsellSheet: View {
     // String(localized:) rather than bare literals: Text(String) does not look
     // the catalog up, so these four lines were English in every language.
     private let features: [String] = [
-        String(localized: "See what is open right now, not just open today"),
-        String(localized: "Filter by kind of place, and by how it is grown"),
-        String(localized: "An email when a farm you saved posts something new"),
-        String(localized: "Everything new we add to Pro, included"),
+        String(localized: "The fewest farms that cover your shopping list, and the route between them"),
+        String(localized: "How recently a farm was confirmed open, and by how many people"),
+        String(localized: "An alert when a product you follow turns up within your radius"),
+        String(localized: "Everything new we add to Plus, included"),
     ]
 
     /// Poll the profile after a purchase — the grant lands a few seconds after the
@@ -63,11 +63,11 @@ struct ProUpsellSheet: View {
                     Kicker(text: String(localized: "Farmsy"))
                         .padding(.top, 4)
                     Text("Unlock Farmsy Pro")
-                        .font(.display(28, weight: .semibold)).foregroundStyle(Color.ink)
+                        .font(.ui(28, .semibold)).foregroundStyle(Color.ink)
                         .multilineTextAlignment(.center)
                     // Subheading (account.gateSubUnlock) — leads with open-now.
                     Text("Find what is open at this minute, and filter by the kind of place. Cancel anytime.")
-                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                        .font(.ui(14)).foregroundStyle(Color.inkMuted)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20)
 
@@ -79,13 +79,13 @@ struct ProUpsellSheet: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Divider().background(Color.hairline)
                         Text("Included in both plans")
-                            .font(.geist(13, .semibold)).foregroundStyle(Color.inkMuted)
+                            .font(.ui(13, .semibold)).foregroundStyle(Color.inkMuted)
                         ForEach(features, id: \.self) { line in
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 13, weight: .bold)).foregroundStyle(Color.farmGreen)
                                     .padding(.top, 2)
-                                Text(line).font(.geist(14)).foregroundStyle(Color.ink)
+                                Text(line).font(.ui(14)).foregroundStyle(Color.ink)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
@@ -102,7 +102,7 @@ struct ProUpsellSheet: View {
     @ViewBuilder
     private var purchaseArea: some View {
         if let error = purchases.purchaseError {
-            Text(error).font(.geist(14, .medium)).foregroundStyle(Color.warnRed)
+            Text(error).font(.ui(14, .medium)).foregroundStyle(Color.warnRed)
                 .multilineTextAlignment(.center)
         }
         if purchases.isPurchasing || isChecking {
@@ -110,10 +110,10 @@ struct ProUpsellSheet: View {
         } else if purchases.productsUnavailable {
             VStack(spacing: 10) {
                 Text("Memberships can't be loaded right now.")
-                    .font(.geist(14, .medium)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(14, .medium)).foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
                 Button("Try again") { Haptics.tap(); Task { await purchases.loadOffering(force: true) } }
-                    .font(.geist(15, .semibold)).foregroundStyle(Color.farmGreenMap)
+                    .font(.ui(15, .semibold)).foregroundStyle(Color.farmGreenMap)
             }
         } else if purchases.yearlyPrice == nil {
             ProgressView().tint(Color.farmGreen)
@@ -160,14 +160,14 @@ struct ProUpsellSheet: View {
             }
             if let days = trialDays, let price = purchases.yearlyPrice {
                 Text("Free for \(days) days, then \(price) per year. Cancel anytime in Settings.")
-                    .font(.geist(12)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(12)).foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center).padding(.top, 4)
             }
             Button("Restore purchases") {
                 Haptics.tap()
                 Task { if await purchases.restore() { await awaitGrant() } }
             }
-            .font(.geist(14, .medium)).foregroundStyle(Color.inkMuted).padding(.top, 8)
+            .font(.ui(14, .medium)).foregroundStyle(Color.inkMuted).padding(.top, 8)
         }
     }
 }

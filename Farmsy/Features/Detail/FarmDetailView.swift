@@ -125,7 +125,7 @@ struct FarmDetailView: View {
     private var pinnedHeader: some View {
         HStack(alignment: .center, spacing: 10) {
             Text(pin.name)
-                .font(.geist(19, .bold))
+                .font(.ui(19, .bold))
                 .foregroundStyle(Color.ink)
                 .lineLimit(1)
             Spacer(minLength: 8)
@@ -159,7 +159,7 @@ struct FarmDetailView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color.inkMuted)
                     Text(locationLine)
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 }
             }
@@ -186,10 +186,10 @@ struct FarmDetailView: View {
         HStack(spacing: 6) {
             if let rating = pin.avgRating {
                 Image(systemName: "star.fill").font(.system(size: 13)).foregroundStyle(Color.star)
-                Text(String(format: "%.1f", rating)).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
-                Text("(\(pin.reviewCount))").font(.geist(12)).foregroundStyle(Color.inkMuted)
+                Text(String(format: "%.1f", rating)).font(.ui(14, .semibold)).foregroundStyle(Color.ink)
+                Text("(\(pin.reviewCount))").font(.ui(12)).foregroundStyle(Color.inkMuted)
             } else {
-                Text("No reviews yet").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                Text("No reviews yet").font(.ui(13)).foregroundStyle(Color.inkMuted)
             }
         }
     }
@@ -201,7 +201,7 @@ struct FarmDetailView: View {
             HStack(spacing: 6) {
                 ForEach(pin.categories.prefix(4)) { cat in
                     Text("\(cat.emoji) \(cat.label)")
-                        .font(.geist(11, .semibold))
+                        .font(.ui(11, .semibold))
                         .foregroundStyle(.white)
                         .padding(.vertical, 4).padding(.horizontal, 10)
                         .background(cat.color, in: Capsule())
@@ -209,7 +209,7 @@ struct FarmDetailView: View {
                 if pin.isVerified {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.seal.fill").font(.system(size: 10))
-                        Text("Verified").font(.geist(11, .semibold))
+                        Text("Verified").font(.ui(11, .semibold))
                     }
                     .foregroundStyle(Color.farmGreenMap)
                     .padding(.vertical, 4).padding(.horizontal, 10)
@@ -218,7 +218,7 @@ struct FarmDetailView: View {
                 if FarmFilters.isOpenToday(pin.openingHours) {
                     HStack(spacing: 5) {
                         Circle().fill(Color(hex: 0x10B981)).frame(width: 6, height: 6)
-                        Text("Open now").font(.geist(11, .semibold))
+                        Text("Open now").font(.ui(11, .semibold))
                     }
                     .foregroundStyle(Color(hex: 0x047857))
                     .padding(.vertical, 4).padding(.horizontal, 10)
@@ -261,7 +261,7 @@ struct FarmDetailView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: inTrip ? "checkmark" : "plus").font(.system(size: 13, weight: .semibold))
-                    Text(inTrip ? "In your trip" : "Add to trip").font(.geist(14, .semibold))
+                    Text(inTrip ? "In your trip" : "Add to trip").font(.ui(14, .semibold))
                 }
                 .foregroundStyle(inTrip ? .white : Color.farmGreen)
                 .frame(maxWidth: .infinity)
@@ -313,7 +313,7 @@ struct FarmDetailView: View {
                 LinearGradient(colors: [Color.farmGreen.opacity(0.85), Color.farmGreenDeep],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
                     .frame(height: 160)
-                    .overlay(Text(pin.primaryCategory.emoji).font(.geist(56)))
+                    .overlay(Text(pin.primaryCategory.emoji).font(.ui(56)))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else if imgs.count == 1 {
                 // One photo — no rail, just the cover.
@@ -364,7 +364,7 @@ struct FarmDetailView: View {
                 if let plusN {
                     ZStack {
                         Color.black.opacity(0.6)
-                        Text("+\(plusN)").font(.geist(14, .bold)).foregroundStyle(.white)
+                        Text("+\(plusN)").font(.ui(14, .bold)).foregroundStyle(.white)
                     }
                 }
             }
@@ -410,7 +410,7 @@ struct FarmDetailView: View {
         Button(action: { Haptics.tap(); action() }) {
             HStack(spacing: 7) {
                 Image(systemName: icon).font(.system(size: 14, weight: .semibold))
-                Text(label).font(.geist(14, .semibold))
+                Text(label).font(.ui(14, .semibold))
             }
             .foregroundStyle(filled ? .white : Color.ink)
             .frame(maxWidth: .infinity)
@@ -440,14 +440,14 @@ struct FarmDetailView: View {
     private var loadErrorView: some View {
         VStack(spacing: 10) {
             Text("Couldn't load this farm. Check your connection and try again.")
-                .font(.geist(14, .medium))
+                .font(.ui(14, .medium))
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
             Button("Try again") {
                 Haptics.tap()
                 Task { await reload() }
             }
-            .font(.geist(15, .semibold))
+            .font(.ui(15, .semibold))
             .foregroundStyle(Color.farmGreenMap)
         }
         .frame(maxWidth: .infinity)
@@ -558,10 +558,10 @@ struct InfoRow: View {
                 .frame(width: 26)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.geist(13, .semibold))
+                    .font(.ui(13, .semibold))
                     .foregroundStyle(Color.inkMuted)
                 Text(value)
-                    .font(.geist(15))
+                    .font(.ui(15))
                     .foregroundStyle(isLink ? Color.farmGreenMap : Color.ink)
                     .lineLimit(isLink ? 1 : nil)
             }
@@ -583,7 +583,7 @@ struct SocialChip: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.geist(14, .semibold))
+                .font(.ui(14, .semibold))
                 .foregroundStyle(Color.farmGreen)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
@@ -655,7 +655,7 @@ struct LockedAccessView: View {
 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 14) {
                     ForEach(emojiGrid, id: \.self) { e in
-                        Text(e).font(.geist(28))
+                        Text(e).font(.ui(28))
                     }
                 }
                 .padding(.horizontal, 6)
@@ -665,13 +665,13 @@ struct LockedAccessView: View {
                         .font(.system(size: 34))
                         .foregroundStyle(Color.farmGreen)
                     Text(isExpired ? "Your membership has expired" : "Unlock every farm")
-                        .font(.geist(19, .bold))
+                        .font(.ui(19, .bold))
                         .foregroundStyle(Color.ink)
                         .multilineTextAlignment(.center)
                     Text(isExpired
                          ? "Resubscribe to reopen opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map."
                          : "Opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map.")
-                        .font(.geist(15))
+                        .font(.ui(15))
                         .foregroundStyle(Color.inkMuted)
                         .multilineTextAlignment(.center)
                         .lineSpacing(2)
@@ -680,7 +680,7 @@ struct LockedAccessView: View {
 
                 if let error = purchases.purchaseError {
                     Text(error)
-                        .font(.geist(14, .medium))
+                        .font(.ui(14, .medium))
                         .foregroundStyle(Color.warnRed)
                         .multilineTextAlignment(.center)
                 }
@@ -697,17 +697,17 @@ struct LockedAccessView: View {
                     // reviewer as "can't access subscriptions" (guideline 2.1).
                     VStack(spacing: 10) {
                         Text("Memberships can't be loaded right now.")
-                            .font(.geist(15, .semibold))
+                            .font(.ui(15, .semibold))
                             .foregroundStyle(Color.ink)
                         Text("This is usually temporary — tap to try again.")
-                            .font(.geist(13))
+                            .font(.ui(13))
                             .foregroundStyle(Color.inkMuted)
                             .multilineTextAlignment(.center)
                         Button("Try again") {
                             Haptics.tap()
                             Task { await purchases.loadOffering(force: true) }
                         }
-                        .font(.geist(14, .semibold))
+                        .font(.ui(14, .semibold))
                         .foregroundStyle(Color.farmGreen)
                         .padding(.top, 2)
                     }
@@ -761,7 +761,7 @@ struct LockedAccessView: View {
                     // exists to stop — and a rotten way to treat someone besides.
                     if let days = trialDays, let price = purchases.yearlyPrice {
                         Text("Free for \(days) days, then \(price) per year. Cancel anytime in Settings.")
-                            .font(.geist(12))
+                            .font(.ui(12))
                             .foregroundStyle(Color.inkMuted)
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
@@ -775,7 +775,7 @@ struct LockedAccessView: View {
                         Haptics.tap()
                         Task { if await purchases.restore() { await awaitGrant() } }
                     }
-                    .font(.geist(14, .medium))
+                    .font(.ui(14, .medium))
                     .foregroundStyle(Color.inkMuted)
                 }
 
@@ -788,7 +788,7 @@ struct LockedAccessView: View {
                         Image(systemName: "checkmark.seal")
                             .font(.system(size: 13))
                         Text("Is \(pin.name) yours? Claim it")
-                            .font(.geist(14, .semibold))
+                            .font(.ui(14, .semibold))
                     }
                     .foregroundStyle(Color.inkMuted)
                 }
@@ -820,12 +820,12 @@ struct PlanButton: View {
         } label: {
             VStack(spacing: 2) {
                 Text(detail == nil ? String(localized: "Become a member") : label)
-                    .font(.geist(17, .semibold))
+                    .font(.ui(17, .semibold))
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
                 if let detail {
                     Text(detail)
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .minimumScaleFactor(0.7)
                         .lineLimit(1)
                         .foregroundStyle(filled ? Color.white.opacity(0.9) : Color.ink)
@@ -866,7 +866,7 @@ struct ExpandableText: View {
 
     var body: some View {
         content
-            .font(.geist(15))
+            .font(.ui(15))
             .lineSpacing(3)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(

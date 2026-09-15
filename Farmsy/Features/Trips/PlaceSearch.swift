@@ -47,7 +47,7 @@ struct PlaceSearchSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text("STARTING POINT")
-                    .font(.geist(11, .semibold)).kerning(1.2).foregroundStyle(Color.inkMuted)
+                    .font(.ui(11, .semibold)).kerning(1.2).foregroundStyle(Color.inkMuted)
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .semibold))
@@ -61,7 +61,7 @@ struct PlaceSearchSheet: View {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(Color.inkMuted)
                 TextField("Search a town, address or postcode", text: $search.query)
-                    .font(.geist(15)).focused($focused).submitLabel(.search)
+                    .font(.ui(15)).focused($focused).submitLabel(.search)
                 if !search.query.isEmpty {
                     Button { search.query = "" } label: {
                         Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Color.inkMuted)
@@ -81,7 +81,7 @@ struct PlaceSearchSheet: View {
                         HStack(spacing: 12) {
                             Image(systemName: "location.fill").font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
                                 .frame(width: 34, height: 34).background(Color.farmGreenMap.opacity(0.12), in: Circle())
-                            Text("Use my location").font(.geist(15, .semibold)).foregroundStyle(Color.ink)
+                            Text("Use my location").font(.ui(15, .semibold)).foregroundStyle(Color.ink)
                             Spacer()
                         }
                         .padding(.horizontal, 16).padding(.vertical, 12).contentShape(Rectangle())
@@ -98,9 +98,9 @@ struct PlaceSearchSheet: View {
                                 Image(systemName: "mappin.circle").font(.system(size: 16)).foregroundStyle(Color.inkMuted)
                                     .frame(width: 34)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(r.title).font(.geist(15)).foregroundStyle(Color.ink).lineLimit(1)
+                                    Text(r.title).font(.ui(15)).foregroundStyle(Color.ink).lineLimit(1)
                                     if !r.subtitle.isEmpty {
-                                        Text(r.subtitle).font(.geist(12)).foregroundStyle(Color.inkMuted).lineLimit(1)
+                                        Text(r.subtitle).font(.ui(12)).foregroundStyle(Color.inkMuted).lineLimit(1)
                                     }
                                 }
                                 Spacer()

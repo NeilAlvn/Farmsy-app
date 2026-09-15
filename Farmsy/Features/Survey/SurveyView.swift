@@ -90,10 +90,10 @@ struct SurveyView: View {
     private var loadError: some View {
         VStack(spacing: 10) {
             Text("Couldn't load the survey. Check your connection and try again.")
-                .font(.geist(14, .medium)).foregroundStyle(Color.inkMuted)
+                .font(.ui(14, .medium)).foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
             Button("Try again") { Haptics.tap(); Task { await load() } }
-                .font(.geist(15, .semibold)).foregroundStyle(Color.farmGreenMap)
+                .font(.ui(15, .semibold)).foregroundStyle(Color.farmGreenMap)
         }
         .padding(.horizontal, 24)
     }
@@ -123,7 +123,7 @@ struct SurveyView: View {
     private var header: some View {
         HStack {
             Text("Seven questions about buying from farms")
-                .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                .font(.ui(18, .bold)).foregroundStyle(Color.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button { Haptics.tap(); dismiss() } label: {
@@ -140,13 +140,13 @@ struct SurveyView: View {
     private func questionBlock(number: Int, q: SurveyQuestion) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text("\(number)")
-                .font(.geist(12, .bold)).monospacedDigit()
+                .font(.ui(12, .bold)).monospacedDigit()
                 .foregroundStyle(Color.farmGreen)
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: 10) {
-                Text(q.text).font(.geist(15, .semibold)).foregroundStyle(Color.ink)
+                Text(q.text).font(.ui(15, .semibold)).foregroundStyle(Color.ink)
                 if let hint = hint(for: q) {
-                    Text(hint).font(.geist(12)).foregroundStyle(Color.inkMuted)
+                    Text(hint).font(.ui(12)).foregroundStyle(Color.inkMuted)
                 }
                 switch q.kind {
                 case .one:  ForEach(q.options) { opt in optionRow(q: q, opt: opt, multiSelect: false) }
@@ -180,7 +180,7 @@ struct SurveyView: View {
             HStack(spacing: 10) {
                 indicator(on: on, square: multiSelect)
                 Text(opt.label)
-                    .font(.geist(14, on ? .semibold : .regular))
+                    .font(.ui(14, on ? .semibold : .regular))
                     .foregroundStyle(Color.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -239,7 +239,7 @@ struct SurveyView: View {
         TextField(String(localized: "Optional"), text: Binding(
             get: { texts[q.id] ?? "" }, set: { texts[q.id] = $0 }
         ), axis: .vertical)
-            .font(.geist(14)).lineLimit(3, reservesSpace: true)
+            .font(.ui(14)).lineLimit(3, reservesSpace: true)
             .padding(.horizontal, 14).padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -254,9 +254,9 @@ struct SurveyView: View {
         VStack(alignment: .leading, spacing: 12) {
             Divider().background(Color.hairline)
             Text("And who may we thank?")
-                .font(.geist(15, .semibold)).foregroundStyle(Color.ink)
+                .font(.ui(15, .semibold)).foregroundStyle(Color.ink)
             Text("We use this only to keep your answers together and to write back if you asked something.")
-                .font(.geist(12)).foregroundStyle(Color.inkMuted)
+                .font(.ui(12)).foregroundStyle(Color.inkMuted)
             plainField(String(localized: "Your name (optional)"), text: $name)
             plainField(String(localized: "Email address"), text: $email, keyboard: .emailAddress)
         }
@@ -265,7 +265,7 @@ struct SurveyView: View {
     private func plainField(_ placeholder: String, text: Binding<String>,
                             keyboard: UIKeyboardType = .default) -> some View {
         TextField(placeholder, text: text)
-            .font(.geist(14)).keyboardType(keyboard)
+            .font(.ui(14)).keyboardType(keyboard)
             .textInputAutocapitalization(keyboard == .emailAddress ? .never : nil)
             .autocorrectionDisabled(keyboard == .emailAddress)
             .padding(.horizontal, 14).padding(.vertical, 10)
@@ -280,14 +280,14 @@ struct SurveyView: View {
 
     private var footer: some View {
         VStack(spacing: 8) {
-            if let submitError { Text(submitError).font(.geist(13, .medium)).foregroundStyle(Color.warnRed) }
+            if let submitError { Text(submitError).font(.ui(13, .medium)).foregroundStyle(Color.warnRed) }
             HStack(spacing: 12) {
-                Text(remainingLabel).font(.geist(12)).foregroundStyle(Color.inkMuted)
+                Text(remainingLabel).font(.ui(12)).foregroundStyle(Color.inkMuted)
                 Spacer()
                 Button { Haptics.tap(); Task { await submit() } } label: {
                     Group {
                         if submitting { ProgressView().tint(.white) }
-                        else { Text("Send").font(.geist(15, .semibold)) }
+                        else { Text("Send").font(.ui(15, .semibold)) }
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20).padding(.vertical, 10)
@@ -405,10 +405,10 @@ private struct ThankYouView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 48)).foregroundStyle(Color.farmGreen)
                 Text("Thank you, we have your answers.")
-                    .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                    .font(.ui(18, .bold)).foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
                 Text("This genuinely decides what we build next.")
-                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(14)).foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 32)
@@ -454,10 +454,10 @@ private struct FeedbackView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     Text("What could be better?")
-                        .font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                        .font(.ui(18, .bold)).foregroundStyle(Color.ink)
                         .multilineTextAlignment(.center).padding(.top, 8)
                     Text("You have already answered the questions, thank you. Anything you write here comes straight to us.")
-                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                        .font(.ui(14)).foregroundStyle(Color.inkMuted)
                         .multilineTextAlignment(.center)
 
                     if sent {
@@ -466,12 +466,12 @@ private struct FeedbackView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 36)).foregroundStyle(Color.farmGreen)
                             Text("Thank you, we read every one.")
-                                .font(.geist(15, .semibold)).foregroundStyle(Color.farmGreen)
+                                .font(.ui(15, .semibold)).foregroundStyle(Color.farmGreen)
                             Button("Add something else") {
                                 Haptics.tap()
                                 subject = ""; message = ""; sent = false
                             }
-                            .font(.geist(14, .medium)).foregroundStyle(Color.farmGreenMap)
+                            .font(.ui(14, .medium)).foregroundStyle(Color.farmGreenMap)
                         }
                         .padding(.top, 8)
                     } else {
@@ -489,7 +489,7 @@ private struct FeedbackView: View {
             Divider().background(Color.hairline)
             field(String(localized: "Subject, briefly"), text: $subject)
             TextField(String(localized: "What did not work, what was missing, or what went well?"), text: $message, axis: .vertical)
-                .font(.geist(14)).lineLimit(4, reservesSpace: true)
+                .font(.ui(14)).lineLimit(4, reservesSpace: true)
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(.white.opacity(0.6)).stroke(Color.hairline, lineWidth: 1))
@@ -497,11 +497,11 @@ private struct FeedbackView: View {
                 field(String(localized: "Your name (optional)"), text: $name)
                 field(String(localized: "Email address"), text: $email, keyboard: .emailAddress)
             }
-            if let error { Text(error).font(.geist(13, .medium)).foregroundStyle(Color.warnRed) }
+            if let error { Text(error).font(.ui(13, .medium)).foregroundStyle(Color.warnRed) }
             Button { Haptics.tap(); Task { await send() } } label: {
                 Group {
                     if sending { ProgressView().tint(.white) }
-                    else { Text("Send").font(.geist(15, .semibold)) }
+                    else { Text("Send").font(.ui(15, .semibold)) }
                 }
                 .foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 12)
                 .background(canSend ? Color.farmGreenMap : Color.farmGreenMap.opacity(0.4),
@@ -514,7 +514,7 @@ private struct FeedbackView: View {
     private func field(_ placeholder: String, text: Binding<String>,
                        keyboard: UIKeyboardType = .default) -> some View {
         TextField(placeholder, text: text)
-            .font(.geist(14)).keyboardType(keyboard)
+            .font(.ui(14)).keyboardType(keyboard)
             .textInputAutocapitalization(keyboard == .emailAddress ? .never : nil)
             .autocorrectionDisabled(keyboard == .emailAddress)
             .padding(.horizontal, 14).padding(.vertical, 10)

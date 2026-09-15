@@ -106,14 +106,14 @@ struct TripsView: View {
         VStack(spacing: 14) {
             Image(systemName: "location.slash").font(.system(size: 28)).foregroundStyle(Color.inkMuted)
             Text("Choose a starting point first")
-                .font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                .font(.ui(16, .bold)).foregroundStyle(Color.ink)
             Text("A shopping trip is planned from somewhere — pick a starting point, or let the app use your location.")
-                .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                .font(.ui(14)).foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
             Button("Choose a starting point") {
                 Haptics.tap(); showShoppingList = false; showOriginSearch = true
             }
-            .font(.geist(14, .semibold)).foregroundStyle(Color.farmGreen)
+            .font(.ui(14, .semibold)).foregroundStyle(Color.farmGreen)
             .buttonStyle(.plain)
         }
         .padding(28)
@@ -140,7 +140,7 @@ struct TripsView: View {
     private var header: some View {
         HStack {
             Text("TRIP PLANNER")
-                .font(.geist(11, .semibold)).kerning(1.2).foregroundStyle(Color.inkMuted)
+                .font(.ui(11, .semibold)).kerning(1.2).foregroundStyle(Color.inkMuted)
             Spacer()
             circleButton("xmark") { dismiss() }
         }
@@ -156,7 +156,7 @@ struct TripsView: View {
 
     private func tabButton(_ title: LocalizedStringKey, _ t: Tab) -> some View {
         Button { Haptics.tap(); tab = t } label: {
-            Text(title).font(.geist(15, .bold))
+            Text(title).font(.ui(15, .bold))
                 .foregroundStyle(tab == t ? .white : Color.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 13)
                 .background(tab == t ? Color.farmGreenMap : .white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -208,7 +208,7 @@ struct TripsView: View {
             Image(systemName: "calendar").font(.system(size: 15)).foregroundStyle(Color.inkMuted)
 
             Text(trip.tripDate == nil ? String(localized: "Choose a day") : dayLabel)
-                .font(.geist(15))
+                .font(.ui(15))
                 .foregroundStyle(trip.tripDate == nil ? Color.inkMuted : Color.ink)
                 .lineLimit(1)
 
@@ -247,7 +247,7 @@ struct TripsView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(Color.inkMuted)
                     Text(trip.originLabel?.isEmpty == false ? trip.originLabel! : String(localized: "Choose a starting point"))
-                        .font(.geist(15))
+                        .font(.ui(15))
                         .foregroundStyle(trip.originLabel?.isEmpty == false ? Color.ink : Color.inkMuted)
                         .lineLimit(1)
                     Spacer()
@@ -276,11 +276,11 @@ struct TripsView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "list.bullet").font(.system(size: 13, weight: .semibold))
-                        Text("Shop from a list").font(.geist(14, .semibold))
+                        Text("Shop from a list").font(.ui(14, .semibold))
                         if !trip.wantedProducts.isEmpty {
                             // verbatim: a bare count is a number, not a phrase to translate.
                             Text(verbatim: "\(trip.wantedProducts.count)")
-                                .font(.geist(12, .bold)).foregroundStyle(.white)
+                                .font(.ui(12, .bold)).foregroundStyle(.white)
                                 .padding(.horizontal, 7).padding(.vertical, 2)
                                 .background(Color.farmGreenMap, in: Capsule())
                         }
@@ -307,7 +307,7 @@ struct TripsView: View {
                 // outgrow the box.
                 let rows = max(stops.count, PLAN_SLOTS)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Trip overview").font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                    Text("Trip overview").font(.ui(16, .bold)).foregroundStyle(Color.ink)
                         .padding(14)
                     Divider()
                     ScrollView(showsIndicators: true) {
@@ -354,7 +354,7 @@ struct TripsView: View {
             }
 
             if !collapsed, let reorderNote {
-                Text(reorderNote).font(.geist(12)).foregroundStyle(Color.farmGreenMap)
+                Text(reorderNote).font(.ui(12)).foregroundStyle(Color.farmGreenMap)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -362,7 +362,7 @@ struct TripsView: View {
             // height matters for keeping the header and actions on screen.
             if !collapsed, stops.count >= 3 {
                 Button { reorder() } label: {
-                    Text("Best order").font(.geist(14, .semibold)).foregroundStyle(Color.farmGreen)
+                    Text("Best order").font(.ui(14, .semibold)).foregroundStyle(Color.farmGreen)
                 }.buttonStyle(.plain)
             }
         }
@@ -408,7 +408,7 @@ struct TripsView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: m.icon).font(.system(size: 13, weight: .semibold))
-                        Text(m.label).font(.geist(13, .semibold))
+                        Text(m.label).font(.ui(13, .semibold))
                     }
                     .foregroundStyle(trip.mode == m ? .white : Color.ink)
                     .frame(maxWidth: .infinity).padding(.vertical, 9)
@@ -426,11 +426,11 @@ struct TripsView: View {
     private func filledRow(i: Int, pin: FarmPin) -> some View {
         let selected = pin.osmId == selectedOsmId
         return HStack(spacing: 12) {
-            Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(.white)
+            Text("\(i + 1)").font(.ui(12, .bold)).foregroundStyle(.white)
                 .frame(width: 28, height: 28).background(Color.farmGreenMap, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text(pin.name).font(.geist(15, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
-                Text(legLabel(i)).font(.geist(12)).foregroundStyle(Color.inkMuted)
+                Text(pin.name).font(.ui(15, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
+                Text(legLabel(i)).font(.ui(12)).foregroundStyle(Color.inkMuted)
             }
             Spacer()
             // A check marks the farm currently selected/open on the map.
@@ -450,12 +450,12 @@ struct TripsView: View {
 
     private func emptyRow(i: Int) -> some View {
         HStack(spacing: 12) {
-            Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(Color.inkMuted.opacity(0.6))
+            Text("\(i + 1)").font(.ui(12, .bold)).foregroundStyle(Color.inkMuted.opacity(0.6))
                 .frame(width: 28, height: 28)
                 .overlay(Circle().strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1.5, dash: [3])))
             VStack(alignment: .leading, spacing: 2) {
-                Text("Pick a farm on the map").font(.geist(15)).foregroundStyle(Color.inkMuted)
-                Text("—").font(.geist(12)).foregroundStyle(Color.inkMuted.opacity(0.5))
+                Text("Pick a farm on the map").font(.ui(15)).foregroundStyle(Color.inkMuted)
+                Text("—").font(.ui(12)).foregroundStyle(Color.inkMuted.opacity(0.5))
             }
             Spacer()
         }
@@ -467,11 +467,11 @@ struct TripsView: View {
             Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
                 .font(.system(size: 15)).foregroundStyle(Color.farmGreenMap)
             if !canRoute {
-                Text("Add farms to see time and distance").font(.geist(14)).foregroundStyle(Color.inkMuted)
+                Text("Add farms to see time and distance").font(.ui(14)).foregroundStyle(Color.inkMuted)
             } else if trip.isRouting {
-                Text("Finding the road…").font(.geist(14)).foregroundStyle(Color.inkMuted)
+                Text("Finding the road…").font(.ui(14)).foregroundStyle(Color.inkMuted)
             } else {
-                Text(totalsText).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
+                Text(totalsText).font(.ui(14, .semibold)).foregroundStyle(Color.ink)
             }
             Spacer()
             Image(systemName: trip.mode.icon).font(.system(size: 15)).foregroundStyle(Color.inkMuted.opacity(0.5))
@@ -513,7 +513,7 @@ struct TripsView: View {
                 // Draft banner.
                 Text(trip.stopIds.isEmpty ? String(localized: "No trip in progress")
                      : String(localized: "A draft with \(trip.stopIds.count) stops is waiting"))
-                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(14)).foregroundStyle(Color.inkMuted)
                     .frame(maxWidth: .infinity).padding(.vertical, 14)
                     .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
                     .contentShape(Rectangle())
@@ -536,9 +536,9 @@ struct TripsView: View {
                     let rows = max(trip.savedTrips.count, MINE_SLOTS)
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("My Trips").font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                            Text("My Trips").font(.ui(16, .bold)).foregroundStyle(Color.ink)
                             Spacer()
-                            Text("\(trip.savedTrips.count) saved").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                            Text("\(trip.savedTrips.count) saved").font(.ui(13)).foregroundStyle(Color.inkMuted)
                         }.padding(14)
                         Divider()
                         ScrollView(showsIndicators: true) {
@@ -568,12 +568,12 @@ struct TripsView: View {
 
     private func savedRow(i: Int, t: SavedTrip) -> some View {
         HStack(spacing: 12) {
-            Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(.white)
+            Text("\(i + 1)").font(.ui(12, .bold)).foregroundStyle(.white)
                 .frame(width: 28, height: 28).background(Color.farmGreenMap, in: Circle())
             VStack(alignment: .leading, spacing: 1) {
-                Text(t.name).font(.geist(15, .bold)).foregroundStyle(Color.ink).lineLimit(1)
+                Text(t.name).font(.ui(15, .bold)).foregroundStyle(Color.ink).lineLimit(1)
                 Text("\(t.stopCount) \(t.stopCount == 1 ? String(localized: "farm") : String(localized: "farms"))\(dateLabel(t.updatedAt))")
-                    .font(.geist(12)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(12)).foregroundStyle(Color.inkMuted)
             }
             Spacer()
             Button {
@@ -596,10 +596,10 @@ struct TripsView: View {
 
     private func savedEmptyRow(i: Int) -> some View {
         HStack(spacing: 12) {
-            Text("\(i + 1)").font(.geist(12, .bold)).foregroundStyle(Color.inkMuted.opacity(0.6))
+            Text("\(i + 1)").font(.ui(12, .bold)).foregroundStyle(Color.inkMuted.opacity(0.6))
                 .frame(width: 28, height: 28)
                 .overlay(Circle().strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1.5, dash: [3])))
-            Text("Plan a trip to fill this").font(.geist(15)).foregroundStyle(Color.inkMuted)
+            Text("Plan a trip to fill this").font(.ui(15)).foregroundStyle(Color.inkMuted)
             Spacer()
             Image(systemName: "plus").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.farmGreenMap)
         }
@@ -618,7 +618,7 @@ struct TripsView: View {
         VStack(spacing: 12) {
             Spacer()
             Image(systemName: "lock.fill").font(.system(size: 34)).foregroundStyle(Color.farmGreenMap)
-            Text(text).font(.geist(15)).foregroundStyle(Color.inkMuted).multilineTextAlignment(.center)
+            Text(text).font(.ui(15)).foregroundStyle(Color.inkMuted).multilineTextAlignment(.center)
             Spacer(); Spacer()
         }
         .frame(maxWidth: .infinity, minHeight: 260).padding(.horizontal, 40)
@@ -630,7 +630,7 @@ struct TripsView: View {
         Button { Haptics.tap(); action() } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold))
-                Text(title).font(.geist(14, .semibold))
+                Text(title).font(.ui(14, .semibold))
             }
             .foregroundStyle(Color.ink).frame(maxWidth: .infinity).padding(.vertical, 14)
             .background(.white, in: RoundedRectangle(cornerRadius: 16))
@@ -642,7 +642,7 @@ struct TripsView: View {
         Button { Haptics.tap(); action() } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold))
-                Text(title).font(.geist(14, .semibold))
+                Text(title).font(.ui(14, .semibold))
             }
             .foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 14)
             .background(Color.farmGreenMap.opacity(canRoute ? 1 : 0.5), in: RoundedRectangle(cornerRadius: 16))
@@ -803,7 +803,7 @@ struct TripRecommendations: View {
             } else {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(hasAnchor ? "RECOMMENDATIONS NEAR YOU" : "RECOMMENDATION")
-                        .font(.geist(11, .semibold)).kerning(1.2)
+                        .font(.ui(11, .semibold)).kerning(1.2)
                         .foregroundStyle(Color.inkMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 6)
@@ -888,15 +888,15 @@ struct TripRecommendations: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(pin.name).font(.geist(14, .bold)).foregroundStyle(.white).lineLimit(2)
+                Text(pin.name).font(.ui(14, .bold)).foregroundStyle(.white).lineLimit(2)
                 if let city = pin.city {
-                    Text(city).font(.geist(12, .medium)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+                    Text(city).font(.ui(12, .medium)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
                 }
                 if !tags.isEmpty {
                     HStack(spacing: 5) {
                         ForEach(tags) { cat in
                             Text(cat.label.uppercased())
-                                .font(.geist(9, .bold)).kerning(0.4)
+                                .font(.ui(9, .bold)).kerning(0.4)
                                 .foregroundStyle(.white)
                                 .padding(.vertical, 3).padding(.horizontal, 7)
                                 .background(.white.opacity(0.22), in: Capsule())

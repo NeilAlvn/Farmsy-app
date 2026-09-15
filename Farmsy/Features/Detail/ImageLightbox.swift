@@ -77,7 +77,7 @@ struct ImageLightbox: View {
             header
             if let postText = source.postText, !postText.isEmpty {
                 Text(postText)
-                    .font(.geist(14))
+                    .font(.ui(14))
                     .foregroundStyle(Color.ink)
                     .lineLimit(3)
                     .lineSpacing(2)
@@ -99,16 +99,16 @@ struct ImageLightbox: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.eyebrow.uppercased())
-                    .font(.geist(11, .semibold))
+                    .font(.ui(11, .semibold))
                     .kerning(1.1)
                     .foregroundStyle(Color.inkMuted)
                 Text(source.title)
-                    .font(.geist(14, .semibold))
+                    .font(.ui(14, .semibold))
                     .foregroundStyle(Color.ink)
                     .lineLimit(1)
                 if let subtitle = source.subtitle {
                     Text(subtitle)
-                        .font(.geist(12))
+                        .font(.ui(12))
                         .foregroundStyle(Color.farmGreenMap)
                         .lineLimit(1)
                 }
@@ -118,7 +118,7 @@ struct ImageLightbox: View {
             HStack(spacing: 10) {
                 if hasMany {
                     Text("\(index + 1) / \(source.images.count)")
-                        .font(.geist(13, .semibold))
+                        .font(.ui(13, .semibold))
                         .foregroundStyle(Color.inkMuted)
                 }
                 Button {

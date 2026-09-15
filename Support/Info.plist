@@ -6,18 +6,10 @@
 	<false/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Fraunces-Regular.ttf</string>
-		<string>Fraunces-Medium.ttf</string>
-		<string>Fraunces-SemiBold.ttf</string>
-		<string>Fraunces-Bold.ttf</string>
-		<string>Fraunces-RegularItalic.ttf</string>
-		<string>Fraunces-MediumItalic.ttf</string>
-		<string>Geist-Regular.ttf</string>
-		<string>Geist-Medium.ttf</string>
-		<string>Geist-SemiBold.ttf</string>
-		<string>Geist-Bold.ttf</string>
-		<string>GeistMono-Regular.ttf</string>
-		<string>GeistMono-Medium.ttf</string>
+		<string>PlusJakartaSans-Regular.otf</string>
+		<string>PlusJakartaSans-Medium.otf</string>
+		<string>PlusJakartaSans-SemiBold.otf</string>
+		<string>PlusJakartaSans-Bold.otf</string>
 	</array>
 </dict>
 </plist>

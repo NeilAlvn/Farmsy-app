@@ -179,6 +179,40 @@ final class FarmsStore {
         featuredOrder.compactMap { id in pins.first { $0.osmId == id } }
     }
 
+    /// Home's "Available near you": every list item with at least one farm in
+    /// the radius that says it sells it, most farms first. Pure over the pins
+    /// and the produce text, so it runs off the main thread.
+    nonisolated static func productsNearby(items: [ShoppingItem], pins: [FarmPin], produce: [String: String],
+                                           origin: CLLocationCoordinate2D, radiusKm: Double) -> [ProductNearby] {
+        let here = CLLocation(latitude: origin.latitude, longitude: origin.longitude)
+        let near: [(sells: String, km: Double)] = pins.compactMap { pin in
+            guard let sells = produce[pin.osmId] else { return nil }
+            let km = (pin.distance(from: here) ?? .infinity) / 1000
+            return km <= radiusKm ? (sells, km) : nil
+        }
+        return items.compactMap { item in
+            var count = 0
+            var nearest = Double.infinity
+            for farm in near where ProductMatch.covers(farm.sells, terms: item.terms) {
+                count += 1
+                nearest = min(nearest, farm.km)
+            }
+            return count > 0 ? ProductNearby(item: item, count: count, nearestKm: nearest) : nil
+        }
+        .sorted { $0.count > $1.count }
+    }
+
+    /// Show the map filtered on one list item near the user — the same path an
+    /// AI search takes, so ranking, radius and the summary bar come for free.
+    func showProduct(_ item: ShoppingItem, userLocation: CLLocation?, radiusKm: Double) async {
+        var intent = SmartSearchIntent()
+        intent.products = item.terms
+        intent.nearMe = userLocation != nil
+        intent.radiusKm = radiusKm
+        intent.summary = item.label
+        await applyAISearch(intent, userLocation: userLocation)
+    }
+
     func clearAllFilters() {
         selectedCategories = []
         filterVerified = false; filterOpenToday = false

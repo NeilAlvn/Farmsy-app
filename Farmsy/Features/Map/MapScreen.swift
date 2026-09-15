@@ -127,6 +127,16 @@ struct MapScreen: View {
         }
         // An AI search that named a place flies the map there (the web doesn't yet).
         .onChange(of: farms.aiPlaceToken) { _, _ in flyToAIPlace() }
+        // First appearance: a search or product tap from another tab may already
+        // be waiting; otherwise open on the user rather than on the whole country.
+        .onAppear {
+            if farms.aiIntent != nil {
+                flyToAIPlace()
+            } else if visibleRegion == nil, let loc = locationManager.location {
+                camera = .region(MKCoordinateRegion(center: loc.coordinate,
+                                                    span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)))
+            }
+        }
         // Emptying the search bar drops the AI intent so the map returns to all farms.
         .onChange(of: farms.searchText) { _, text in
             if text.trimmingCharacters(in: .whitespaces).isEmpty, farms.aiIntent != nil {
@@ -237,7 +247,7 @@ struct MapScreen: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "sparkles").font(.system(size: 13)).foregroundStyle(Color.farmGreenMap)
-                Text(ai?.summary ?? "").font(.geist(13)).foregroundStyle(Color.ink)
+                Text(ai?.summary ?? "").font(.ui(13)).foregroundStyle(Color.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
                 Button {
@@ -253,7 +263,7 @@ struct MapScreen: View {
                     HStack(spacing: 6) {
                         ForEach(chips, id: \.self) { chip in
                             Text(chip)
-                                .font(.geist(11, .semibold))
+                                .font(.ui(11, .semibold))
                                 .foregroundStyle(Color.farmGreenDeep)
                                 .padding(.vertical, 4).padding(.horizontal, 9)
                                 .background(Color.farmGreenMap.opacity(0.12), in: Capsule())
@@ -435,12 +445,12 @@ struct MapScreen: View {
             if let error = farms.loadError {
                 VStack(spacing: 10) {
                     Text(error)
-                        .font(.geist(14, .medium))
+                        .font(.ui(14, .medium))
                         .multilineTextAlignment(.center)
                     Button("Retry") {
                         Task { await farms.loadIfNeeded() }
                     }
-                    .font(.geist(15, .semibold))
+                    .font(.ui(15, .semibold))
                     .foregroundStyle(Color.farmGreenMap)
                 }
                 .padding(16)
@@ -476,7 +486,7 @@ struct FilterChip: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(isOn ? .white : Color.farmGreenMap)
                 Text(title)
-                    .font(.geist(13, .semibold))
+                    .font(.ui(13, .semibold))
                     .foregroundStyle(isOn ? .white : Color.ink)
             }
             .padding(.vertical, 8)
@@ -550,7 +560,7 @@ struct ClusterBubble: View {
 
     var body: some View {
         Text(count > 999 ? "999+" : "\(count)")
-            .font(.geist(count > 99 ? 13 : 15, .bold))
+            .font(.ui(count > 99 ? 13 : 15, .bold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(Color.farmGreenMap, in: Circle())
@@ -565,7 +575,7 @@ struct TripStopMarker: View {
     let number: Int
     var body: some View {
         Text("\(number)")
-            .font(.geist(14, .bold))
+            .font(.ui(14, .bold))
             .foregroundStyle(.white)
             .frame(width: 34, height: 34)
             .background(Color.farmGreen, in: Circle())
@@ -619,13 +629,13 @@ struct FarmCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top) {
                     Text(pin.name)
-                        .font(.geist(18, .bold))
+                        .font(.ui(18, .bold))
                         .foregroundStyle(Color.ink)
                         .multilineTextAlignment(.leading)
                     Spacer()
                     if let distanceText {
                         Text(distanceText)
-                            .font(.geist(15, .semibold))
+                            .font(.ui(15, .semibold))
                             .foregroundStyle(Color.farmGreen)
                     }
                     Image(systemName: "chevron.right")
@@ -636,14 +646,14 @@ struct FarmCard: View {
 
                 if pin.address != nil || pin.city != nil {
                     Text([pin.address, pin.postalCode, pin.city].compactMap(\.self).joined(separator: ", "))
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                         .lineLimit(1)
                 }
 
                 HStack(spacing: 6) {
                     ForEach(pin.categories.prefix(4)) { cat in
-                        Text(cat.emoji).font(.geist(17))
+                        Text(cat.emoji).font(.ui(17))
                     }
                     if let rating = pin.avgRating {
                         HStack(spacing: 3) {
@@ -651,7 +661,7 @@ struct FarmCard: View {
                                 .font(.system(size: 11))
                                 .foregroundStyle(Color.star)
                             Text(String(format: "%.1f", rating))
-                                .font(.geist(13, .semibold))
+                                .font(.ui(13, .semibold))
                                 .foregroundStyle(Color.ink)
                         }
                     }
@@ -704,13 +714,15 @@ struct FilterSheet: View {
     /// platforms, no exception (Aviah later-8: the Android no-IAP concern was wrong,
     /// Play IAP works and carries most revenue, so the escalation was withdrawn). The
     /// time filters were never free; the two axis groups moved into Pro from the rail.
-    private var proLocked: Bool { !session.hasFullAccess }
+    /// Time and place-type filters are free now: opening hours are the farm's own
+    /// information, not intelligence. Plus sells matching, routing and alerts.
+    private var proLocked: Bool { false }
 
     var body: some View {
         @Bindable var farms = farms
         VStack(spacing: 0) {
             HStack {
-                Text("Filters").font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                Text("Filters").font(.ui(18, .bold)).foregroundStyle(Color.ink)
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -768,7 +780,7 @@ struct FilterSheet: View {
                     // than toggling. The three time filters were never free; the two
                     // axis groups moved into Pro from the free rail.
                     divider
-                    sectionHeader(String(localized: "Farmsy Pro"))
+                    sectionHeader(String(localized: "When and what kind"))
                     proRow(id: AnalyticsValue.Filter.openNow, icon: "clock.badge.checkmark", label: String(localized: "Open right now"),
                            isOn: farms.filterOpenNow) { farms.filterOpenNow.toggle() }
                     proRow(id: AnalyticsValue.Filter.openSaturday, icon: "calendar", label: String(localized: "Open Saturday"),
@@ -844,7 +856,7 @@ struct FilterSheet: View {
 
     private func sectionHeader(_ text: String) -> some View {
         Text(text.uppercased())
-            .font(.geist(11, .semibold)).kerning(1.1)
+            .font(.ui(11, .semibold)).kerning(1.1)
             .foregroundStyle(Color.inkMuted)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
@@ -866,13 +878,13 @@ struct FilterSheet: View {
                 }
             }
             Text(label)
-                .font(.geist(15))
+                .font(.ui(15))
                 .foregroundStyle(Color.ink)
                 .lineLimit(1)
             Spacer(minLength: 6)
             if let trailing {
                 Text(trailing)
-                    .font(.geist(13, .semibold))
+                    .font(.ui(13, .semibold))
                     .foregroundStyle(Color.inkMuted)
                     .padding(.vertical, 3).padding(.horizontal, 8)
                     .background(Color(hex: 0xF3F4F6), in: Capsule())

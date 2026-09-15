@@ -20,7 +20,7 @@ struct RootView: View {
                 SplashView { splashDone = true }
                     .transition(.opacity)
             } else if session.isAuthenticated || didFinishOnboarding {
-                MainView()
+                AppShell()
                     .transition(.opacity)
             } else {
                 OnboardingView { didFinishOnboarding = true }

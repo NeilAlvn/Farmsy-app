@@ -1,10 +1,15 @@
 import SwiftUI
 
-struct SettingsSheet: View {
+/// Profile — opened from the Home header. Identity, membership, what Farmsy
+/// knows about you (radius, alerts), preferences, legal, and the way out.
+struct ProfileScreen: View {
+    @AppStorage("searchRadiusKm") private var radiusKm = 15.0
+    @State private var showSurvey = false
     @Environment(SessionStore.self) private var session
     @Environment(LanguageManager.self) private var language
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestAuth) private var requestAuth
+    @Environment(\.shell) private var shell
 
     @State private var showLanguage = false
     @State private var showSignOutConfirm = false
@@ -42,178 +47,146 @@ struct SettingsSheet: View {
         }
     }
 
+    private var initials: String {
+        let parts = session.displayName.split(separator: " ").prefix(2).compactMap { $0.first }
+        return parts.isEmpty ? "?" : String(parts).uppercased()
+    }
+
+    @ViewBuilder
+    private var identity: some View {
+        if session.isAuthenticated {
+            VStack(spacing: Space.s3) {
+                ZStack {
+                    Circle().stroke(Color.vivid.opacity(0.9), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
+                        .frame(width: 96, height: 96)
+                    Circle().stroke(Color.farmGreen.opacity(0.35), style: StrokeStyle(lineWidth: 2, dash: [4, 6]))
+                        .frame(width: 84, height: 84)
+                    Text(initials)
+                        .font(.ui(26, .bold))
+                        .foregroundStyle(Color.farmGreen)
+                        .frame(width: 72, height: 72)
+                        .background(Color.surface, in: Circle())
+                }
+                HStack(spacing: Space.s2) {
+                    Text(session.displayName).role(.heading)
+                    Badge(text: subscriptionBadge.0, fill: subscriptionBadge.1)
+                }
+                if !session.email.isEmpty { Text(session.email).role(.caption, .inkMuted) }
+            }
+            .frame(maxWidth: .infinity)
+        } else {
+            VStack(spacing: Space.s3) {
+                Image(systemName: "person.crop.circle")
+                    .font(.system(size: 56, weight: .regular))
+                    .foregroundStyle(Color.farmGreen)
+                Text("You're browsing as a guest").role(.heading)
+                Text("Sign in to follow farms, plan trips and keep your list on every device.")
+                    .role(.bodySm, .inkMuted)
+                    .multilineTextAlignment(.center)
+                Button(String(localized: "Sign in")) { Haptics.tap(); dismiss(); requestAuth() }
+                    .buttonStyle(PillButtonStyle(.primary, size: .medium))
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Same header treatment as What's New / Saved: an eyebrow and a
-            // circular close, in Geist (product UI uses no serif).
-            HStack {
-                Text("SETTINGS")
-                    .font(.geist(11, .semibold))
-                    .kerning(1.2)
-                    .foregroundStyle(Color.inkMuted)
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0x6B7280))
-                        .frame(width: 32, height: 32)
-                        .background(Color(hex: 0xF3F4F6), in: Circle())
-                }
-                .buttonStyle(.plain)
+            ScreenHeader(String(localized: "Profile"), compact: true) {
+                IconButton("xmark", label: String(localized: "Close"), small: true) { dismiss() }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 10)
+            .padding(.top, Space.s2)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 14) {
-                    // Account
-                    if session.isAuthenticated {
-                        HStack(spacing: 12) {
-                            Image("FarmsyLogo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 42)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(session.email.isEmpty ? String(localized: "Signed in") : session.email)
-                                    .font(.geist(15, .semibold))
-                                    .foregroundStyle(Color.ink)
-                                    .lineLimit(1)
-                                // Only name a plan while it still grants access — a
-                                // lapsed cancellation keeps subscription_plan in the DB.
-                                Text((session.profile?.hasFullAccess == true ? session.profile?.subscriptionPlan : nil).map { String(localized: "\($0.capitalized) plan") } ?? String(localized: "Farmsy account"))
-                                    .font(.geist(13))
-                                    .foregroundStyle(Color.inkMuted)
-                            }
-                            Spacer()
-                            Text(subscriptionBadge.0)
-                                .font(.geist(12, .bold))
-                                .foregroundStyle(.white)
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 10)
-                                .background(subscriptionBadge.1, in: Capsule())
-                        }
-                        .card()
-                    } else {
-                        // Guest: invite to sign in instead of account info.
-                        HStack(spacing: 12) {
-                            Image("FarmsyLogo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 42)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("You're browsing as a guest")
-                                    .font(.geist(15, .semibold))
-                                    .foregroundStyle(Color.ink)
-                                Text("Sign in to save farms and see details")
-                                    .font(.geist(13))
-                                    .foregroundStyle(Color.inkMuted)
-                            }
-                            Spacer()
-                            Button("Sign in") {
-                                Haptics.tap()
-                                requestAuth()
-                            }
-                            .font(.geist(13, .bold))
-                            .foregroundStyle(.white)
-                            .padding(.vertical, 7)
-                            .padding(.horizontal, 12)
-                            .background(Color.farmGreenMap, in: Capsule())
-                            .buttonStyle(.plain)
-                        }
-                        .card()
-                    }
+                VStack(spacing: Space.s8) {
+                    identity
 
-                    // Membership. Signed-in users only — a guest has no subscription
-                    // to manage, and the paywall is where they'd start one.
                     if session.isAuthenticated {
                         MembershipSection()
                     }
 
-                    VStack(spacing: 0) {
-                        // Language chooser — lets a user on an English phone run
-                        // Farmsy in Dutch (or vice versa) without changing their
-                        // whole device.
-                        SettingsRow(icon: "globe", tintBg: 0x3F5E3A, label: "Language",
-                                    value: language.current == .system
-                                        ? String(localized: "System") : language.current.name) {
+                    RowGroup(title: String(localized: "Farmsy")) {
+                        Menu {
+                            ForEach(HomeScreen.radiusChoices, id: \.self) { km in
+                                Button("\(Int(km)) km") { radiusKm = km }
+                            }
+                        } label: {
+                            Row(icon: "location", title: String(localized: "Search radius"),
+                                value: "\(Int(radiusKm)) km", chevron: false) {}
+                        }
+                        Row(icon: "bell", title: String(localized: "Product alerts"),
+                            subtitle: session.hasFullAccess ? nil : String(localized: "Farmsy Plus")) {
+                            if session.hasFullAccess, let url = URL(string: "https://www.farmsy.app/alerts") {
+                                UIApplication.shared.open(url)
+                            } else {
+                                dismiss(); shell.openPlus()
+                            }
+                        }
+                    }
+
+                    RowGroup(title: String(localized: "Preferences")) {
+                        Row(icon: "globe", title: String(localized: "Language"),
+                            value: language.current == .system ? String(localized: "System") : language.current.name) {
                             showLanguage = true
                         }
-                        Divider().padding(.leading, 62)
-                        SettingsRow(icon: "bell.fill", tintBg: 0xF5B301, label: "Notifications") {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                        // Refer friends, signed-in only — a guest has no code to
-                        // share. Opens the web invite page rather than duplicating the
-                        // referral dashboard natively; the signup-side code capture,
-                        // the part that actually earns referrals, stays in the app.
-                        if session.isAuthenticated {
-                            Divider().padding(.leading, 62)
-                            SettingsRow(icon: "gift.fill", tintBg: 0xEC4899, label: "Refer friends") {
-                                if let url = URL(string: "https://www.farmsy.app/invite") {
-                                    UIApplication.shared.open(url)
-                                }
-                            }
-                        }
-                        Divider().padding(.leading, 62)
-                        SettingsRow(icon: "envelope.fill", tintBg: 0x38BDF8, label: "Contact us") {
-                            if let url = URL(string: "https://www.farmsy.app/messages") {
-                                UIApplication.shared.open(url)
-                            }
+                        Row(icon: "app.badge", title: String(localized: "Notifications")) {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                         }
                     }
-                    .card(padding: 4)
 
-                    // Legal
-                    VStack(spacing: 0) {
-                        SettingsRow(icon: "hand.raised.fill", tintBg: 0x8B5CF6, label: "Privacy Policy") {
-                            if let url = URL(string: "https://farmsy.app/privacy") {
-                                UIApplication.shared.open(url)
+                    RowGroup(title: String(localized: "Community")) {
+                        Row(icon: "text.bubble", title: String(localized: "Give feedback")) { showSurvey = true }
+                        if session.isAuthenticated {
+                            Row(icon: "gift", title: String(localized: "Refer friends")) {
+                                if let url = URL(string: "https://www.farmsy.app/invite") { UIApplication.shared.open(url) }
                             }
                         }
-                        Divider().padding(.leading, 62)
-                        SettingsRow(icon: "doc.text.fill", tintBg: 0x64748B, label: "Terms of Service") {
-                            if let url = URL(string: "https://farmsy.app/terms") {
-                                UIApplication.shared.open(url)
-                            }
+                        Row(icon: "envelope", title: String(localized: "Contact us")) {
+                            if let url = URL(string: "https://www.farmsy.app/messages") { UIApplication.shared.open(url) }
                         }
                     }
-                    .card(padding: 4)
+
+                    RowGroup(title: String(localized: "Legal")) {
+                        Row(icon: "hand.raised", title: String(localized: "Privacy Policy")) {
+                            if let url = URL(string: "https://farmsy.app/privacy") { UIApplication.shared.open(url) }
+                        }
+                        Row(icon: "doc.text", title: String(localized: "Terms of Service")) {
+                            if let url = URL(string: "https://farmsy.app/terms") { UIApplication.shared.open(url) }
+                        }
+                    }
 
                     if session.isAuthenticated {
-                        VStack(spacing: 0) {
-                            SettingsRow(icon: "rectangle.portrait.and.arrow.right", tintBg: 0x3F5E3A, label: "Sign out") {
-                                showSignOutConfirm = true
-                            }
-                            Divider().padding(.leading, 62)
-                            SettingsRow(icon: "trash.fill", tintBg: 0xDC2626, label: "Delete account", tint: .warnRed) {
-                                showDeleteInfo = true
-                            }
+                        VStack(spacing: Space.s3) {
+                            Button(String(localized: "Sign out")) { Haptics.tap(); showSignOutConfirm = true }
+                                .buttonStyle(PillButtonStyle(.ghost, size: .medium, block: true))
+                            Button(String(localized: "Delete account")) { showDeleteInfo = true }
+                                .buttonStyle(PillButtonStyle(.text, size: .small))
+                                .foregroundStyle(Color.critical)
                         }
-                        .card(padding: 4)
                     }
 
-                    Text("Farmsy for iOS \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")")
-                        .font(.geist(12))
-                        .foregroundStyle(Color.inkMuted.opacity(0.7))
-                        .padding(.top, 8)
-                    // OpenStreetMap attribution (P0-5). The farm records carry OSM ids,
-                    // so the ODbL credit has to be reachable in the app; here rather
-                    // than under the map, where it would compete with the controls.
-                    // Same wording as Android's osm_attribution.
-                    Text("Place data © OpenStreetMap contributors")
-                        .font(.geist(12))
-                        .foregroundStyle(Color.inkMuted.opacity(0.7))
-                        .padding(.top, 2)
+                    VStack(spacing: 2) {
+                        Text("Farmsy for iOS \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")")
+                        // OpenStreetMap attribution (P0-5): the farm records carry OSM ids,
+                        // so the ODbL credit has to be reachable in the app.
+                        Text("Place data © OpenStreetMap contributors")
+                    }
+                    .role(.caption, .inkFaint)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .padding(.horizontal, Space.s4)
+                .padding(.top, Space.s4)
+                .padding(.bottom, Space.s8)
             }
         }
         .background(Color.cream.ignoresSafeArea())
         .task { await session.refreshProfile() }
+        .sheet(isPresented: $showSurvey) {
+            SurveyView(mode: .feedback)
+                .presentationDetents([.fraction(0.92)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
         .sheet(isPresented: $showLanguage) {
             LanguagePickerSheet()
                 .presentationDetents([.medium, .large])
@@ -301,16 +274,16 @@ private struct AccountDeletedView: View {
                 .font(.system(size: 56))
                 .foregroundStyle(Color.farmGreen)
             Text("Your account was deleted")
-                .font(.display(24))
+                .font(.ui(24, .bold))
                 .foregroundStyle(Color.ink)
                 .multilineTextAlignment(.center)
             Text("Your profile, saved farms and subscription data have been removed. Thanks for trying Farmsy.")
-                .font(.geist(15))
+                .font(.ui(15))
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
             if remindStore {
                 Text("Your membership was bought through \(storeName). Cancel it there so you aren't charged again.")
-                    .font(.geist(14, .medium))
+                    .font(.ui(14, .medium))
                     .foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
                     .padding(16)
@@ -319,7 +292,7 @@ private struct AccountDeletedView: View {
             Spacer()
             Button(action: onDone) {
                 Text("Done")
-                    .font(.geist(16, .semibold))
+                    .font(.ui(16, .semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
@@ -352,12 +325,12 @@ struct SettingsRow: View {
                     .frame(width: 34, height: 34)
                     .background(Color(hex: tintBg).opacity(0.14), in: Circle())
                 Text(label)
-                    .font(.geist(16, .medium))
+                    .font(.ui(16, .medium))
                     .foregroundStyle(tint)
                 Spacer()
                 if let value {
                     Text(value)
-                        .font(.geist(14, .medium))
+                        .font(.ui(14, .medium))
                         .foregroundStyle(Color.inkMuted)
                         .lineLimit(1)
                 }
@@ -383,7 +356,7 @@ struct LanguagePickerSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text("LANGUAGE")
-                    .font(.geist(11, .semibold))
+                    .font(.ui(11, .semibold))
                     .kerning(1.2)
                     .foregroundStyle(Color.inkMuted)
                 Spacer()
@@ -410,7 +383,7 @@ struct LanguagePickerSheet: View {
                             HStack(spacing: 14) {
                                 Text(lang.flag).font(.system(size: 22))
                                 Text(lang.name)
-                                    .font(.geist(16, .medium))
+                                    .font(.ui(16, .medium))
                                     .foregroundStyle(Color.ink)
                                 Spacer()
                                 if language.current == lang {
@@ -438,7 +411,7 @@ struct LanguagePickerSheet: View {
                 if changed {
                     VStack(spacing: 12) {
                         Text(language.localized("Restart Farmsy to apply your new language.", in: language.current))
-                            .font(.geist(13)).foregroundStyle(Color.inkMuted)
+                            .font(.ui(13)).foregroundStyle(Color.inkMuted)
                             .multilineTextAlignment(.center)
                         Button {
                             // No API relaunches an iOS app; terminating drops the user
@@ -450,7 +423,7 @@ struct LanguagePickerSheet: View {
                                 Image(systemName: "arrow.clockwise")
                                 Text(language.localized("Restart now", in: language.current))
                             }
-                            .font(.geist(16, .semibold))
+                            .font(.ui(16, .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -507,7 +480,7 @@ struct MembershipSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Membership")
-                .font(.geist(13, .semibold))
+                .font(.ui(13, .semibold))
                 .foregroundStyle(Color.inkMuted)
                 .padding(.leading, 4)
 
@@ -516,23 +489,23 @@ struct MembershipSection: View {
                     // Nothing to sell, and nothing to cancel — but say so plainly. An
                     // empty section reads as broken; a clear statement reads as meant.
                     Text("You have Lifetime access")
-                        .font(.geist(16, .bold))
+                        .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
                     Text("One payment, never expires. Nothing to manage.")
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 } else if hasAccess {
                     Text(isCanceled ? "Your membership is ending"
                          : isTrialing ? "Your trial is active"
                          : "You're on the Yearly plan")
-                        .font(.geist(16, .bold))
+                        .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
 
                     // During a trial, say when the charge lands. A free trial that
                     // quietly becomes a bill is exactly what guideline 3.1.2 exists to
                     // stop, and the date is the whole point of the disclosure.
                     Text(subtitle)
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
 
                     // No "Upgrade to Lifetime": the server now refuses to sell a second
@@ -544,22 +517,22 @@ struct MembershipSection: View {
                         Haptics.tap()
                         if let url = billingURL { UIApplication.shared.open(url) }
                     }
-                    .font(.geist(14, .semibold))
+                    .font(.ui(14, .semibold))
                     .foregroundStyle(Color.farmGreen)
                     .padding(.top, 10)
                 } else if isExpired {
                     Text("Your membership has expired")
-                        .font(.geist(16, .bold))
+                        .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
                     Text("Renew to unlock full details for every farm again.")
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 } else {
                     Text("You don't have a membership yet")
-                        .font(.geist(16, .bold))
+                        .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
                     Text("Unlock full details for every farm.")
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 }
             }

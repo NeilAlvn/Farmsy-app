@@ -1,51 +1,105 @@
 import SwiftUI
 
-/// The map is the app. There is no feed, list or discovery tab — everything is a
-/// layer over the map (MOBILE-SPEC-MAP §0). The farm card is a bottom sheet at
-/// three heights with the map usable behind it; Saved and Settings live behind an
-/// account button in the header; posts and featured farms live in the What's New
-/// sheet, opened from a floating button on the map.
-struct MainView: View {
+/// Five tabs, one floating pill: Home · Shopping · Map · Discover · Community.
+/// Profile opens from the Home header. Sheets that any tab can raise — the farm
+/// card, sign-in, the trip planner, the membership sheet — live here once, and
+/// screens reach them through `ShellActions` in the environment.
+enum AppTab: String, CaseIterable, Identifiable {
+    case home, shopping, map, discover, community
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home: String(localized: "Home")
+        case .shopping: String(localized: "Shopping")
+        case .map: String(localized: "Map")
+        case .discover: String(localized: "Discover")
+        case .community: String(localized: "Community")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .home: "house"
+        case .shopping: "basket"
+        case .map: "map"
+        case .discover: "leaf"
+        case .community: "person.2"
+        }
+    }
+
+    var filledIcon: String { icon + ".fill" }
+}
+
+/// What a screen can ask the shell to do.
+struct ShellActions {
+    var openFarm: (FarmPin) -> Void = { _ in }
+    var showTab: (AppTab) -> Void = { _ in }
+    var openTrips: () -> Void = {}
+    var openProfile: () -> Void = {}
+    var openPlus: () -> Void = {}
+}
+
+private struct ShellActionsKey: EnvironmentKey {
+    static let defaultValue = ShellActions()
+}
+
+extension EnvironmentValues {
+    var shell: ShellActions {
+        get { self[ShellActionsKey.self] }
+        set { self[ShellActionsKey.self] = newValue }
+    }
+}
+
+struct AppShell: View {
     @Environment(SessionStore.self) private var session
 
+    @State private var tab: AppTab = .home
     /// The open farm. A bound value (not a `.sheet(item:)`) so tapping another pin
     /// swaps the card's contents in place rather than dismissing and re-presenting.
     @State private var selectedPin: FarmPin?
     @State private var showAuth = false
-    @State private var accountRoute: AccountRoute?
-    @State private var showWhatsNew = false
+    @State private var showProfile = false
     @State private var showTrips = false
+    @State private var showPlus = false
     @State private var showSurvey = false
     @State private var tripDetent: PresentationDetent = .fraction(0.92)
     /// The card opens at half and can be dragged to peek or full.
     @State private var farmDetent: PresentationDetent = .fraction(0.55)
-    /// A pin the map should fly to (set when opening from the What's New sheet).
+    /// A pin the map should fly to (set when a farm is opened from another tab).
     @State private var flyTarget: FarmPin?
 
-    enum AccountRoute: Identifiable {
-        case saved, settings
-        var id: Int { hashValue }
+    private var actions: ShellActions {
+        ShellActions(
+            openFarm: { openFarm($0, source: .whatsNew) },
+            showTab: { tab = $0 },
+            openTrips: { requireAuth { showTrips = true } },
+            openProfile: { showProfile = true },
+            openPlus: { requireAuth { showPlus = true } })
     }
 
     var body: some View {
-        MapScreen(onOpenFarm: { openFarm($0, source: .mapPin) }, focusPin: flyTarget)
+        ZStack(alignment: .bottom) {
+            // A TabView with its own bar hidden: each tab keeps its scroll position,
+            // camera and loaded state across switches, which a `switch` would drop.
+            TabView(selection: $tab) {
+                HomeScreen().tag(AppTab.home)
+                ShoppingScreen().tag(AppTab.shopping)
+                MapScreen(onOpenFarm: { openFarm($0, source: .mapPin) }, focusPin: flyTarget).tag(AppTab.map)
+                DiscoverScreen().tag(AppTab.discover)
+                CommunityScreen().tag(AppTab.community)
+            }
+            .toolbar(.hidden, for: .tabBar)
+
+            FloatingTabBar(selected: $tab)
+                .padding(.bottom, Space.s3)
+        }
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
         .environment(\.requestAuth, { showAuth = true })
-        .overlay(alignment: .bottom) {
-            bottomPanel
-                .padding(.horizontal, 14)
-                .padding(.bottom, 6)
-        }
-        // Survey entry point (button + sheet). Extracted into one modifier so the
-        // already-large body stays within the type-checker's budget. Aviah's spec
-        // delegates placement on a phone explicitly ("the button placement is
-        // yours"); a small round button at bottom-trailing, above the panel, mirrors
-        // the web's bottom-right corner without colliding with the map controls. The
-        // server gate hides it after answering. (Auto-open timing is a deliberate
-        // deferral — see PORT_NOTES.)
-        .modifier(SurveyEntry(isPresented: $showSurvey))
+        .environment(\.shell, actions)
+        .modifier(SurveyEntry(isPresented: $showSurvey, buttonVisible: tab == .map))
         // The farm card — three resting heights, opening at half, and the map
         // stays interactive behind it up through half.
         .sheet(isPresented: Binding(
@@ -59,85 +113,41 @@ struct MainView: View {
                     .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
                     .presentationContentInteraction(.scrolls)
                     .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
+                    .presentationCornerRadius(Radius.sheet)
             }
         }
-        .sheet(isPresented: $showWhatsNew) {
-            WhatsNewSheet(onOpenFarm: { pin in
-                flyTarget = pin          // fly the map straight to it
-                showWhatsNew = false
-                openFarm(pin, source: .whatsNew)
-            })
-            .presentationDetents([.fraction(0.55), .fraction(0.92)])
-            .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
-            .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
-        }
-        .sheet(item: $accountRoute) { route in
-            Group {
-                switch route {
-                case .saved:    SavedScreen { openFarm($0, source: .saved) }
-                case .settings: SettingsSheet()
-                }
-            }
-            .presentationDetents([.fraction(0.55), .fraction(0.92)])
-            .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.55)))
-            .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
+        .sheet(isPresented: $showProfile) {
+            ProfileScreen()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
         }
         .sheet(isPresented: $showTrips) {
             TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
                 .presentationDetents([.fraction(0.5), .fraction(0.92)], selection: $tripDetent)
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
                 .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
+                .presentationCornerRadius(Radius.sheet)
+        }
+        .sheet(isPresented: $showPlus) {
+            ProUpsellSheet()
+                .presentationDetents([.fraction(0.92)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
         }
         .sheet(isPresented: $showAuth) { AuthView() }
     }
 
-    /// Farm cards open for everyone, signed out included (MOBILE-SPEC-MAP §0) —
-    /// the card shows the free content and locks the paid fields inside. Actions
-    /// that need an account (save, subscribe) prompt for one from within the card.
+    /// Farm cards open for everyone, signed out included. Opening a farm from
+    /// another tab switches to the map and flies to it, so "where is it" is
+    /// always one tap from "what is it".
     private func openFarm(_ pin: FarmPin, source: AnalyticsValue.Source) {
         farmDetent = .fraction(0.55)   // always open at half
-        flyTarget = pin                // fly the map to the farm, wherever it was opened from
+        if tab != .map { tab = .map }
+        flyTarget = pin
         selectedPin = pin
-        // Fired here, where the pin is set, not in a view body that runs more than
-        // once. `source` is what tells whether the map or the feed sells.
         Observability.capture(.farmOpened, [AnalyticsProp.osmId: pin.osmId,
                                             AnalyticsProp.source: source.rawValue])
-    }
-
-    // MARK: - Bottom floating panel
-
-    /// A floating pill over the map, the width of the search bar: Discover (the
-    /// What's New sheet), Save, Trips and Settings.
-    private var bottomPanel: some View {
-        HStack(spacing: 4) {
-            panelItem(icon: "newspaper", label: String(localized: "Discover")) { showWhatsNew = true }
-            panelItem(icon: "heart", label: String(localized: "Saved")) { requireAuth { accountRoute = .saved } }
-            panelItem(icon: "map", label: String(localized: "Trips")) { requireAuth { showTrips = true } }
-            panelItem(icon: "gearshape", label: String(localized: "Settings")) { requireAuth { accountRoute = .settings } }
-        }
-        .padding(6)
-        .background(.white, in: Capsule())
-        .shadow(color: .black.opacity(0.14), radius: 12, y: 3)
-    }
-
-    private func panelItem(icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button {
-            Haptics.tap()
-            action()
-        } label: {
-            VStack(spacing: 3) {
-                Image(systemName: icon).font(.system(size: 17, weight: .semibold))
-                Text(label).font(.geist(10, .semibold))
-            }
-            .foregroundStyle(Color.farmGreenMap)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        }
-        .buttonStyle(.plain)
     }
 
     private func requireAuth(_ action: @escaping () -> Void) {
@@ -145,7 +155,7 @@ struct MainView: View {
     }
 }
 
-/// The survey's floating entry button + arrow + sheet, as one modifier so MainView's
+/// The survey's floating entry button + arrow + sheet, as one modifier so AppShell's
 /// body stays small. The button is shown for EVERY role — signed-out, signed-in and
 /// admin alike (Neil: "the survey appears whatever the role"). It changes what it
 /// opens: the seven questions while unanswered, the feedback box once answered. A down
@@ -155,6 +165,9 @@ struct MainView: View {
 /// admin submit with `is_admin`, so showing the UI to staff pollutes nothing.)
 private struct SurveyEntry: ViewModifier {
     @Binding var isPresented: Bool
+    /// The floating button only sits over the map; on scrolling tabs it would
+    /// cover content. The cold-launch auto-open does not depend on it.
+    var buttonVisible = true
     @Environment(SessionStore.self) private var session
 
     /// The gate result (nil until loaded). Drives only `answered` now: answered → the
@@ -176,6 +189,41 @@ private struct SurveyEntry: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottomTrailing) {
+                if buttonVisible { surveyButton }
+            }
+            .sheet(isPresented: $isPresented) {
+                SurveyView(mode: mode)
+                    .presentationDetents([.fraction(0.92)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(28)
+                    // Re-check once the sheet closes (they may have just answered), so
+                    // the arrow disappears and the button switches to feedback mode.
+                    .onDisappear { Task { gate = await SurveyAPI.gate(accessToken: session.session?.accessToken) } }
+            }
+            // Refresh the gate on sign-in / sign-out (token change) for the arrow + mode.
+            .task(id: session.session?.accessToken) {
+                gate = await SurveyAPI.gate(accessToken: session.session?.accessToken)
+            }
+            // Cold-launch auto-open — runs once when the app first appears (not on
+            // resume). The 1.4s delay lets the map settle (and the session bootstrap)
+            // before asking, so it reads as a question rather than part of the loading.
+            // Fires for any role; only `answered` and the frequency cap stop it.
+            .task {
+                guard !didAutoOpen else { return }
+                didAutoOpen = true
+                try? await Task.sleep(for: .seconds(1.4))
+                let g = await SurveyAPI.gate(accessToken: session.session?.accessToken)
+                gate = g
+                guard !g.answered else { return }
+                let account = session.isAuthenticated ? session.email : nil
+                guard SurveyAutoOpen.canAutoOpen(account: account) else { return }
+                SurveyAutoOpen.recordAutoOpen(account: account)
+                mode = .questions
+                isPresented = true
+            }
+    }
+
+    private var surveyButton: some View {
                 ZStack(alignment: .bottom) {
                     if showArrow {
                         SurveyArrow()
@@ -198,41 +246,8 @@ private struct SurveyEntry: ViewModifier {
                     .buttonStyle(.plain)
                 }
                 .padding(.trailing, 14)
-                // 120 clears the bottom pill (spans ~safe-bottom+6 to +67) by ~50pt.
-                // The overlay is inset by the safe area, so it clears the home
-                // indicator; button + pill ignore Dynamic Type, so the gap holds.
-                .padding(.bottom, 120)
-            }
-            .sheet(isPresented: $isPresented) {
-                SurveyView(mode: mode)
-                    .presentationDetents([.fraction(0.92)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(28)
-                    // Re-check once the sheet closes (they may have just answered), so
-                    // the arrow disappears and the button switches to feedback mode.
-                    .onDisappear { Task { gate = await SurveyAPI.gate(accessToken: session.session?.accessToken) } }
-            }
-            // Refresh the gate on sign-in / sign-out (token change) for the arrow + mode.
-            .task(id: session.session?.accessToken) {
-                gate = await SurveyAPI.gate(accessToken: session.session?.accessToken)
-            }
-            // Cold-launch auto-open — runs once when the map first appears (not on
-            // resume). The 1.4s delay lets the map settle (and the session bootstrap)
-            // before asking, so it reads as a question rather than part of the loading.
-            // Fires for any role; only `answered` and the frequency cap stop it.
-            .task {
-                guard !didAutoOpen else { return }
-                didAutoOpen = true
-                try? await Task.sleep(for: .seconds(1.4))
-                let g = await SurveyAPI.gate(accessToken: session.session?.accessToken)
-                gate = g
-                guard !g.answered else { return }
-                let account = session.isAuthenticated ? session.email : nil
-                guard SurveyAutoOpen.canAutoOpen(account: account) else { return }
-                SurveyAutoOpen.recordAutoOpen(account: account)
-                mode = .questions
-                isPresented = true
-            }
+                // Clears the 64pt tab pill and its 12pt gap.
+                .padding(.bottom, TabBarInset.content + 12)
     }
 }
 
