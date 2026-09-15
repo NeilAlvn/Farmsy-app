@@ -116,7 +116,25 @@ data class ShoppingItem(
     /// Dutch or English, the same rule the website applies. fr and de fall back
     /// to English rather than showing an id — the labels only exist in two.
     fun label(language: String): String = if (language == "nl") nl else en
+
+    /// A glyph for tiles and chips. Ids are the web's closed list; anything new
+    /// falls back to the basket.
+    val emoji: String
+        get() = when (id) {
+            "eggs" -> "🥚"; "cheese" -> "🧀"; "milk" -> "🥛"; "potatoes" -> "🥔"
+            "vegetables" -> "🥬"; "fruits" -> "🍎"; "meat" -> "🥩"; "honey" -> "🍯"
+            "bread" -> "🍞"; "juices" -> "🧃"; "jams" -> "🫙"; "ice-cream" -> "🍦"
+            "strawberry" -> "🍓"; "apples" -> "🍏"; "pears" -> "🍐"; "asparagus" -> "🌱"
+            "pumpkin" -> "🎃"; "tomatoes" -> "🍅"; "onions" -> "🧅"; "carrot" -> "🥕"
+            "mushrooms" -> "🍄"; "nuts" -> "🌰"; "butter" -> "🧈"; "yoghurt" -> "🥣"
+            "herbs" -> "🌿"; "flowers" -> "🌷"; "wine" -> "🍷"; "beer" -> "🍺"
+            "fish" -> "🐟"
+            else -> "🧺"
+        }
 }
+
+/// How many farms near here sell a thing, and how close the nearest is.
+data class ProductNearby(val item: ShoppingItem, val count: Int, val nearestKm: Double)
 
 @Serializable
 private data class ItemsPayload(val items: List<ShoppingItem> = emptyList())
@@ -143,6 +161,11 @@ object ShoppingItems {
     }
 
     fun item(id: String): ShoppingItem? = _items.value.firstOrNull { it.id == id }
+
+    /// Dutch or English, the same rule the website applies; fr and de fall back
+    /// to English because the labels only exist in two.
+    fun language(context: android.content.Context): String =
+        LanguageStore.current(context).code.ifEmpty { java.util.Locale.getDefault().language }
 }
 
 // ── Planner ──────────────────────────────────────────────────────────────────

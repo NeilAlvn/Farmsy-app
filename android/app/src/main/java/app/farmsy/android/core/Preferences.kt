@@ -9,6 +9,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
@@ -193,5 +196,22 @@ class PreferencesSync(
         /// The languages Farmsy ships a bundle for — the fold target for a device
         /// locale we do not translate (matches LanguageStore.Lang's codes).
         val SUPPORTED = setOf("en", "nl", "fr", "de")
+    }
+}
+
+/// How far "near you" reaches (km). Shared by Home, Shopping, Profile and the
+/// map's product tap; persisted under the same key iOS uses (`searchRadiusKm`).
+object SearchRadius {
+    val choices = listOf(5.0, 10.0, 15.0, 25.0, 50.0)
+    private val _km = MutableStateFlow(15.0)
+    val km: StateFlow<Double> = _km.asStateFlow()
+
+    fun load(context: Context) {
+        _km.value = context.getSharedPreferences("farmsy", Context.MODE_PRIVATE).getFloat("searchRadiusKm", 15f).toDouble()
+    }
+
+    fun set(context: Context, value: Double) {
+        _km.value = value
+        context.getSharedPreferences("farmsy", Context.MODE_PRIVATE).edit().putFloat("searchRadiusKm", value.toFloat()).apply()
     }
 }

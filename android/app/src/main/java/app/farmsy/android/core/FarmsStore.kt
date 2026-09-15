@@ -114,8 +114,10 @@ class FarmsStore(private val scope: CoroutineScope) {
     private val _aiPlaceToken = MutableStateFlow(0)
     val aiPlaceToken: StateFlow<Int> = _aiPlaceToken.asStateFlow()
 
-    // Flags maps (loaded once from /api/farms/flags).
-    private var flagsLoaded = false
+    // Flags maps (loaded once from /api/farms/flags). Observable so Home and
+    // Shopping can recompute once the produce text is in.
+    private val _flagsLoaded = MutableStateFlow(false)
+    val flagsLoaded: StateFlow<Boolean> = _flagsLoaded.asStateFlow()
     // Merged product text per farm from the flags `p` (produce folded to
     // produce_inferred server-side). Read by the smart-search product match, the
     // R5 corridor product chips, and the shopping-list planner (via produceFor).
@@ -151,7 +153,7 @@ class FarmsStore(private val scope: CoroutineScope) {
     /// Fetch the flags endpoint once → produce/place-type/method lookups for
     /// AI-search matching (and, later, the filter groups).
     suspend fun loadFlagsIfNeeded() {
-        if (flagsLoaded) return
+        if (_flagsLoaded.value) return
         try {
             val rows = withContext(Dispatchers.IO) {
                 val resp = httpClient.get("${Backend.WEB_API}/farms/flags")
@@ -167,7 +169,7 @@ class FarmsStore(private val scope: CoroutineScope) {
             _galleries.value = rows.mapNotNull { r ->
                 r.g?.takeIf { it.size >= 2 }?.let { r.o to it }
             }.toMap()
-            flagsLoaded = true
+            _flagsLoaded.value = true
         } catch (e: Exception) { /* leave maps empty; AI still filters on categories */ }
     }
 
@@ -205,6 +207,15 @@ class FarmsStore(private val scope: CoroutineScope) {
             val byId = _pins.value.associateBy { it.osmId }
             return _featuredOrder.value.mapNotNull { byId[it] }
         }
+
+    /// Show the map filtered on one list item near the user — the same path an
+    /// AI search takes, so ranking, radius and the summary bar come for free.
+    suspend fun showProduct(item: ShoppingItem, userLocation: Location?, radiusKm: Double, language: String) {
+        val intent = SmartSearchIntent(
+            products = item.terms, nearMe = userLocation != null, radiusKm = radiusKm, summary = item.label(language),
+        )
+        applyAISearch(intent, userLocation)
+    }
 
     /// Apply a parsed AI intent — takes over filtering and resolves the centre
     /// (server `center`, or the user's own location for a nearMe query).
@@ -383,6 +394,31 @@ class FarmsStore(private val scope: CoroutineScope) {
     }
 
     fun pinForOsmId(osmId: String): FarmPin? = _pins.value.firstOrNull { it.osmId == osmId }
+
+    companion object {
+        /// Home's "Available near you": every list item with at least one farm in
+        /// the radius that says it sells it, most farms first. Pure over the pins
+        /// and the produce text, so it runs off the main thread.
+        fun productsNearby(
+            items: List<ShoppingItem>, pins: List<FarmPin>, produce: Map<String, String>,
+            originLat: Double, originLng: Double, radiusKm: Double,
+        ): List<ProductNearby> {
+            val near = pins.mapNotNull { pin ->
+                val sells = produce[pin.osmId] ?: return@mapNotNull null
+                val km = pin.distanceMeters(originLat, originLng) / 1000
+                if (km <= radiusKm) sells to km else null
+            }
+            return items.mapNotNull { item ->
+                var count = 0
+                var nearest = Double.POSITIVE_INFINITY
+                for ((sells, km) in near) if (ProductMatch.covers(sells, item.terms)) {
+                    count += 1
+                    nearest = minOf(nearest, km)
+                }
+                if (count > 0) ProductNearby(item, count, nearest) else null
+            }.sortedByDescending { it.count }
+        }
+    }
 
     /// Random feed of farms that at least have a photo. When we know where
     /// the user is, farms within 75 km lead the feed (shuffled), with the
