@@ -255,11 +255,9 @@ struct TripsView: View {
                         // re-positions against the new road for free.
                         if trip.routeLine.count >= 2 {
                             Divider()
-                            // R6 · which day + departure the corridor answers about.
-                            // Defaults to the coming Saturday at 10:00 until changed.
-                            tripWhenRow
-                                .padding(.horizontal, 14)
-                                .padding(.top, 14)
+                            // R6 · the corridor answers "open when you pass" for the day
+                            // picked in `dayRow` above (Luuk's R7); departure defaults to
+                            // 10:00. resolvedDayMon/resolvedDepartMinutes bridge his model.
                             RouteCorridorView(
                                 road: trip.routeLine,
                                 tripKm: trip.distanceMeters.map { $0 / 1000 },
@@ -355,36 +353,6 @@ struct TripsView: View {
         }
     }
 
-    /// R6 · "Going [day] at [time]" — the day and departure the corridor's
-    /// open/closed answers are measured against. Two native pickers bound to the
-    /// TripStore, defaulting to the coming Saturday at 10:00 until touched.
-    private var tripWhenRow: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "calendar")
-                .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.inkMuted)
-            Text("Going").font(.geist(13, .medium)).foregroundStyle(Color.inkMuted)
-            DatePicker("", selection: Binding(
-                get: { trip.resolvedTripDate },
-                set: { trip.setTripDate($0) }
-            ), displayedComponents: .date)
-                .labelsHidden()
-            Text("at").font(.geist(13, .medium)).foregroundStyle(Color.inkMuted)
-            DatePicker("", selection: Binding(
-                get: {
-                    Calendar.current.date(
-                        bySettingHour: trip.resolvedDepartMinutes / 60,
-                        minute: trip.resolvedDepartMinutes % 60, second: 0, of: Date()
-                    ) ?? Date()
-                },
-                set: { newTime in
-                    let c = Calendar.current.dateComponents([.hour, .minute], from: newTime)
-                    trip.setDepartMinutes((c.hour ?? 10) * 60 + (c.minute ?? 0))
-                }
-            ), displayedComponents: .hourAndMinute)
-                .labelsHidden()
-            Spacer(minLength: 0)
-        }
-    }
 
     private func filledRow(i: Int, pin: FarmPin) -> some View {
         let selected = pin.osmId == selectedOsmId

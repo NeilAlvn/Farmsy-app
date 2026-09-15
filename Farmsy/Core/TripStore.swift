@@ -195,14 +195,6 @@ final class TripStore {
     /// farms on the way). Several picked means ANY of them, never all.
     private(set) var selectedProducts: Set<String> = []
 
-    /// R6 — the day and departure the corridor answers "open when you pass" about.
-    /// Both nullable, and deliberately NOT persisted: nil means "resolve the default
-    /// at render" (never a frozen date), so a trip planned today and reopened next
-    /// week answers about the *next* Saturday rather than a stale past one. The web's
-    /// contract is the same.
-    private(set) var tripDate: Date?
-    /// Minutes past midnight to set out. nil → the 10:00 default.
-    private(set) var departMinutes: Int?
     /// The line as it draws itself, sliced by the trace animation (0→1). The map
     /// renders this, not `routeLine`, so the route traces along the road.
     private(set) var traceProgress: Double = 1
@@ -323,28 +315,19 @@ final class TripStore {
     }
     func clearProducts() { selectedProducts.removeAll() }
 
-    // MARK: R6 — trip day + departure
+    // MARK: R6 — corridor day/departure bridge
 
-    func setTripDate(_ d: Date?) { tripDate = d }
-    func setDepartMinutes(_ m: Int?) { departMinutes = m }
-
-    /// The day the corridor answers about — the coming Saturday (today if it is
-    /// Saturday) until the user picks another. Amsterdam time; the drives are NL/BE.
-    var resolvedTripDate: Date { tripDate ?? Self.defaultTripDate() }
-    /// Minutes past midnight to set out, defaulting to 10:00.
+    /// R7 (Luuk) stores the chosen day as an ISO string on the trip, persisted to the
+    /// DB and the device via TripEndpoints, and offers `nextSaturday()` as the default.
+    /// The R4 corridor (R6) needs that day as a Mon-indexed weekday plus a departure
+    /// minute to place each farm's arrival time. These derive both from his model, so
+    /// the date has one source of truth rather than two.
     var resolvedDepartMinutes: Int { departMinutes ?? 600 }
-    /// The chosen day as `statusOnDay`'s 0=Mon…6=Sun index.
-    var resolvedDayMon: Int { Self.dayMon(for: resolvedTripDate) }
-
-    /// The next Saturday, or today when today is already Saturday. Start-of-day in
-    /// Amsterdam so the weekday is the Dutch one, not the device's.
-    static func defaultTripDate(now: Date = Date()) -> Date {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam") ?? .current
-        let today = cal.startOfDay(for: now)
-        let wd = cal.component(.weekday, from: today)   // 1=Sun … 7=Sat
-        let daysUntilSat = (7 - wd + 7) % 7             // 0 when today is Saturday
-        return cal.date(byAdding: .day, value: daysUntilSat, to: today) ?? today
+    var resolvedDayMon: Int {
+        let day = TripEndpoints.day(from: tripDate)
+            ?? TripEndpoints.day(from: TripEndpoints.nextSaturday())
+            ?? Date()
+        return Self.dayMon(for: day)
     }
 
     /// A date's weekday as `statusOnDay`'s index (0=Mon … 6=Sun), in Amsterdam —
