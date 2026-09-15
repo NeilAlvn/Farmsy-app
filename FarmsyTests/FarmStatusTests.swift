@@ -138,3 +138,31 @@ struct FarmStatusTests {
         #expect(FarmStatus.parseTimestamp("not a date") == nil)
     }
 }
+
+/// The Plus half: minutes, how many agree today, and what they found.
+struct FreshnessTests {
+    static let now = Date(timeIntervalSince1970: 1_800_000_000)
+    static func at(_ minutesAgo: Double, _ status: ReportStatus, _ products: [String] = []) -> FarmReport {
+        FarmReport(status: status, createdAt: now.addingTimeInterval(-minutesAgo * 60), products: products)
+    }
+
+    @Test("newest report leads; only same-status reports in the last day count as confirmations")
+    func counts() {
+        let f = FarmStatus.freshness([
+            Self.at(18, .open, ["eggs"]),
+            Self.at(240, .open, ["cheese", "eggs"]),
+            Self.at(300, .closed),
+            Self.at(60 * 30, .open, ["milk"]),   // 30 h ago: too old
+        ], now: Self.now)
+        #expect(f?.status == .open)
+        #expect(f?.minutesAgo == 18)
+        #expect(f?.confirmations == 2)
+        #expect(f?.products == ["eggs", "cheese"])
+    }
+
+    @Test("a day-old report is history, not confirmation")
+    func stale() {
+        #expect(FarmStatus.freshness([Self.at(60 * 25, .open)], now: Self.now) == nil)
+        #expect(FarmStatus.freshness([], now: Self.now) == nil)
+    }
+}

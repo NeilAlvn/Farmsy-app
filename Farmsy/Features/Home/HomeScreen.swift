@@ -18,6 +18,7 @@ struct HomeScreen: View {
 
     @State private var catalogue = ShoppingItems.shared
     @State private var seasons = Seasons.shared
+    @State private var recent = RecentReports.shared
     @State private var query = ""
     @State private var nearby: [ProductNearby] = []
     @State private var nearbyReady = false
@@ -59,6 +60,7 @@ struct HomeScreen: View {
         .task { await catalogue.loadIfNeeded() }
         .task { await seasons.loadIfNeeded() }
         .task { await farms.loadFlagsIfNeeded() }
+        .task(id: session.hasFullAccess) { if session.hasFullAccess { await recent.refresh() } }
         .task(id: nearbyKey) { await computeNearby() }
         .onAppear { if location == nil { locationManager.request() } }
     }
@@ -178,6 +180,21 @@ struct HomeScreen: View {
         }
     }
 
+    /// Plus: the newest "open" report within the radius that names this
+    /// product, as "confirmed 18 min ago". Free tiles say nothing about timing.
+    private func confirmedLine(_ itemId: String) -> String? {
+        guard session.hasFullAccess, let location else { return nil }
+        let pins = Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
+        let hit = recent.near(location, radiusKm: radiusKm, pins: pins)
+            .filter { $0.report.status == .open && $0.report.products.contains(itemId) }
+            .max { $0.report.createdAt < $1.report.createdAt }
+        guard let hit else { return nil }
+        let mins = max(0, Int(Date().timeIntervalSince(hit.report.createdAt) / 60))
+        if mins < 60 { return String(localized: "Confirmed \(mins) min ago") }
+        if mins < 60 * 36 { return String(localized: "Confirmed \(mins / 60) h ago") }
+        return String(localized: "Confirmed \(mins / 1440) d ago")
+    }
+
     private func productTile(_ p: ProductNearby) -> some View {
         Button {
             Haptics.tap()
@@ -192,6 +209,12 @@ struct HomeScreen: View {
                 Text("\(p.count) farms · \(p.nearestKm.formatted(.number.precision(.fractionLength(1)))) km")
                     .role(.caption, .inkMuted)
                     .lineLimit(1)
+                if let line = confirmedLine(p.item.id) {
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.vividPositive).frame(width: 6, height: 6)
+                        Text(line).role(.caption, .positive).lineLimit(1)
+                    }
+                }
             }
             .frame(width: 156, alignment: .leading)
             .padding(Space.s4)
