@@ -501,13 +501,19 @@ struct FarmDetailView: View {
 
     /// The description, then all the detail sections in the web's order (what
     /// people are saying → details → what's new → reviews → claim → report).
-    /// Public now — shown to everyone, signed in or not (the wall is gone).
+    /// Public now — shown to everyone, signed in or not (the wall is gone). Luuk's
+    /// #27 added the "was it open?" FarmStatusSection here; with the wall removed it
+    /// lives in the public content rather than behind a sign-up gate.
     @ViewBuilder
     private var detailSections: some View {
         VStack(alignment: .leading, spacing: 20) {
             if let description = detail?.description, !description.isEmpty {
                 ExpandableText(text: description)
             }
+            // Reading is public, so this sits outside the member sections: a
+            // farm three people found shut this week is exactly what somebody
+            // deciding whether to drive needs to know, account or not.
+            FarmStatusSection(osmId: pin.osmId, onNeedsSignIn: { showSignIn = true })
             FarmMemberSections(pin: pin, detail: detail, onClaim: { showClaim = true })
         }
     }

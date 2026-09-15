@@ -316,6 +316,11 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             detail?.description?.takeIf { it.isNotEmpty() }?.let {
                                 Text(it, style = geist(16.sp).copy(lineHeight = 22.sp), color = FarmsyColors.ink)
                             }
+                            // R (Luuk #27) · "was it open?" visitor status. Reading is
+                            // public now, so it sits in the shared content, not behind a
+                            // gate — a farm three people found shut is what a visitor
+                            // deciding whether to drive needs, account or not.
+                            FarmStatusSection(osmId = pin.osmId, onNeedsSignIn = requestAuth)
                             FarmMemberSections(pin = pin, detail = detail, onClaim = { showClaim = true })
                         }
                     }
