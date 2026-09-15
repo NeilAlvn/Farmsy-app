@@ -189,11 +189,11 @@ struct HomeScreen: View {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text(p.item.emoji).font(.system(size: 28))
                 Text(p.item.label).role(.subheading).lineLimit(1)
-                Text("\(p.count) farms · \(p.nearestKm, specifier: "%.1f") km")
+                Text("\(p.count) farms · \(p.nearestKm.formatted(.number.precision(.fractionLength(1)))) km")
                     .role(.caption, .inkMuted)
                     .lineLimit(1)
             }
-            .frame(width: 140, alignment: .leading)
+            .frame(width: 156, alignment: .leading)
             .padding(Space.s4)
             .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
         }
