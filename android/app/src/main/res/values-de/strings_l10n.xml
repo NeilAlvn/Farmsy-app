@@ -394,4 +394,11 @@
     <string name="route_show_all_arg">Alle %1$d anzeigen</string>
     <string name="route_enter_ends">Fügen Sie Start und Ziel hinzu, um die Höfe zu sehen, an denen Sie fast vorbeifahren.</string>
     <string name="closed">Geschlossen</string>
+    <string name="status_ask">War geöffnet?</string>
+    <string name="status_open">Offen</string>
+    <string name="status_closed">Geschlossen</string>
+    <string name="status_sold_out">Ausverkauft</string>
+    <string name="status_recent_open_arg">%1$d Besucher kamen rein, zuletzt vor %2$d Tagen</string>
+    <string name="status_recent_trouble_arg">%1$d Besucher standen vor verschlossener Tür oder leerem Stand, zuletzt vor %2$d Tagen</string>
+    <string name="status_recent_mixed_arg">%1$d kamen rein, %2$d nicht, in den letzten Wochen</string>
 </resources>
