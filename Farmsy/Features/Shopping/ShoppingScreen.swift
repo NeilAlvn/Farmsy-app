@@ -37,8 +37,8 @@ struct ShoppingScreen: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     listSection
-                    addSection
                     farmsSection
+                    addSection
                     historySection
                 }
                 .padding(.horizontal, Space.s4)
