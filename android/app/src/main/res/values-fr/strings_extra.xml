@@ -184,4 +184,13 @@
     <string name="report_send_failed">Envoi impossible. Vérifiez votre connexion et réessayez.</string>
     <string name="thank_you">Merci</string>
     <string name="report_thank_you_body">Nous vérifions chaque signalement à la main et corrigeons la fiche.</string>
+
+    <!-- Five-tab redesign. -->
+    <string name="just_arrived">Vient d\'arriver</string>
+    <string name="just_arrived_sub">Repéré dans les fermes ce mois-ci.</string>
+    <string name="one_farm">1 ferme</string>
+    <string name="n_farms_arg">%1$d fermes</string>
+    <string name="pick_your_own_weekend">Cueillette ce week-end</string>
+    <string name="open_this_weekend">Ouvert ce week-end</string>
+    <string name="from_the_community">De la communauté</string>
 </resources>
