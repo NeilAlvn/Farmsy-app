@@ -163,4 +163,23 @@
     <string name="in_season_sub">Grown outdoors around here this month. Tap one to see who sells it.</string>
     <string name="peak">PEAK</string>
     <string name="find_it_nearby">Find it nearby</string>
+
+    <!-- Farm card: products as shopping chips + report incorrect info. -->
+    <string name="products">Products</string>
+    <string name="products_likely">likely</string>
+    <string name="add_all_to_shopping">Add all to shopping</string>
+    <string name="on_your_list">On your list</string>
+    <string name="products_tap_hint">Tap a product to put it on your shopping list.</string>
+    <string name="report_what_is_wrong">What is wrong?</string>
+    <string name="report_reason_closed">Closed permanently</string>
+    <string name="report_reason_hours">Opening hours are wrong</string>
+    <string name="report_reason_products">Products are wrong</string>
+    <string name="report_reason_location">Wrong location</string>
+    <string name="report_reason_duplicate">Duplicate farm</string>
+    <string name="report_reason_other">Something else</string>
+    <string name="report_note_placeholder">Anything else we should know? (optional)</string>
+    <string name="report_send">Send report</string>
+    <string name="report_send_failed">Couldn\'t send. Check your connection and try again.</string>
+    <string name="thank_you">Thank you</string>
+    <string name="report_thank_you_body">We check every report by hand and fix the listing.</string>
 </resources>
