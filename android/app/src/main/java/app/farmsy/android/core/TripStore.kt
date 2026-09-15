@@ -168,6 +168,7 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val destinationLabelKey = "dlb_trip_destination_label"
     private val ownerKey = "dlb_trip_owner"
     private val modeKey = "dlb_trip_mode"
+    private val tripDateKey = "dlb_trip_date"
 
     // Draft (local).
     private val _stopIds = MutableStateFlow<List<String>>(emptyList())
@@ -184,6 +185,12 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     val destinationCoord: StateFlow<LatLng?> = _destinationCoord.asStateFlow()
     private val _destinationLabel = MutableStateFlow<String?>(null)
     val destinationLabel: StateFlow<String?> = _destinationLabel.asStateFlow()
+
+    /// The day this drive is for (R7), `yyyy-mm-dd`. Null until somebody picks
+    /// one: a trip that never had a day must reopen against the planner's
+    /// default rather than claim it was planned for a date in the past.
+    private val _tripDate = MutableStateFlow<String?>(null)
+    val tripDate: StateFlow<String?> = _tripDate.asStateFlow()
 
     private val _mode = MutableStateFlow(TravelMode.CAR)
     val mode: StateFlow<TravelMode> = _mode.asStateFlow()
@@ -252,6 +259,9 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
             _destinationCoord.value = LatLng(d[0], d[1])
             _destinationLabel.value = prefs.getString(destinationLabelKey, null)
         }
+        // Validated on the way in as well as on the way out: a day written by
+        // an older build, or edited by hand, is not a day this build trusts.
+        _tripDate.value = TripEndpoints.validDate(prefs.getString(tripDateKey, null))
         TravelMode.fromRaw(prefs.getString(modeKey, null))?.let { _mode.value = it }
     }
 
@@ -390,6 +400,17 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         requestFit()
     }
 
+    /// Choose the day. A value that is not a day clears it rather than storing
+    /// it — the picker cannot produce one, but a restored preference can.
+    fun setTripDate(date: String?) {
+        val valid = TripEndpoints.validDate(date)
+        _tripDate.value = valid
+        if (valid == null) prefs.edit().remove(tripDateKey).apply()
+        else prefs.edit().putString(tripDateKey, valid).apply()
+    }
+
+    fun clearTripDate() = setTripDate(null)
+
     fun clearDestination() {
         _destinationCoord.value = null; _destinationLabel.value = null
         prefs.edit().remove(destinationKey).remove(destinationLabelKey).apply()
@@ -402,6 +423,10 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
             origin = TripPlace.make(_originCoord.value, _originLabel.value),
             destination = TripPlace.make(_destinationCoord.value, _destinationLabel.value),
             radiusKm = null,
+            date = _tripDate.value,
+            // Not offered anywhere yet. The column exists (059) and the rules
+            // are shared, so the day can ship without waiting for a time.
+            departMinutes = null,
         )
 
     /// Wipe the draft if the account changed. Signed-out counts as owner "anon".
@@ -615,6 +640,9 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         if (o != null) setOrigin(o.latLng, o.label) else clearOrigin()
         val dest = ends.destination
         if (dest != null) setDestination(dest.latLng, dest.label) else clearDestination()
+        // Unconditional, including the null: reopening a trip saved before R7
+        // must clear whatever day the last trip left behind, not inherit it.
+        setTripDate(ends.date)
 
         editingTripId = id
         persist()
