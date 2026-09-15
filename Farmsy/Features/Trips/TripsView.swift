@@ -135,6 +135,71 @@ struct TripsView: View {
         }.buttonStyle(.plain)
     }
 
+    // MARK: - When the drive is (R7)
+
+    /// The day the planner is working against.
+    ///
+    /// The picker always shows a day, but the trip only *has* one once somebody
+    /// chooses it: `trip.tripDate` stays nil until then, and a trip saved with
+    /// nil reopens against the planner's default rather than claiming it was
+    /// planned for a day in the past.
+    private var chosenDay: Binding<Date> {
+        Binding(
+            get: { TripEndpoints.day(from: trip.tripDate)
+                    ?? TripEndpoints.day(from: TripEndpoints.nextSaturday())
+                    ?? Date() },
+            set: { trip.setWhen(date: TripEndpoints.dayString($0), departMinutes: trip.departMinutes) }
+        )
+    }
+
+    /// A weekday and date, in the reader's own language.
+    private var dayLabel: String {
+        let day = TripEndpoints.day(from: trip.tripDate) ?? Date()
+        let f = DateFormatter()
+        f.calendar = TripEndpoints.calendar
+        f.timeZone = TripEndpoints.calendar.timeZone
+        f.setLocalizedDateFormatFromTemplate("EEEEd MMM")
+        return f.string(from: day)
+    }
+
+    /// R7 · which day this drive is for. A farm open on the Saturday you saved
+    /// and shut on the one you are planning is the single most useful thing the
+    /// planner can tell someone, and it cannot say it without a day.
+    private var dayRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "calendar").font(.system(size: 15)).foregroundStyle(Color.inkMuted)
+
+            Text(trip.tripDate == nil ? String(localized: "Choose a day") : dayLabel)
+                .font(.geist(15))
+                .foregroundStyle(trip.tripDate == nil ? Color.inkMuted : Color.ink)
+                .lineLimit(1)
+
+            Spacer()
+
+            if trip.tripDate != nil {
+                Image(systemName: "xmark.circle.fill").font(.system(size: 16))
+                    .foregroundStyle(Color.inkMuted)
+                    .onTapGesture { Haptics.tap(); trip.clearWhen() }
+                    .accessibilityLabel(String(localized: "Clear the day"))
+            }
+
+            // The system picker rather than a hand-rolled calendar: it already
+            // knows the reader's language, their first day of the week and how
+            // they expect a date to be typed.
+            //
+            // No upper bound and a lower bound of today — a trip planned for
+            // last Tuesday is a trip nobody is going to drive, and the whole
+            // point of the day is what it says about opening hours ahead.
+            DatePicker("", selection: chosenDay, in: Date()..., displayedComponents: .date)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .accessibilityLabel(String(localized: "Day of the trip"))
+        }
+        .padding(.vertical, 8).padding(.horizontal, 16)
+        .background(.white, in: Capsule())
+        .overlay(Capsule().stroke(Color.hairline, lineWidth: 1))
+    }
+
     // MARK: - Plan tab
 
     private var planTab: some View {
@@ -160,6 +225,8 @@ struct TripsView: View {
                 .overlay(Capsule().stroke(Color.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
+
+            dayRow
 
             if collapsed {
                 // On the small detent the list is tucked away entirely to keep the
@@ -577,20 +644,22 @@ struct TripsView: View {
         tab = .mine
     }
 
+    /// Hand the planned drive to Google Maps.
+    ///
+    /// The endpoints are the same ones a save writes, so what opens in Maps is
+    /// what reopening the trip would draw. Before R8 this built its own URL from
+    /// the origin and the stop list alone, which meant a drive planned towards a
+    /// destination opened as a drive ending at the last farm — the place the
+    /// user said they were going was simply absent. The rules now live in
+    /// `MapsHandoff`, alongside the web's `mapsHandoff.ts`.
     private func openGoogleMaps() {
-        let coords = ([trip.originCoord].compactMap { $0 }) + stops.map(\.coordinate)
-        guard coords.count >= 2 else {
-            if let f = stops.first, let url = URL(string: "https://www.google.com/maps/search/?api=1&query=\(f.lat),\(f.lng)") {
-                UIApplication.shared.open(url)
-            }
-            return
-        }
-        let origin = "\(coords.first!.latitude),\(coords.first!.longitude)"
-        let dest = "\(coords.last!.latitude),\(coords.last!.longitude)"
-        let mid = coords.dropFirst().dropLast().map { "\($0.latitude),\($0.longitude)" }.joined(separator: "|")
-        var s = "https://www.google.com/maps/dir/?api=1&origin=\(origin)&destination=\(dest)&travelmode=\(trip.mode.googleMode)"
-        if !mid.isEmpty { s += "&waypoints=\(mid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? mid)" }
-        if let url = URL(string: s) { UIApplication.shared.open(url) }
+        let url = MapsHandoff.googleMapsURL(.init(
+            origin: trip.originCoord,
+            stops: stops.map(\.coordinate),
+            destination: trip.destinationCoord,
+            travelMode: trip.mode.googleMode
+        ))
+        if let url { UIApplication.shared.open(url) }
     }
 }
 
