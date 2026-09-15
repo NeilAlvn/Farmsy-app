@@ -325,6 +325,34 @@
         }
       }
     },
+    "%lld days free · then %@/year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld days free · then %@/year"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld dagen gratis · daarna %@/jaar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld jours gratuits · puis %@/an"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld Tage kostenlos · dann %@/Jahr"
+          }
+        }
+      }
+    },
     "%lld farms within 100 km of %@": {
       "localizations": {
         "en": {
@@ -381,6 +409,56 @@
         }
       }
     },
+    "%lld got in, %lld did not, in the last few weeks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld got in, %lld did not, in the last few weeks"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld konden terecht, %2$lld niet, de afgelopen weken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld ont pu entrer, %2$lld non, ces dernières semaines"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld kamen rein, %2$lld nicht, in den letzten Wochen"
+          }
+        }
+      }
+    },
+    "%lld questions to go": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog %lld vragen te gaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encore %lld questions"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch %lld Fragen"
+          }
+        }
+      }
+    },
     "%lld saved": {
       "localizations": {
         "en": {
@@ -405,6 +483,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld gespeichert"
+          }
+        }
+      }
+    },
+    "%lld visitors found it shut or sold out, most recently %lld days ago": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld visitors found it shut or sold out, most recently %lld days ago"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld bezoekers stonden voor een dichte deur of een lege kraam, laatst %2$lld dagen geleden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld visiteurs ont trouvé porte close ou étal vide, le dernier il y a %2$lld jours"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Besucher standen vor verschlossener Tür oder leerem Stand, zuletzt vor %2$lld Tagen"
+          }
+        }
+      }
+    },
+    "%lld visitors got in, most recently %lld days ago": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%lld visitors got in, most recently %lld days ago"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld bezoekers konden terecht, laatst %2$lld dagen geleden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld visiteurs ont pu entrer, le dernier il y a %2$lld jours"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld Besucher kamen rein, zuletzt vor %2$lld Tagen"
           }
         }
       }
@@ -471,6 +605,28 @@
           "stringUnit": {
             "state": "new",
             "value": "+31 …"
+          }
+        }
+      }
+    },
+    "1 question to go": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog 1 vraag te gaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encore 1 question"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch 1 Frage"
           }
         }
       }
@@ -586,6 +742,62 @@
         }
       }
     },
+    "A shopping trip is planned from somewhere — pick a starting point, or let the app use your location.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "A shopping trip is planned from somewhere — pick a starting point, or let the app use your location."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een boodschappenrit begint ergens — kies een startpunt, of laat de app je locatie gebruiken."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un trajet de courses part de quelque part — choisissez un point de départ, ou laissez l’app utiliser votre position."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eine Einkaufsfahrt beginnt irgendwo — wähle einen Startpunkt, oder lass die App deinen Standort verwenden."
+          }
+        }
+      }
+    },
+    "Add %lld stops to my trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Add %lld stops to my trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voeg %lld stops toe aan mijn rit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter %lld arrêts à mon trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld Stopps zur Route hinzufügen"
+          }
+        }
+      }
+    },
     "Add a farm shop": {
       "localizations": {
         "en": {
@@ -670,6 +882,28 @@
         }
       }
     },
+    "Add something else": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog iets toevoegen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter autre chose"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch etwas hinzufügen"
+          }
+        }
+      }
+    },
     "Add to trip": {
       "localizations": {
         "en": {
@@ -750,6 +984,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adresse"
+          }
+        }
+      }
+    },
+    "Address, phone, opening times and what they sell. One free account opens every farm on the map.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse, Telefon, Öffnungszeiten und was verkauft wird. Ein kostenloses Konto öffnet jeden Hof auf der Karte."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse, téléphone, horaires et ce qu’ils vendent. Un compte gratuit ouvre toutes les fermes de la carte."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart."
           }
         }
       }
@@ -906,6 +1162,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ein Konto mit dieser E-Mail existiert bereits."
+          }
+        }
+      }
+    },
+    "An answer is still missing.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Er ontbreekt nog een antwoord."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il manque encore une réponse."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es fehlt noch eine Antwort."
+          }
+        }
+      }
+    },
+    "An email when a farm you saved posts something new": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "An email when a farm you saved posts something new"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een e-mail als een bewaarde boerderij iets nieuws plaatst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un e-mail quand une ferme enregistrée publie du nouveau"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eine E-Mail, wenn ein gespeicherter Hof etwas Neues postet"
+          }
+        }
+      }
+    },
+    "And who may we thank?": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En wie mogen we bedanken?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et qui devons-nous remercier ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Und wem dürfen wir danken?"
           }
         }
       }
@@ -1268,6 +1596,34 @@
         }
       }
     },
+    "Buy lifetime access": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Buy lifetime access"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Koop levenslange toegang"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Acheter l’accès à vie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lebenslangen Zugang kaufen"
+          }
+        }
+      }
+    },
     "Call": {
       "localizations": {
         "en": {
@@ -1520,6 +1876,34 @@
         }
       }
     },
+    "Choose a starting point first": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Choose a starting point first"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kies eerst een startpunt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisissez d’abord un point de départ"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wähle zuerst einen Startpunkt"
+          }
+        }
+      }
+    },
     "Choose photos": {
       "localizations": {
         "en": {
@@ -1544,6 +1928,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fotos auswählen"
+          }
+        }
+      }
+    },
+    "Choose up to %lld": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies er maximaal %lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez-en %lld au maximum"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wählen Sie höchstens %lld"
           }
         }
       }
@@ -1744,6 +2150,34 @@
         }
       }
     },
+    "Clear list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Clear list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lijst wissen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vider la liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Liste leeren"
+          }
+        }
+      }
+    },
     "Close": {
       "localizations": {
         "en": {
@@ -1768,6 +2202,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Schließen"
+          }
+        }
+      }
+    },
+    "Closed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Closed"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesloten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geschlossen"
           }
         }
       }
@@ -1964,6 +2426,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Land"
+          }
+        }
+      }
+    },
+    "Create a free account": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenloses Konto erstellen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un compte gratuit"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maak een gratis account aan"
           }
         }
       }
@@ -2612,6 +3096,28 @@
         }
       }
     },
+    "Email address": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-mailadres"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse e-mail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-Mail-Adresse"
+          }
+        }
+      }
+    },
     "Enter a valid date of birth. You must be at least 16.": {
       "localizations": {
         "en": {
@@ -2692,6 +3198,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alles lokal"
+          }
+        }
+      }
+    },
+    "Everything new we add to Pro, included": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Everything new we add to Pro, included"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alles wat we aan Pro toevoegen, inbegrepen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tout ce que nous ajoutons à Pro, inclus"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alles Neue, das wir zu Pro hinzufügen, inklusive"
           }
         }
       }
@@ -3148,6 +3682,34 @@
         }
       }
     },
+    "Filter by kind of place, and by how it is grown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Filter by kind of place, and by how it is grown"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Filter op soort plek en op hoe het geteeld wordt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Filtrez par type de lieu et par mode de culture"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Filtere nach Art des Ortes und nach Anbauweise"
+          }
+        }
+      }
+    },
     "Filters": {
       "localizations": {
         "de": {
@@ -3194,6 +3756,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Finde Hofläden, Selbstpflück-Höfe und ehrliche Lebensmittel direkt von den Menschen, die sie anbauen."
+          }
+        }
+      }
+    },
+    "Find what is open at this minute, and filter by the kind of place. Cancel anytime.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Find what is open at this minute, and filter by the kind of place. Cancel anytime."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zie wat nu open is en filter op soort plek. Opzeggen kan altijd."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voyez ce qui est ouvert en ce moment et filtrez par type de lieu. Résiliable à tout moment."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sieh, was gerade geöffnet ist, und filtere nach Art des Ortes. Jederzeit kündbar."
           }
         }
       }
@@ -3562,6 +4152,34 @@
         }
       }
     },
+    "Get yearly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Get yearly"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kies jaarlijks"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisir l’abonnement annuel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jährlich wählen"
+          }
+        }
+      }
+    },
     "Google Play": {
       "localizations": {
         "en": {
@@ -3920,6 +4538,34 @@
         }
       }
     },
+    "Included in both plans": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Included in both plans"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inbegrepen in beide abonnementen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inclus dans les deux formules"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In beiden Tarifen enthalten"
+          }
+        }
+      }
+    },
     "Invalid email or password.": {
       "localizations": {
         "en": {
@@ -4056,6 +4702,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ist das Ihr Hof? Beanspruchen Sie ihn"
+          }
+        }
+      }
+    },
+    "Just your email address": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alleen je e-mailadres nog"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus que votre adresse e-mail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur noch Ihre E-Mail-Adresse"
           }
         }
       }
@@ -4944,6 +5612,28 @@
         }
       }
     },
+    "More than one answer is possible": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meerdere antwoorden mogelijk"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plusieurs réponses possibles"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehrere Antworten möglich"
+          }
+        }
+      }
+    },
     "My Trips": {
       "localizations": {
         "en": {
@@ -5218,6 +5908,34 @@
         }
       }
     },
+    "No farm within 25 km lists any of this.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No farm within 25 km lists any of this."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geen boerderij binnen 25 km noemt hier iets van."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucune ferme dans un rayon de 25 km ne mentionne cela."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kein Hof im Umkreis von 25 km nennt davon etwas."
+          }
+        }
+      }
+    },
     "No farms match your search": {
       "localizations": {
         "en": {
@@ -5370,6 +6088,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keine Tour in Arbeit"
+          }
+        }
+      }
+    },
+    "Not found nearby: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Not found nearby: %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Niet gevonden in de buurt: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introuvable à proximité : %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In der Nähe nicht gefunden: %@"
           }
         }
       }
@@ -5592,6 +6338,34 @@
         }
       }
     },
+    "One-time · no renewals": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "One-time · no renewals"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eenmalig · geen verlengingen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Une seule fois · sans renouvellement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einmalig · keine Verlängerung"
+          }
+        }
+      }
+    },
     "Only farms open right now": {
       "localizations": {
         "en": {
@@ -5616,6 +6390,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nur Höfe, die gerade geöffnet sind"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Open"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offen"
           }
         }
       }
@@ -6246,6 +7048,34 @@
         }
       }
     },
+    "Place data © OpenStreetMap contributors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Place data © OpenStreetMap contributors"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plaatsgegevens © OpenStreetMap-bijdragers"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Données des lieux © contributeurs d’OpenStreetMap"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ortsdaten © OpenStreetMap-Mitwirkende"
+          }
+        }
+      }
+    },
     "Plan a trip": {
       "localizations": {
         "en": {
@@ -6352,6 +7182,34 @@
         }
       }
     },
+    "Plan my trip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Plan my trip"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plan mijn rit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Planifier mon trajet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Route planen"
+          }
+        }
+      }
+    },
     "Please check your connection and try again.": {
       "localizations": {
         "en": {
@@ -6432,6 +7290,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bestätige zuerst deine E-Mail — der Link ist in deinem Postfach."
+          }
+        }
+      }
+    },
+    "Please wait a moment and try again.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Even wachten en dan opnieuw proberen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Patientez un instant et réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einen Moment warten und noch einmal versuchen."
           }
         }
       }
@@ -7773,6 +8653,56 @@
         }
       }
     },
+    "See this farm, free": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen Hof ansehen, kostenlos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir cette ferme, gratuitement"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijk deze boerderij, gratis"
+          }
+        }
+      }
+    },
+    "See what is open right now, not just open today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "See what is open right now, not just open today"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zie wat nu open is, niet alleen vandaag"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voyez ce qui est ouvert maintenant, pas seulement aujourd’hui"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sieh, was jetzt geöffnet ist, nicht nur heute"
+          }
+        }
+      }
+    },
     "Self-picking": {
       "localizations": {
         "en": {
@@ -7829,6 +8759,28 @@
         }
       }
     },
+    "Send": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versturen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
+          }
+        }
+      }
+    },
     "Send claim": {
       "localizations": {
         "en": {
@@ -7853,6 +8805,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anspruch einreichen"
+          }
+        }
+      }
+    },
+    "Sending failed. Please try again.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versturen lukte niet. Probeer het nog eens."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’envoi a échoué. Réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden fehlgeschlagen. Bitte noch einmal versuchen."
           }
         }
       }
@@ -7885,6 +8859,28 @@
         }
       }
     },
+    "Seven questions about buying from farms": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeven vragen over boodschappen bij de boer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sept questions sur les achats à la ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sieben Fragen zum Einkaufen beim Hof"
+          }
+        }
+      }
+    },
     "Share your experience… (optional)": {
       "localizations": {
         "en": {
@@ -7909,6 +8905,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Teile deine Erfahrung… (optional)"
+          }
+        }
+      }
+    },
+    "Shop from a list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Shop from a list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Boodschappenlijst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Faire une liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nach Einkaufsliste"
+          }
+        }
+      }
+    },
+    "Shopping list": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Shopping list"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Boodschappenlijst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Liste de courses"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einkaufsliste"
           }
         }
       }
@@ -8221,6 +9273,34 @@
         }
       }
     },
+    "Sold out": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Sold out"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uitverkocht"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Épuisé"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausverkauft"
+          }
+        }
+      }
+    },
     "Something went wrong. Please try again.": {
       "localizations": {
         "en": {
@@ -8385,6 +9465,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Straße und Hausnummer (optional)"
+          }
+        }
+      }
+    },
+    "Subject, briefly": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onderwerp, kort"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objet, en bref"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betreff, kurz"
           }
         }
       }
@@ -8719,6 +9821,50 @@
         }
       }
     },
+    "Thank you, we have your answers.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedankt, we hebben je antwoorden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci, nous avons vos réponses."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danke, wir haben Ihre Antworten."
+          }
+        }
+      }
+    },
+    "Thank you, we read every one.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dank je, we lezen alles."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci, nous lisons tout."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danke, wir lesen alles."
+          }
+        }
+      }
+    },
     "Thanks — it's ": {
       "localizations": {
         "en": {
@@ -8799,6 +9945,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "Das Wesentliche"
+          }
+        }
+      }
+    },
+    "The product list couldn't be loaded. Check your connection and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The product list couldn't be loaded. Check your connection and try again."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De productlijst kon niet worden geladen. Controleer je verbinding en probeer opnieuw."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La liste des produits n’a pas pu être chargée. Vérifiez votre connexion et réessayez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Produktliste konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut."
+          }
+        }
+      }
+    },
+    "This genuinely decides what we build next.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit bepaalt echt wat we hierna bouwen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela décide vraiment de ce que nous construirons ensuite."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das entscheidet wirklich, was wir als Nächstes bauen."
+          }
+        }
+      }
+    },
+    "This is an admin account, so your answers are not counted.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit is een beheerdersaccount, dus je antwoorden tellen niet mee."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ceci est un compte administrateur, vos réponses ne sont donc pas comptées."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dies ist ein Administratorkonto, Ihre Antworten zählen daher nicht."
           }
         }
       }
@@ -8993,6 +10211,34 @@
         }
       }
     },
+    "Try free for %lld days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Try free for %lld days"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Probeer %lld dagen gratis"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Essayez %lld jours gratuitement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%lld Tage kostenlos testen"
+          }
+        }
+      }
+    },
     "Turn on notifications": {
       "localizations": {
         "en": {
@@ -9045,6 +10291,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Art des Ortes"
+          }
+        }
+      }
+    },
+    "Unlock Farmsy Pro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Unlock Farmsy Pro"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ontgrendel Farmsy Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Débloquez Farmsy Pro"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Farmsy Pro freischalten"
           }
         }
       }
@@ -9462,6 +10736,106 @@
         }
       }
     },
+    "Was it open?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Was it open?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was het open?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'était ouvert ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "War geöffnet?"
+          }
+        }
+      }
+    },
+    "We could not find your account. Open the link from the email, or sign in first.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We konden je account niet vinden. Open de link uit de e-mail, of log eerst in."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous n’avons pas trouvé votre compte. Ouvrez le lien de l’e-mail, ou connectez-vous d’abord."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir konnten Ihr Konto nicht finden. Öffnen Sie den Link aus der E-Mail, oder melden Sie sich zuerst an."
+          }
+        }
+      }
+    },
+    "We pick the farms, you drive once": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "We pick the farms, you drive once"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wij kiezen de boerderijen, jij rijdt één rondje"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nous choisissons les fermes, vous ne roulez qu’une fois"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wir wählen die Höfe, du fährst einmal"
+          }
+        }
+      }
+    },
+    "We use this only to keep your answers together and to write back if you asked something.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We gebruiken dit alleen om je antwoorden te bewaren en om terug te schrijven als je een vraag stelt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous l’utilisons uniquement pour regrouper vos réponses et vous répondre si vous avez posé une question."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir verwenden das nur, um Ihre Antworten zusammenzuhalten und zu antworten, falls Sie etwas gefragt haben."
+          }
+        }
+      }
+    },
     "We'll be in touch at %@ once the team has verified your claim.": {
       "localizations": {
         "en": {
@@ -9626,6 +11000,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wonach *suchst* du?"
+          }
+        }
+      }
+    },
+    "What could be better?": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat kan er beter?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qu’est-ce qui pourrait être mieux ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was könnte besser sein?"
+          }
+        }
+      }
+    },
+    "What did not work, what was missing, or what went well?": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat werkte niet, wat miste je, of wat viel juist mee?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qu’est-ce qui n’a pas marché, qu’est-ce qui manquait, ou qu’est-ce qui allait bien ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was hat nicht funktioniert, was hat gefehlt, oder was lief gut?"
           }
         }
       }
@@ -9988,6 +11406,28 @@
         }
       }
     },
+    "You have already answered the questions, thank you. Anything you write here comes straight to us.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt de vragen al beantwoord, dank je. Alles wat je hier schrijft komt rechtstreeks bij ons terecht."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez déjà répondu aux questions, merci. Tout ce que vous écrivez ici nous parvient directement."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sie haben die Fragen bereits beantwortet, danke. Alles, was Sie hier schreiben, kommt direkt bei uns an."
+          }
+        }
+      }
+    },
     "You're all *set*": {
       "localizations": {
         "en": {
@@ -10264,6 +11704,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deine Mitgliedschaft wurde über %@ gekauft. Kündige sie dort, damit dir nichts erneut berechnet wird."
+          }
+        }
+      }
+    },
+    "Your name (optional)": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je naam (optioneel)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre nom (facultatif)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ihr Name (optional)"
           }
         }
       }
@@ -11151,1160 +12613,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "🧺"
-          }
-        }
-      }
-    },
-    "See this farm, free": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diesen Hof ansehen, kostenlos"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voir cette ferme, gratuitement"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bekijk deze boerderij, gratis"
-          }
-        }
-      }
-    },
-    "Address, phone, opening times and what they sell. One free account opens every farm on the map.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse, Telefon, Öffnungszeiten und was verkauft wird. Ein kostenloses Konto öffnet jeden Hof auf der Karte."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse, téléphone, horaires et ce qu’ils vendent. Un compte gratuit ouvre toutes les fermes de la carte."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart."
-          }
-        }
-      }
-    },
-    "Create a free account": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kostenloses Konto erstellen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Créer un compte gratuit"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maak een gratis account aan"
-          }
-        }
-      }
-    },
-    "Seven questions about buying from farms": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zeven vragen over boodschappen bij de boer"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sept questions sur les achats à la ferme"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sieben Fragen zum Einkaufen beim Hof"
-          }
-        }
-      }
-    },
-    "More than one answer is possible": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meerdere antwoorden mogelijk"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plusieurs réponses possibles"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mehrere Antworten möglich"
-          }
-        }
-      }
-    },
-    "Choose up to %lld": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kies er maximaal %lld"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choisissez-en %lld au maximum"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wählen Sie höchstens %lld"
-          }
-        }
-      }
-    },
-    "And who may we thank?": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En wie mogen we bedanken?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Et qui devons-nous remercier ?"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Und wem dürfen wir danken?"
-          }
-        }
-      }
-    },
-    "We use this only to keep your answers together and to write back if you asked something.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "We gebruiken dit alleen om je antwoorden te bewaren en om terug te schrijven als je een vraag stelt."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nous l’utilisons uniquement pour regrouper vos réponses et vous répondre si vous avez posé une question."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wir verwenden das nur, um Ihre Antworten zusammenzuhalten und zu antworten, falls Sie etwas gefragt haben."
-          }
-        }
-      }
-    },
-    "Your name (optional)": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Je naam (optioneel)"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Votre nom (facultatif)"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ihr Name (optional)"
-          }
-        }
-      }
-    },
-    "Email address": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E-mailadres"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adresse e-mail"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E-Mail-Adresse"
-          }
-        }
-      }
-    },
-    "%lld questions to go": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nog %lld vragen te gaan"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encore %lld questions"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch %lld Fragen"
-          }
-        }
-      }
-    },
-    "1 question to go": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nog 1 vraag te gaan"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encore 1 question"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch 1 Frage"
-          }
-        }
-      }
-    },
-    "Just your email address": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alleen je e-mailadres nog"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plus que votre adresse e-mail"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nur noch Ihre E-Mail-Adresse"
-          }
-        }
-      }
-    },
-    "An answer is still missing.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Er ontbreekt nog een antwoord."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Il manque encore une réponse."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es fehlt noch eine Antwort."
-          }
-        }
-      }
-    },
-    "This is an admin account, so your answers are not counted.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dit is een beheerdersaccount, dus je antwoorden tellen niet mee."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ceci est un compte administrateur, vos réponses ne sont donc pas comptées."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dies ist ein Administratorkonto, Ihre Antworten zählen daher nicht."
-          }
-        }
-      }
-    },
-    "Please wait a moment and try again.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Even wachten en dan opnieuw proberen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Patientez un instant et réessayez."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Einen Moment warten und noch einmal versuchen."
-          }
-        }
-      }
-    },
-    "We could not find your account. Open the link from the email, or sign in first.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "We konden je account niet vinden. Open de link uit de e-mail, of log eerst in."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nous n’avons pas trouvé votre compte. Ouvrez le lien de l’e-mail, ou connectez-vous d’abord."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wir konnten Ihr Konto nicht finden. Öffnen Sie den Link aus der E-Mail, oder melden Sie sich zuerst an."
-          }
-        }
-      }
-    },
-    "Thank you, we have your answers.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bedankt, we hebben je antwoorden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Merci, nous avons vos réponses."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Danke, wir haben Ihre Antworten."
-          }
-        }
-      }
-    },
-    "This genuinely decides what we build next.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dit bepaalt echt wat we hierna bouwen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cela décide vraiment de ce que nous construirons ensuite."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das entscheidet wirklich, was wir als Nächstes bauen."
-          }
-        }
-      }
-    },
-    "What could be better?": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wat kan er beter?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qu’est-ce qui pourrait être mieux ?"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Was könnte besser sein?"
-          }
-        }
-      }
-    },
-    "You have already answered the questions, thank you. Anything you write here comes straight to us.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Je hebt de vragen al beantwoord, dank je. Alles wat je hier schrijft komt rechtstreeks bij ons terecht."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vous avez déjà répondu aux questions, merci. Tout ce que vous écrivez ici nous parvient directement."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sie haben die Fragen bereits beantwortet, danke. Alles, was Sie hier schreiben, kommt direkt bei uns an."
-          }
-        }
-      }
-    },
-    "Thank you, we read every one.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dank je, we lezen alles."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Merci, nous lisons tout."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Danke, wir lesen alles."
-          }
-        }
-      }
-    },
-    "Add something else": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nog iets toevoegen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajouter autre chose"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch etwas hinzufügen"
-          }
-        }
-      }
-    },
-    "Subject, briefly": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Onderwerp, kort"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Objet, en bref"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Betreff, kurz"
-          }
-        }
-      }
-    },
-    "What did not work, what was missing, or what went well?": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wat werkte niet, wat miste je, of wat viel juist mee?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qu’est-ce qui n’a pas marché, qu’est-ce qui manquait, ou qu’est-ce qui allait bien ?"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Was hat nicht funktioniert, was hat gefehlt, oder was lief gut?"
-          }
-        }
-      }
-    },
-    "Sending failed. Please try again.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Versturen lukte niet. Probeer het nog eens."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L’envoi a échoué. Réessayez."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Senden fehlgeschlagen. Bitte noch einmal versuchen."
-          }
-        }
-      }
-    },
-    "Send": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Versturen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Senden"
-          }
-        }
-      }
-    },
-    "Try free for %lld days": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Try free for %lld days"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Probeer %lld dagen gratis"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Essayez %lld jours gratuitement"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%lld Tage kostenlos testen"
-          }
-        }
-      }
-    },
-    "%lld days free · then %@/year": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%lld days free · then %@/year"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%lld dagen gratis · daarna %@/jaar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%lld jours gratuits · puis %@/an"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%lld Tage kostenlos · dann %@/Jahr"
-          }
-        }
-      }
-    },
-    "Get yearly": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Get yearly"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Kies jaarlijks"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Choisir l’abonnement annuel"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Jährlich wählen"
-          }
-        }
-      }
-    },
-    "Buy lifetime access": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Buy lifetime access"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Koop levenslange toegang"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Acheter l’accès à vie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Lebenslangen Zugang kaufen"
-          }
-        }
-      }
-    },
-    "One-time · no renewals": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "One-time · no renewals"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Eenmalig · geen verlengingen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Une seule fois · sans renouvellement"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Einmalig · keine Verlängerung"
-          }
-        }
-      }
-    },
-    "Unlock Farmsy Pro": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Unlock Farmsy Pro"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Ontgrendel Farmsy Pro"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Débloquez Farmsy Pro"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Farmsy Pro freischalten"
-          }
-        }
-      }
-    },
-    "Find what is open at this minute, and filter by the kind of place. Cancel anytime.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Find what is open at this minute, and filter by the kind of place. Cancel anytime."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Zie wat nu open is en filter op soort plek. Opzeggen kan altijd."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Voyez ce qui est ouvert en ce moment et filtrez par type de lieu. Résiliable à tout moment."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Sieh, was gerade geöffnet ist, und filtere nach Art des Ortes. Jederzeit kündbar."
-          }
-        }
-      }
-    },
-    "Included in both plans": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Included in both plans"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Inbegrepen in beide abonnementen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Inclus dans les deux formules"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "In beiden Tarifen enthalten"
-          }
-        }
-      }
-    },
-    "See what is open right now, not just open today": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "See what is open right now, not just open today"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Zie wat nu open is, niet alleen vandaag"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Voyez ce qui est ouvert maintenant, pas seulement aujourd’hui"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Sieh, was jetzt geöffnet ist, nicht nur heute"
-          }
-        }
-      }
-    },
-    "Filter by kind of place, and by how it is grown": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Filter by kind of place, and by how it is grown"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Filter op soort plek en op hoe het geteeld wordt"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Filtrez par type de lieu et par mode de culture"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Filtere nach Art des Ortes und nach Anbauweise"
-          }
-        }
-      }
-    },
-    "An email when a farm you saved posts something new": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "An email when a farm you saved posts something new"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Een e-mail als een bewaarde boerderij iets nieuws plaatst"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Un e-mail quand une ferme enregistrée publie du nouveau"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Eine E-Mail, wenn ein gespeicherter Hof etwas Neues postet"
-          }
-        }
-      }
-    },
-    "Everything new we add to Pro, included": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Everything new we add to Pro, included"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Alles wat we aan Pro toevoegen, inbegrepen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Tout ce que nous ajoutons à Pro, inclus"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Alles Neue, das wir zu Pro hinzufügen, inklusive"
-          }
-        }
-      }
-    },
-    "Place data © OpenStreetMap contributors": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Place data © OpenStreetMap contributors"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Plaatsgegevens © OpenStreetMap-bijdragers"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Données des lieux © contributeurs d’OpenStreetMap"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Ortsdaten © OpenStreetMap-Mitwirkende"
-          }
-        }
-      }
-    },
-    "Was it open?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Was it open?"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Was het open?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "C'était ouvert ?"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "War geöffnet?"
-          }
-        }
-      }
-    },
-    "Open": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Open"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ouvert"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Offen"
-          }
-        }
-      }
-    },
-    "Closed": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Closed"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gesloten"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fermé"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Geschlossen"
-          }
-        }
-      }
-    },
-    "Sold out": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Sold out"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uitverkocht"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Épuisé"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ausverkauft"
-          }
-        }
-      }
-    },
-    "%lld visitors got in, most recently %lld days ago": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%lld visitors got in, most recently %lld days ago"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld bezoekers konden terecht, laatst %2$lld dagen geleden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld visiteurs ont pu entrer, le dernier il y a %2$lld jours"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld Besucher kamen rein, zuletzt vor %2$lld Tagen"
-          }
-        }
-      }
-    },
-    "%lld visitors found it shut or sold out, most recently %lld days ago": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%lld visitors found it shut or sold out, most recently %lld days ago"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld bezoekers stonden voor een dichte deur of een lege kraam, laatst %2$lld dagen geleden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld visiteurs ont trouvé porte close ou étal vide, le dernier il y a %2$lld jours"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld Besucher standen vor verschlossener Tür oder leerem Stand, zuletzt vor %2$lld Tagen"
-          }
-        }
-      }
-    },
-    "%lld got in, %lld did not, in the last few weeks": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%lld got in, %lld did not, in the last few weeks"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld konden terecht, %2$lld niet, de afgelopen weken"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld ont pu entrer, %2$lld non, ces dernières semaines"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld kamen rein, %2$lld nicht, in den letzten Wochen"
           }
         }
       }

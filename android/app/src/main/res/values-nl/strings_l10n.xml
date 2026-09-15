@@ -401,4 +401,13 @@
     <string name="status_recent_open_arg">%1$d bezoekers konden terecht, laatst %2$d dagen geleden</string>
     <string name="status_recent_trouble_arg">%1$d bezoekers stonden voor een dichte deur of een lege kraam, laatst %2$d dagen geleden</string>
     <string name="status_recent_mixed_arg">%1$d konden terecht, %2$d niet, de afgelopen weken</string>
+    <string name="shop_from_a_list">Boodschappenlijst</string>
+    <string name="shopping_list">Boodschappenlijst</string>
+    <string name="shopping_list_sub">Wij kiezen de boerderijen, jij rijdt één rondje</string>
+    <string name="shopping_list_plan">Plan mijn rit</string>
+    <string name="shopping_list_add_stops_arg">Voeg %1$d stops toe aan mijn rit</string>
+    <string name="shopping_list_clear">Lijst wissen</string>
+    <string name="shopping_list_none">Geen boerderij binnen 25 km noemt hier iets van.</string>
+    <string name="shopping_list_missing_arg">Niet gevonden in de buurt: %1$s</string>
+    <string name="shopping_list_catalogue_failed">De productlijst kon niet worden geladen. Controleer je verbinding en probeer opnieuw.</string>
 </resources>
