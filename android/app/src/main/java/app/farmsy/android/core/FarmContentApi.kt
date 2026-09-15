@@ -63,14 +63,16 @@ object FarmContentApi {
     /// views** (WhatsNewSheet.loadPings / DiscoverFeedView.loadPings), not through a
     /// shared API layer. Putting it in FarmContentApi centralises the one query both
     /// screens use — a deliberate structural improvement over the iOS duplication.
-    suspend fun feedPosts(limit: Long = 30): List<Ping> = runCatching {
+    /// `sinceIso` keeps only posts created at or after that ISO-8601 instant
+    /// (Discover's "last thirty days").
+    suspend fun feedPosts(limit: Long = 30, sinceIso: String? = null): List<Ping> = runCatching {
         supabase.from("farm_pings")
             .select(
                 Columns.raw(
                     "id, farm_osm_id, author_name, body, like_count, created_at, farm_ping_images(url, sort_order)"
                 )
             ) {
-                filter { eq("status", "visible") }
+                filter { eq("status", "visible"); sinceIso?.let { gte("created_at", it) } }
                 order("created_at", Order.DESCENDING)
                 limit(limit)
             }
