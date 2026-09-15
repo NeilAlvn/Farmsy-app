@@ -168,6 +168,7 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val destinationLabelKey = "dlb_trip_destination_label"
     private val ownerKey = "dlb_trip_owner"
     private val modeKey = "dlb_trip_mode"
+    private val tripDateKey = "dlb_trip_date"
 
     // Draft (local).
     private val _stopIds = MutableStateFlow<List<String>>(emptyList())
@@ -185,6 +186,12 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val _destinationLabel = MutableStateFlow<String?>(null)
     val destinationLabel: StateFlow<String?> = _destinationLabel.asStateFlow()
 
+    /// The day this drive is for (R7), `yyyy-mm-dd`. Null until somebody picks
+    /// one: a trip that never had a day must reopen against the planner's
+    /// default rather than claim it was planned for a date in the past.
+    private val _tripDate = MutableStateFlow<String?>(null)
+    val tripDate: StateFlow<String?> = _tripDate.asStateFlow()
+
     private val _mode = MutableStateFlow(TravelMode.CAR)
     val mode: StateFlow<TravelMode> = _mode.asStateFlow()
 
@@ -194,15 +201,6 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     // ANY of them, never all. Mirrors iOS TripStore.selectedProducts.
     private val _selectedProducts = MutableStateFlow<Set<String>>(emptySet())
     val selectedProducts: StateFlow<Set<String>> = _selectedProducts.asStateFlow()
-
-    // R6 — the day + departure the corridor answers "open when you pass" about. Both
-    // nullable and NOT persisted: null means "resolve the default at render", never a
-    // frozen date, so a trip reopened next week answers about the next Saturday, not a
-    // stale one. Mirrors iOS TripStore.tripDate / departMinutes.
-    private val _tripDate = MutableStateFlow<java.time.LocalDate?>(null)
-    val tripDate: StateFlow<java.time.LocalDate?> = _tripDate.asStateFlow()
-    private val _departMinutes = MutableStateFlow<Int?>(null)
-    val departMinutes: StateFlow<Int?> = _departMinutes.asStateFlow()
 
     var editingTripId: String? = null
         private set
@@ -252,6 +250,9 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
             _destinationCoord.value = LatLng(d[0], d[1])
             _destinationLabel.value = prefs.getString(destinationLabelKey, null)
         }
+        // Validated on the way in as well as on the way out: a day written by
+        // an older build, or edited by hand, is not a day this build trusts.
+        _tripDate.value = TripEndpoints.validDate(prefs.getString(tripDateKey, null))
         TravelMode.fromRaw(prefs.getString(modeKey, null))?.let { _mode.value = it }
     }
 
@@ -321,25 +322,16 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     }
     fun clearProducts() { _selectedProducts.value = emptySet() }
 
-    // R6 — trip day + departure
-    fun setTripDate(d: java.time.LocalDate?) { _tripDate.value = d }
-    fun setDepartMinutes(m: Int?) { _departMinutes.value = m }
-
-    companion object {
-        /// Minutes past midnight for the default 10:00 departure.
-        const val DEFAULT_DEPART_MINUTES = 600
-
-        /// The next Saturday, or today when today is already Saturday — Amsterdam
-        /// time, so the weekday is the Dutch one. Matches iOS defaultTripDate.
-        fun defaultTripDate(): java.time.LocalDate {
-            val today = java.time.LocalDate.now(java.time.ZoneId.of("Europe/Amsterdam"))
-            val until = (java.time.DayOfWeek.SATURDAY.value - today.dayOfWeek.value + 7) % 7
-            return today.plusDays(until.toLong())
-        }
-
-        /// A date's weekday as statusOnDay's index (0=Mon … 6=Sun). java DayOfWeek is
-        /// 1=Mon … 7=Sun, so subtract one. Matches iOS TripStore.dayMon.
-        fun dayMon(date: java.time.LocalDate): Int = date.dayOfWeek.value - 1
+    // R6 — corridor day/departure bridge. Luuk's R7 stores the chosen day as an ISO
+    // string (TripEndpoints, persisted to DB + device); the R4 corridor needs it as a
+    // Mon-indexed weekday plus a departure minute to place each farm's arrival. Derive
+    // both from his model so the date has one source of truth, not two. Android has no
+    // departure-time picker (his endpoints leave departMinutes null), so departure is
+    // the 10:00 default.
+    val resolvedDepartMinutes: Int get() = 600
+    val resolvedDayMon: Int get() {
+        val day = TripEndpoints.day(_tripDate.value) ?: TripEndpoints.day(TripEndpoints.nextSaturday())
+        return (day?.dayOfWeek?.value ?: 6) - 1   // java DayOfWeek 1=Mon…7=Sun → 0=Mon…6=Sun
     }
 
     // MARK: Draft
@@ -390,6 +382,17 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         requestFit()
     }
 
+    /// Choose the day. A value that is not a day clears it rather than storing
+    /// it — the picker cannot produce one, but a restored preference can.
+    fun setTripDate(date: String?) {
+        val valid = TripEndpoints.validDate(date)
+        _tripDate.value = valid
+        if (valid == null) prefs.edit().remove(tripDateKey).apply()
+        else prefs.edit().putString(tripDateKey, valid).apply()
+    }
+
+    fun clearTripDate() = setTripDate(null)
+
     fun clearDestination() {
         _destinationCoord.value = null; _destinationLabel.value = null
         prefs.edit().remove(destinationKey).remove(destinationLabelKey).apply()
@@ -402,6 +405,10 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
             origin = TripPlace.make(_originCoord.value, _originLabel.value),
             destination = TripPlace.make(_destinationCoord.value, _destinationLabel.value),
             radiusKm = null,
+            date = _tripDate.value,
+            // Not offered anywhere yet. The column exists (059) and the rules
+            // are shared, so the day can ship without waiting for a time.
+            departMinutes = null,
         )
 
     /// Wipe the draft if the account changed. Signed-out counts as owner "anon".
@@ -615,6 +622,9 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
         if (o != null) setOrigin(o.latLng, o.label) else clearOrigin()
         val dest = ends.destination
         if (dest != null) setDestination(dest.latLng, dest.label) else clearDestination()
+        // Unconditional, including the null: reopening a trip saved before R7
+        // must clear whatever day the last trip left behind, not inherit it.
+        setTripDate(ends.date)
 
         editingTripId = id
         persist()

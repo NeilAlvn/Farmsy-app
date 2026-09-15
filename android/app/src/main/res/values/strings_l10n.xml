@@ -331,6 +331,11 @@
     <string name="signup_wall_body">Address, phone, opening times and what they sell. One free account opens every farm on the map.</string>
     <string name="signup_wall_cta">Create a free account</string>
     <string name="choose_a_starting_point">Choose a starting point</string>
+    <string name="choose_a_day">Choose a day</string>
+    <string name="day_of_the_trip">Day of the trip</string>
+    <string name="clear_the_day">Clear the day</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
     <string name="farmsy_for_android_arg">Farmsy for Android %1$s</string>
     <string name="farmsy_pro">Farmsy Pro</string>
     <string name="pro_open_now">Open right now</string>

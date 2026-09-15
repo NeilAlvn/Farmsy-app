@@ -168,6 +168,15 @@ final class TripStore {
     /// trip that is only a list of farms is still a trip.
     private(set) var destinationCoord: CLLocationCoordinate2D?
     private(set) var destinationLabel: String?
+    /// The day the drive is planned for, `yyyy-mm-dd` (R7). Nil means never
+    /// chosen, which is what every trip saved before R7 is.
+    ///
+    /// This is what lets "drive this again" say what changed. Without a day to
+    /// compare against, every farm on a reopened trip would report today and the
+    /// comparison would be between a saved route and nothing at all.
+    private(set) var tripDate: String?
+    /// When the drive sets off, minutes past midnight. Nil means never chosen.
+    private(set) var departMinutes: Int?
     /// Which trip is being edited (so save updates instead of duplicating).
     private(set) var editingTripId: String?
 
@@ -186,14 +195,6 @@ final class TripStore {
     /// farms on the way). Several picked means ANY of them, never all.
     private(set) var selectedProducts: Set<String> = []
 
-    /// R6 — the day and departure the corridor answers "open when you pass" about.
-    /// Both nullable, and deliberately NOT persisted: nil means "resolve the default
-    /// at render" (never a frozen date), so a trip planned today and reopened next
-    /// week answers about the *next* Saturday rather than a stale past one. The web's
-    /// contract is the same.
-    private(set) var tripDate: Date?
-    /// Minutes past midnight to set out. nil → the 10:00 default.
-    private(set) var departMinutes: Int?
     /// The line as it draws itself, sliced by the trace animation (0→1). The map
     /// renders this, not `routeLine`, so the route traces along the road.
     private(set) var traceProgress: Double = 1
@@ -273,6 +274,7 @@ final class TripStore {
     private let destinationKey = "dlb_trip_destination"
     private let ownerKey = "dlb_trip_owner"
     private let modeKey = "dlb_trip_mode"
+    private let whenKey = "dlb_trip_when"
     /// Route answers keyed by the stops they belong to (failures cached too).
     private var routeCache: [String: RouteAPI.Response?] = [:]
 
@@ -287,6 +289,12 @@ final class TripStore {
             destinationLabel = UserDefaults.standard.string(forKey: destinationKey + ".label")
         }
         if let m = UserDefaults.standard.string(forKey: modeKey).flatMap(TravelMode.init) { mode = m }
+        // Validated on the way in as well as out: a value that is no longer a
+        // real date (a device clock rolled back over a leap day, a hand-edited
+        // plist) must not become a trip planned for a day that does not exist.
+        tripDate = TripEndpoints.validDate(UserDefaults.standard.string(forKey: whenKey))
+        departMinutes = UserDefaults.standard.object(forKey: whenKey + ".depart") as? Int
+        departMinutes = TripEndpoints.validDepartMinutes(departMinutes)
     }
 
     /// Switch travel mode. The road geometry is cached by stops and unchanged by
@@ -307,28 +315,19 @@ final class TripStore {
     }
     func clearProducts() { selectedProducts.removeAll() }
 
-    // MARK: R6 — trip day + departure
+    // MARK: R6 — corridor day/departure bridge
 
-    func setTripDate(_ d: Date?) { tripDate = d }
-    func setDepartMinutes(_ m: Int?) { departMinutes = m }
-
-    /// The day the corridor answers about — the coming Saturday (today if it is
-    /// Saturday) until the user picks another. Amsterdam time; the drives are NL/BE.
-    var resolvedTripDate: Date { tripDate ?? Self.defaultTripDate() }
-    /// Minutes past midnight to set out, defaulting to 10:00.
+    /// R7 (Luuk) stores the chosen day as an ISO string on the trip, persisted to the
+    /// DB and the device via TripEndpoints, and offers `nextSaturday()` as the default.
+    /// The R4 corridor (R6) needs that day as a Mon-indexed weekday plus a departure
+    /// minute to place each farm's arrival time. These derive both from his model, so
+    /// the date has one source of truth rather than two.
     var resolvedDepartMinutes: Int { departMinutes ?? 600 }
-    /// The chosen day as `statusOnDay`'s 0=Mon…6=Sun index.
-    var resolvedDayMon: Int { Self.dayMon(for: resolvedTripDate) }
-
-    /// The next Saturday, or today when today is already Saturday. Start-of-day in
-    /// Amsterdam so the weekday is the Dutch one, not the device's.
-    static func defaultTripDate(now: Date = Date()) -> Date {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Europe/Amsterdam") ?? .current
-        let today = cal.startOfDay(for: now)
-        let wd = cal.component(.weekday, from: today)   // 1=Sun … 7=Sat
-        let daysUntilSat = (7 - wd + 7) % 7             // 0 when today is Saturday
-        return cal.date(byAdding: .day, value: daysUntilSat, to: today) ?? today
+    var resolvedDayMon: Int {
+        let day = TripEndpoints.day(from: tripDate)
+            ?? TripEndpoints.day(from: TripEndpoints.nextSaturday())
+            ?? Date()
+        return Self.dayMon(for: day)
     }
 
     /// A date's weekday as `statusOnDay`'s index (0=Mon … 6=Sun), in Amsterdam —
@@ -385,13 +384,40 @@ final class TripStore {
         UserDefaults.standard.removeObject(forKey: destinationKey + ".label")
     }
 
-    /// The ends as they are stored (R1). One place builds them, so the insert,
-    /// the update and the Maps hand-off cannot disagree about what the trip is.
+    /// Plan the drive for a day, and optionally a departure (R7).
+    ///
+    /// A value that is not a real date or not a minute inside a day is stored as
+    /// nil rather than rejected. The planner falls back to its own default when
+    /// there is no day, which is a working trip; refusing the write would leave
+    /// the user with a picker that appears to do nothing.
+    func setWhen(date: String?, departMinutes minutes: Int? = nil) {
+        tripDate = TripEndpoints.validDate(date)
+        departMinutes = TripEndpoints.validDepartMinutes(minutes)
+
+        if let tripDate {
+            UserDefaults.standard.set(tripDate, forKey: whenKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: whenKey)
+        }
+        if let departMinutes {
+            UserDefaults.standard.set(departMinutes, forKey: whenKey + ".depart")
+        } else {
+            UserDefaults.standard.removeObject(forKey: whenKey + ".depart")
+        }
+    }
+
+    func clearWhen() { setWhen(date: nil, departMinutes: nil) }
+
+    /// The ends as they are stored (R1, R7). One place builds them, so the
+    /// insert, the update and the Maps hand-off cannot disagree about what the
+    /// trip is.
     var endpoints: TripEndpoints {
         TripEndpoints(
             origin: originCoord.flatMap { TripPlace.make($0, label: originLabel) },
             destination: destinationCoord.flatMap { TripPlace.make($0, label: destinationLabel) },
-            radiusKm: nil
+            radiusKm: nil,
+            date: tripDate,
+            departMinutes: departMinutes
         )
     }
 
@@ -527,9 +553,10 @@ final class TripStore {
     /// Save the current draft as a trip (insert, or update when editing). Caches
     /// the farm name/coords/city/image on each stop row so a share link survives.
     func save(name: String, userId: String, pins: [String: FarmPin]) async {
-        // R1: the ends travel with the row. Flattened rather than nested so the
-        // column names are the ones migration 058 added, and so the update below
-        // can carry exactly the same seven fields as the insert.
+        // R1 and R7: the ends and the day travel with the row. Flattened rather
+        // than nested so the column names are the ones migrations 058 and 059
+        // added, and so the update below can carry exactly the same nine fields
+        // as the insert.
         struct TripRow: Encodable {
             let user_id: String
             let name: String
@@ -540,6 +567,8 @@ final class TripStore {
             let destination_lng: Double?
             let destination_label: String?
             let radius_km: Double?
+            let trip_date: String?
+            let depart_minutes: Int?
 
             init(user_id: String, name: String, ends: TripEndpointRow) {
                 self.user_id = user_id
@@ -551,13 +580,15 @@ final class TripStore {
                 destination_lng = ends.destination_lng
                 destination_label = ends.destination_label
                 radius_km = ends.radius_km
+                trip_date = ends.trip_date
+                depart_minutes = ends.depart_minutes
             }
         }
 
-        /// Editing an existing trip. Every one of the seven ends is written, so
-        /// removing a destination clears the column instead of leaving the old
-        /// one behind — a trip that keeps a start the user deleted is worse than
-        /// one that never had it.
+        /// Editing an existing trip. Every one of the nine is written, so
+        /// removing a destination or a day clears the column instead of leaving
+        /// the old one behind — a trip that keeps a start the user deleted is
+        /// worse than one that never had it.
         struct TripUpdate: Encodable {
             let name: String
             let updated_at: String
@@ -568,6 +599,8 @@ final class TripStore {
             let destination_lng: Double?
             let destination_label: String?
             let radius_km: Double?
+            let trip_date: String?
+            let depart_minutes: Int?
         }
         struct StopRow: Encodable {
             let trip_id: String; let farm_osm_id: String; let farm_name: String
@@ -587,7 +620,8 @@ final class TripStore {
                     origin_lat: ends.origin_lat, origin_lng: ends.origin_lng, origin_label: ends.origin_label,
                     destination_lat: ends.destination_lat, destination_lng: ends.destination_lng,
                     destination_label: ends.destination_label,
-                    radius_km: ends.radius_km))
+                    radius_km: ends.radius_km,
+                    trip_date: ends.trip_date, depart_minutes: ends.depart_minutes))
                 .eq("id", value: editingTripId).execute()
             _ = try? await supabase.from("trip_farms").delete().eq("trip_id", value: editingTripId).execute()
             tripId = editingTripId
@@ -631,6 +665,10 @@ final class TripStore {
         let ends = rows.first?.endpoints ?? .none
         if let o = ends.origin { setOrigin(o.coordinate, label: o.label) } else { clearOrigin() }
         if let d = ends.destination { setDestination(d.coordinate, label: d.label) } else { clearDestination() }
+        // R7: and the day it was for. A trip saved before R7 has none, which is
+        // exactly what it was — the planner falls back to its own default rather
+        // than claiming the trip was planned for a day in the past.
+        setWhen(date: ends.date, departMinutes: ends.departMinutes)
 
         editingTripId = id
         persist()

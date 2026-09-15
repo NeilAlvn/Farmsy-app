@@ -308,6 +308,11 @@
     <string name="signup_wall_body">Adres, telefoon, openingstijden en wat ze verkopen. Eén gratis account opent elke boerderij op de kaart.</string>
     <string name="signup_wall_cta">Maak een gratis account aan</string>
     <string name="choose_a_starting_point">Kies een vertrekpunt</string>
+    <string name="choose_a_day">Kies een dag</string>
+    <string name="day_of_the_trip">Dag van de rit</string>
+    <string name="clear_the_day">Dag wissen</string>
+    <string name="today">Vandaag</string>
+    <string name="tomorrow">Morgen</string>
     <string name="farmsy_for_android_arg">Farmsy voor Android %1$s</string>
     <string name="farmsy_pro">Farmsy Pro</string>
     <string name="pro_open_now">Nu geopend</string>
