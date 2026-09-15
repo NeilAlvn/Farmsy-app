@@ -202,15 +202,6 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private val _selectedProducts = MutableStateFlow<Set<String>>(emptySet())
     val selectedProducts: StateFlow<Set<String>> = _selectedProducts.asStateFlow()
 
-    // R6 — the day + departure the corridor answers "open when you pass" about. Both
-    // nullable and NOT persisted: null means "resolve the default at render", never a
-    // frozen date, so a trip reopened next week answers about the next Saturday, not a
-    // stale one. Mirrors iOS TripStore.tripDate / departMinutes.
-    private val _tripDate = MutableStateFlow<java.time.LocalDate?>(null)
-    val tripDate: StateFlow<java.time.LocalDate?> = _tripDate.asStateFlow()
-    private val _departMinutes = MutableStateFlow<Int?>(null)
-    val departMinutes: StateFlow<Int?> = _departMinutes.asStateFlow()
-
     var editingTripId: String? = null
         private set
 
@@ -331,25 +322,16 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     }
     fun clearProducts() { _selectedProducts.value = emptySet() }
 
-    // R6 — trip day + departure
-    fun setTripDate(d: java.time.LocalDate?) { _tripDate.value = d }
-    fun setDepartMinutes(m: Int?) { _departMinutes.value = m }
-
-    companion object {
-        /// Minutes past midnight for the default 10:00 departure.
-        const val DEFAULT_DEPART_MINUTES = 600
-
-        /// The next Saturday, or today when today is already Saturday — Amsterdam
-        /// time, so the weekday is the Dutch one. Matches iOS defaultTripDate.
-        fun defaultTripDate(): java.time.LocalDate {
-            val today = java.time.LocalDate.now(java.time.ZoneId.of("Europe/Amsterdam"))
-            val until = (java.time.DayOfWeek.SATURDAY.value - today.dayOfWeek.value + 7) % 7
-            return today.plusDays(until.toLong())
-        }
-
-        /// A date's weekday as statusOnDay's index (0=Mon … 6=Sun). java DayOfWeek is
-        /// 1=Mon … 7=Sun, so subtract one. Matches iOS TripStore.dayMon.
-        fun dayMon(date: java.time.LocalDate): Int = date.dayOfWeek.value - 1
+    // R6 — corridor day/departure bridge. Luuk's R7 stores the chosen day as an ISO
+    // string (TripEndpoints, persisted to DB + device); the R4 corridor needs it as a
+    // Mon-indexed weekday plus a departure minute to place each farm's arrival. Derive
+    // both from his model so the date has one source of truth, not two. Android has no
+    // departure-time picker (his endpoints leave departMinutes null), so departure is
+    // the 10:00 default.
+    val resolvedDepartMinutes: Int get() = 600
+    val resolvedDayMon: Int get() {
+        val day = TripEndpoints.day(_tripDate.value) ?: TripEndpoints.day(TripEndpoints.nextSaturday())
+        return (day?.dayOfWeek?.value ?: 6) - 1   // java DayOfWeek 1=Mon…7=Sun → 0=Mon…6=Sun
     }
 
     // MARK: Draft

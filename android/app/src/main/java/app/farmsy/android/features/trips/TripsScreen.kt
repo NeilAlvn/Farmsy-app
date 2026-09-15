@@ -121,9 +121,6 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val routeLine by trip.routeLine.collectAsState()
     val distanceMeters by trip.distanceMeters.collectAsState()
     val durationSeconds by trip.durationSeconds.collectAsState()
-    // R6 — the day + departure the corridor answers about (null → resolved default).
-    val tripDate by trip.tripDate.collectAsState()
-    val departMinutes by trip.departMinutes.collectAsState()
     // R5 — the product chips picked for the corridor.
     val selectedProducts by trip.selectedProducts.collectAsState()
     val isRouting by trip.isRouting.collectAsState()
@@ -312,24 +309,20 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                 // the new road for free.
                 if (routeLine.size >= 2) {
                     Spacer(Modifier.height(4.dp))
-                    // R6 · which day + departure the corridor answers about. Defaults
-                    // to the coming Saturday at 10:00 until changed.
-                    val resolvedDate = tripDate ?: TripStore.defaultTripDate()
-                    val resolvedDepart = departMinutes ?: TripStore.DEFAULT_DEPART_MINUTES
-                    TripWhenRow(
-                        date = resolvedDate,
-                        departMinutes = resolvedDepart,
-                        onDate = { trip.setTripDate(it) },
-                        onDepart = { trip.setDepartMinutes(it) },
-                    )
-                    Spacer(Modifier.height(4.dp))
+                    // R6 · the corridor answers "open when you pass" for the day picked
+                    // in Luuk's day row (R7); departure is the 10:00 default (Android has
+                    // no time picker). Derive the Mon-indexed weekday from his String date.
+                    val resolvedDayMon = remember(tripDate) {
+                        val d = TripEndpoints.day(tripDate) ?: TripEndpoints.day(TripEndpoints.nextSaturday())
+                        (d?.dayOfWeek?.value ?: 6) - 1
+                    }
                     RouteCorridor(
                         road = routeLine,
                         tripKm = distanceMeters?.let { it / 1000.0 },
                         filteredFarms = farms.filtered(),
                         stopIds = stopIds.toSet(),
-                        dayMon = TripStore.dayMon(resolvedDate),
-                        departMinutes = resolvedDepart,
+                        dayMon = resolvedDayMon,
+                        departMinutes = 600,
                         durationSeconds = durationSeconds,
                         produceByOsm = farms.produceByOsm,
                         selectedProducts = selectedProducts,
@@ -791,64 +784,3 @@ private fun openGoogleMaps(
     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
 }
 
-/// R6 · "Going [day] at [time]" — the day and departure the corridor's open/closed
-/// answers are measured against. Two native pickers bound to the TripStore, defaulting
-/// to the coming Saturday at 10:00 until touched. Mirrors iOS TripsView.tripWhenRow.
-private val tripDateFmt: java.time.format.DateTimeFormatter =
-    java.time.format.DateTimeFormatter.ofPattern("EEE d MMM")
-
-@Composable
-private fun TripWhenRow(
-    date: java.time.LocalDate,
-    departMinutes: Int,
-    onDate: (java.time.LocalDate) -> Unit,
-    onDepart: (Int) -> Unit,
-) {
-    val context = LocalContext.current
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(
-            Icons.Filled.CalendarMonth, null,
-            tint = FarmsyColors.inkMuted, modifier = Modifier.size(16.dp),
-        )
-        Text(
-            stringResource(R.string.route_going),
-            style = geist(13.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
-        )
-        WhenChip(date.format(tripDateFmt)) {
-            android.app.DatePickerDialog(
-                context,
-                { _, y, m, d -> onDate(java.time.LocalDate.of(y, m + 1, d)) },
-                date.year, date.monthValue - 1, date.dayOfMonth,
-            ).show()
-        }
-        Text(
-            stringResource(R.string.route_at),
-            style = geist(13.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
-        )
-        WhenChip("%02d:%02d".format(departMinutes / 60, departMinutes % 60)) {
-            android.app.TimePickerDialog(
-                context,
-                { _, h, min -> onDepart(h * 60 + min) },
-                departMinutes / 60, departMinutes % 60, true,
-            ).show()
-        }
-    }
-}
-
-@Composable
-private fun WhenChip(text: String, onClick: () -> Unit) {
-    Text(
-        text,
-        style = geist(13.sp, FontWeight.SemiBold),
-        color = FarmsyColors.ink,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(FarmsyColors.hairline.copy(alpha = 0.5f))
-            .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
-}
