@@ -1,5 +1,31 @@
 # Farmsy iOS → Android Port Manifest
 
+## Five-tab redesign (Sept 2026) — new surfaces and their Android files
+
+The map-with-sheets shell became five tabs with a floating pill; Fraunces and Geist
+became Plus Jakarta Sans (weight by file). The sections below this one predate
+the redesign and still describe the old shell/typography where they mention it.
+
+| iOS | Android |
+|-----|---------|
+| `App/Theme.swift` tokens (colours, `Space`, `Radius`, `TabBarInset`, `TextRole`) | `ui/theme/Theme.kt`, `ui/theme/Type.kt` (`ui()`, `role(TextRole)`; `geist()`/`display()` kept as aliases) |
+| `App/UI.swift` primitive kit | `ui/theme/Components.kt` (`ScreenHeader`, `SectionHeader`, `PillButton`, `IconButton`, `Chip`, `Badge`, `RowGroup`/`ListRow`, `SearchField`, `EmptyState`, `AtmosphereBand`, `Wordmark`, `PlusLockCard`); `FloatingTabBar` in `features/main/MainScreen.kt` |
+| `Features/Main/AppShell.swift` (`AppTab`, `ShellActions`) | `features/main/MainScreen.kt` (`AppTab`, `ShellActions`, `LocalShell`; pager keeps every tab alive) |
+| `Features/Home/HomeScreen.swift` | `features/home/HomeScreen.kt` |
+| `Features/Shopping/ShoppingScreen.swift` | `features/shopping/ShoppingScreen.kt` |
+| `Features/Profile/ProfileScreen.swift` (replaces SettingsSheet) | `features/profile/ProfileScreen.kt` (replaces `features/settings/SettingsScreen.kt`) |
+| `Features/Discover/DiscoverScreen.swift` | `features/discover/DiscoverScreen.kt` |
+| `Features/Community/CommunityScreen.swift` | `features/community/CommunityScreen.kt` |
+| `PingCard.swift` / `FeaturedFarmCard.swift` | `features/whatsnew/FeedCards.kt` (was `WhatsNewSheet.kt`; the sheet itself is gone) |
+| `Core/FarmsStore.productsNearby` / `showProduct`; `ShoppingItem.emoji`, `ProductNearby` | `core/FarmsStore.kt`, `core/ShoppingList.kt`; search radius in `core/Preferences.kt` (`SearchRadius`) |
+| `FarmsyTests/ProductsNearbyTests.swift` | `app/src/test/.../core/ProductsNearbyTest.kt` |
+| Deleted: `SavedScreen`, `WhatsNewSheet`, `DiscoverFeedView` | Deleted: `features/saved/SavedScreen.kt`, `WhatsNewSheet` composable, `features/discover/DiscoverFeedScreen.kt` |
+
+Map: the "Farmsy Pro" filter group is now "When and what kind" and free on both;
+the map opens on the user's first fix unless a product/AI search is pending.
+Plus upsell: the four feature lines sell matching, routing, live availability and
+alerts (nl/fr/de fall back to English, as on iOS).
+
 Exhaustive audit of the **iOS** app (`Farmsy/`, SwiftUI, 39 files, ~10,098 LOC) for a 1:1 Android (Jetpack Compose) port. Every screen, element, model, endpoint, token and dependency is enumerated with a **Status** column. Nothing here is summarized as "similar to above" — each item is listed.
 
 **Status legend:** `NOT_STARTED` · `IN_PROGRESS` · `DONE` · `N/A` (platform-specific, no Android analog). Every row below is `NOT_STARTED` unless a port already exists — this manifest is the source of truth; treat all as `NOT_STARTED` for planning.

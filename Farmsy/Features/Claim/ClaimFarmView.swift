@@ -71,7 +71,7 @@ struct ClaimFarmView: View {
                                  emphasis: pin.name,
                                  trailing: String(localized: " yours?"), size: 26)
                     Text("Claim it to keep your details up to date. Our team verifies every claim before handing over the keys.")
-                        .font(.geist(14))
+                        .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                         .lineSpacing(2)
                 }
@@ -87,7 +87,7 @@ struct ClaimFarmView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("How should we verify you?")
-                        .font(.display(19, weight: .semibold))
+                        .font(.ui(19, .semibold))
                         .foregroundStyle(Color.ink)
                     Picker("Verification", selection: $method) {
                         ForEach(Method.allCases, id: \.self) { m in
@@ -100,16 +100,16 @@ struct ClaimFarmView: View {
                         field("KVK number *", text: $kvkNumber, prompt: "12345678", keyboard: .numberPad)
                     } else {
                         Text("Use an email address on your farm's own domain and we can verify you fastest.")
-                            .font(.geist(13))
+                            .font(.ui(13))
                             .foregroundStyle(Color.inkMuted)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Anything we should know? (optional)")
-                            .font(.geist(13, .semibold))
+                            .font(.ui(13, .semibold))
                             .foregroundStyle(Color.inkMuted)
                         TextEditor(text: $message)
-                            .font(.geist(15))
+                            .font(.ui(15))
                             .frame(minHeight: 80)
                             .padding(8)
                             .scrollContentBackground(.hidden)
@@ -121,7 +121,7 @@ struct ClaimFarmView: View {
 
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(.geist(14, .medium))
+                        .font(.ui(14, .medium))
                         .foregroundStyle(Color.warnRed)
                 }
 
@@ -156,10 +156,10 @@ struct ClaimFarmView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.geist(13, .semibold))
+                .font(.ui(13, .semibold))
                 .foregroundStyle(Color.inkMuted)
             TextField(prompt, text: text)
-                .font(.geist(15))
+                .font(.ui(15))
                 .keyboardType(keyboard)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(keyboard == .default ? .words : .never)
@@ -177,7 +177,7 @@ struct ClaimFarmView: View {
                 .foregroundStyle(Color.farmGreen)
             DisplayTitle(String(localized: "Claim *sent*"), size: 30)
             Text("We'll be in touch at \(email) once the team has verified your claim.")
-                .font(.geist(15))
+                .font(.ui(15))
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)

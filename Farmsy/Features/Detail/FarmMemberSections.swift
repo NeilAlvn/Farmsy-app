@@ -53,9 +53,9 @@ struct FarmMemberSections: View {
                 HStack(spacing: 8) {
                     Image(systemName: "star.fill").font(.system(size: 15)).foregroundStyle(Color.star)
                     Text(String(format: "%.1f", averageRating))
-                        .font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                        .font(.ui(16, .bold)).foregroundStyle(Color.ink)
                     Text("· \(reviews.count) \(reviews.count == 1 ? "review" : "reviews")")
-                        .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                        .font(.ui(14)).foregroundStyle(Color.inkMuted)
                 }
             }
         }
@@ -181,7 +181,7 @@ struct FarmMemberSections: View {
             ReviewComposer(pin: pin, existing: myReview) { await reload() }
             if reviews.isEmpty {
                 Text("No reviews yet. Be the first!")
-                    .font(.geist(13)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(13)).foregroundStyle(Color.inkMuted)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
             } else {
@@ -200,11 +200,11 @@ struct FarmMemberSections: View {
     private var claimBlock: some View {
         VStack(spacing: 8) {
             Text("Is this your farm?")
-                .font(.geist(16, .bold)).foregroundStyle(Color.ink)
+                .font(.ui(16, .bold)).foregroundStyle(Color.ink)
             Button(action: { Haptics.tap(); onClaim() }) {
                 HStack(spacing: 8) {
                     Image(systemName: "shield").font(.system(size: 15, weight: .semibold))
-                    Text("Claim this farm").font(.geist(15, .semibold))
+                    Text("Claim this farm").font(.ui(15, .semibold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -213,7 +213,7 @@ struct FarmMemberSections: View {
             }
             .buttonStyle(.plain)
             Text("Claim it to keep its details, photos and opening hours up to date. We check every claim by hand.")
-                .font(.geist(12)).foregroundStyle(Color.inkMuted)
+                .font(.ui(12)).foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -226,7 +226,7 @@ struct FarmMemberSections: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "flag").font(.system(size: 13))
-                Text("Report incorrect info").font(.geist(13, .medium))
+                Text("Report incorrect info").font(.ui(13, .medium))
             }
             .foregroundStyle(Color.inkMuted)
             .frame(maxWidth: .infinity)
@@ -237,12 +237,12 @@ struct FarmMemberSections: View {
     // MARK: - Helpers
 
     private func sectionHeader(_ title: String) -> some View {
-        Text(title).font(.geist(17, .bold)).foregroundStyle(Color.ink)
+        Text(title).font(.ui(17, .bold)).foregroundStyle(Color.ink)
     }
 
     private func dashedNote(_ text: String) -> some View {
         Text(text)
-            .font(.geist(13)).foregroundStyle(Color.inkMuted)
+            .font(.ui(13)).foregroundStyle(Color.inkMuted)
             .frame(maxWidth: .infinity).padding(.vertical, 14)
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Color(hex: 0xE5E7EB), style: StrokeStyle(lineWidth: 1, dash: [4])))
@@ -303,13 +303,13 @@ private struct FarmPostRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(initials).font(.geist(13, .bold)).foregroundStyle(Color.farmGreen)
+                Text(initials).font(.ui(13, .bold)).foregroundStyle(Color.farmGreen)
                     .frame(width: 36, height: 36).background(Color.farmGreen.opacity(0.12), in: Circle())
-                Text(ping.authorName).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
+                Text(ping.authorName).font(.ui(14, .semibold)).foregroundStyle(Color.ink)
                 Spacer()
             }
             if !ping.body.isEmpty {
-                Text(ping.body).font(.geist(14)).foregroundStyle(Color.ink)
+                Text(ping.body).font(.ui(14)).foregroundStyle(Color.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             if !ping.images.isEmpty {
@@ -319,7 +319,7 @@ private struct FarmPostRow: View {
                 Button { Task { await onLike() } } label: {
                     HStack(spacing: 5) {
                         Image(systemName: liked ? "heart.fill" : "heart").font(.system(size: 13))
-                        if displayCount > 0 { Text("\(displayCount)").font(.geist(12)) }
+                        if displayCount > 0 { Text("\(displayCount)").font(.ui(12)) }
                     }
                     .foregroundStyle(liked ? Color.farmGreen : Color.inkMuted)
                 }.buttonStyle(.plain)
@@ -331,7 +331,7 @@ private struct FarmPostRow: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "flag").font(.system(size: 12))
-                        Text(reported ? "Reported" : "Report").font(.geist(12))
+                        Text(reported ? "Reported" : "Report").font(.ui(12))
                     }
                     .foregroundStyle(Color.inkMuted)
                 }.buttonStyle(.plain).disabled(reported)
@@ -352,7 +352,7 @@ private struct ReviewRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 8) {
-                Text(review.reviewerName).font(.geist(14, .semibold)).foregroundStyle(Color.ink)
+                Text(review.reviewerName).font(.ui(14, .semibold)).foregroundStyle(Color.ink)
                 Spacer()
                 HStack(spacing: 2) {
                     ForEach(1...5, id: \.self) { i in
@@ -362,7 +362,7 @@ private struct ReviewRow: View {
                 }
             }
             if let body = review.body, !body.isEmpty {
-                Text(body).font(.geist(14)).foregroundStyle(Color.ink)
+                Text(body).font(.ui(14)).foregroundStyle(Color.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -387,7 +387,7 @@ private struct ReviewComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Leave a review").font(.geist(14, .semibold)).foregroundStyle(Color.ink)
+            Text("Leave a review").font(.ui(14, .semibold)).foregroundStyle(Color.ink)
             HStack(spacing: 6) {
                 ForEach(1...5, id: \.self) { i in
                     Image(systemName: i <= rating ? "star.fill" : "star")
@@ -396,7 +396,7 @@ private struct ReviewComposer: View {
                 }
             }
             TextField("Share your experience… (optional)", text: $reviewText, axis: .vertical)
-                .font(.geist(15)).lineLimit(2...4)
+                .font(.ui(15)).lineLimit(2...4)
                 .padding(12)
                 .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.hairline, lineWidth: 1))
@@ -406,7 +406,7 @@ private struct ReviewComposer: View {
                     Task { await submit() }
                 } label: {
                     if posting { ProgressView().tint(.white).frame(width: 80) }
-                    else { Text("Submit").font(.geist(14, .semibold)).foregroundStyle(.white).frame(width: 80) }
+                    else { Text("Submit").font(.ui(14, .semibold)).foregroundStyle(.white).frame(width: 80) }
                 }
                 .padding(.vertical, 11)
                 .background(rating > 0 ? Color.farmGreenMap : Color.farmGreenMap.opacity(0.4),
@@ -451,7 +451,7 @@ private struct PostComposer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             TextField("What's new at \(pin.name)?", text: $text, axis: .vertical)
-                .font(.geist(15)).lineLimit(2...5)
+                .font(.ui(15)).lineLimit(2...5)
             if !photos.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(Array(photos.enumerated()), id: \.offset) { i, data in
@@ -471,17 +471,17 @@ private struct PostComposer: View {
                 PhotosPicker(selection: $picks, maxSelectionCount: 3, matching: .images) {
                     HStack(spacing: 6) {
                         Image(systemName: "photo.badge.plus").font(.system(size: 15))
-                        Text("Photo").font(.geist(14, .medium))
+                        Text("Photo").font(.ui(14, .medium))
                     }.foregroundStyle(Color.ink)
                 }
-                Text("\(limit - text.count)").font(.geist(13)).foregroundStyle(Color.inkMuted)
+                Text("\(limit - text.count)").font(.ui(13)).foregroundStyle(Color.inkMuted)
                 Spacer()
                 Button { Task { await post() } } label: {
                     if posting { ProgressView().tint(.white).frame(width: 80) }
                     else {
                         HStack(spacing: 6) {
                             Image(systemName: "paperplane.fill").font(.system(size: 13))
-                            Text("Post").font(.geist(14, .semibold))
+                            Text("Post").font(.ui(14, .semibold))
                         }.foregroundStyle(.white).frame(width: 80)
                     }
                 }
@@ -492,7 +492,7 @@ private struct PostComposer: View {
                 .buttonStyle(.plain)
             }
             Text("Posted to your farm on the map.")
-                .font(.geist(11)).foregroundStyle(Color.inkMuted)
+                .font(.ui(11)).foregroundStyle(Color.inkMuted)
         }
         .padding(14)
         .background(.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

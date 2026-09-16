@@ -361,10 +361,6 @@
     <string name="pro_unlock_title">Débloquez Farmsy Pro</string>
     <string name="pro_unlock_sub">Trouvez ce qui est ouvert à la minute et filtrez par type de lieu. Annulable à tout moment.</string>
     <string name="pro_included_in_both">Inclus dans les deux formules</string>
-    <string name="pro_feature_open_now">Voyez ce qui est ouvert maintenant, pas seulement aujourd\'hui</string>
-    <string name="pro_feature_filter">Filtrez par type de lieu et par mode de culture</string>
-    <string name="pro_feature_email">Un e-mail quand une ferme enregistrée publie du nouveau</string>
-    <string name="pro_feature_everything">Toutes les nouveautés que nous ajoutons à Pro, incluses</string>
     <string name="pro_get_yearly">Prendre l\'annuel</string>
     <string name="pro_buy_lifetime">Acheter l\'accès à vie</string>
     <string name="pro_lifetime_onetime">Paiement unique · sans renouvellement</string>

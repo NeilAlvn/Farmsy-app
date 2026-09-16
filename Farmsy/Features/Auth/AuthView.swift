@@ -95,10 +95,10 @@ struct AuthView: View {
                         .frame(height: 54)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("Farmsy")
-                            .font(.display(30))
+                            .font(.ui(30, .bold))
                             .foregroundStyle(Color.ink)
                         Text("Local farms, fresh finds")
-                            .font(.geist(13))
+                            .font(.ui(13))
                             .foregroundStyle(Color.inkMuted)
                     }
                 }
@@ -106,13 +106,13 @@ struct AuthView: View {
                 .padding(.bottom, 30)
 
                 Text(mode == .signUp ? "Create your free account" : "Welcome back")
-                    .font(.display(28))
+                    .font(.ui(28, .bold))
                     .foregroundStyle(Color.ink)
                     .padding(.bottom, 6)
                 Text(mode == .signUp
                      ? "See every farm on the map in seconds."
                      : "Log in to pick up where you left off.")
-                    .font(.geist(15))
+                    .font(.ui(15))
                     .foregroundStyle(Color.inkMuted)
                     .padding(.bottom, 24)
 
@@ -168,7 +168,7 @@ struct AuthView: View {
 
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(.geist(14, .medium))
+                        .font(.ui(14, .medium))
                         .foregroundStyle(Color.warnRed)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 12)
@@ -194,7 +194,7 @@ struct AuthView: View {
                         Haptics.tap()
                         withAnimation(.spring(duration: 0.3)) { step = 1; errorMessage = nil }
                     }
-                    .font(.geist(15))
+                    .font(.ui(15))
                     .foregroundStyle(Color.inkMuted)
                     .padding(.top, 10)
                 }
@@ -212,7 +212,7 @@ struct AuthView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.farmGreen)
                 }
-                .font(.geist(15))
+                .font(.ui(15))
                 .padding(.top, 18)
                 .padding(.bottom, 30)
             }
@@ -312,7 +312,7 @@ struct DOBField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Date of birth (optional)")
-                .font(.geist(14, .semibold))
+                .font(.ui(14, .semibold))
                 .foregroundStyle(Color.farmGreen)
             DatePicker(
                 "",
@@ -344,11 +344,11 @@ struct VerifyEmailView: View {
         VStack(spacing: 0) {
             Text("📬").font(.system(size: 46))
             Text("Check your inbox")
-                .font(.display(26))
+                .font(.ui(26, .bold))
                 .foregroundStyle(Color.ink)
                 .padding(.top, 14)
             Text("We've sent a verification link to \(email). Click it to activate your account, then log in.")
-                .font(.geist(15))
+                .font(.ui(15))
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
                 .padding(.top, 8)
@@ -374,7 +374,7 @@ struct AuthField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.geist(14, .semibold))
+                .font(.ui(14, .semibold))
                 .foregroundStyle(Color.farmGreen)
             HStack(spacing: 8) {
                 Group {
@@ -386,7 +386,7 @@ struct AuthField: View {
                             .autocorrectionDisabled(isSecure)
                     }
                 }
-                .font(.geist(17))
+                .font(.ui(17))
                 // A show/hide toggle on password fields.
                 if isSecure {
                     Button {

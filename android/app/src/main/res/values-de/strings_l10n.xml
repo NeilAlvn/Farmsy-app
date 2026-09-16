@@ -361,10 +361,6 @@
     <string name="pro_unlock_title">Farmsy Pro freischalten</string>
     <string name="pro_unlock_sub">Finde, was in dieser Minute geöffnet ist, und filtere nach Art des Orts. Jederzeit kündbar.</string>
     <string name="pro_included_in_both">In beiden Tarifen enthalten</string>
-    <string name="pro_feature_open_now">Sieh, was gerade jetzt geöffnet ist, nicht nur heute</string>
-    <string name="pro_feature_filter">Filtere nach Art des Orts und nach Anbauweise</string>
-    <string name="pro_feature_email">Eine E-Mail, wenn ein gespeicherter Hof etwas Neues postet</string>
-    <string name="pro_feature_everything">Alles Neue, das wir zu Pro hinzufügen, inklusive</string>
     <string name="pro_get_yearly">Jährlich holen</string>
     <string name="pro_buy_lifetime">Lebenslangen Zugang kaufen</string>
     <string name="pro_lifetime_onetime">Einmalig · keine Verlängerung</string>

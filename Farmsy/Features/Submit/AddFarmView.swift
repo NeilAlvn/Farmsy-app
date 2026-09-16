@@ -61,7 +61,7 @@ struct AddFarmView: View {
                     .padding(.top, 8)
 
                 Text("Know a farm shop that isn't on Farmsy yet? Fill in what you know — our team checks every submission before it goes live.")
-                    .font(.geist(14))
+                    .font(.ui(14))
                     .foregroundStyle(Color.inkMuted)
                     .lineSpacing(2)
 
@@ -82,10 +82,10 @@ struct AddFarmView: View {
                 section("Tell us more (optional)") {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Description")
-                            .font(.geist(13, .semibold))
+                            .font(.ui(13, .semibold))
                             .foregroundStyle(Color.inkMuted)
                         TextEditor(text: $form.description)
-                            .font(.geist(15))
+                            .font(.ui(15))
                             .frame(minHeight: 90)
                             .padding(8)
                             .scrollContentBackground(.hidden)
@@ -109,7 +109,7 @@ struct AddFarmView: View {
 
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(.geist(14, .medium))
+                        .font(.ui(14, .medium))
                         .foregroundStyle(Color.warnRed)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -142,7 +142,7 @@ struct AddFarmView: View {
             Image(systemName: "lock.fill")
                 .foregroundStyle(Color.farmGreen)
             Text("Adding farm shops is a member feature — your account doesn't have full access yet.")
-                .font(.geist(13, .medium))
+                .font(.ui(13, .medium))
                 .foregroundStyle(Color.ink)
         }
         .padding(12)
@@ -155,7 +155,7 @@ struct AddFarmView: View {
     private func section(_ title: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.display(19, weight: .semibold))
+                .font(.ui(19, .semibold))
                 .foregroundStyle(Color.ink)
             content()
         }
@@ -172,10 +172,10 @@ struct AddFarmView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.geist(13, .semibold))
+                .font(.ui(13, .semibold))
                 .foregroundStyle(Color.inkMuted)
             TextField(prompt, text: text)
-                .font(.geist(15))
+                .font(.ui(15))
                 .keyboardType(keyboard)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(keyboard == .default ? .words : .never)
@@ -188,7 +188,7 @@ struct AddFarmView: View {
     private var countryPicker: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Country")
-                .font(.geist(13, .semibold))
+                .font(.ui(13, .semibold))
                 .foregroundStyle(Color.inkMuted)
             Picker("Country", selection: $form.country) {
                 Text("Netherlands").tag("Netherlands")
@@ -207,7 +207,7 @@ struct AddFarmView: View {
             Text(pinCoordinate == nil
                  ? "Tap the map to drop a pin (optional — the address is enough)."
                  : "Pin dropped. Tap again to adjust.")
-                .font(.geist(13))
+                .font(.ui(13))
                 .foregroundStyle(Color.inkMuted)
 
             MapReader { proxy in
@@ -246,7 +246,7 @@ struct AddFarmView: View {
                 }
             } label: {
                 Label("Use my location", systemImage: "location.fill")
-                    .font(.geist(14, .semibold))
+                    .font(.ui(14, .semibold))
                     .foregroundStyle(Color.farmGreen)
             }
         }
@@ -261,7 +261,7 @@ struct AddFarmView: View {
             ) {
                 Label(photoPreviews.isEmpty ? "Choose photos" : "Change photos",
                       systemImage: "photo.on.rectangle.angled")
-                    .font(.geist(14, .semibold))
+                    .font(.ui(14, .semibold))
                     .foregroundStyle(Color.farmGreen)
                     .padding(.vertical, 11)
                     .padding(.horizontal, 14)
@@ -297,7 +297,7 @@ struct AddFarmView: View {
                 .foregroundStyle(Color.farmGreen)
             DisplayTitle(String(localized: "Thanks — it's *in review*"), size: 28)
             Text("Our team looks at every submission. Once approved, the farm appears on the map for everyone.")
-                .font(.geist(15))
+                .font(.ui(15))
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
@@ -372,7 +372,7 @@ struct CategoryPickChips: View {
                     if isOn { selected.remove(cat) } else { selected.insert(cat) }
                 } label: {
                     Text("\(cat.emoji) \(cat.label)")
-                        .font(.geist(13, .semibold))
+                        .font(.ui(13, .semibold))
                         .foregroundStyle(isOn ? .white : Color.ink)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 10)

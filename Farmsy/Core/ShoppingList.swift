@@ -112,6 +112,30 @@ struct ShoppingItem: Decodable, Identifiable, Equatable, Sendable {
     var label: String {
         Locale.current.language.languageCode?.identifier == "nl" ? nl : en
     }
+
+    /// A glyph for tiles and chips. Ids are the web's closed list; anything new
+    /// falls back to the basket.
+    var emoji: String {
+        switch id {
+        case "eggs": "🥚"; case "cheese": "🧀"; case "milk": "🥛"; case "potatoes": "🥔"
+        case "vegetables": "🥬"; case "fruits": "🍎"; case "meat": "🥩"; case "honey": "🍯"
+        case "bread": "🍞"; case "juices": "🧃"; case "jams": "🫙"; case "ice-cream": "🍦"
+        case "strawberry": "🍓"; case "apples": "🍏"; case "pears": "🍐"; case "asparagus": "🌱"
+        case "pumpkin": "🎃"; case "tomatoes": "🍅"; case "onions": "🧅"; case "carrot": "🥕"
+        case "mushrooms": "🍄"; case "nuts": "🌰"; case "butter": "🧈"; case "yoghurt": "🥣"
+        case "herbs": "🌿"; case "flowers": "🌷"; case "wine": "🍷"; case "beer": "🍺"
+        case "fish": "🐟"
+        default: "🧺"
+        }
+    }
+}
+
+/// How many farms near here sell a thing, and how close the nearest is.
+struct ProductNearby: Identifiable {
+    let item: ShoppingItem
+    let count: Int
+    let nearestKm: Double
+    var id: String { item.id }
 }
 
 /// The picker list, fetched once.

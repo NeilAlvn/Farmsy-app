@@ -63,9 +63,9 @@ struct ShoppingListSheet: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Shopping list").font(.geist(18, .bold)).foregroundStyle(Color.ink)
+                Text("Shopping list").font(.ui(18, .bold)).foregroundStyle(Color.ink)
                 Text("We pick the farms, you drive once")
-                    .font(.geist(12)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(12)).foregroundStyle(Color.inkMuted)
             }
             Spacer()
             Button { Haptics.tap(); dismiss() } label: {
@@ -85,7 +85,7 @@ struct ShoppingListSheet: View {
     private var loading: some View {
         if catalogue.loadFailed {
             Text("The product list couldn't be loaded. Check your connection and try again.")
-                .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                .font(.ui(14)).foregroundStyle(Color.inkMuted)
         } else {
             ProgressView().tint(Color.farmGreen).frame(maxWidth: .infinity).padding(.vertical, 24)
         }
@@ -104,7 +104,7 @@ struct ShoppingListSheet: View {
                         if on {
                             Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
                         }
-                        Text(item.label).font(.geist(14, .medium))
+                        Text(item.label).font(.ui(14, .medium))
                     }
                     .foregroundStyle(on ? .white : Color.ink)
                     .padding(.vertical, 8).padding(.horizontal, 12)
@@ -121,19 +121,19 @@ struct ShoppingListSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             if plan.isEmpty {
                 Text("No farm within 25 km lists any of this.")
-                    .font(.geist(14)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(14)).foregroundStyle(Color.inkMuted)
             } else {
                 ForEach(Array(plan.picks.enumerated()), id: \.element.osmId) { i, pick in
                     HStack(alignment: .top, spacing: 12) {
                         Text(verbatim: "\(i + 1)")
-                            .font(.geist(13, .bold)).foregroundStyle(.white)
+                            .font(.ui(13, .bold)).foregroundStyle(.white)
                             .frame(width: 24, height: 24)
                             .background(Color.farmGreenMap, in: Circle())
                         VStack(alignment: .leading, spacing: 2) {
                             Text(farms.pin(forOsmId: pick.osmId)?.name ?? pick.osmId)
-                                .font(.geist(15, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
+                                .font(.ui(15, .semibold)).foregroundStyle(Color.ink).lineLimit(1)
                             Text(labels(pick.covers).joined(separator: " · "))
-                                .font(.geist(13)).foregroundStyle(Color.inkMuted).lineLimit(2)
+                                .font(.ui(13)).foregroundStyle(Color.inkMuted).lineLimit(2)
                         }
                         Spacer(minLength: 0)
                     }
@@ -143,7 +143,7 @@ struct ShoppingListSheet: View {
             // is only useful if you know which half.
             if !plan.missing.isEmpty {
                 Text("Not found nearby: \(labels(plan.missing).joined(separator: ", "))")
-                    .font(.geist(13, .medium)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(13, .medium)).foregroundStyle(Color.inkMuted)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -167,9 +167,9 @@ struct ShoppingListSheet: View {
                     // literal is then its own catalog key, which a ternary of
                     // interpolated literals is not guaranteed to be.
                     if let plan, !plan.isEmpty {
-                        Text("Add \(plan.picks.count) stops to my trip").font(.geist(14, .semibold))
+                        Text("Add \(plan.picks.count) stops to my trip").font(.ui(14, .semibold))
                     } else {
-                        Text("Plan my trip").font(.geist(14, .semibold))
+                        Text("Plan my trip").font(.ui(14, .semibold))
                     }
                 }
                 .foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 14)
@@ -181,7 +181,7 @@ struct ShoppingListSheet: View {
 
             if !trip.wantedProducts.isEmpty {
                 Button("Clear list") { Haptics.tap(); trip.clearProducts(); plan = nil }
-                    .font(.geist(13, .medium)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(13, .medium)).foregroundStyle(Color.inkMuted)
                     .buttonStyle(.plain)
             }
         }

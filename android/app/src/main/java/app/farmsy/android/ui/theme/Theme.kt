@@ -10,30 +10,64 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 
-// Farmsy design tokens — the exact iOS Theme.swift hex values (measured out of the
-// web app's DESIGN-SYSTEM.md, oklch→sRGB, not eyeballed): warm cream background,
-// deep forest-green primary, warm near-black ink, serif display type.
-//
-// Two greens on purpose (same as iOS): `farmGreen` is the deep brand green for
-// surfaces away from the map; `farmGreenMap` is lighter, for controls sitting *on*
-// the map where the dark green reads as a heavy block.
+// Farmsy design tokens — the exact iOS Theme.swift hex values. Structure (type
+// scale, spacing, radii) is the Vision Tech base system shared with Nime; only the
+// brand slots are Farmsy's greens and cream. Two colour families per semantic on
+// purpose — `positive/warning/critical` are text-safe, the `vivid*` set is for
+// fills only (dots, rings, bars) and never for text.
 object FarmsyColors {
-    val farmGreen = Color(0xFF234725)      // --primary
+    // Brand slots
+    val farmGreen = Color(0xFF234725)      // accent
     val farmGreenDeep = Color(0xFF18321A)  // darker, for gradients
-    val farmGreenMap = Color(0xFF4E7F54)   // --primary-soft (on-map controls)
-    val farmGreenSoft = Color(0x1A234725)  // primary at 10%, no new swatch
-    val cream = Color(0xFFFCFAF6)          // --background, warm off-white
-    val creamCard = Color(0xFFFDFCF9)      // --card, a hair lighter than ground
-    val creamFill = Color(0xFFF3EAD9)      // --cream, marketing blocks only
-    val ink = Color(0xFF15110D)            // --foreground, warm near-black
-    val inkMuted = Color(0xFF68625E)       // --muted-foreground, warm grey
-    val hairline = Color(0xFFE1DDD8)       // --border
-    val star = Color(0xFFFBBF24)           // amber — ratings read as stars, not brand
-    val warnRed = Color(0xFFBA2B28)        // --destructive
+    val farmGreenMap = Color(0xFF4E7F54)   // lighter green for on-map controls
+    val farmGreenSoft = Color(0xFFE3ECE0)  // accentSoft: one soft card per screen at most
+    val vivid = Color(0xFF9BE15D)          // accentVivid: fills only, never text
+    val cream = Color(0xFFFCFAF6)          // canvas
+    val surface = Color.White              // cards, rows, the tab pill
+    val creamCard = Color.White            // legacy name for `surface`
+    val creamFill = Color(0xFFF3EAD9)      // tile: search field, image wells, skeletons
+    val ink = Color(0xFF15110D)
+    val inkMuted = Color(0xFF68625E)
+    val inkFaint = Color(0xFF8A837D)
+    val hairline = Color(0xFFE1DDD8)
+    val star = Color(0xFFFBBF24)           // a rating reads as stars, not brand
+
+    // Semantic, text-safe (WCAG AA on cream and white)
+    val positive = Color(0xFF137A4A)
+    val warning = Color(0xFF9A5B00)
+    val critical = Color(0xFFBA2B28)
+    val warnRed = Color(0xFFBA2B28)        // legacy name for `critical`
+    val positiveSoft = Color(0xFFE4F3EA)
+    val warningSoft = Color(0xFFFBEFD9)
+    val criticalSoft = Color(0xFFFBE5E5)
+
+    // Semantic, fills only (open dot, availability ring, closed pin)
+    val vividPositive = Color(0xFF9BE15D)
+    val vividWarning = Color(0xFFFF8A00)
+    val vividCritical = Color(0xFFFF2D46)
 }
 
-// iOS cards/buttons use a 16pt continuous radius; pills are capsules.
-val CardShape = RoundedCornerShape(16.dp)
+/// Spacing scale, base 4. Gutter 16, card padding 20, section 24–32.
+object Space {
+    val s1 = 4.dp; val s2 = 8.dp; val s3 = 12.dp; val s4 = 16.dp
+    val s5 = 20.dp; val s6 = 24.dp; val s8 = 32.dp; val s12 = 48.dp
+}
+
+object Radius {
+    val card = 20.dp; val tile = 16.dp
+    val input = 14.dp; val sheet = 28.dp; val thumb = 12.dp
+}
+
+/// The bottom inset a scrolling tab screen reserves so its last row clears the
+/// floating tab pill (64dp pill + 12dp gap + breathing room).
+object TabBarInset {
+    val height = 64.dp
+    val content = height + 12.dp + 24.dp
+}
+
+/// Cards are radius 20; pills are capsules.
+val CardShape = RoundedCornerShape(20.dp)
+val TileShape = RoundedCornerShape(16.dp)
 val PillShape = RoundedCornerShape(50)
 
 private val LightColors = lightColorScheme(

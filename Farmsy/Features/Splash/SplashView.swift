@@ -104,7 +104,7 @@ struct SplashView: View {
                 HStack(spacing: 0) {
                     ForEach(Self.letters.indices, id: \.self) { i in
                         Text(String(Self.letters[i]))
-                            .font(.displayItalic(60, weight: .medium))
+                            .font(.ui(60, .medium))
                             .foregroundStyle(Color.ink)
                             .opacity(lettersIn ? 1 : 0)
                             .offset(y: lettersIn ? 0 : 38)

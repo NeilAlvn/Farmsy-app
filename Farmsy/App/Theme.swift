@@ -1,8 +1,13 @@
 import SwiftUI
 import UIKit
 
-// Farmsy design tokens — mirrors the web app: warm cream background,
-// forest-green primary, serif display type.
+// Farmsy design tokens.
+//
+// Structure (type scale, spacing, radii, elevation, motion) is the Vision Tech
+// base system shared with Nime (`nime-app/src/theme/base.ts`). Only the brand
+// slots differ: Farmsy keeps its own greens and cream. Two colour families per
+// semantic on purpose — `positive/warning/critical` are text-safe, the `vivid*`
+// set is for fills only (dots, rings, bars) and never for text.
 extension Color {
     init(hex: UInt32) {
         self.init(
@@ -13,101 +18,138 @@ extension Color {
         )
     }
 
-    // Values measured out of the web app (docs/DESIGN-SYSTEM.md), converted from
-    // oklch to sRGB hex — not eyeballed. Two greens on purpose: `farmGreen` is the
-    // brand green for surfaces away from the map; `farmGreenMap` is lighter, for
-    // controls sitting *on* the map where the dark green reads as a heavy block.
-    static let farmGreen     = Color(hex: 0x234725)  // --primary
+    // Brand slots
+    static let farmGreen     = Color(hex: 0x234725)  // accent
     static let farmGreenDeep = Color(hex: 0x18321A)  // darker, for gradients
-    static let farmGreenMap  = Color(hex: 0x4E7F54)  // --primary-soft (on-map controls)
-    static let farmGreenSoft = Color(hex: 0x234725).opacity(0.10)  // primary tint, no new swatch
-    static let cream         = Color(hex: 0xFCFAF6)  // --background, warm off-white
-    static let creamCard     = Color(hex: 0xFDFCF9)  // --card, a hair lighter than ground
-    static let creamFill     = Color(hex: 0xF3EAD9)  // --cream, marketing blocks only
-    static let ink           = Color(hex: 0x15110D)  // --foreground, warm near-black
-    static let inkMuted      = Color(hex: 0x68625E)  // --muted-foreground
-    static let hairline      = Color(hex: 0xE1DDD8)  // --border
-    static let star          = Color(hex: 0xFBBF24)  // amber — a rating reads as stars, not brand
-    static let warnRed       = Color(hex: 0xBA2B28)  // --destructive
+    static let farmGreenMap  = Color(hex: 0x4E7F54)  // lighter green for on-map controls
+    static let farmGreenSoft = Color(hex: 0xE3ECE0)  // accentSoft: one soft card per screen at most
+    static let vivid         = Color(hex: 0x9BE15D)  // accentVivid: fills only, never text
+    static let cream         = Color(hex: 0xFCFAF6)  // canvas
+    static let surface       = Color.white           // cards, rows, the tab pill
+    static let creamCard     = Color.white           // legacy name for `surface`
+    static let creamFill     = Color(hex: 0xF3EAD9)  // tile: search field, image wells, skeletons
+    static let ink           = Color(hex: 0x15110D)
+    static let inkMuted      = Color(hex: 0x68625E)
+    static let inkFaint      = Color(hex: 0x8A837D)
+    static let hairline      = Color(hex: 0xE1DDD8)
+    static let star          = Color(hex: 0xFBBF24)  // a rating reads as stars, not brand
+
+    // Semantic, text-safe (WCAG AA on cream and white)
+    static let positive = Color(hex: 0x137A4A)
+    static let warning  = Color(hex: 0x9A5B00)
+    static let critical = Color(hex: 0xBA2B28)
+    static let warnRed  = Color(hex: 0xBA2B28)  // legacy name for `critical`
+    static let positiveSoft = Color(hex: 0xE4F3EA)
+    static let warningSoft  = Color(hex: 0xFBEFD9)
+    static let criticalSoft = Color(hex: 0xFBE5E5)
+
+    // Semantic, fills only (open dot, availability ring, closed pin)
+    static let vividPositive = Color(hex: 0x9BE15D)
+    static let vividWarning  = Color(hex: 0xFF8A00)
+    static let vividCritical = Color(hex: 0xFF2D46)
+}
+
+/// Spacing scale, base 4. Gutter 16, card padding 20, section 24–32.
+enum Space {
+    static let s1: CGFloat = 4, s2: CGFloat = 8, s3: CGFloat = 12, s4: CGFloat = 16
+    static let s5: CGFloat = 20, s6: CGFloat = 24, s8: CGFloat = 32, s12: CGFloat = 48
+}
+
+enum Radius {
+    static let pill: CGFloat = 999, card: CGFloat = 20, tile: CGFloat = 16
+    static let input: CGFloat = 14, sheet: CGFloat = 28, thumb: CGFloat = 12
+}
+
+/// The bottom inset a scrolling tab screen reserves so its last row clears the
+/// floating tab pill (64pt pill + 12pt gap + breathing room).
+enum TabBarInset {
+    static let height: CGFloat = 64
+    static let content: CGFloat = height + 12 + 24
 }
 
 extension Font {
-    /// Fraunces — the website's display serif. PostScript names verified
-    /// from the bundled TTFs.
-    static func display(_ size: CGFloat, weight: Font.Weight = .bold) -> Font {
+    /// Plus Jakarta Sans — the one family. Weight resolves to a file, never to a
+    /// synthetic weight, so bold is real bold on both platforms.
+    static func ui(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         let name = switch weight {
-        case .regular: "Fraunces-Regular"
-        case .medium: "Fraunces-Medium"
-        case .semibold: "Fraunces-SemiBold"
-        default: "Fraunces-Bold"
+        case .medium: "PlusJakartaSans-Medium"
+        case .semibold: "PlusJakartaSans-SemiBold"
+        case .bold, .heavy, .black: "PlusJakartaSans-Bold"
+        default: "PlusJakartaSans-Regular"
         }
         return .custom(name, size: size)
-    }
-
-    /// Fraunces Italic — the site's signature emphasis style.
-    static func displayItalic(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .custom(weight == .medium ? "Fraunces-MediumItalic" : "Fraunces-Italic", size: size)
-    }
-
-    /// Geist — body/UI text, matching the website.
-    static func geist(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        let name = switch weight {
-        case .medium: "Geist-Medium"
-        case .semibold: "Geist-SemiBold"
-        case .bold, .heavy, .black: "Geist-Bold"
-        default: "Geist-Regular"
-        }
-        return .custom(name, size: size)
-    }
-
-    static func geistMono(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .custom(weight == .medium ? "GeistMono-Medium" : "GeistMono-Regular", size: size)
     }
 }
 
-/// Serif headline with the website's signature one-italic-word treatment.
+enum TextRole {
+    case display, title, heading, subheading, body, bodySm, caption, label
+
+    /// Size / weight pairs of the scale: display 40/700, title 28/700,
+    /// heading 22/600, subheading 17/600, body 16, bodySm 15, caption 13, label 12/600.
+    var font: Font {
+        switch self {
+        case .display: .ui(40, .bold)
+        case .title: .ui(28, .bold)
+        case .heading: .ui(22, .semibold)
+        case .subheading: .ui(17, .semibold)
+        case .body: .ui(16)
+        case .bodySm: .ui(15)
+        case .caption: .ui(13)
+        case .label: .ui(12, .semibold)
+        }
+    }
+
+    var tracking: CGFloat {
+        switch self {
+        case .display: -0.8
+        case .title: -0.4
+        case .heading: -0.2
+        case .label: 0.3
+        default: 0
+        }
+    }
+
+    /// Extra leading beyond the font's own, so 16/24 body reads as 24.
+    var lineSpacing: CGFloat {
+        switch self {
+        case .body: 4
+        case .bodySm, .caption, .label: 2
+        default: 0
+        }
+    }
+}
+
+extension View {
+    /// Type role + tone in one call: `Text("…").role(.heading)`.
+    func role(_ role: TextRole, _ tone: Color = .ink) -> some View {
+        font(role.font)
+            .tracking(role.tracking)
+            .lineSpacing(role.lineSpacing)
+            .foregroundStyle(tone)
+    }
+}
+
+/// Headline. Kept for its call sites; the italic-word treatment went with the
+/// serif, so the whole line now renders as one bold title.
 struct DisplayTitle: View {
-    let leading: String
-    let emphasis: String
-    let trailing: String
+    let text: String
     var size: CGFloat = 32
 
-    /// Legacy three-part form, for titles whose emphasis is *dynamic* (a farm
-    /// name). Each part renders exactly as given, so callers — and translations —
-    /// own their own spacing.
     init(leading: String, emphasis: String, trailing: String, size: CGFloat = 32) {
-        self.leading = leading
-        self.emphasis = emphasis
-        self.trailing = trailing
+        text = leading + emphasis + trailing
         self.size = size
     }
 
-    /// Preferred form: one localized sentence with the emphasised span wrapped in
-    /// *asterisks*, e.g. `"What are you *looking* for?"`. Each language can put the
-    /// italic word wherever it grammatically belongs, with exact spacing and
-    /// punctuation — so the two-colour headline reads naturally in every locale
-    /// instead of being stitched from fragments that only line up in English.
+    /// One localized sentence; `*asterisks*` from the old markup are stripped.
     init(_ marked: String, size: CGFloat = 32) {
-        if let open = marked.firstIndex(of: "*"),
-           let close = marked[marked.index(after: open)...].firstIndex(of: "*") {
-            leading  = String(marked[..<open])
-            emphasis = String(marked[marked.index(after: open)..<close])
-            trailing = String(marked[marked.index(after: close)...])
-        } else {
-            leading = marked
-            emphasis = ""
-            trailing = ""
-        }
+        text = marked.replacingOccurrences(of: "*", with: "")
         self.size = size
     }
 
     var body: some View {
-        // Exact concatenation — no trimming or space-insertion. Whatever spacing a
-        // (translated) string carries is what shows, which is the only way the
-        // italic word can sit correctly across languages.
-        (Text(leading).font(.display(size, weight: .medium))
-            + Text(emphasis).font(.displayItalic(size, weight: .medium))
-            + Text(trailing).font(.display(size, weight: .medium)))
+        Text(text)
+            .font(.ui(size, .bold))
+            .tracking(-0.4)
             .foregroundStyle(Color.ink)
             .multilineTextAlignment(.center)
     }
@@ -146,82 +188,87 @@ enum Haptics {
     static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
 }
 
-/// Big rounded primary CTA, like the reference app's Continue buttons.
+/// Primary pill: ink on white, 56pt. Green is the app's answer, so it is not
+/// also every button. `fill` stays for the few on-map callers that pass one.
 struct PrimaryButtonStyle: ButtonStyle {
-    var fill: Color = .farmGreenMap
+    var fill: Color = .ink
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.geist(18, .semibold))
+            .font(.ui(17, .semibold))
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 17)
-            .background(fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .padding(.horizontal, Space.s6)
+            .background(fill, in: Capsule())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(duration: 0.25), value: configuration.isPressed)
     }
 }
 
-/// Grey secondary pill (the "No" / "Not yet" style).
+/// Secondary pill: tile fill, ink label.
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.geist(18, .semibold))
+            .font(.ui(17, .semibold))
             .foregroundStyle(Color.ink)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 17)
-            .background(Color(hex: 0xE5E4DF), in: Capsule())
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .padding(.horizontal, Space.s6)
+            .background(Color.creamFill, in: Capsule())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(duration: 0.25), value: configuration.isPressed)
     }
 }
 
+/// Card: white, radius 20, padding 20, flat. `edged` adds a hairline ring for a
+/// card that has to hold its own on a white ground; `soft` is the accent wash.
 struct CardBackground: ViewModifier {
-    var padding: CGFloat = 16
+    var padding: CGFloat = Space.s5
+    var edged = false
+    var soft = false
     func body(content: Content) -> some View {
-        // Web card: --card fill with a 1px hairline, no shadow at rest. Shadows are
-        // for things that float (sheets, popovers), not for items in a list.
         content
             .padding(padding)
-            .background(Color.creamCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(soft ? Color.farmGreenSoft : Color.surface,
+                        in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.hairline, lineWidth: 1)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .stroke(Color.hairline, lineWidth: edged ? 1 : 0)
             )
     }
 }
 
 extension View {
-    func card(padding: CGFloat = 16) -> some View { modifier(CardBackground(padding: padding)) }
+    func card(padding: CGFloat = Space.s5, edged: Bool = false, soft: Bool = false) -> some View {
+        modifier(CardBackground(padding: padding, edged: edged, soft: soft))
+    }
 }
 
-/// A stat cell: a bold green value over a muted caption. Used in the farm card
-/// header and elsewhere numbers need a compact, centered treatment.
+/// A stat cell: a bold green value over a muted caption.
 struct StatTile: View {
     let value: String
     let caption: String
     var body: some View {
         VStack(spacing: 3) {
             Text(value)
-                .font(.geist(22, .bold))
+                .font(.ui(22, .bold))
                 .foregroundStyle(Color.farmGreen)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             Text(caption)
-                .font(.geist(13))
+                .font(.ui(13))
                 .foregroundStyle(Color.inkMuted)
         }
         .frame(maxWidth: .infinity)
     }
 }
 
-/// Small green uppercase kicker line above serif titles ("PERSONALIZATION" style).
+/// Small green uppercase kicker line above titles.
 struct Kicker: View {
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(.geist(14, .semibold))
-            .kerning(1.6)
+            .font(.ui(12, .semibold))
+            .tracking(0.6)
             .foregroundStyle(Color.farmGreen)
     }
 }

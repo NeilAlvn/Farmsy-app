@@ -92,7 +92,7 @@ import app.farmsy.android.features.whatsnew.SkeletonBox
 import com.google.android.gms.maps.model.LatLng
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
-import app.farmsy.android.ui.theme.Fraunces
+import app.farmsy.android.ui.theme.ui
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
@@ -288,7 +288,7 @@ private fun WelcomeStep(onLogin: () -> Unit, onSkip: () -> Unit) {
                         modifier = Modifier.size(74.dp), contentScale = ContentScale.Fit,
                     )
                 }
-                Text("Farmsy", fontFamily = Fraunces, fontStyle = FontStyle.Italic, fontWeight = FontWeight.Medium, fontSize = 52.sp, color = Color.White)
+                Text("Farmsy", style = ui(52.sp, FontWeight.Bold), color = Color.White)
             }
             Text(
                 stringResource(R.string.welcome_tagline),
