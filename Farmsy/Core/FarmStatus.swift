@@ -1,4 +1,6 @@
 import Foundation
+import CoreLocation
+import Observation
 
 // "Was it open when you got there?" — one tap, from the farm card.
 //
@@ -26,15 +28,19 @@ enum ReportStatus: String, Codable, CaseIterable, Sendable {
 struct FarmReport: Decodable, Sendable {
     let status: ReportStatus
     let createdAt: Date
+    /// Shopping-list item ids the visitor found in stock. Empty = did not say,
+    /// never "had nothing".
+    let products: [String]
 
     enum CodingKeys: String, CodingKey {
-        case status
+        case status, products
         case createdAt = "created_at"
     }
 
-    init(status: ReportStatus, createdAt: Date) {
+    init(status: ReportStatus, createdAt: Date, products: [String] = []) {
         self.status = status
         self.createdAt = createdAt
+        self.products = products
     }
 
     init(from decoder: Decoder) throws {
@@ -43,7 +49,34 @@ struct FarmReport: Decodable, Sendable {
         status = ReportStatus(rawValue: try c.decode(String.self, forKey: .status)) ?? .open
         let raw = try c.decode(String.self, forKey: .createdAt)
         createdAt = FarmStatus.parseTimestamp(raw) ?? .distantPast
+        products = (try? c.decodeIfPresent([String].self, forKey: .products)) ?? []
     }
+}
+
+/// One row of GET /api/status/recent: a report with the farm it is about.
+struct RecentReport: Decodable, Identifiable, Sendable {
+    let farmOsmId: String
+    let report: FarmReport
+    var id: String { "\(farmOsmId)|\(report.createdAt.timeIntervalSince1970)" }
+
+    enum CodingKeys: String, CodingKey { case farmOsmId = "farm_osm_id" }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        farmOsmId = try c.decode(String.self, forKey: .farmOsmId)
+        report = try FarmReport(from: decoder)
+    }
+}
+
+/// The Plus half of a report: not just "3 people this month" but "18 minutes
+/// ago, and 3 people today agree".
+struct Freshness: Equatable {
+    let status: ReportStatus
+    let minutesAgo: Int
+    /// Reports with the same status in the last 24 hours, the newest included.
+    let confirmations: Int
+    /// Item ids seen in those same reports, newest first, unique.
+    let products: [String]
 }
 
 /// What the panel should lead with.
@@ -128,6 +161,24 @@ enum FarmStatus {
         return s
     }
 
+    /// The newest report within the last 24 hours, with how many agreed and what
+    /// they found. Nil when the freshest word is older than a day: "confirmed 26
+    /// hours ago" is not confirmation, it is history, and the day-level summary
+    /// already says it.
+    static func freshness(_ reports: [FarmReport], now: Date = Date()) -> Freshness? {
+        let dayAgo = now.addingTimeInterval(-86_400)
+        let recent = reports.filter { $0.createdAt >= dayAgo && $0.createdAt <= now.addingTimeInterval(86_400) }
+            .sorted { $0.createdAt > $1.createdAt }
+        guard let newest = recent.first else { return nil }
+        let agreeing = recent.filter { $0.status == newest.status }
+        var seen = Set<String>()
+        let products = agreeing.flatMap(\.products).filter { seen.insert($0).inserted }
+        return Freshness(status: newest.status,
+                         minutesAgo: max(0, Int(now.timeIntervalSince(newest.createdAt) / 60)),
+                         confirmations: agreeing.count,
+                         products: products)
+    }
+
     /// Whether this person already reported today, and what they said.
     ///
     /// The table allows one row per person per farm per Amsterdam day, so the
@@ -194,12 +245,12 @@ enum FarmStatusAPI {
 
     /// Report what you found. Sending the same status twice is a correction, not
     /// a second vote — the caller clears instead.
-    static func report(osmId: String, status: ReportStatus, token: String) async -> Bool {
+    static func report(osmId: String, status: ReportStatus, products: [String] = [], token: String) async -> Bool {
         var request = URLRequest(url: url(osmId))
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: ["status": status.rawValue])
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["status": status.rawValue, "products": products])
         guard let (_, resp) = try? await URLSession.shared.data(for: request) else { return false }
         return (resp as? HTTPURLResponse)?.statusCode == 200
     }
@@ -211,5 +262,46 @@ enum FarmStatusAPI {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         guard let (_, resp) = try? await URLSession.shared.data(for: request) else { return false }
         return (resp as? HTTPURLResponse)?.statusCode == 200
+    }
+
+    /// Every report from the last `days` days across all farms, newest first.
+    /// No geography on the wire: the caller holds every pin and filters itself.
+    static func recent(days: Int = 7) async -> [RecentReport] {
+        var url = Backend.webAPI.appending(path: "status").appending(path: "recent")
+        url.append(queryItems: [URLQueryItem(name: "days", value: String(days))])
+        guard let (data, resp) = try? await URLSession.shared.data(from: url),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let decoded = try? JSONDecoder().decode(RecentPayload.self, from: data)
+        else { return [] }
+        return decoded.reports
+    }
+
+    private struct RecentPayload: Decodable { let reports: [RecentReport] }
+}
+
+/// The recent-reports feed, fetched once a minute at most and shared by Home,
+/// Community and the farm card, so three screens do not ask three times.
+@MainActor
+@Observable
+final class RecentReports {
+    static let shared = RecentReports()
+    private(set) var reports: [RecentReport] = []
+    private(set) var loadedAt: Date?
+    private init() {}
+
+    func refresh(force: Bool = false) async {
+        if !force, let loadedAt, Date().timeIntervalSince(loadedAt) < 60 { return }
+        reports = await FarmStatusAPI.recent()
+        loadedAt = Date()
+    }
+
+    /// Reports about farms within `radiusKm` of `origin`, using the pins the
+    /// store already holds. No origin means everywhere.
+    func near(_ origin: CLLocation?, radiusKm: Double, pins: [String: FarmPin]) -> [RecentReport] {
+        guard let origin else { return reports }
+        return reports.filter { r in
+            guard let pin = pins[r.farmOsmId], let d = pin.distance(from: origin) else { return false }
+            return d / 1000 <= radiusKm
+        }
     }
 }

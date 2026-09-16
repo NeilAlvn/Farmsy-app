@@ -521,7 +521,7 @@ struct FarmDetailView: View {
             // farm three people found shut this week is exactly what somebody
             // deciding whether to drive needs to know, account or not.
             FarmProductsSection(pin: pin, detail: detail)
-            FarmStatusSection(osmId: pin.osmId, onNeedsSignIn: { showSignIn = true })
+            FarmStatusSection(osmId: pin.osmId, sells: detail?.displayProduce, onNeedsSignIn: { showSignIn = true })
             FarmMemberSections(pin: pin, detail: detail, onClaim: { showClaim = true },
                                onReport: { if isSignedIn { showReport = true } else { showSignIn = true } })
         }

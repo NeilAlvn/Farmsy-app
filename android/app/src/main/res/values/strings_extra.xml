@@ -191,4 +191,25 @@
     <string name="pick_your_own_weekend">Pick your own this weekend</string>
     <string name="open_this_weekend">Open this weekend</string>
     <string name="from_the_community">From the community</string>
+
+    <!-- Live availability: product tags on reports, freshness for Plus, reports in the Community feed. -->
+    <string name="status_what_did_you_find">What did you find?</string>
+    <string name="status_what_was_still_there">What was still there?</string>
+    <string name="on_the_shelf_arg">On the shelf: %1$s</string>
+    <string name="status_confirmed_today_plus">Confirmed today — see when with Plus</string>
+    <string name="status_fresh_line_arg">%1$s · confirmed %2$s by %3$s</string>
+    <string name="fresh_when_min_arg">%1$d min ago</string>
+    <string name="fresh_when_h_arg">%1$d h ago</string>
+    <string name="min_ago_arg">%1$d min ago</string>
+    <string name="h_ago_arg">%1$d h ago</string>
+    <string name="d_ago_arg">%1$d d ago</string>
+    <string name="confirmed_arg">Confirmed %1$s</string>
+    <string name="one_person">1 person</string>
+    <string name="n_people_arg">%1$d people</string>
+    <string name="visitor_report">Visitor report</string>
+    <string name="confirm">Confirm</string>
+    <string name="confirmed">Confirmed</string>
+    <string name="report_today">today</string>
+    <string name="report_yesterday">yesterday</string>
+    <string name="report_days_ago_arg">%1$d days ago</string>
 </resources>

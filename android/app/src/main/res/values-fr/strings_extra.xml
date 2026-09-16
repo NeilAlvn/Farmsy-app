@@ -193,4 +193,25 @@
     <string name="pick_your_own_weekend">Cueillette ce week-end</string>
     <string name="open_this_weekend">Ouvert ce week-end</string>
     <string name="from_the_community">De la communauté</string>
+
+    <!-- Live availability. -->
+    <string name="status_what_did_you_find">Qu\'avez-vous trouvé ?</string>
+    <string name="status_what_was_still_there">Que restait-il ?</string>
+    <string name="on_the_shelf_arg">En rayon : %1$s</string>
+    <string name="status_confirmed_today_plus">Confirmé aujourd\'hui — voyez quand avec Plus</string>
+    <string name="status_fresh_line_arg">%1$s · confirmé %2$s par %3$s</string>
+    <string name="fresh_when_min_arg">il y a %1$d min</string>
+    <string name="fresh_when_h_arg">il y a %1$d h</string>
+    <string name="min_ago_arg">il y a %1$d min</string>
+    <string name="h_ago_arg">il y a %1$d h</string>
+    <string name="d_ago_arg">il y a %1$d j</string>
+    <string name="confirmed_arg">Confirmé %1$s</string>
+    <string name="one_person">1 personne</string>
+    <string name="n_people_arg">%1$d personnes</string>
+    <string name="visitor_report">Signalement de visiteur</string>
+    <string name="confirm">Confirmer</string>
+    <string name="confirmed">Confirmé</string>
+    <string name="report_today">aujourd\'hui</string>
+    <string name="report_yesterday">hier</string>
+    <string name="report_days_ago_arg">il y a %1$d jours</string>
 </resources>
