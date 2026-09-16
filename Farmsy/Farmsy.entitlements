@@ -7,6 +7,11 @@
 	     user who installs the app arrives with no code and the referrer is never
 	     credited. Apple checks these against the site's
 	     /.well-known/apple-app-site-association. -->
+	<!-- Push notifications (alerts about products and followed farms). Xcode
+	     swaps "development" for "production" when archiving for TestFlight and
+	     the App Store; the server side needs the APNs key set on Vercel. -->
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:farmsy.app</string>

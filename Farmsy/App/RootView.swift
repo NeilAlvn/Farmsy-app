@@ -43,6 +43,8 @@ struct RootView: View {
             } else {
                 favorites.clear()
             }
+            PushRegistrar.shared.sync(userId: userId?.uuidString.lowercased(),
+                                      accessToken: session.session?.accessToken)
         }
     }
 }

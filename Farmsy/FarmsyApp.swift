@@ -9,6 +9,8 @@ import SwiftUI
 
 @main
 struct FarmsyApp: App {
+    /// Push needs the UIKit token callback and the notification-tap hook.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: SessionStore
     @State private var farms: FarmsStore
@@ -70,6 +72,10 @@ struct FarmsyApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         Task { await session.refreshProfile() }
+                        // A token can change between launches, and permission
+                        // may have been granted in Settings since last time.
+                        PushRegistrar.shared.sync(userId: session.session?.user.id.uuidString.lowercased(),
+                                                  accessToken: session.session?.accessToken)
                     }
                 }
         }

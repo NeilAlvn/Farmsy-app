@@ -262,6 +262,8 @@ final class SessionStore {
     }
 
     func signOut() async {
+        // Drop the device token first, while the access token still works.
+        if let token = session?.accessToken { await PushRegistrar.shared.unregister(accessToken: token) }
         try? await supabase.auth.signOut()
         session = nil
         profile = nil

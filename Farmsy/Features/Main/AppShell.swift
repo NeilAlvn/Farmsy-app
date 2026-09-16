@@ -53,8 +53,10 @@ extension EnvironmentValues {
 
 struct AppShell: View {
     @Environment(SessionStore.self) private var session
+    @Environment(FarmsStore.self) private var farms
 
     @State private var tab: AppTab = .home
+    @State private var push = PushRegistrar.shared
     /// The open farm. A bound value (not a `.sheet(item:)`) so tapping another pin
     /// swaps the card's contents in place rather than dismissing and re-presenting.
     @State private var selectedPin: FarmPin?
@@ -99,6 +101,12 @@ struct AppShell: View {
         .tint(.farmGreen)
         .environment(\.requestAuth, { showAuth = true })
         .environment(\.shell, actions)
+        // A notification tap lands here: open the farm it was about.
+        .onChange(of: push.pendingOsmId, initial: true) { _, osmId in
+            guard let osmId, let pin = farms.pin(forOsmId: osmId) else { return }
+            push.pendingOsmId = nil
+            openFarm(pin, source: .whatsNew)
+        }
         .modifier(SurveyEntry(isPresented: $showSurvey, buttonVisible: tab == .map))
         // The farm card — three resting heights, opening at half, and the map
         // stays interactive behind it up through half.
