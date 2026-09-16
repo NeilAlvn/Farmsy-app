@@ -184,4 +184,13 @@
     <string name="report_send_failed">Senden fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="thank_you">Danke</string>
     <string name="report_thank_you_body">Wir prüfen jede Meldung von Hand und korrigieren den Eintrag.</string>
+
+    <!-- Five-tab redesign. -->
+    <string name="just_arrived">Gerade eingetroffen</string>
+    <string name="just_arrived_sub">Diesen Monat auf Höfen gesichtet.</string>
+    <string name="one_farm">1 Hof</string>
+    <string name="n_farms_arg">%1$d Höfe</string>
+    <string name="pick_your_own_weekend">Selbstpflücken dieses Wochenende</string>
+    <string name="open_this_weekend">Dieses Wochenende geöffnet</string>
+    <string name="from_the_community">Aus der Community</string>
 </resources>

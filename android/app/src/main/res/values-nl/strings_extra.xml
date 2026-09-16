@@ -184,4 +184,13 @@
     <string name="report_send_failed">Versturen mislukt. Controleer je verbinding en probeer het opnieuw.</string>
     <string name="thank_you">Bedankt</string>
     <string name="report_thank_you_body">We controleren elke melding met de hand en passen de vermelding aan.</string>
+
+    <!-- Five-tab redesign. -->
+    <string name="just_arrived">Net binnen</string>
+    <string name="just_arrived_sub">Deze maand gespot bij boerderijen.</string>
+    <string name="one_farm">1 boerderij</string>
+    <string name="n_farms_arg">%1$d boerderijen</string>
+    <string name="pick_your_own_weekend">Zelf plukken dit weekend</string>
+    <string name="open_this_weekend">Dit weekend open</string>
+    <string name="from_the_community">Uit de community</string>
 </resources>

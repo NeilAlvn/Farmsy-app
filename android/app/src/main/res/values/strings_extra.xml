@@ -182,4 +182,13 @@
     <string name="report_send_failed">Couldn\'t send. Check your connection and try again.</string>
     <string name="thank_you">Thank you</string>
     <string name="report_thank_you_body">We check every report by hand and fix the listing.</string>
+
+    <!-- Discover: just arrived, pick your own, community. -->
+    <string name="just_arrived">Just arrived</string>
+    <string name="just_arrived_sub">Spotted at farms this month.</string>
+    <string name="one_farm">1 farm</string>
+    <string name="n_farms_arg">%1$d farms</string>
+    <string name="pick_your_own_weekend">Pick your own this weekend</string>
+    <string name="open_this_weekend">Open this weekend</string>
+    <string name="from_the_community">From the community</string>
 </resources>
