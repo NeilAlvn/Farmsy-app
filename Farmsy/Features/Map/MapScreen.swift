@@ -120,7 +120,7 @@ struct MapScreen: View {
                     searchRow
                     CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
                 }
-                if farms.aiIntent != nil { aiSummaryBar }
+                if farms.aiIntent != nil { aiSummaryBar } else { quickChips }
             }
             .padding(.horizontal, 14)
             .padding(.top, 6)
@@ -200,6 +200,26 @@ struct MapScreen: View {
         withAnimation(.easeInOut(duration: 0.6)) {
             camera = .region(MKCoordinateRegion(center: center, span: span))
         }
+    }
+
+    // MARK: - Quick chips
+
+    /// The four filters people reach for most, one tap under the search bar.
+    /// "Open now" leads: farm hours are irregular and seasonal, and a wasted
+    /// drive is the thing this map exists to prevent.
+    private var quickChips: some View {
+        @Bindable var farms = farms
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s2) {
+                Chip(label: String(localized: "Open now"), selected: farms.filterOpenNow,
+                     dot: farms.filterOpenNow ? nil : Color.vividPositive) { farms.filterOpenNow.toggle() }
+                Chip(label: String(localized: "Open today"), selected: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
+                Chip(label: String(localized: "Pick your own"), emoji: "🍓", selected: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
+                Chip(label: String(localized: "Vending machine"), emoji: "🥚", selected: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
+            }
+            .padding(.horizontal, 2)
+        }
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
     }
 
     // MARK: - Search row (top)

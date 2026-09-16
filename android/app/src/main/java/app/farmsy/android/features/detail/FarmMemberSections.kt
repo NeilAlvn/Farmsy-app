@@ -87,6 +87,7 @@ fun FarmMemberSections(
     pin: FarmPin,
     detail: FarmDetail?,
     onClaim: () -> Unit,
+    onReport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -231,11 +232,11 @@ fun FarmMemberSections(
             )
         }
 
-        // 6 · reportLink → farmsy.app/messages
+        // 6 · reportLink → ReportInfoSheet
         Row(
             Modifier.fillMaxWidth()
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                    haptics.tapTick(); openUrl(context, "https://www.farmsy.app/messages")
+                    haptics.tapTick(); onReport()
                 },
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,

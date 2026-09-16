@@ -114,7 +114,9 @@ import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmsStore
 import app.farmsy.android.core.SmartSearchApi
 import app.farmsy.android.core.SmartSearchIntent
+import app.farmsy.android.ui.theme.Chip
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.Space
 import app.farmsy.android.ui.theme.geist
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -636,6 +638,26 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                     Box(contentAlignment = Alignment.Center) {
                         Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
                     }
+                }
+            }
+
+            // Quick chips — the four filters people reach for most, one tap under
+            // the search bar (iOS quickChips). "Open now" leads: farm hours are
+            // irregular and seasonal, and a wasted drive is the thing this map
+            // exists to prevent. Hidden while an AI intent owns the bar.
+            if (aiIntent == null) {
+                val fOpenNow by farms.filterOpenNow.collectAsState()
+                val fOpenToday by farms.filterOpenToday.collectAsState()
+                val fZelfpluk by farms.filterZelfpluk.collectAsState()
+                val fAutomaat by farms.filterAutomaat.collectAsState()
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 8.dp).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(Space.s2),
+                ) {
+                    Chip(stringResource(R.string.open_now), selected = fOpenNow, dot = if (fOpenNow) null else FarmsyColors.vividPositive) { farms.filterOpenNow.value = !fOpenNow }
+                    Chip(stringResource(R.string.open_today), selected = fOpenToday) { farms.filterOpenToday.value = !fOpenToday }
+                    Chip(stringResource(R.string.filter_zelfpluk), emoji = "🍓", selected = fZelfpluk) { farms.filterZelfpluk.value = !fZelfpluk }
+                    Chip(stringResource(R.string.axis_vending_machine), emoji = "🥚", selected = fAutomaat) { farms.filterAutomaat.value = !fAutomaat }
                 }
             }
 

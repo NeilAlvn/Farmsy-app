@@ -9,6 +9,7 @@ struct FarmMemberSections: View {
     let pin: FarmPin
     let detail: FarmDetail?
     var onClaim: () -> Void
+    var onReport: () -> Void
 
     @Environment(SessionStore.self) private var session
 
@@ -222,7 +223,7 @@ struct FarmMemberSections: View {
     private var reportLink: some View {
         Button {
             Haptics.tap()
-            if let url = URL(string: "https://www.farmsy.app/messages") { UIApplication.shared.open(url) }
+            onReport()
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "flag").font(.system(size: 13))

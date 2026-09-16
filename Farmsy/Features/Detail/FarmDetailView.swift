@@ -21,6 +21,7 @@ struct FarmDetailView: View {
     /// failure). Shows an error + retry.
     @State private var loadFailed = false
     @State private var showClaim = false
+    @State private var showReport = false
     @State private var showSignIn = false
     @State private var lightbox: LightboxSource?
     /// Public gallery photos, so multiple images show even for non-members (the
@@ -65,6 +66,12 @@ struct FarmDetailView: View {
             if let url = claimURL { SafariView(url: url).ignoresSafeArea() }
         }
         .sheet(isPresented: $showSignIn) { AuthView() }
+        .sheet(isPresented: $showReport) {
+            ReportInfoSheet(pin: pin)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
         .fullScreenCover(item: $lightbox) { src in
             ImageLightbox(source: src) { closeLightbox() }
                 .presentationBackground(.clear)
@@ -513,8 +520,10 @@ struct FarmDetailView: View {
             // Reading is public, so this sits outside the member sections: a
             // farm three people found shut this week is exactly what somebody
             // deciding whether to drive needs to know, account or not.
+            FarmProductsSection(pin: pin, detail: detail)
             FarmStatusSection(osmId: pin.osmId, onNeedsSignIn: { showSignIn = true })
-            FarmMemberSections(pin: pin, detail: detail, onClaim: { showClaim = true })
+            FarmMemberSections(pin: pin, detail: detail, onClaim: { showClaim = true },
+                               onReport: { if isSignedIn { showReport = true } else { showSignIn = true } })
         }
     }
 }

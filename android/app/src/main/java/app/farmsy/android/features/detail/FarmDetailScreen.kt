@@ -125,6 +125,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
     // lock. (Save + trips still prompt sign-in on tap; the DETAILS do not.)
     var loadFailed by remember { mutableStateOf(false) }
     var showClaim by remember { mutableStateOf(false) }
+    var showReport by remember { mutableStateOf(false) }
 
     suspend fun reload() {
         isLoading = true; loadFailed = false
@@ -320,8 +321,10 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             // public now, so it sits in the shared content, not behind a
                             // gate — a farm three people found shut is what a visitor
                             // deciding whether to drive needs, account or not.
+                            FarmProductsSection(pin = pin, detail = detail)
                             FarmStatusSection(osmId = pin.osmId, onNeedsSignIn = requestAuth)
-                            FarmMemberSections(pin = pin, detail = detail, onClaim = { showClaim = true })
+                            FarmMemberSections(pin = pin, detail = detail, onClaim = { showClaim = true },
+                                onReport = { if (session.isAuthenticated) showReport = true else requestAuth() })
                         }
                     }
                 }
@@ -362,6 +365,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
 
     lightbox?.let { src -> ImageLightbox(source = src, onClose = { lightbox = null }) }
     if (showClaim) ClaimSheet(pin = pin, onDismiss = { showClaim = false })
+    if (showReport) ReportInfoSheet(pin = pin, onDismiss = { showReport = false })
 }
 
 /// iOS photoStrip — 1 big cover (160) + a 84-wide column of two 76-tall thumbnails, the
