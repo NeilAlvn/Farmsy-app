@@ -214,4 +214,5 @@
     <string name="report_today">heute</string>
     <string name="report_yesterday">gestern</string>
     <string name="report_days_ago_arg">vor %1$d Tagen</string>
+    <string name="push_channel_alerts">Hof-Benachrichtigungen</string>
 </resources>
