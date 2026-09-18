@@ -7,7 +7,14 @@ import Supabase
 enum Backend {
     static let supabaseURL = URL(string: "https://lxkyypmzxfkzddraxtat.supabase.co")!
     static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4a3l5cG16eGZremRkcmF4dGF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NjA5NzMsImV4cCI6MjA5MzQzNjk3M30.6WpDjAtun7TUixlqMBZrvDn57TXNKY8sIaGxPvX0fyU"
-    static let webAPI = URL(string: "https://www.farmsy.app/api")!
+    static let webAPI: URL = {
+        #if DEBUG
+        // `--api-base http://localhost:3000/api` points a debug build at a local web checkout.
+        if let i = CommandLine.arguments.firstIndex(of: "--api-base"), i + 1 < CommandLine.arguments.count,
+           let u = URL(string: CommandLine.arguments[i + 1]) { return u }
+        #endif
+        return URL(string: "https://www.farmsy.app/api")!
+    }()
 
     /// All public client keys live in Secrets.plist (gitignored). Every value is
     /// optional: a missing key disables its feature rather than crashing, so

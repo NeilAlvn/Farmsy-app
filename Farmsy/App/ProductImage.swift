@@ -13,13 +13,16 @@ import SwiftUI
 /// reads as something.
 struct ProductImage: View {
     let slug: String?
+    /// A second file to try before the emoji: a recipe picture that is not
+    /// bundled yet shows its product's photograph.
+    var fallbackSlug: String? = nil
     var fallback: String = "🌱"
     var size: CGFloat = 56
     var corner: CGFloat = Radius.thumb
 
     var body: some View {
         Group {
-            if let slug, let image = ProductImageCache.image(slug) {
+            if let image = slug.flatMap(ProductImageCache.image) ?? fallbackSlug.flatMap(ProductImageCache.image) {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()

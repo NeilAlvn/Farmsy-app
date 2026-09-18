@@ -131,7 +131,7 @@ struct DiscoverScreen: View {
                     ForEach(arrived, id: \.item.id) { entry in
                         Button {
                             Haptics.tap()
-                            show(label: entry.item.label, terms: entry.item.terms)
+                            shell.openProduct(entry.item.id)
                         } label: {
                             VStack(alignment: .leading, spacing: Space.s2) {
                                 ProductImage(slug: entry.item.imageSlug, fallback: entry.item.emoji, size: 64)

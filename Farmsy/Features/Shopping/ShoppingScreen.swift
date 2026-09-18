@@ -80,8 +80,13 @@ struct ShoppingScreen: View {
             VStack(spacing: Space.s2) {
                 ForEach(picked) { item in
                     HStack(spacing: Space.s3) {
-                        ProductImage(slug: item.imageSlug, fallback: item.emoji, size: 36, corner: 8)
-                        Text(item.label).role(.body)
+                        Button { Haptics.tap(); if !item.isCustom { shell.openProduct(item.id) } } label: {
+                            HStack(spacing: Space.s3) {
+                                ProductImage(slug: item.imageSlug, fallback: item.emoji, size: 36, corner: 8)
+                                Text(item.label).role(.body)
+                            }
+                        }
+                        .buttonStyle(.plain)
                         Spacer()
                         Button {
                             Haptics.tap()

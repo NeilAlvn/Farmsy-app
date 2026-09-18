@@ -31,6 +31,8 @@ struct ShellActions {
     var openTrips: () -> Void = {}
     var openProfile: () -> Void = {}
     var openPlus: () -> Void = {}
+    /// A product page, by shopping id or seasonal slug.
+    var openProduct: (String) -> Void = { _ in }
 }
 
 private struct ShellActionsKey: EnvironmentKey {
@@ -43,6 +45,8 @@ extension EnvironmentValues {
         set { self[ShellActionsKey.self] = newValue }
     }
 }
+
+struct ProductRoute: Identifiable { let slug: String; var id: String { slug } }
 
 struct AppShell: View {
     @Environment(SessionStore.self) private var session
@@ -57,6 +61,7 @@ struct AppShell: View {
     @State private var showProfile = false
     @State private var showTrips = false
     @State private var showPlus = false
+    @State private var productSlug: ProductRoute?
     @State private var showSurvey = false
     @State private var tripDetent: PresentationDetent = .fraction(0.92)
     /// The card opens at half and can be dragged to peek or full.
@@ -70,7 +75,8 @@ struct AppShell: View {
             showTab: { tab = $0 },
             openTrips: { requireAuth { showTrips = true } },
             openProfile: { showProfile = true },
-            openPlus: { requireAuth { showPlus = true } })
+            openPlus: { requireAuth { showPlus = true } },
+            openProduct: { productSlug = ProductRoute(slug: $0) })
     }
 
     var body: some View {
@@ -130,6 +136,12 @@ struct AppShell: View {
             TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
                 .presentationDetents([.fraction(0.5), .fraction(0.92)], selection: $tripDetent)
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
+        .sheet(item: $productSlug) { r in
+            ProductSheet(slug: r.slug)
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
         }
