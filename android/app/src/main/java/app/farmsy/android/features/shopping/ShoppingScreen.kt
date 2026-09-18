@@ -57,6 +57,7 @@ import app.farmsy.android.core.lenientJson
 import app.farmsy.android.features.home.rememberLocationRequest
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
+import app.farmsy.android.ui.ProductImage
 import app.farmsy.android.ui.theme.CardShape
 import app.farmsy.android.ui.theme.Chip
 import app.farmsy.android.ui.theme.FarmsyColors
@@ -203,7 +204,7 @@ fun ShoppingScreen() {
                                 .padding(horizontal = Space.s4, vertical = Space.s2),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
                         ) {
-                            Text(item.emoji, fontSize = 22.sp, modifier = Modifier.width(32.dp))
+                            ProductImage(item.imageSlug, item.emoji, 36.dp, corner = 8.dp)
                             Text(item.label(language), style = role(TextRole.BODY), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
                             Box(
                                 Modifier.size(32.dp).clickable { tap(); trip.toggleProduct(item.id) }.semantics { contentDescription = remove },

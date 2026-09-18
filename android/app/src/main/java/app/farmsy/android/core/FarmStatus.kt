@@ -289,6 +289,16 @@ object RecentReports {
         loadedAt = Instant.now()
     }
 
+    /// Farms a visitor reported open today (Amsterdam day). What the map's
+    /// "Confirmed open today" chip and the vivid pin ring are built on.
+    fun confirmedOpenToday(reports: List<RecentReport> = _reports.value, now: Instant = Instant.now()): Set<String> {
+        val today = FarmStatus.amsterdamDay(now)
+        return reports.filter { r ->
+            r.report.reportStatus == ReportStatus.OPEN &&
+                r.report.instant?.let { FarmStatus.amsterdamDay(it) } == today
+        }.mapTo(HashSet()) { it.farmOsmId }
+    }
+
     /// Reports about farms within `radiusKm` of `location`, using the pins the
     /// store already holds. No location means everywhere.
     fun near(location: android.location.Location?, radiusKm: Double, pins: Map<String, FarmPin>): List<RecentReport> {

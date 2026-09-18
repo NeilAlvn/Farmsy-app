@@ -115,7 +115,7 @@ struct DiscoverScreen: View {
                             show(label: entry.item.label, terms: entry.item.terms)
                         } label: {
                             VStack(alignment: .leading, spacing: Space.s2) {
-                                Text(entry.item.emoji).font(.system(size: 28))
+                                ProductImage(slug: entry.item.imageSlug, fallback: entry.item.emoji, size: 64)
                                 Text(entry.item.label).role(.subheading).lineLimit(1)
                                 Text(entry.farms == 1 ? String(localized: "1 farm") : String(localized: "\(entry.farms) farms"))
                                     .role(.caption, .inkMuted)

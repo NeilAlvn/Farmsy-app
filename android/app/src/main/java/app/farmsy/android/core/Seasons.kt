@@ -24,6 +24,10 @@ data class SeasonalItem(
     val months: List<Int> = emptyList(),
     val peak: List<Int> = emptyList(),
     val category: String = "",
+    /// Slug of the bundled tile photograph. Older servers omit it; most seasonal
+    /// slugs are their own file, the aliased ones (aardbei → strawberry) show
+    /// the emoji until the server sends the mapping.
+    val image: String? = null,
     val storage: String? = null,
     val note: String? = null,
     /// Every word that means this, for matching a farm's produce text.
@@ -32,6 +36,8 @@ data class SeasonalItem(
     val now: Boolean = false,
 ) {
     fun label(language: String): String = if (language == "nl") nl else en
+
+    val imageSlug: String get() = image ?: slug
 
     val emoji: String
         get() = when (category) {

@@ -213,4 +213,5 @@
     <string name="report_yesterday">yesterday</string>
     <string name="report_days_ago_arg">%1$d days ago</string>
     <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

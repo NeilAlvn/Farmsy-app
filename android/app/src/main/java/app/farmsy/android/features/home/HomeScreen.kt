@@ -74,6 +74,7 @@ import app.farmsy.android.features.detail.minutesAgoLabel
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
 import app.farmsy.android.ui.theme.AtmosphereBand
+import app.farmsy.android.ui.ProductImage
 import app.farmsy.android.ui.theme.Badge
 import app.farmsy.android.ui.theme.CardShape
 import app.farmsy.android.ui.theme.FarmsyColors
@@ -271,7 +272,7 @@ fun HomeScreen() {
                             }.padding(Space.s4),
                             verticalArrangement = Arrangement.spacedBy(Space.s2),
                         ) {
-                            Text(p.item.emoji, fontSize = 28.sp)
+                            ProductImage(p.item.imageSlug, p.item.emoji, 64.dp)
                             Text(p.item.label(language), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 stringResource(R.string.home_farms_km_arg, p.count, String.format("%.1f", p.nearestKm)),
@@ -304,18 +305,19 @@ fun HomeScreen() {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
                     seasonPicks.forEach { item ->
                         Column(
-                            Modifier.width(172.dp).background(FarmsyColors.farmGreenSoft, TileShape).tapCard {
+                            Modifier.width(148.dp).background(FarmsyColors.surface, CardShape).tapCard {
                                 scope.launch {
                                     farms.showProduct(item.label(language), item.terms, location, radiusKm)
                                     shell.showTab(AppTab.MAP)
                                 }
-                            }.padding(Space.s4),
+                            }.padding(Space.s3),
                             verticalArrangement = Arrangement.spacedBy(Space.s2),
                         ) {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(item.emoji, fontSize = 28.sp)
-                                Spacer(Modifier.weight(1f))
-                                if (item.isPeak(seasonMonth)) Badge(stringResource(R.string.peak), fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
+                            Box {
+                                ProductImage(item.imageSlug, item.emoji, 124.dp, corner = Radius.tile)
+                                if (item.isPeak(seasonMonth)) {
+                                    Badge(stringResource(R.string.peak), fill = FarmsyColors.vivid, ink = FarmsyColors.ink, modifier = Modifier.align(Alignment.TopEnd).padding(Space.s2))
+                                }
                             }
                             Text(item.label(language), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(stringResource(R.string.find_it_nearby), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)
