@@ -27,6 +27,7 @@ struct DiscoverScreen: View {
     @State private var seasons = Seasons.shared
     @State private var catalogue = ShoppingItems.shared
     @State private var tips = Tips.shared
+    @State private var products = Products.shared
     @State private var recent: [Ping] = []
     @State private var recentLoaded = false
     @State private var openMonth: Int?
@@ -72,6 +73,7 @@ struct DiscoverScreen: View {
         .task { await seasons.loadIfNeeded() }
         .task { await catalogue.loadIfNeeded() }
         .task { await tips.loadIfNeeded() }
+        .task { await products.loadIfNeeded() }
         .task { await loadRecent() }
     }
 
@@ -109,6 +111,7 @@ struct DiscoverScreen: View {
             ForEach(0..<3, id: \.self) { _ in SkeletonBox(cornerRadius: Radius.card).frame(height: 150) }
         } else {
             justArrivedSection
+            recipeOfWeekSection
             tipsSection
             pickYourOwnSection
             communitySection
@@ -149,6 +152,27 @@ struct DiscoverScreen: View {
                 .padding(.trailing, Space.s4)
             }
             .padding(.trailing, -Space.s4)
+        }
+    }
+
+    /// One idea from a product at its peak this month, fixed for the ISO week
+    /// so everyone sees the same one and it changes on Monday.
+    private var recipeOfWeek: (ProductProfile, ProductProfile.Idea)? {
+        let month = Calendar.current.component(.month, from: Date())
+        let pool = products.all.filter { $0.state(in: month) == .peak }.flatMap { p in p.ideas.map { (p, $0) } }
+        guard !pool.isEmpty else { return nil }
+        let week = Calendar(identifier: .iso8601).component(.weekOfYear, from: Date())
+        return pool[week % pool.count]
+    }
+
+    @ViewBuilder
+    private var recipeOfWeekSection: some View {
+        if let (p, idea) = recipeOfWeek {
+            SectionHeader(title: String(localized: "Recipe of the week"),
+                          action: (p.name, { Haptics.tap(); shell.openProduct(p.slug) }))
+            IdeaCard(kicker: nil, title: idea.title, text: idea.body,
+                     image: idea.image, fallbackImage: p.image, fallback: "🍽️",
+                     ingredients: idea.ingredients)
         }
     }
 

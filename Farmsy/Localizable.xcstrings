@@ -17500,6 +17500,28 @@
           }
         }
       }
+    },
+    "Recipe of the week": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recept van de week"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recette de la semaine"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept der Woche"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
