@@ -241,4 +241,40 @@
     <string name="farms_search_placeholder">Höfe nach Name oder Ort suchen</string>
     <string name="no_farm_matches">Kein Hof gefunden</string>
     <string name="try_fewer_words">Versuche weniger Wörter oder entferne einen Filter.</string>
+
+    <!-- Community: Reports / Leaderboard tabs, report portal, badges -->
+    <string name="community_tab_reports">Meldungen</string>
+    <string name="community_tab_leaderboard">Rangliste</string>
+    <string name="report_portal_title">Was hast du heute gesehen?</string>
+    <string name="report_portal_sub">Offen, geschlossen, ausverkauft, und was im Regal lag. Ein Tipp hilft allen nach dir.</string>
+    <string name="leaderboard_intro">Die Leute, die die Karte ehrlich halten. Meldungen zählen; Bestätigungen und Fotos bringen Abzeichen.</string>
+    <string name="all_time">Gesamt</string>
+    <string name="this_month">Diesen Monat</string>
+    <string name="no_reports_yet">Noch keine Meldungen</string>
+    <string name="no_reports_yet_sub">Wer zuerst einen Hof meldet, steht oben.</string>
+    <string name="report_a_farm">Hof melden</string>
+    <string name="you_reports_arg">Du: %1$d Meldungen · %2$d Höfe</string>
+    <string name="you_badge">DU</string>
+    <string name="farms_badges_arg">%1$d Höfe · %2$d Abzeichen</string>
+    <string name="reports_label">Meldungen</string>
+    <string name="what_did_you_see">Was hast du gesehen?</string>
+    <string name="report_sent_body">Alle, die überlegen, heute hinzufahren, sehen es jetzt.</string>
+    <string name="which_farm">Welcher Hof?</string>
+    <string name="allow_location_or_search">Erlaube den Standort, um die Höfe um dich herum zu sehen, oder suche nach Name.</string>
+    <string name="badge_first_report">Erste Meldung</string>
+    <string name="badge_early_bird">Frühaufsteher</string>
+    <string name="badge_confirmer">Bestätiger</string>
+    <string name="badge_explorer">Entdecker</string>
+    <string name="badge_shelf_scout">Regalscout</string>
+    <string name="badge_photographer">Fotograf</string>
+    <string name="badge_regular">Stammkunde</string>
+    <string name="badge_collector">Sammler</string>
+    <string name="badge_rule_first_report">Melde einmal, ob ein Hof offen war.</string>
+    <string name="badge_rule_early_bird">Melde als Erster einen Hof an dem Tag, fünfmal.</string>
+    <string name="badge_rule_confirmer">Bestätige zehnmal, was jemand anderes an dem Tag meldete.</string>
+    <string name="badge_rule_explorer">Melde bei zehn verschiedenen Höfen.</string>
+    <string name="badge_rule_shelf_scout">Sag in 25 Meldungen, was im Regal lag.</string>
+    <string name="badge_rule_photographer">Poste ein Foto von einem Hof.</string>
+    <string name="badge_rule_regular">Melde in vier verschiedenen Wochen.</string>
+    <string name="badge_rule_collector">Speichere fünf Höfe.</string>
 </resources>

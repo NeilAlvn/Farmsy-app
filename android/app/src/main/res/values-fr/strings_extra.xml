@@ -241,4 +241,40 @@
     <string name="farms_search_placeholder">Rechercher une ferme par nom ou lieu</string>
     <string name="no_farm_matches">Aucune ferme ne correspond</string>
     <string name="try_fewer_words">Essayez moins de mots, ou retirez un filtre.</string>
+
+    <!-- Community: Reports / Leaderboard tabs, report portal, badges -->
+    <string name="community_tab_reports">Signalements</string>
+    <string name="community_tab_leaderboard">Classement</string>
+    <string name="report_portal_title">Qu\'avez-vous vu aujourd\'hui ?</string>
+    <string name="report_portal_sub">Ouvert, fermé, épuisé, et ce qu\'il y avait en rayon. Un geste qui aide tous ceux qui passent après vous.</string>
+    <string name="leaderboard_intro">Ceux qui gardent la carte honnête. Les signalements comptent ; les confirmations et les photos rapportent des badges.</string>
+    <string name="all_time">Depuis toujours</string>
+    <string name="this_month">Ce mois-ci</string>
+    <string name="no_reports_yet">Aucun signalement pour l\'instant</string>
+    <string name="no_reports_yet_sub">La première personne à signaler une ferme sera en tête.</string>
+    <string name="report_a_farm">Signaler une ferme</string>
+    <string name="you_reports_arg">Vous : %1$d signalements · %2$d fermes</string>
+    <string name="you_badge">VOUS</string>
+    <string name="farms_badges_arg">%1$d fermes · %2$d badges</string>
+    <string name="reports_label">signalements</string>
+    <string name="what_did_you_see">Qu\'avez-vous vu ?</string>
+    <string name="report_sent_body">Tous ceux qui hésitent à y aller aujourd\'hui le voient maintenant.</string>
+    <string name="which_farm">Quelle ferme ?</string>
+    <string name="allow_location_or_search">Autorisez la localisation pour voir les fermes autour de vous, ou cherchez par nom.</string>
+    <string name="badge_first_report">Premier signalement</string>
+    <string name="badge_early_bird">Lève-tôt</string>
+    <string name="badge_confirmer">Confirmateur</string>
+    <string name="badge_explorer">Explorateur</string>
+    <string name="badge_shelf_scout">Éclaireur des rayons</string>
+    <string name="badge_photographer">Photographe</string>
+    <string name="badge_regular">Habitué</string>
+    <string name="badge_collector">Collectionneur</string>
+    <string name="badge_rule_first_report">Dites une fois si une ferme était ouverte.</string>
+    <string name="badge_rule_early_bird">Soyez le premier à signaler une ferme ce jour-là, cinq fois.</string>
+    <string name="badge_rule_confirmer">Confirmez dix fois ce que quelqu\'un d\'autre a signalé ce jour-là.</string>
+    <string name="badge_rule_explorer">Signalez dans dix fermes différentes.</string>
+    <string name="badge_rule_shelf_scout">Indiquez ce qu\'il y avait en rayon dans 25 signalements.</string>
+    <string name="badge_rule_photographer">Publiez une photo d\'une ferme.</string>
+    <string name="badge_rule_regular">Signalez sur quatre semaines différentes.</string>
+    <string name="badge_rule_collector">Enregistrez cinq fermes.</string>
 </resources>

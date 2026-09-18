@@ -18,7 +18,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.MeetingRoom
+import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -32,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,7 +48,9 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.Contributions
 import app.farmsy.android.core.FarmContentApi
+import app.farmsy.android.core.LeaderRow
 import app.farmsy.android.core.FarmStatus
 import app.farmsy.android.core.FarmStatusApi
 import app.farmsy.android.core.Ping
@@ -57,6 +66,9 @@ import app.farmsy.android.features.main.AppTab
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.PingCard
 import app.farmsy.android.features.whatsnew.SkeletonBox
+import app.farmsy.android.ui.theme.Badge
+import app.farmsy.android.ui.theme.CardShape
+import app.farmsy.android.ui.theme.Chip
 import app.farmsy.android.ui.theme.EmptyState
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.PillButton
@@ -70,6 +82,10 @@ import app.farmsy.android.ui.theme.TabBarInset
 import app.farmsy.android.ui.theme.TextRole
 import app.farmsy.android.ui.theme.card
 import app.farmsy.android.ui.theme.role
+import app.farmsy.android.ui.theme.tapCard
+import app.farmsy.android.ui.theme.ui
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -92,6 +108,8 @@ private sealed class Entry(val id: String, val at: Instant) {
     class Report(val group: ReportGroup) : Entry("r" + group.id, group.newest)
 }
 
+enum class CommunityTab(val labelRes: Int) { REPORTS(R.string.community_tab_reports), LEADERBOARD(R.string.community_tab_leaderboard) }
+
 /// Community — "Near you": what people reported and posted at farms around
 /// you, newest first. A report card is one farm, one status, one day, with
 /// how many people said so and what they found; "Confirm" adds your voice
@@ -112,6 +130,9 @@ fun CommunityScreen() {
     var refreshing by remember { mutableStateOf(false) }
     var lightbox by remember { mutableStateOf<LightboxSource?>(null) }
     var confirming by remember { mutableStateOf<String?>(null) }
+    var tab by remember { mutableStateOf(CommunityTab.REPORTS) }
+    var boardMonth by remember { mutableStateOf(false) }
+    var reporting by remember { mutableStateOf(false) }
     val fromAPost = stringResource(R.string.lightbox_from_a_post)
 
     val pins by farms.pins.collectAsState()
@@ -122,6 +143,11 @@ fun CommunityScreen() {
     val language = remember { ShoppingItems.language(context) }
     session.profile.collectAsState().value
     val plus = session.hasFullAccess
+    val myId = session.session.collectAsState().value?.user?.id
+    val stats by Contributions.stats.collectAsState()
+    val boardAll by Contributions.leaderboard.collectAsState()
+    val boardMonthRows by Contributions.leaderboardMonth.collectAsState()
+    val rows = if (boardMonth) boardMonthRows else boardAll
 
     suspend fun load(force: Boolean = false) {
         RecentReports.refresh(force)
@@ -130,6 +156,7 @@ fun CommunityScreen() {
         loading = false
     }
     LaunchedEffect(Unit) { load() }
+    LaunchedEffect(Unit) { Contributions.refreshLeaderboard() }
 
     // Everywhere when the phone has no location; the radius, widened to at
     // least 25 km, when it has — a report feed with nothing in it teaches
@@ -167,9 +194,15 @@ fun CommunityScreen() {
 
     Column(Modifier.fillMaxSize().background(FarmsyColors.cream).statusBarsPadding()) {
         ScreenHeader(stringResource(R.string.community))
+        Row(
+            Modifier.padding(start = Space.s4, end = Space.s4, bottom = Space.s3),
+            horizontalArrangement = Arrangement.spacedBy(Space.s2),
+        ) {
+            CommunityTab.entries.forEach { t -> Chip(stringResource(t.labelRes), selected = tab == t) { tab = t } }
+        }
         PullToRefreshBox(
             isRefreshing = refreshing,
-            onRefresh = { scope.launch { refreshing = true; load(force = true); refreshing = false } },
+            onRefresh = { scope.launch { refreshing = true; load(force = true); Contributions.refreshLeaderboard(); refreshing = false } },
             modifier = Modifier.fillMaxSize(),
         ) {
             LazyColumn(
@@ -177,7 +210,62 @@ fun CommunityScreen() {
                 verticalArrangement = Arrangement.spacedBy(Space.s2),
                 contentPadding = PaddingValues(bottom = TabBarInset.content),
             ) {
-                item { SectionHeader(stringResource(R.string.community_near_you), top = 0.dp) }
+                if (tab == CommunityTab.LEADERBOARD) {
+                    item {
+                        Text(stringResource(R.string.leaderboard_intro), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
+                    }
+                    item {
+                        Row(Modifier.padding(vertical = Space.s2), horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
+                            Chip(stringResource(R.string.all_time), selected = !boardMonth) { boardMonth = false }
+                            Chip(stringResource(R.string.this_month), selected = boardMonth) { boardMonth = true }
+                        }
+                    }
+                    if (rows.isEmpty()) {
+                        item {
+                            EmptyState(
+                                Icons.Outlined.EmojiEvents, stringResource(R.string.no_reports_yet), stringResource(R.string.no_reports_yet_sub),
+                                stringResource(R.string.report_a_farm) to { reporting = true },
+                            )
+                        }
+                    } else {
+                        item {
+                            Column(Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape)) {
+                                rows.forEachIndexed { i, row ->
+                                    LeaderRowView(rank = i + 1, row = row, me = row.userId == myId)
+                                    if (i < rows.lastIndex) HorizontalDivider(Modifier.padding(start = 112.dp), color = FarmsyColors.hairline)
+                                }
+                            }
+                        }
+                        val mine = stats
+                        if (myId != null && rows.none { it.userId == myId } && mine != null) {
+                            item {
+                                Text(
+                                    stringResource(R.string.you_reports_arg, mine.reports, mine.farms),
+                                    style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted, modifier = Modifier.padding(top = Space.s2),
+                                )
+                            }
+                        }
+                    }
+                    return@LazyColumn
+                }
+                // The portal: report without opening a farm card first.
+                item {
+                    Row(
+                        Modifier.fillMaxWidth().tapCard { if (session.isAuthenticated) reporting = true else requestAuth() }.card(soft = true),
+                        horizontalArrangement = Arrangement.spacedBy(Space.s3),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(44.dp).background(FarmsyColors.vivid, CircleShape), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Filled.MeetingRoom, null, tint = FarmsyColors.ink, modifier = Modifier.size(22.dp))
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(stringResource(R.string.report_portal_title), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink)
+                            Text(stringResource(R.string.report_portal_sub), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)
+                        }
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(18.dp))
+                    }
+                }
+                item { SectionHeader(stringResource(R.string.community_near_you)) }
                 when {
                     loading -> items(3) { SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(150.dp)) }
                     feed.isEmpty() -> item {
@@ -222,6 +310,40 @@ fun CommunityScreen() {
     }
 
     lightbox?.let { src -> ImageLightbox(source = src, onClose = { lightbox = null }) }
+    if (reporting) ReportSheet(onDismiss = { reporting = false }) { RecentReports.refresh(force = true) }
+}
+
+@Composable
+private fun LeaderRowView(rank: Int, row: LeaderRow, me: Boolean) {
+    val initials = row.name.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("").uppercase()
+    Row(
+        Modifier.fillMaxWidth().background(if (me) FarmsyColors.farmGreenSoft else Color.Transparent)
+            .padding(horizontal = Space.s4, vertical = Space.s3),
+        horizontalArrangement = Arrangement.spacedBy(Space.s3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(32.dp).background(FarmsyColors.creamFill, CircleShape), contentAlignment = Alignment.Center) {
+            if (rank <= 3) Icon(Icons.Filled.EmojiEvents, null, tint = FarmsyColors.vivid, modifier = Modifier.size(16.dp))
+            else Text("$rank", style = ui(12.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
+        }
+        Box(Modifier.size(40.dp).background(FarmsyColors.creamFill, CircleShape), contentAlignment = Alignment.Center) {
+            Text(initials, style = ui(13.sp, FontWeight.SemiBold), color = FarmsyColors.ink)
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s2), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    row.name, style = role(TextRole.SUBHEADING), color = FarmsyColors.ink,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                )
+                if (me) Badge(stringResource(R.string.you_badge), fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
+            }
+            Text(stringResource(R.string.farms_badges_arg, row.farms, row.badges), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)
+        }
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("${row.reports}", style = role(TextRole.SUBHEADING), color = FarmsyColors.ink)
+            Text(stringResource(R.string.reports_label), style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint)
+        }
+    }
 }
 
 @Composable
