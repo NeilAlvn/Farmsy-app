@@ -15476,6 +15476,226 @@
           }
         }
       }
+    },
+    "Search or type a product": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoek of typ een product"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher ou saisir un produit"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkt suchen oder eingeben"
+          }
+        }
+      }
+    },
+    "Add “%@”": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” toevoegen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter « %@ »"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ hinzufügen"
+          }
+        }
+      }
+    },
+    "Build my route · %lld stops": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maak mijn route · %lld stops"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer mon trajet · %lld arrêts"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Route erstellen · %lld Stopps"
+          }
+        }
+      }
+    },
+    "Find farms for my list": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vind boerderijen voor mijn lijst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trouver des fermes pour ma liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe für meine Liste finden"
+          }
+        }
+      }
+    },
+    "Farmsy Plus picks the fewest farms that cover your list and builds the trip. Tap the button below.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy Plus kiest zo min mogelijk boerderijen die je hele lijst dekken en maakt de rit. Tik op de knop hieronder."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste et prépare le trajet. Touchez le bouton ci-dessous."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy Plus wählt so wenige Höfe wie möglich, die deine Liste abdecken, und plant die Fahrt. Tippe auf den Button unten."
+          }
+        }
+      }
+    },
+    "Farmsy Plus picks the fewest farms that cover your list. Tap the button below.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy Plus kiest zo min mogelijk boerderijen die je hele lijst dekken. Tik op de knop hieronder."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste. Touchez le bouton ci-dessous."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy Plus wählt so wenige Höfe wie möglich, die deine Liste abdecken. Tippe auf den Button unten."
+          }
+        }
+      }
+    },
+    "%lld of %lld products": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld van %lld producten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld produits sur %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld von %lld Produkten"
+          }
+        }
+      }
+    },
+    "Change farm": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andere boerderij"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changer de ferme"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anderen Hof wählen"
+          }
+        }
+      }
+    },
+    "Other farms nearby that sell what this stop is for.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andere boerderijen in de buurt die verkopen waar deze stop voor is."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "D'autres fermes à proximité qui vendent ce pour quoi cet arrêt est prévu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andere Höfe in der Nähe, die verkaufen, wofür dieser Stopp gedacht ist."
+          }
+        }
+      }
+    },
+    "No other farm within %lld km sells these.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen andere boerderij binnen %lld km verkoopt dit."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune autre ferme à moins de %lld km ne vend cela."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein anderer Hof im Umkreis von %lld km verkauft das."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

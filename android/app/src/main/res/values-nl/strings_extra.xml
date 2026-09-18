@@ -214,6 +214,16 @@
     <string name="report_today">vandaag</string>
     <string name="report_yesterday">gisteren</string>
     <string name="report_days_ago_arg">%1$d dagen geleden</string>
+    <string name="shopping_search_placeholder">Zoek of typ een product</string>
+    <string name="shopping_add_typed_arg">“%1$s” toevoegen</string>
+    <string name="shopping_build_route_stops_arg">Maak mijn route · %1$d stops</string>
+    <string name="shopping_find_farms_bar">Vind boerderijen voor mijn lijst</string>
+    <string name="shopping_plus_hint_long">Farmsy Plus kiest zo min mogelijk boerderijen die je hele lijst dekken en maakt de rit. Tik op de knop hieronder.</string>
+    <string name="shopping_plus_hint_short">Farmsy Plus kiest zo min mogelijk boerderijen die je hele lijst dekken. Tik op de knop hieronder.</string>
+    <string name="shopping_coverage_arg">%1$d van %2$d producten</string>
+    <string name="change_farm">Andere boerderij</string>
+    <string name="change_farm_sub">Andere boerderijen in de buurt die verkopen waar deze stop voor is.</string>
+    <string name="change_farm_none_arg">Geen andere boerderij binnen %1$d km verkoopt dit.</string>
     <string name="push_channel_alerts">Meldingen van boerderijen</string>
     <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>

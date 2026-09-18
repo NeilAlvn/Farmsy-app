@@ -16,17 +16,22 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.LocationOff
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,10 +42,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +61,7 @@ import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
 import app.farmsy.android.core.ProductMatch
 import app.farmsy.android.core.SearchRadius
+import app.farmsy.android.core.ShoppingItem
 import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.core.ShoppingPlanner
 import app.farmsy.android.core.lenientJson
@@ -58,15 +69,17 @@ import app.farmsy.android.features.home.rememberLocationRequest
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
 import app.farmsy.android.ui.ProductImage
+import app.farmsy.android.ui.theme.Badge
 import app.farmsy.android.ui.theme.CardShape
 import app.farmsy.android.ui.theme.Chip
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.PillButton
+import app.farmsy.android.ui.theme.PillShape
 import app.farmsy.android.ui.theme.PillSize
 import app.farmsy.android.ui.theme.PillVariant
-import app.farmsy.android.ui.theme.PlusLockCard
 import app.farmsy.android.ui.theme.Radius
 import app.farmsy.android.ui.theme.ScreenHeader
+import app.farmsy.android.ui.theme.SearchField
 import app.farmsy.android.ui.theme.SectionHeader
 import app.farmsy.android.ui.theme.Space
 import app.farmsy.android.ui.theme.TabBarInset
@@ -76,9 +89,6 @@ import app.farmsy.android.ui.theme.card
 import app.farmsy.android.ui.theme.rememberTapHaptic
 import app.farmsy.android.ui.theme.role
 import app.farmsy.android.ui.theme.ui
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -105,11 +115,12 @@ private object ShoppingHistory {
 
 /// Shopping — "help me get my local groceries". The list is free. Which farms
 /// answer it, and the route between them, is Farmsy Plus: that is the thing a
-/// map cannot do, and the reason to pay.
+/// map cannot do, and the reason to pay — so it sits in one bar above the tab
+/// pill the moment the list has an item.
 ///
 /// The list itself is `TripStore.wantedProducts` (already persisted, already
 /// what the trip planner's chips read), so nothing is stored twice.
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingScreen() {
     val context = LocalContext.current
@@ -128,6 +139,7 @@ fun ShoppingScreen() {
     val pins by farms.pins.collectAsState()
     val flagsLoaded by farms.flagsLoaded.collectAsState()
     val catalogue by ShoppingItems.items.collectAsState()
+    val categories by ShoppingItems.categories.collectAsState()
     val loadFailed by ShoppingItems.loadFailed.collectAsState()
     val radiusKm by SearchRadius.km.collectAsState()
     val language = remember { ShoppingItems.language(context) }
@@ -136,10 +148,18 @@ fun ShoppingScreen() {
     var matchingFarms by remember { mutableStateOf<Int?>(null) }
     var isPlanning by remember { mutableStateOf(false) }
     var history by remember { mutableStateOf(ShoppingHistory.read(context)) }
+    // The picker's search field. Typing filters the chips; Enter with no
+    // matching chip adds what was typed as a custom item.
+    var query by remember { mutableStateOf("") }
+    // The stop a "Change farm" sheet is open for.
+    var swapping by remember { mutableStateOf<ShoppingPlanner.Pick?>(null) }
 
-    val picked = remember(wanted, catalogue) { wanted.mapNotNull { id -> catalogue.firstOrNull { it.id == id } } }
+    val picked = remember(wanted, catalogue) { wanted.mapNotNull { ShoppingItems.item(it) } }
     val origin: LatLng? = tripOrigin ?: location?.let { LatLng(it.latitude, it.longitude) }
-    fun labels(ids: List<String>) = ids.map { id -> catalogue.firstOrNull { it.id == id }?.label(language) ?: id }
+    fun labels(ids: List<String>) = ids.map { id -> ShoppingItems.item(id)?.label(language) ?: id }
+    fun candidates() = pins.map {
+        ShoppingPlanner.Candidate(it.osmId, LatLng(it.lat, it.lng), farms.produceFor(it.osmId) ?: "")
+    }
 
     LaunchedEffect(Unit) { ShoppingItems.loadIfNeeded() }
     LaunchedEffect(Unit) { farms.loadFlagsIfNeeded() }
@@ -163,9 +183,7 @@ fun ShoppingScreen() {
         isPlanning = true
         scope.launch {
             farms.loadFlagsIfNeeded()
-            val candidates = pins.map {
-                ShoppingPlanner.Candidate(it.osmId, LatLng(it.lat, it.lng), farms.produceFor(it.osmId) ?: "")
-            }
+            val candidates = candidates()
             plan = withContext(Dispatchers.Default) {
                 ShoppingPlanner.plan(wanted = picked, farms = candidates, origin = o, radiusKm = radiusKm)
             }
@@ -181,114 +199,233 @@ fun ShoppingScreen() {
         shell.openTrips()
     }
 
-    Column(Modifier.fillMaxSize().background(FarmsyColors.cream).statusBarsPadding()) {
-        ScreenHeader(stringResource(R.string.shopping))
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                .padding(horizontal = Space.s4).padding(bottom = TabBarInset.content),
-        ) {
-            // MARK: The list
-            if (picked.isEmpty()) {
-                Text(stringResource(R.string.shopping_what_need), style = role(TextRole.HEADING), color = FarmsyColors.ink)
-                Text(
-                    stringResource(R.string.shopping_intro), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted,
-                    modifier = Modifier.padding(top = Space.s1),
-                )
-            } else {
-                SectionHeader(stringResource(R.string.this_weeks_list), stringResource(R.string.clear) to { trip.clearProducts() }, top = 0.dp)
-                Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
-                    picked.forEach { item ->
-                        val remove = stringResource(R.string.remove_arg, item.label(language))
-                        Row(
-                            Modifier.fillMaxWidth().heightIn(min = 56.dp).background(FarmsyColors.surface, CardShape)
-                                .padding(horizontal = Space.s4, vertical = Space.s2),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
-                        ) {
-                            ProductImage(item.imageSlug, item.emoji, 36.dp, corner = 8.dp)
-                            Text(item.label(language), style = role(TextRole.BODY), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
-                            Box(
-                                Modifier.size(32.dp).clickable { tap(); trip.toggleProduct(item.id) }.semantics { contentDescription = remove },
-                                contentAlignment = Alignment.Center,
-                            ) { Icon(Icons.Filled.Close, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(16.dp)) }
-                        }
-                    }
-                }
-            }
+    /// Enter in the search field: the one chip that matches, else a custom item.
+    fun addTyped() {
+        val text = query.trim()
+        if (text.isEmpty()) return
+        val q = ProductMatch.fold(text)
+        val exact = catalogue.firstOrNull { ProductMatch.fold(it.label(language)) == q && it.id !in wanted }
+        tap()
+        trip.toggleProduct(exact?.id ?: ShoppingItem.custom(text).id)
+        query = ""
+    }
 
-            // MARK: Farms for the list
-            if (picked.isNotEmpty()) {
-                SectionHeader(stringResource(R.string.farms_for_your_list))
-                val n = matchingFarms
-                when {
-                    origin == null -> Row(
-                        Modifier.fillMaxWidth().card(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Space.s3),
-                    ) {
-                        Icon(Icons.Filled.LocationOff, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp))
-                        Text(stringResource(R.string.allow_location_look_around), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted, modifier = Modifier.weight(1f))
-                        PillButton(stringResource(R.string.allow), PillVariant.PRIMARY, PillSize.SMALL, onClick = requestLocation)
-                    }
-                    // The lock card bleeds to the card's edges (iOS negative padding),
-                    // so the card's own padding sits on the text, not the container.
-                    n != null -> Column(Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape), verticalArrangement = Arrangement.spacedBy(Space.s3)) {
-                        val locked = n > 0 && !session.hasFullAccess
-                        Text(
-                            if (n == 0) stringResource(R.string.shopping_none_within_arg, radiusKm.toInt())
-                            else stringResource(R.string.shopping_match_arg, n, radiusKm.toInt()),
-                            style = role(TextRole.BODY), color = FarmsyColors.ink,
-                            modifier = Modifier.padding(start = Space.s5, end = Space.s5, top = Space.s5, bottom = if (n > 0) 0.dp else Space.s5),
-                        )
-                        if (n > 0) {
-                            if (!locked) {
-                                Column(Modifier.padding(start = Space.s5, end = Space.s5, bottom = Space.s5), verticalArrangement = Arrangement.spacedBy(Space.s3)) {
-                                    PlanView(plan, isPlanning, ::labels, onFind = ::findFarms, onBuild = ::buildRoute, onOpen = { osmId ->
-                                        farms.pinForOsmId(osmId)?.let { shell.openFarm(it) }
-                                    }, km = { osmId -> location?.let { l -> farms.pinForOsmId(osmId)?.distanceMeters(l.latitude, l.longitude)?.div(1000) } })
-                                }
-                            } else {
-                                PlusLockCard(stringResource(R.string.plus_route_title), stringResource(R.string.plus_route_text), onUnlock = shell.openPlus)
-                            }
-                        }
-                    }
-                    else -> SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(88.dp))
-                }
-            }
+    fun km(osmId: String): Double? = location?.let { l -> farms.pinForOsmId(osmId)?.distanceMeters(l.latitude, l.longitude)?.div(1000) }
 
-            // MARK: Add products
-            SectionHeader(stringResource(R.string.add_products))
-            if (catalogue.isEmpty()) {
-                if (loadFailed) {
-                    Text(stringResource(R.string.shopping_list_catalogue_failed), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
+    Box(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            ScreenHeader(stringResource(R.string.shopping))
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    .padding(horizontal = Space.s4).padding(bottom = TabBarInset.content + if (picked.isEmpty()) 0.dp else 72.dp),
+            ) {
+                // MARK: The list
+                if (picked.isEmpty()) {
+                    Text(stringResource(R.string.shopping_what_need), style = role(TextRole.HEADING), color = FarmsyColors.ink)
+                    Text(
+                        stringResource(R.string.shopping_intro), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted,
+                        modifier = Modifier.padding(top = Space.s1),
+                    )
                 } else {
-                    SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(120.dp))
+                    SectionHeader(stringResource(R.string.this_weeks_list), stringResource(R.string.clear) to { trip.clearProducts() }, top = 0.dp)
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
+                        picked.forEach { item ->
+                            val remove = stringResource(R.string.remove_arg, item.label(language))
+                            Row(
+                                Modifier.fillMaxWidth().heightIn(min = 56.dp).background(FarmsyColors.surface, CardShape)
+                                    .padding(horizontal = Space.s4, vertical = Space.s2),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
+                            ) {
+                                ProductImage(item.imageSlug, item.emoji, 36.dp, corner = 8.dp)
+                                Text(item.label(language), style = role(TextRole.BODY), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
+                                Box(
+                                    Modifier.size(32.dp).clickable { tap(); trip.toggleProduct(item.id) }.semantics { contentDescription = remove },
+                                    contentAlignment = Alignment.Center,
+                                ) { Icon(Icons.Filled.Close, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(16.dp)) }
+                            }
+                        }
+                    }
                 }
-            } else {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s2), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
-                    catalogue.filter { it.id !in wanted }.forEach { item ->
-                        Chip(item.label(language), emoji = item.emoji) { trip.toggleProduct(item.id) }
+
+                // MARK: Farms for the list
+                if (picked.isNotEmpty()) {
+                    SectionHeader(stringResource(R.string.farms_for_your_list))
+                    val n = matchingFarms
+                    when {
+                        origin == null -> Row(
+                            Modifier.fillMaxWidth().card(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Space.s3),
+                        ) {
+                            Icon(Icons.Filled.LocationOff, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp))
+                            Text(stringResource(R.string.allow_location_look_around), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted, modifier = Modifier.weight(1f))
+                            PillButton(stringResource(R.string.allow), PillVariant.PRIMARY, PillSize.SMALL, onClick = requestLocation)
+                        }
+                        n != null -> Column(Modifier.fillMaxWidth().card(), verticalArrangement = Arrangement.spacedBy(Space.s3)) {
+                            Text(
+                                if (n == 0) stringResource(R.string.shopping_none_within_arg, radiusKm.toInt())
+                                else stringResource(R.string.shopping_match_arg, n, radiusKm.toInt()),
+                                style = role(TextRole.BODY), color = FarmsyColors.ink,
+                            )
+                            if (n > 0) {
+                                if (session.hasFullAccess) {
+                                    PlanView(plan, picked.size, ::labels, onOpen = { osmId ->
+                                        farms.pinForOsmId(osmId)?.let { shell.openFarm(it) }
+                                    }, onSwap = { swapping = it }, km = ::km)
+                                } else {
+                                    Text(stringResource(R.string.shopping_plus_hint_long), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
+                                }
+                            }
+                        }
+                        else -> SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(88.dp))
+                    }
+                }
+
+                // MARK: Add products
+                SectionHeader(stringResource(R.string.add_products))
+                SearchField(
+                    query, { query = it }, stringResource(R.string.shopping_search_placeholder),
+                    modifier = Modifier.padding(bottom = Space.s3), onSubmit = ::addTyped,
+                )
+                if (catalogue.isEmpty()) {
+                    if (loadFailed) {
+                        Text(stringResource(R.string.shopping_list_catalogue_failed), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
+                    } else {
+                        SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(120.dp))
+                    }
+                } else {
+                    val q = ProductMatch.fold(query)
+                    val available = catalogue.filter { it.id !in wanted }
+                    val shown = if (q.isEmpty()) available
+                    else available.filter { ProductMatch.fold(it.label(language)).contains(q) || it.terms.any { t -> t.contains(q) } }
+                    if (q.isNotEmpty() && shown.none { ProductMatch.fold(it.label(language)) == q }) {
+                        // What was typed is not a chip: offer it as its own item.
+                        Box(Modifier.padding(bottom = Space.s3)) {
+                            Chip(stringResource(R.string.shopping_add_typed_arg, query.trim()), icon = Icons.Filled.Add, selected = true) { addTyped() }
+                        }
+                    }
+                    if (q.isEmpty() && categories.isNotEmpty()) {
+                        categories.forEach { cat ->
+                            val group = shown.filter { (it.category ?: "other") == cat.id }
+                            if (group.isNotEmpty()) {
+                                Text(
+                                    cat.label(language).uppercase(), style = role(TextRole.LABEL), color = FarmsyColors.inkFaint,
+                                    modifier = Modifier.padding(top = Space.s3, bottom = Space.s2),
+                                )
+                                Chips(group, language) { trip.toggleProduct(it) }
+                            }
+                        }
+                    } else {
+                        Chips(shown, language) { trip.toggleProduct(it) }
+                    }
+                }
+
+                // MARK: History
+                val previous = history.filter { it != wanted }
+                if (previous.isNotEmpty()) {
+                    SectionHeader(stringResource(R.string.previous_lists))
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
+                        previous.forEach { list ->
+                            Row(
+                                Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape).padding(Space.s4),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
+                            ) {
+                                Text(
+                                    labels(list).joinToString(", "), style = role(TextRole.BODY_SM), color = FarmsyColors.ink,
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+                                )
+                                PillButton(stringResource(R.string.repeat), PillVariant.SOFT, PillSize.SMALL) {
+                                    trip.clearProducts()
+                                    list.forEach { trip.toggleProduct(it) }
+                                }
+                            }
+                        }
                     }
                 }
             }
+        }
 
-            // MARK: History
-            val previous = history.filter { it != wanted }
-            if (previous.isNotEmpty()) {
-                SectionHeader(stringResource(R.string.previous_lists))
-                Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
-                    previous.forEach { list ->
-                        Row(
-                            Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape).padding(Space.s4),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
-                        ) {
-                            Text(
-                                labels(list).joinToString(", "), style = role(TextRole.BODY_SM), color = FarmsyColors.ink,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
-                            )
-                            PillButton(stringResource(R.string.repeat), PillVariant.SOFT, PillSize.SMALL) {
-                                trip.clearProducts()
-                                list.forEach { trip.toggleProduct(it) }
-                            }
+        // MARK: The Plus bar — one bar, one job at a time, pinned above the tab
+        // pill: first "Find farms", then "Build my route". Free users get the
+        // Plus sheet from either.
+        if (picked.isNotEmpty()) {
+            val stops = plan?.picks?.size ?: 0
+            val enabled = !isPlanning && origin != null
+            Row(
+                Modifier.align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp).padding(bottom = TabBarInset.height + 24.dp)
+                    .shadow(16.dp, PillShape, ambientColor = FarmsyColors.ink.copy(alpha = 0.14f), spotColor = FarmsyColors.ink.copy(alpha = 0.14f))
+                    .fillMaxWidth().heightIn(min = PillSize.LARGE.height)
+                    .alpha(if (enabled) 1f else 0.55f)
+                    .background(FarmsyColors.ink, PillShape).clip(PillShape)
+                    .clickable(enabled = enabled) {
+                        tap()
+                        val p = plan
+                        when {
+                            !session.hasFullAccess -> shell.openPlus()
+                            p != null && !p.isEmpty -> buildRoute(p)
+                            else -> findFarms()
                         }
+                    }
+                    .padding(horizontal = Space.s5),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.s2),
+            ) {
+                if (isPlanning) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(
+                        if (!session.hasFullAccess) Icons.Filled.Lock else if (stops > 0) Icons.Filled.DirectionsCar else Icons.Filled.AutoAwesome,
+                        null, tint = Color.White, modifier = Modifier.size(18.dp),
+                    )
+                }
+                Text(
+                    if (stops > 0) stringResource(R.string.shopping_build_route_stops_arg, stops) else stringResource(R.string.shopping_find_farms_bar),
+                    style = ui(17.sp, FontWeight.SemiBold), color = Color.White, maxLines = 1, modifier = Modifier.weight(1f),
+                )
+                Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
+            }
+        }
+    }
+
+    // MARK: Change farm — up to five other farms that could take this stop's place.
+    swapping?.let { pick ->
+        val current = plan ?: ShoppingPlanner.Plan(emptyList(), emptyList())
+        val options = remember(pick, current, picked, pins, origin, radiusKm) {
+            origin?.let { ShoppingPlanner.alternatives(pick, current, picked, candidates(), it, radiusKm) } ?: emptyList()
+        }
+        ModalBottomSheet(
+            onDismissRequest = { swapping = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = FarmsyColors.cream,
+        ) {
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = Space.s5).padding(bottom = Space.s8),
+                verticalArrangement = Arrangement.spacedBy(Space.s3),
+            ) {
+                Text(stringResource(R.string.change_farm), style = role(TextRole.HEADING), color = FarmsyColors.ink)
+                Text(stringResource(R.string.change_farm_sub), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
+                if (options.isEmpty()) {
+                    Text(
+                        stringResource(R.string.change_farm_none_arg, radiusKm.toInt()), style = role(TextRole.BODY), color = FarmsyColors.inkMuted,
+                        modifier = Modifier.padding(top = Space.s4),
+                    )
+                }
+                options.forEach { alt ->
+                    val pin = farms.pinForOsmId(alt.osmId)
+                    Row(
+                        Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape).clip(CardShape).clickable {
+                            tap()
+                            plan = ShoppingPlanner.replacing(pick, alt, current)
+                            swapping = null
+                        }.padding(Space.s4),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
+                    ) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(pin?.name ?: alt.osmId, style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(labels(alt.covers).joinToString(" · "), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        km(alt.osmId)?.let { Text("${String.format("%.1f", it)} km", style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint) }
+                        Icon(Icons.Filled.ChevronRight, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -296,28 +433,28 @@ fun ShoppingScreen() {
     }
 }
 
-/// The Plus half: the planner's picks, what is missing, and the route button.
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Chips(items: List<ShoppingItem>, language: String, onPick: (String) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s2), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
+        items.forEach { item -> Chip(item.label(language), emoji = item.emoji) { onPick(item.id) } }
+    }
+}
+
+/// The Plus half: the planner's picks and what is missing. The buttons that
+/// drive it live in the bar above the tab pill.
 @Composable
 private fun PlanView(
     plan: ShoppingPlanner.Plan?,
-    isPlanning: Boolean,
+    total: Int,
     labels: (List<String>) -> List<String>,
-    onFind: () -> Unit,
-    onBuild: (ShoppingPlanner.Plan) -> Unit,
     onOpen: (String) -> Unit,
+    onSwap: (ShoppingPlanner.Pick) -> Unit,
     km: (String) -> Double?,
 ) {
     val farms = LocalFarms.current
     if (plan == null) {
-        Box(Modifier.fillMaxWidth()) {
-            if (isPlanning) {
-                Box(Modifier.fillMaxWidth().height(48.dp).background(FarmsyColors.ink, CircleShape), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                }
-            } else {
-                PillButton(stringResource(R.string.find_best_farms), PillVariant.PRIMARY, PillSize.MEDIUM, block = true, icon = Icons.Filled.AutoAwesome, onClick = onFind)
-            }
-        }
+        Text(stringResource(R.string.shopping_plus_hint_short), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
         return
     }
     if (plan.isEmpty) {
@@ -327,18 +464,21 @@ private fun PlanView(
     Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
         plan.picks.forEachIndexed { i, pick ->
             val pin = farms.pinForOsmId(pick.osmId)
-            Row(
-                Modifier.fillMaxWidth().background(FarmsyColors.creamFill, TileShape).clickable { onOpen(pick.osmId) }.padding(Space.s3),
-                horizontalArrangement = Arrangement.spacedBy(Space.s3),
-            ) {
-                Box(Modifier.size(26.dp).background(FarmsyColors.vivid, CircleShape), contentAlignment = Alignment.Center) {
-                    Text("${i + 1}", style = ui(13.sp, FontWeight.Bold), color = FarmsyColors.ink)
+            Column(Modifier.fillMaxWidth().background(FarmsyColors.creamFill, TileShape).padding(Space.s3), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
+                Row(Modifier.fillMaxWidth().clickable { onOpen(pick.osmId) }, horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    Box(Modifier.size(26.dp).background(FarmsyColors.vivid, CircleShape), contentAlignment = Alignment.Center) {
+                        Text("${i + 1}", style = ui(13.sp, FontWeight.Bold), color = FarmsyColors.ink)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(pin?.name ?: pick.osmId, style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(labels(pick.covers).joinToString(" · "), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Row(horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
+                            Text(stringResource(R.string.shopping_coverage_arg, pick.covers.size, total), style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint)
+                            km(pick.osmId)?.let { Text("· ${String.format("%.1f", it)} km", style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint) }
+                        }
+                    }
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(pin?.name ?: pick.osmId, style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(labels(pick.covers).joinToString(" · "), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    km(pick.osmId)?.let { Text("${String.format("%.1f", it)} km", style = role(TextRole.CAPTION), color = FarmsyColors.inkFaint) }
-                }
+                PillButton(stringResource(R.string.change_farm), PillVariant.TEXT, PillSize.SMALL) { onSwap(pick) }
             }
         }
     }
@@ -348,5 +488,4 @@ private fun PlanView(
             style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted,
         )
     }
-    PillButton(stringResource(R.string.build_my_route), PillVariant.PRIMARY, PillSize.MEDIUM, block = true, icon = Icons.Filled.DirectionsCar) { onBuild(plan) }
 }

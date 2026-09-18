@@ -23,6 +23,11 @@ struct ShoppingScreen: View {
     @State private var plan: ShoppingPlanner.Plan?
     @State private var matchingFarms: Int?
     @State private var isPlanning = false
+    /// The picker's search field. Typing filters the chips; Enter with no
+    /// matching chip adds what was typed as a custom item.
+    @State private var query = ""
+    /// The stop a "Change farm" sheet is open for.
+    @State private var swapping: ShoppingPlanner.Pick?
 
     private var picked: [ShoppingItem] { trip.wantedProducts.compactMap { catalogue.item(id: $0) } }
     private var origin: CLLocationCoordinate2D? { trip.originCoord ?? locationManager.location?.coordinate }
@@ -42,10 +47,17 @@ struct ShoppingScreen: View {
                     historySection
                 }
                 .padding(.horizontal, Space.s4)
-                .padding(.bottom, TabBarInset.content)
+                .padding(.bottom, TabBarInset.content + (picked.isEmpty ? 0 : 72))
             }
         }
         .background(Color.cream.ignoresSafeArea())
+        .overlay(alignment: .bottom) { if !picked.isEmpty { actionBar } }
+        .sheet(item: $swapping) { pick in
+            swapSheet(pick)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
         .task { await catalogue.loadIfNeeded() }
         .task { await farms.loadFlagsIfNeeded() }
         .task(id: matchKey) { await countMatches() }
@@ -95,6 +107,8 @@ struct ShoppingScreen: View {
     @ViewBuilder
     private var addSection: some View {
         SectionHeader(title: String(localized: "Add products"))
+        SearchField(text: $query, placeholder: String(localized: "Search or type a product"), onSubmit: addTyped)
+            .padding(.bottom, Space.s3)
         if catalogue.items.isEmpty {
             if catalogue.loadFailed {
                 Text("The product list couldn't be loaded. Check your connection and try again.")
@@ -103,12 +117,83 @@ struct ShoppingScreen: View {
                 SkeletonBox(cornerRadius: Radius.card).frame(height: 120)
             }
         } else {
-            FlowRow(spacing: Space.s2) {
-                ForEach(catalogue.items.filter { !trip.wantedProducts.contains($0.id) }) { item in
-                    Chip(label: item.label, emoji: item.emoji) { trip.toggleProduct(item.id) }
+            let q = ProductMatch.fold(query)
+            let available = catalogue.items.filter { !trip.wantedProducts.contains($0.id) }
+            let shown = q.isEmpty ? available
+                : available.filter { ProductMatch.fold($0.label).contains(q) || $0.terms.contains { $0.contains(q) } }
+            if !q.isEmpty && !shown.contains(where: { ProductMatch.fold($0.label) == q }) {
+                // What was typed is not a chip: offer it as its own item.
+                Chip(label: String(localized: "Add “\(query.trimmingCharacters(in: .whitespaces))”"),
+                     icon: "plus", selected: true) { addTyped() }
+                    .padding(.bottom, Space.s3)
+            }
+            if q.isEmpty, !catalogue.categories.isEmpty {
+                ForEach(catalogue.categories) { cat in
+                    let group = shown.filter { ($0.category ?? "other") == cat.id }
+                    if !group.isEmpty {
+                        Text(cat.label).role(.label, .inkFaint).textCase(.uppercase)
+                            .padding(.top, Space.s3).padding(.bottom, Space.s2)
+                        chips(group)
+                    }
                 }
+            } else {
+                chips(shown)
             }
         }
+    }
+
+    private func chips(_ items: [ShoppingItem]) -> some View {
+        FlowRow(spacing: Space.s2) {
+            ForEach(items) { item in
+                Chip(label: item.label, emoji: item.emoji) { trip.toggleProduct(item.id) }
+            }
+        }
+    }
+
+    /// Enter in the search field: the one chip that matches, else a custom item.
+    private func addTyped() {
+        let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        let q = ProductMatch.fold(text)
+        let exact = catalogue.items.first { ProductMatch.fold($0.label) == q && !trip.wantedProducts.contains($0.id) }
+        Haptics.tap()
+        trip.toggleProduct(exact?.id ?? ShoppingItem.custom(text).id)
+        query = ""
+    }
+
+    // MARK: - The Plus bar
+
+    /// One bar, one job at a time, pinned above the tab pill: first "Find
+    /// farms", then "Build my route". Free users get the Plus sheet from either.
+    private var actionBar: some View {
+        let stops = plan?.picks.count ?? 0
+        return Button {
+            Haptics.tap()
+            guard session.hasFullAccess else { shell.openPlus(); return }
+            if let plan, !plan.isEmpty { buildRoute(plan) } else { findFarms() }
+        } label: {
+            HStack(spacing: Space.s2) {
+                if isPlanning {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: !session.hasFullAccess ? "lock.fill" : (stops > 0 ? "car.fill" : "sparkles"))
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                if stops > 0 {
+                    Text(String(localized: "Build my route · \(stops) stops"))
+                } else {
+                    Text(String(localized: "Find farms for my list"))
+                }
+                Spacer()
+                Badge(text: "PLUS", fill: .vivid, ink: .ink)
+            }
+            .padding(.horizontal, Space.s5)
+        }
+        .buttonStyle(PillButtonStyle(.primary, size: .large, block: true))
+        .disabled(isPlanning || origin == nil)
+        .padding(.horizontal, Space.s4)
+        .padding(.bottom, TabBarInset.height + 12 + 12)
+        .shadow(color: Color.ink.opacity(0.14), radius: 16, y: 8)
     }
 
     // MARK: - Farms for the list
@@ -156,11 +241,8 @@ struct ShoppingScreen: View {
                         if session.hasFullAccess {
                             planView
                         } else {
-                            PlusLockCard(title: String(localized: "Best farms and your route"),
-                                         text: String(localized: "Farmsy Plus picks the fewest farms that cover your list and builds the trip."),
-                                         onUnlock: shell.openPlus)
-                            .padding(.horizontal, -Space.s5)
-                            .padding(.bottom, -Space.s5)
+                            Text("Farmsy Plus picks the fewest farms that cover your list and builds the trip. Tap the button below.")
+                                .role(.bodySm, .inkMuted)
                         }
                     }
                 }
@@ -186,57 +268,100 @@ struct ShoppingScreen: View {
                     Text("Not found nearby: \(labels(plan.missing).joined(separator: ", "))")
                         .role(.caption, .inkMuted)
                 }
-                Button {
-                    Haptics.success()
-                    buildRoute(plan)
-                } label: {
-                    Label(String(localized: "Build my route"), systemImage: "car")
-                }
-                .buttonStyle(PillButtonStyle(.primary, size: .medium, block: true))
             }
         } else {
-            Button {
-                Haptics.tap()
-                findFarms()
-            } label: {
-                if isPlanning {
-                    ProgressView().tint(.white)
-                } else {
-                    Label(String(localized: "Find the best farms"), systemImage: "sparkles")
-                }
-            }
-            .buttonStyle(PillButtonStyle(.primary, size: .medium, block: true))
-            .disabled(isPlanning)
+            Text("Farmsy Plus picks the fewest farms that cover your list. Tap the button below.")
+                .role(.bodySm, .inkMuted)
         }
     }
 
     private func pickRow(index: Int, pick: ShoppingPlanner.Pick) -> some View {
         let pin = farms.pin(forOsmId: pick.osmId)
         let km = pin?.distance(from: locationManager.location).map { $0 / 1000 }
-        return Button {
-            Haptics.tap()
-            if let pin { shell.openFarm(pin) }
-        } label: {
-            HStack(alignment: .top, spacing: Space.s3) {
-                Text(verbatim: "\(index + 1)")
-                    .font(.ui(13, .bold))
-                    .foregroundStyle(Color.ink)
-                    .frame(width: 26, height: 26)
-                    .background(Color.vivid, in: Circle())
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(pin?.name ?? pick.osmId).role(.subheading).lineLimit(1)
-                    Text(labels(pick.covers).joined(separator: " · ")).role(.caption, .inkMuted).lineLimit(2)
-                    if let km {
-                        Text(verbatim: "\(km.formatted(.number.precision(.fractionLength(1)))) km")
-                            .role(.caption, .inkFaint)
+        return VStack(alignment: .leading, spacing: Space.s2) {
+            Button {
+                Haptics.tap()
+                if let pin { shell.openFarm(pin) }
+            } label: {
+                HStack(alignment: .top, spacing: Space.s3) {
+                    Text(verbatim: "\(index + 1)")
+                        .font(.ui(13, .bold))
+                        .foregroundStyle(Color.ink)
+                        .frame(width: 26, height: 26)
+                        .background(Color.vivid, in: Circle())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(pin?.name ?? pick.osmId).role(.subheading).lineLimit(1)
+                        Text(labels(pick.covers).joined(separator: " · ")).role(.caption, .inkMuted).lineLimit(2)
+                        HStack(spacing: Space.s2) {
+                            Text(String(localized: "\(pick.covers.count) of \(picked.count) products")).role(.caption, .inkFaint)
+                            if let km {
+                                Text(verbatim: "· \(km.formatted(.number.precision(.fractionLength(1)))) km").role(.caption, .inkFaint)
+                            }
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            .buttonStyle(.plain)
+            Button(String(localized: "Change farm")) { Haptics.tap(); swapping = pick }
+                .buttonStyle(PillButtonStyle(.text, size: .small))
+        }
+        .padding(Space.s3)
+        .background(Color.creamFill, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+    }
+
+    /// Up to five other farms that could take this stop's place.
+    private func swapSheet(_ pick: ShoppingPlanner.Pick) -> some View {
+        let plan = self.plan ?? ShoppingPlanner.Plan(picks: [], missing: [])
+        let options = origin.map {
+            ShoppingPlanner.alternatives(to: pick, in: plan, wanted: picked, farms: candidates(),
+                                         origin: $0, radiusKm: radiusKm)
+        } ?? []
+        return VStack(alignment: .leading, spacing: Space.s3) {
+            Text(String(localized: "Change farm")).role(.heading).padding(.top, Space.s5)
+            Text(String(localized: "Other farms nearby that sell what this stop is for."))
+                .role(.bodySm, .inkMuted)
+            if options.isEmpty {
+                Text(String(localized: "No other farm within \(Int(radiusKm)) km sells these.")).role(.body, .inkMuted)
+                    .padding(.top, Space.s4)
+            }
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: Space.s2) {
+                    ForEach(options, id: \.osmId) { alt in
+                        let pin = farms.pin(forOsmId: alt.osmId)
+                        let km = pin?.distance(from: locationManager.location).map { $0 / 1000 }
+                        Button {
+                            Haptics.success()
+                            self.plan = ShoppingPlanner.replacing(pick, with: alt, in: plan)
+                            swapping = nil
+                        } label: {
+                            HStack(spacing: Space.s3) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(pin?.name ?? alt.osmId).role(.subheading).lineLimit(1)
+                                    Text(labels(alt.covers).joined(separator: " · ")).role(.caption, .inkMuted).lineLimit(2)
+                                }
+                                Spacer()
+                                if let km {
+                                    Text(verbatim: "\(km.formatted(.number.precision(.fractionLength(1)))) km").role(.caption, .inkFaint)
+                                }
+                                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.inkMuted)
+                            }
+                            .padding(Space.s4)
+                            .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                Spacer(minLength: 0)
             }
-            .padding(Space.s3)
-            .background(Color.creamFill, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, Space.s5)
+        .background(Color.cream.ignoresSafeArea())
+    }
+
+    private func candidates() -> [ShoppingPlanner.Candidate] {
+        farms.pins.map {
+            ShoppingPlanner.Candidate(osmId: $0.osmId, coord: $0.coordinate, sells: farms.produceByOsm[$0.osmId] ?? "")
+        }
     }
 
     private func labels(_ ids: [String]) -> [String] { ids.map { catalogue.item(id: $0)?.label ?? $0 } }
@@ -246,11 +371,7 @@ struct ShoppingScreen: View {
         isPlanning = true
         Task {
             await farms.loadFlagsIfNeeded()
-            let candidates = farms.pins.map {
-                ShoppingPlanner.Candidate(osmId: $0.osmId, coord: $0.coordinate,
-                                          sells: farms.produceByOsm[$0.osmId] ?? "")
-            }
-            plan = ShoppingPlanner.plan(wanted: picked, farms: candidates, origin: origin, radiusKm: radiusKm)
+            plan = ShoppingPlanner.plan(wanted: picked, farms: candidates(), origin: origin, radiusKm: radiusKm)
             isPlanning = false
         }
     }

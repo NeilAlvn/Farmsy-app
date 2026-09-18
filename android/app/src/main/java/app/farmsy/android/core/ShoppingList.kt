@@ -120,6 +120,23 @@ data class ShoppingItem(
 ) {
     val imageSlug: String get() = image ?: id
 
+    /// Something typed that the picker does not know; see [custom].
+    val isCustom: Boolean get() = id.startsWith(CUSTOM_PREFIX)
+
+    companion object {
+        const val CUSTOM_PREFIX = "custom:"
+
+        /// Something typed that the picker does not know. The id carries the text
+        /// so it survives in `wantedProducts` like any other id; matching uses the
+        /// folded text as its one term under the search rule, so "geitenkaas"
+        /// finds "geitenkaas" and "boerengeitenkaas" but "ui" stays a whole word.
+        fun custom(text: String): ShoppingItem {
+            val clean = text.trim()
+            val folded = ProductMatch.fold(clean)
+            return ShoppingItem(CUSTOM_PREFIX + folded, clean, clean, listOf(folded), "other", null)
+        }
+    }
+
     /// Dutch or English, the same rule the website applies. fr and de fall back
     /// to English rather than showing an id — the labels only exist in two.
     fun label(language: String): String = if (language == "nl") nl else en
@@ -180,7 +197,9 @@ object ShoppingItems {
         _loadFailed.value = false
     }
 
-    fun item(id: String): ShoppingItem? = _items.value.firstOrNull { it.id == id }
+    fun item(id: String): ShoppingItem? =
+        if (id.startsWith(ShoppingItem.CUSTOM_PREFIX)) ShoppingItem.custom(id.removePrefix(ShoppingItem.CUSTOM_PREFIX))
+        else _items.value.firstOrNull { it.id == id }
 
     /// Dutch or English, the same rule the website applies; fr and de fall back
     /// to English because the labels only exist in two.
@@ -264,5 +283,39 @@ object ShoppingPlanner {
         }
 
         return Plan(picks, order.filter { it in remaining })
+    }
+
+    /// Other farms that could take a stop's place: inside the radius, not
+    /// already in the plan, and selling at least one of the things that stop
+    /// was for. Most of that stop's items first, then nearest. Up to `limit`.
+    fun alternatives(
+        pick: Pick,
+        plan: Plan,
+        wanted: List<ShoppingItem>,
+        farms: List<Candidate>,
+        origin: LatLng,
+        radiusKm: Double = 25.0,
+        limit: Int = 5,
+    ): List<Pick> {
+        val taken = plan.picks.map { it.osmId }.toSet()
+        val items = wanted.filter { it.id in pick.covers }
+        data class Option(val pick: Pick, val hits: Int, val km: Double)
+        val out = ArrayList<Option>()
+        for (farm in farms) {
+            if (farm.sells.isEmpty() || farm.osmId in taken) continue
+            val km = TripGeometry.haversineKm(origin, farm.coord)
+            if (km > radiusKm) continue
+            val hit = items.filter { ProductMatch.covers(farm.sells, it.terms) }.map { it.id }
+            if (hit.isNotEmpty()) out.add(Option(Pick(farm.osmId, hit), hit.size, km))
+        }
+        return out.sortedWith(compareByDescending<Option> { it.hits }.thenBy { it.km }).take(limit).map { it.pick }
+    }
+
+    /// The plan with one stop swapped for another. Items the new farm does not
+    /// sell go back to `missing` rather than quietly disappearing.
+    fun replacing(old: Pick, new: Pick, plan: Plan): Plan {
+        val picks = plan.picks.map { if (it.osmId == old.osmId) new else it }
+        val lost = old.covers.filter { it !in new.covers }
+        return Plan(picks, plan.missing + lost)
     }
 }
