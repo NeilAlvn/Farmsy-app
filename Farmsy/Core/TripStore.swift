@@ -22,6 +22,11 @@ enum RouteAPI {
         var request = URLRequest(url: Backend.webAPI.appending(path: "route"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // A third stop is Plus; the server decides from the session. Two stops
+        // route for everyone, token or not.
+        if let token = try? await supabase.auth.session.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         let coords = stops.map { [$0.longitude, $0.latitude] }
         request.httpBody = try? JSONSerialization.data(withJSONObject: ["coordinates": coords])
         guard let (data, resp) = try? await URLSession.shared.data(for: request),
