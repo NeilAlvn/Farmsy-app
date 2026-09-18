@@ -112,7 +112,14 @@ data class ShoppingItem(
     val en: String,
     /// Every word that means this, already narrowed and pluralised by the web.
     val terms: List<String> = emptyList(),
+    /// The picker group (dairy, eggs, vegetables, …). Older servers omit it.
+    val category: String? = null,
+    /// Slug of the bundled tile photograph. Older servers omit it; the id
+    /// itself is the file name for every shopping item, so it falls back to that.
+    val image: String? = null,
 ) {
+    val imageSlug: String get() = image ?: id
+
     /// Dutch or English, the same rule the website applies. fr and de fall back
     /// to English rather than showing an id — the labels only exist in two.
     fun label(language: String): String = if (language == "nl") nl else en
@@ -136,14 +143,26 @@ data class ShoppingItem(
 /// How many farms near here sell a thing, and how close the nearest is.
 data class ProductNearby(val item: ShoppingItem, val count: Int, val nearestKm: Double)
 
+/// A picker group, as the server orders them.
 @Serializable
-private data class ItemsPayload(val items: List<ShoppingItem> = emptyList())
+data class ShoppingCategory(val id: String, val nl: String, val en: String, val image: String) {
+    fun label(language: String): String = if (language == "nl") nl else en
+}
+
+@Serializable
+private data class ItemsPayload(
+    val items: List<ShoppingItem> = emptyList(),
+    val categories: List<ShoppingCategory> = emptyList(),
+)
 
 /// The picker list, fetched once.
 object ShoppingItems {
 
     private val _items = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val items: StateFlow<List<ShoppingItem>> = _items.asStateFlow()
+
+    private val _categories = MutableStateFlow<List<ShoppingCategory>>(emptyList())
+    val categories: StateFlow<List<ShoppingCategory>> = _categories.asStateFlow()
 
     private val _loadFailed = MutableStateFlow(false)
     val loadFailed: StateFlow<Boolean> = _loadFailed.asStateFlow()
@@ -157,6 +176,7 @@ object ShoppingItems {
         }.getOrNull()
         if (payload == null) { _loadFailed.value = true; return }
         _items.value = payload.items
+        _categories.value = payload.categories
         _loadFailed.value = false
     }
 

@@ -525,8 +525,8 @@ fun Chip(
 
 /// 22dp pill label. Accent by default; pass a vivid `fill` for a state badge.
 @Composable
-fun Badge(text: String, fill: Color = FarmsyColors.farmGreen, ink: Color = Color.White) {
-    Box(Modifier.height(22.dp).background(fill, PillShape).padding(horizontal = Space.s2), contentAlignment = Alignment.Center) {
+fun Badge(text: String, fill: Color = FarmsyColors.farmGreen, ink: Color = Color.White, modifier: Modifier = Modifier) {
+    Box(modifier.height(22.dp).background(fill, PillShape).padding(horizontal = Space.s2), contentAlignment = Alignment.Center) {
         Text(text, style = ui(12.sp, FontWeight.SemiBold), letterSpacing = 0.3.sp, color = ink)
     }
 }
