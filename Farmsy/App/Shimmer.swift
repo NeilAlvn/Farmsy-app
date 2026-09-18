@@ -6,6 +6,8 @@ import SwiftUI
 struct SkeletonBox: View {
     var cornerRadius: CGFloat = 12
     @State private var phase: CGFloat = -1
+    /// A pulsing block is decorative motion; under Reduce Motion it sits still.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -22,6 +24,7 @@ struct SkeletonBox: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .onAppear {
+                guard !reduceMotion else { return }
                 withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
                     phase = 1
                 }

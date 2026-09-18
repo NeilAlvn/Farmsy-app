@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 /// Profile — opened from the Home header. Identity, membership, what Farmsy
 /// knows about you (radius, alerts), preferences, legal, and the way out.
@@ -12,6 +13,11 @@ struct ProfileScreen: View {
     @Environment(\.shell) private var shell
 
     @State private var showLanguage = false
+    @State private var showAccessibility = false
+    @State private var avatar = AvatarStore.shared
+    @State private var contributions = Contributions.shared
+    @State private var photoItem: PhotosPickerItem?
+    @State private var badgeSheet: BadgeKind?
     @State private var showSignOutConfirm = false
     @State private var showDeleteInfo = false
     @State private var isDeleting = false
@@ -56,16 +62,52 @@ struct ProfileScreen: View {
     private var identity: some View {
         if session.isAuthenticated {
             VStack(spacing: Space.s3) {
-                ZStack {
-                    Circle().stroke(Color.vivid.opacity(0.9), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
-                        .frame(width: 96, height: 96)
-                    Circle().stroke(Color.farmGreen.opacity(0.35), style: StrokeStyle(lineWidth: 2, dash: [4, 6]))
-                        .frame(width: 84, height: 84)
-                    Text(initials)
-                        .font(.ui(26, .bold))
-                        .foregroundStyle(Color.farmGreen)
-                        .frame(width: 72, height: 72)
-                        .background(Color.surface, in: Circle())
+                PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
+                    ZStack(alignment: .bottomTrailing) {
+                        ZStack {
+                            Circle().stroke(Color.vivid.opacity(0.9), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
+                                .frame(width: 96, height: 96)
+                            Circle().stroke(Color.farmGreen.opacity(0.35), style: StrokeStyle(lineWidth: 2, dash: [4, 6]))
+                                .frame(width: 84, height: 84)
+                            if let url = avatar.url {
+                                AsyncImage(url: url) { phase in
+                                    if case .success(let img) = phase { img.resizable().scaledToFill() }
+                                    else { Text(initials).font(.ui(26, .bold)).foregroundStyle(Color.farmGreen) }
+                                }
+                                .frame(width: 72, height: 72)
+                                .background(Color.surface)
+                                .clipShape(Circle())
+                            } else {
+                                Text(initials)
+                                    .font(.ui(26, .bold))
+                                    .foregroundStyle(Color.farmGreen)
+                                    .frame(width: 72, height: 72)
+                                    .background(Color.surface, in: Circle())
+                            }
+                        }
+                        // The camera badge says "this is tappable" without a label.
+                        ZStack {
+                            Circle().fill(Color.ink).frame(width: 32, height: 32)
+                                .overlay(Circle().stroke(Color.cream, lineWidth: 2))
+                            if avatar.busy {
+                                ProgressView().tint(.white).controlSize(.small)
+                            } else {
+                                Image(systemName: "camera.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                            }
+                        }
+                        .offset(x: 4, y: 4)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Change photo"))
+                .onChange(of: photoItem) { _, item in
+                    guard let item, let userId = session.session?.user.id.uuidString.lowercased() else { return }
+                    Task {
+                        if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                            if await avatar.upload(img, userId: userId) { Haptics.success() } else { Haptics.warning() }
+                        }
+                        photoItem = nil
+                    }
                 }
                 HStack(spacing: Space.s2) {
                     Text(session.displayName).role(.heading)
@@ -90,6 +132,51 @@ struct ProfileScreen: View {
         }
     }
 
+    /// Three numbers and the eight circles. Locked ones are tappable too: the
+    /// rule is the invitation.
+    private var contributionsCard: some View {
+        let stats = contributions.stats
+        return VStack(alignment: .leading, spacing: Space.s4) {
+            Text(String(localized: "Your contributions")).role(.heading)
+            HStack(spacing: 0) {
+                stat(stats.map { "\($0.reports)" } ?? "—", String(localized: "reports"), "flag.fill")
+                Divider().frame(height: 36)
+                stat(stats.map { "\($0.farms)" } ?? "—", String(localized: "farms"), "map.fill")
+                Divider().frame(height: 36)
+                stat(stats.map { "\($0.badges)" } ?? "—", String(localized: "badges"), "medal.fill")
+            }
+            Divider().overlay(Color.hairline)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: Space.s4) {
+                ForEach(BadgeKind.allCases) { kind in
+                    let earned = contributions.has(kind)
+                    Button { Haptics.tap(); badgeSheet = kind } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: kind.icon)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(earned ? Color.ink : Color.inkFaint)
+                                .frame(width: 44, height: 44)
+                                .background(earned ? Color.vivid : Color.creamFill, in: Circle())
+                            Text(kind.title).role(.caption, earned ? .ink : .inkFaint)
+                                .multilineTextAlignment(.center).lineLimit(2)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .card()
+    }
+
+    private func stat(_ value: String, _ label: String, _ icon: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.farmGreen)
+            Text(value).role(.heading)
+            Text(label).role(.caption, .inkMuted)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScreenHeader(String(localized: "Profile"), compact: true) {
@@ -103,6 +190,7 @@ struct ProfileScreen: View {
 
                     if session.isAuthenticated {
                         MembershipSection()
+                        contributionsCard
                     }
 
                     RowGroup(title: String(localized: "Farmsy")) {
@@ -132,6 +220,7 @@ struct ProfileScreen: View {
                         Row(icon: "app.badge", title: String(localized: "Notifications")) {
                             if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                         }
+                        Row(icon: "figure.walk", title: String(localized: "Accessibility")) { showAccessibility = true }
                     }
 
                     RowGroup(title: String(localized: "Community")) {
@@ -181,6 +270,23 @@ struct ProfileScreen: View {
         }
         .background(Color.cream.ignoresSafeArea())
         .task { await session.refreshProfile() }
+        .task(id: session.session?.user.id) {
+            guard let uid = session.session?.user.id.uuidString.lowercased(), let token = session.session?.accessToken else { return }
+            await avatar.load(userId: uid)
+            await contributions.refreshMine(token: token)
+        }
+        .sheet(isPresented: $showAccessibility) {
+            AccessibilitySheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
+        .sheet(item: $badgeSheet) { kind in
+            BadgeSheet(kind: kind, earned: contributions.has(kind))
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
         .sheet(isPresented: $showSurvey) {
             SurveyView(mode: .feedback)
                 .presentationDetents([.fraction(0.92)])
