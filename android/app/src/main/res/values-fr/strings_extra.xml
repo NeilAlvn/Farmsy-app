@@ -214,4 +214,14 @@
     <string name="report_today">aujourd\'hui</string>
     <string name="report_yesterday">hier</string>
     <string name="report_days_ago_arg">il y a %1$d jours</string>
+    <string name="shopping_search_placeholder">Rechercher ou saisir un produit</string>
+    <string name="shopping_add_typed_arg">Ajouter « %1$s »</string>
+    <string name="shopping_build_route_stops_arg">Créer mon trajet · %1$d arrêts</string>
+    <string name="shopping_find_farms_bar">Trouver des fermes pour ma liste</string>
+    <string name="shopping_plus_hint_long">Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste et prépare le trajet. Touchez le bouton ci-dessous.</string>
+    <string name="shopping_plus_hint_short">Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste. Touchez le bouton ci-dessous.</string>
+    <string name="shopping_coverage_arg">%1$d produits sur %2$d</string>
+    <string name="change_farm">Changer de ferme</string>
+    <string name="change_farm_sub">D\'autres fermes à proximité qui vendent ce pour quoi cet arrêt est prévu.</string>
+    <string name="change_farm_none_arg">Aucune autre ferme à moins de %1$d km ne vend cela.</string>
 </resources>

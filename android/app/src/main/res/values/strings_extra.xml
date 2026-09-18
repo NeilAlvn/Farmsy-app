@@ -212,4 +212,14 @@
     <string name="report_today">today</string>
     <string name="report_yesterday">yesterday</string>
     <string name="report_days_ago_arg">%1$d days ago</string>
+    <string name="shopping_search_placeholder">Search or type a product</string>
+    <string name="shopping_add_typed_arg">Add “%1$s”</string>
+    <string name="shopping_build_route_stops_arg">Build my route · %1$d stops</string>
+    <string name="shopping_find_farms_bar">Find farms for my list</string>
+    <string name="shopping_plus_hint_long">Farmsy Plus picks the fewest farms that cover your list and builds the trip. Tap the button below.</string>
+    <string name="shopping_plus_hint_short">Farmsy Plus picks the fewest farms that cover your list. Tap the button below.</string>
+    <string name="shopping_coverage_arg">%1$d of %2$d products</string>
+    <string name="change_farm">Change farm</string>
+    <string name="change_farm_sub">Other farms nearby that sell what this stop is for.</string>
+    <string name="change_farm_none_arg">No other farm within %1$d km sells these.</string>
 </resources>

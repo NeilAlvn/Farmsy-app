@@ -187,4 +187,35 @@ class ShoppingPlannerTest {
         assertTrue(p.isEmpty)
         assertTrue(p.missing.isEmpty())
     }
+
+    // ── Change a farm ───────────────────────────────────────────────────────
+
+    @Test
+    fun `alternatives are other farms selling what the stop was for, most items first then nearest`() {
+        val farms = listOf(
+            ShoppingPlanner.Candidate("chosen", at(0.01), "eggs, cheese"),
+            ShoppingPlanner.Candidate("both-far", at(0.05), "eggs, cheese, milk"),
+            ShoppingPlanner.Candidate("eggs-near", at(0.005), "eggs"),
+            ShoppingPlanner.Candidate("milk-only", at(0.002), "milk"),
+            ShoppingPlanner.Candidate("both-beyond", at(0.5), "eggs, cheese"),
+            ShoppingPlanner.Candidate("silent", at(0.001), ""),
+        )
+        val p = plan(listOf(eggs, cheese), farms)
+        assertEquals(listOf("chosen"), p.picks.map { it.osmId })
+        val alts = ShoppingPlanner.alternatives(p.picks.first(), p, listOf(eggs, cheese), farms, origin)
+        assertEquals(listOf("both-far", "eggs-near"), alts.map { it.osmId })
+        assertEquals(listOf("eggs", "cheese"), alts.first().covers)
+        assertEquals(listOf("eggs"), alts[1].covers)
+        assertEquals(1, ShoppingPlanner.alternatives(p.picks.first(), p, listOf(eggs, cheese), farms, origin, limit = 1).size)
+    }
+
+    @Test
+    fun `replacing a stop keeps the order and sends what the new farm lacks to missing`() {
+        val old = ShoppingPlanner.Pick("a", listOf("eggs", "cheese"))
+        val other = ShoppingPlanner.Pick("b", listOf("milk"))
+        val new = ShoppingPlanner.Pick("c", listOf("eggs"))
+        val p = ShoppingPlanner.replacing(old, new, ShoppingPlanner.Plan(listOf(old, other), listOf("strawberry")))
+        assertEquals(listOf("c", "b"), p.picks.map { it.osmId })
+        assertEquals(listOf("strawberry", "cheese"), p.missing)
+    }
 }
