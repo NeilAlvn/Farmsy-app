@@ -1,21 +1,83 @@
 import SwiftUI
 import CoreLocation
 
-/// Discover — inspiration, not utility. What is in season, what people just
-/// found at farms, where to pick your own this weekend, what the community is
-/// saying, then the farms with a story. Every item is one tap from the map.
+/// Discover — inspiration, not utility. Three tabs under one title, the Nime
+/// pattern: Season (the year as a rail of months, each with what is ripe and
+/// what to make), Discover (what just arrived, grandmother's tips, pick your
+/// own, the community), Farms (search, four chips, farms with a story).
 struct DiscoverScreen: View {
+    enum Tab: String, CaseIterable, Identifiable {
+        case season, discover, farms
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .season: String(localized: "Season")
+            case .discover: String(localized: "Discover")
+            case .farms: String(localized: "Farms")
+            }
+        }
+    }
+
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
+    @Environment(TripStore.self) private var trip
     @Environment(\.shell) private var shell
     @AppStorage("searchRadiusKm") private var radiusKm = 15.0
+    @State private var tab: Tab = .season
     @State private var seasons = Seasons.shared
     @State private var catalogue = ShoppingItems.shared
+    @State private var tips = Tips.shared
     @State private var recent: [Ping] = []
     @State private var recentLoaded = false
+    @State private var openMonth: Int?
+    @State private var farmQuery = ""
+    @State private var farmChips: Set<FarmChip> = []
 
     private var location: CLLocation? { locationManager.location }
-    private var featured: [FarmPin] { Array(farms.featuredFarms.prefix(10)) }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScreenHeader(String(localized: "Discover"))
+                .padding(.top, Space.s2)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Space.s2) {
+                    ForEach(Tab.allCases) { t in
+                        Chip(label: t.title, selected: tab == t) { tab = t }
+                    }
+                }
+                .padding(.horizontal, Space.s4)
+            }
+            .padding(.bottom, Space.s3)
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: Space.s2) {
+                    switch tab {
+                    case .season: SeasonRail(openMonth: $openMonth)
+                    case .discover: discoverTab
+                    case .farms: farmsTab
+                    }
+                }
+                .padding(.horizontal, Space.s4)
+                .padding(.bottom, TabBarInset.content)
+            }
+            .refreshable { await loadRecent() }
+        }
+        .background(Color.cream.ignoresSafeArea())
+        .sheet(item: Binding(get: { openMonth.map(MonthID.init) }, set: { openMonth = $0?.month })) { m in
+            MonthSheet(month: m.month)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
+        .task { await farms.loadGalleriesIfNeeded() }
+        .task { await seasons.loadIfNeeded() }
+        .task { await catalogue.loadIfNeeded() }
+        .task { await tips.loadIfNeeded() }
+        .task { await loadRecent() }
+    }
+
+    private struct MonthID: Identifiable { let month: Int; var id: Int { month } }
+
+    // MARK: - Discover tab
 
     /// "Just arrived": products people mentioned at farms in the last month,
     /// most-mentioned first. A post saying "verse aardbeien vandaag" is the
@@ -41,70 +103,19 @@ struct DiscoverScreen: View {
         return farms.sortedByDistance(near, from: location)
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            ScreenHeader(String(localized: "Discover"))
-                .padding(.top, Space.s2)
-            ScrollView(showsIndicators: false) {
-                LazyVStack(alignment: .leading, spacing: Space.s2) {
-                    seasonSection
-                    justArrivedSection
-                    pickYourOwnSection
-                    communitySection
-                    SectionHeader(title: String(localized: "Farms with a story"))
-                    if !farms.galleriesLoaded {
-                        ForEach(0..<3, id: \.self) { _ in
-                            SkeletonBox(cornerRadius: Radius.card).frame(height: 180)
-                        }
-                    } else {
-                        ForEach(featured) { pin in
-                            MultiImageFarmCard(pin: pin,
-                                               images: farms.galleries[pin.osmId] ?? [],
-                                               teaser: farms.featuredTeasers[pin.osmId],
-                                               onOpen: { shell.openFarm(pin) })
-                        }
-                    }
-                    TripRecommendations(onOpenFarm: shell.openFarm)
-                        .padding(.top, Space.s4)
-                }
-                .padding(.horizontal, Space.s4)
-                .padding(.bottom, TabBarInset.content)
-            }
-            .refreshable { await loadRecent() }
-        }
-        .background(Color.cream.ignoresSafeArea())
-        .task { await farms.loadGalleriesIfNeeded() }
-        .task { await seasons.loadIfNeeded() }
-        .task { await catalogue.loadIfNeeded() }
-        .task { await loadRecent() }
-    }
-
-    // MARK: - Sections
-
     @ViewBuilder
-    private var seasonSection: some View {
-        if !seasons.thisMonth.isEmpty {
-            SectionHeader(title: String(localized: "In season near you"))
-                .padding(.top, 0)
-            Text(String(localized: "Grown outdoors around here this month. Tap one to see who sells it."))
-                .role(.bodySm, .inkMuted)
-            FlowRow(spacing: Space.s2) {
-                ForEach(seasons.thisMonth) { item in
-                    Chip(label: item.label, emoji: item.emoji,
-                         dot: item.isPeak(month: seasons.month) ? Color.vivid : nil) {
-                        show(label: item.label, terms: item.terms)
-                    }
-                }
-            }
-            .padding(.bottom, Space.s2)
-        }
+    private var discoverTab: some View {
+        justArrivedSection
+        tipsSection
+        pickYourOwnSection
+        communitySection
     }
 
     @ViewBuilder
     private var justArrivedSection: some View {
         let arrived = Array(justArrived.prefix(8))
         if !arrived.isEmpty {
-            SectionHeader(title: String(localized: "Just arrived"))
+            SectionHeader(title: String(localized: "Just arrived")).padding(.top, 0)
             Text(String(localized: "Spotted at farms this month."))
                 .role(.bodySm, .inkMuted)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -134,6 +145,20 @@ struct DiscoverScreen: View {
     }
 
     @ViewBuilder
+    private var tipsSection: some View {
+        if !tips.tips.isEmpty {
+            SectionHeader(title: String(localized: "Grandmother's tips"))
+            Text(String(localized: "How to buy, keep and use farm food. The things people used to know."))
+                .role(.bodySm, .inkMuted)
+            CardCarousel(items: tips.tips) { tip in
+                IdeaCard(kicker: tip.kicker.text, title: tip.title.text, text: tip.body.text,
+                         image: tip.image, fallback: "🧺",
+                         ingredients: tip.ingredient.map { [$0] } ?? [])
+            }
+        }
+    }
+
+    @ViewBuilder
     private var pickYourOwnSection: some View {
         let picks = pickYourOwn
         if !picks.isEmpty {
@@ -152,9 +177,7 @@ struct DiscoverScreen: View {
                         shell.openFarm(pin)
                     } label: {
                         HStack(spacing: Space.s3) {
-                            Text("🍓").font(.system(size: 22))
-                                .frame(width: 48, height: 48)
-                                .background(Color.creamFill, in: RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                            ProductImage(slug: "strawberry", fallback: "🍓", size: 48)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(pin.name).role(.subheading).lineLimit(1)
                                 HStack(spacing: 6) {
@@ -195,6 +218,84 @@ struct DiscoverScreen: View {
         }
     }
 
+    // MARK: - Farms tab
+
+    enum FarmChip: CaseIterable, Identifiable {
+        case photos, verified, openToday, pickYourOwn
+        var id: Self { self }
+        var title: String {
+            switch self {
+            case .photos: String(localized: "With photos")
+            case .verified: String(localized: "Verified")
+            case .openToday: String(localized: "Open today")
+            case .pickYourOwn: String(localized: "Pick your own")
+            }
+        }
+        func matches(_ p: FarmPin) -> Bool {
+            switch self {
+            case .photos: p.image != nil
+            case .verified: p.isVerified
+            case .openToday: FarmFilters.isOpenToday(p.openingHours)
+            case .pickYourOwn: FarmFilters.looksLikeZelfpluk(p.name)
+            }
+        }
+    }
+
+    /// Name or city, folded, plus every selected chip. Nearest first.
+    private var farmResults: [FarmPin] {
+        let q = ProductMatch.fold(farmQuery)
+        let hits = farms.pins.filter { pin in
+            (q.isEmpty || ProductMatch.fold(pin.name).contains(q) || ProductMatch.fold(pin.city ?? "").contains(q))
+                && farmChips.allSatisfy { $0.matches(pin) }
+        }
+        return farms.sortedByDistance(hits, from: location)
+    }
+
+    @ViewBuilder
+    private var farmsTab: some View {
+        SearchField(text: $farmQuery, placeholder: String(localized: "Search farms by name or place"))
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s2) {
+                ForEach(FarmChip.allCases) { chip in
+                    Chip(label: chip.title, selected: farmChips.contains(chip)) {
+                        if farmChips.contains(chip) { farmChips.remove(chip) } else { farmChips.insert(chip) }
+                    }
+                }
+            }
+            .padding(.trailing, Space.s4)
+        }
+        .padding(.trailing, -Space.s4)
+        .padding(.vertical, Space.s3)
+        if !farmQuery.isEmpty || !farmChips.isEmpty {
+            let results = farmResults
+            Text(results.count == 1 ? String(localized: "1 farm") : String(localized: "\(results.count) farms"))
+                .role(.label, .inkFaint).textCase(.uppercase)
+            if results.isEmpty {
+                EmptyState(icon: "magnifyingglass", title: String(localized: "No farm matches"),
+                           text: String(localized: "Try fewer words, or clear a chip."))
+            }
+            ForEach(results.prefix(40)) { pin in
+                FarmRow(pin: pin, km: pin.distance(from: location).map { $0 / 1000 }) { shell.openFarm(pin) }
+            }
+        } else {
+            SectionHeader(title: String(localized: "Farms with a story")).padding(.top, 0)
+            if !farms.galleriesLoaded {
+                ForEach(0..<3, id: \.self) { _ in
+                    SkeletonBox(cornerRadius: Radius.card).frame(height: 180)
+                }
+            } else {
+                ForEach(Array(farms.featuredFarms.prefix(10))) { pin in
+                    MultiImageFarmCard(pin: pin,
+                                       images: farms.galleries[pin.osmId] ?? [],
+                                       teaser: farms.featuredTeasers[pin.osmId],
+                                       onOpen: { shell.openFarm(pin) })
+                }
+            }
+            TripRecommendations(onOpenFarm: shell.openFarm)
+                .padding(.top, Space.s4)
+        }
+    }
+
     // MARK: - Data
 
     private func show(label: String, terms: [String]) {
@@ -219,5 +320,45 @@ struct DiscoverScreen: View {
             .value) ?? []
         recent = rows
         recentLoaded = true
+    }
+}
+
+/// One farm as a row: cover or category glyph, name, city, distance.
+struct FarmRow: View {
+    let pin: FarmPin
+    var km: Double?
+    let action: () -> Void
+
+    var body: some View {
+        Button { Haptics.tap(); action() } label: {
+            HStack(spacing: Space.s3) {
+                ZStack {
+                    Color.creamFill
+                    if let url = pin.image.flatMap(URL.init) {
+                        AsyncImage(url: url) { phase in
+                            if case .success(let img) = phase { img.resizable().scaledToFill() }
+                            else { Text(pin.primaryCategory.emoji).font(.system(size: 20)) }
+                        }
+                    } else {
+                        Text(pin.primaryCategory.emoji).font(.system(size: 20))
+                    }
+                }
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.thumb, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(pin.name).role(.subheading).lineLimit(1)
+                    HStack(spacing: 6) {
+                        if let city = pin.city { Text(city) }
+                        if let km { Text(verbatim: "· \(km.formatted(.number.precision(.fractionLength(1)))) km") }
+                    }
+                    .role(.caption, .inkMuted)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.inkMuted)
+            }
+            .padding(Space.s3)
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }

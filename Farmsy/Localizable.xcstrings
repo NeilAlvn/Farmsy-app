@@ -15696,6 +15696,358 @@
           }
         }
       }
+    },
+    "Season": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seizoen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saison"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saison"
+          }
+        }
+      }
+    },
+    "Farms": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe"
+          }
+        }
+      }
+    },
+    "What is ripe, month by month, and what to make with it. Tap a month.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat er rijp is, maand voor maand, en wat je ermee maakt. Tik op een maand."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce qui est mûr, mois par mois, et quoi en faire. Touchez un mois."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was reif ist, Monat für Monat, und was man daraus macht. Tippe auf einen Monat."
+          }
+        }
+      }
+    },
+    "NOW": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NU"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MAINTENANT"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JETZT"
+          }
+        }
+      }
+    },
+    "Stored crops and the greenhouse.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewaargroente en de kas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Légumes de garde et la serre."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagergemüse und das Gewächshaus."
+          }
+        }
+      }
+    },
+    "%lld in season · %lld ideas": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld in het seizoen · %lld ideeën"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de saison · %lld idées"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld in Saison · %lld Ideen"
+          }
+        }
+      }
+    },
+    "In season": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In het seizoen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De saison"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Saison"
+          }
+        }
+      }
+    },
+    "Little grows outdoors this month. Farm shops sell what was stored: potatoes, onions, beets, apples, and the cheese and eggs that never stop.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buiten groeit deze maand weinig. Boerderijwinkels verkopen wat bewaard is: aardappelen, uien, bieten, appels, en de kaas en eieren die nooit ophouden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peu de choses poussent dehors ce mois-ci. Les fermes vendent ce qui a été conservé : pommes de terre, oignons, betteraves, pommes, et le fromage et les œufs qui ne s'arrêtent jamais."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draußen wächst diesen Monat wenig. Hofläden verkaufen, was gelagert wurde: Kartoffeln, Zwiebeln, Rote Bete, Äpfel, und Käse und Eier, die nie aufhören."
+          }
+        }
+      }
+    },
+    "What to make with it": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat maak je ermee"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quoi en faire"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was man daraus macht"
+          }
+        }
+      }
+    },
+    "Put it on my list": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zet op mijn lijst"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre sur ma liste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf meine Liste"
+          }
+        }
+      }
+    },
+    "Grandmother's tips": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grootmoeders tips"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les astuces de grand-mère"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Großmutters Tipps"
+          }
+        }
+      }
+    },
+    "How to buy, keep and use farm food. The things people used to know.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoe je boerderijeten koopt, bewaart en gebruikt. De dingen die mensen vroeger wisten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment acheter, conserver et utiliser les produits de la ferme. Ce que les gens savaient autrefois."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie man Hofprodukte kauft, lagert und verwendet. Was die Leute früher wussten."
+          }
+        }
+      }
+    },
+    "With photos": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Met foto's"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avec photos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Fotos"
+          }
+        }
+      }
+    },
+    "Search farms by name or place": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoek boerderijen op naam of plaats"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher une ferme par nom ou lieu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe nach Name oder Ort suchen"
+          }
+        }
+      }
+    },
+    "No farm matches": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen boerderij gevonden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune ferme ne correspond"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Hof gefunden"
+          }
+        }
+      }
+    },
+    "Try fewer words, or clear a chip.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probeer minder woorden, of zet een filter uit."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essayez moins de mots, ou retirez un filtre."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versuche weniger Wörter oder entferne einen Filter."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
