@@ -185,13 +185,6 @@ fun DiscoverScreen() {
         farms.sortedByDistance(hits, location)
     }
 
-    fun show(label: String, terms: List<String>) {
-        scope.launch {
-            farms.showProduct(label, terms, location, radiusKm)
-            shell.showTab(AppTab.MAP)
-        }
-    }
-
     fun LazyListScope.discoverTab() {
         if (!recentLoaded && tips.isEmpty()) {
             items(3) { SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(150.dp)) }
@@ -209,7 +202,7 @@ fun DiscoverScreen() {
                         justArrived.forEach { (item, count) ->
                             Column(
                                 Modifier.width(124.dp).background(FarmsyColors.surface, TileShape)
-                                    .tapCard { show(item.label(language), item.terms) }
+                                    .tapCard { shell.openProduct(item.id) }
                                     .padding(Space.s4),
                                 verticalArrangement = Arrangement.spacedBy(Space.s2),
                             ) {

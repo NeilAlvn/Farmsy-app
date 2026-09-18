@@ -301,4 +301,18 @@
     <string name="check_connection">Controleer je verbinding en probeer het opnieuw.</string>
     <string name="nothing_new_yet">Nog niets nieuws</string>
     <string name="nothing_new_yet_sub">Berichten en vondsten van boerderijen bij jou in de buurt komen hier. Sta locatie toe, of kom later terug.</string>
+
+    <!-- Product sheet: one page per product (iOS ProductSheet). -->
+    <string name="how_to_choose">Zo kies je</string>
+    <string name="keeping">Bewaren</string>
+    <string name="preserving">Inmaken</string>
+    <string name="grandmothers_tip">Grootmoeders tip</string>
+    <string name="goes_with">Past bij</string>
+    <string name="peak_legend">Top</string>
+    <string name="at_its_best_now">Nu op z\'n best</string>
+    <string name="not_in_season_now">Nu niet in het seizoen</string>
+    <string name="find_nearby">Vind in de buurt</string>
+    <string name="add_to_list">Zet op mijn lijst</string>
+    <string name="about_days_arg">Ongeveer %1$d dagen</string>
+    <string name="no_profile_yet">Nog geen productpagina voor dit product.</string>
 </resources>

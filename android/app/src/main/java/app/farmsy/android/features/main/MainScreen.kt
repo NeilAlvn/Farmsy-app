@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import app.farmsy.android.features.community.CommunityScreen
 import app.farmsy.android.features.discover.DiscoverScreen
+import app.farmsy.android.features.discover.ProductBottomSheet
 import app.farmsy.android.features.home.HomeScreen
 import app.farmsy.android.features.map.ProUpsellSheet
 import app.farmsy.android.features.profile.ProfileScreen
@@ -131,6 +132,8 @@ class ShellActions(
     val openTrips: () -> Unit = {},
     val openProfile: () -> Unit = {},
     val openPlus: () -> Unit = {},
+    /// A product page, by shopping id or seasonal slug.
+    val openProduct: (String) -> Unit = {},
 )
 
 val LocalShell = staticCompositionLocalOf { ShellActions() }
@@ -182,6 +185,7 @@ fun MainScreen() {
     var focusPin by remember { mutableStateOf<FarmPin?>(null) }
     var showProfile by remember { mutableStateOf(false) }
     var showPlus by remember { mutableStateOf(false) }
+    var productSlug by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -258,6 +262,7 @@ fun MainScreen() {
             openTrips = { requireAuth { route = SheetRoute.TRIPS } },
             openProfile = { showProfile = true },
             openPlus = { requireAuth { showPlus = true } },
+            openProduct = { productSlug = it },
         )
     }
 
@@ -435,6 +440,7 @@ fun MainScreen() {
         }
     }
     if (showPlus) ProUpsellSheet(onDismiss = { showPlus = false })
+    productSlug?.let { s -> ProductBottomSheet(s, onDismiss = { productSlug = null }) }
 
     // The survey presents as a modal over the map (iOS `.sheet` at 0.92), like the
     // other secondary surfaces. The gate hides its button for admins; the screen also
