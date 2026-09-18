@@ -79,7 +79,7 @@ fun SplashScreen(onFinished: () -> Unit) {
         delay(2300)
         // PORT NOTE: iOS Haptics.tap() = UIImpactFeedbackGenerator(.light); the
         // closest Android light-tap constant is VIRTUAL_KEY via View.performHapticFeedback.
-        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        if (app.farmsy.android.ui.theme.Haptics.enabled) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         onFinished()
     }
 

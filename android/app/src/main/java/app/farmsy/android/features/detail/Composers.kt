@@ -60,6 +60,7 @@ import app.farmsy.android.core.FarmContentApi
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.Review
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -342,15 +343,18 @@ private fun ComposerField(
 // Haptics — iOS Haptics.tap() / .success() / .warning(). Compose HapticFeedbackType
 // has no success/warning constant; the platform View does (CONFIRM/REJECT, API 30+;
 // light tick below), the route S8 established.
-private fun androidx.compose.ui.hapticfeedback.HapticFeedback.tapTick() =
-    performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+private fun androidx.compose.ui.hapticfeedback.HapticFeedback.tapTick() {
+    if (Haptics.enabled) performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+}
 
 private fun android.view.View.successTick() {
+    if (!Haptics.enabled) return
     if (Build.VERSION.SDK_INT >= 30) performHapticFeedback(HapticFeedbackConstants.CONFIRM)
     else performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
 }
 
 private fun android.view.View.warnTick(haptics: androidx.compose.ui.hapticfeedback.HapticFeedback) {
+    if (!Haptics.enabled) return
     if (Build.VERSION.SDK_INT >= 30) performHapticFeedback(HapticFeedbackConstants.REJECT)
     else haptics.tapTick()
 }

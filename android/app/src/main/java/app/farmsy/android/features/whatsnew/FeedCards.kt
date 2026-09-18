@@ -287,11 +287,19 @@ fun FixedImageRow(urls: List<String>, height: Dp = 100.dp, onTap: ((Int) -> Unit
 /// x −1→1 over 1.4s linear repeatForever).
 @Composable
 fun SkeletonBox(cornerRadius: Dp = 12.dp, modifier: Modifier = Modifier) {
-    val t = rememberInfiniteTransition(label = "shimmer")
-    val phase by t.animateFloat(
-        -1f, 1f, infiniteRepeatable(tween(1400, easing = androidx.compose.animation.core.LinearEasing), RepeatMode.Restart),
-        label = "phase",
-    )
+    // A pulsing block is decorative motion; under "remove animations" it sits still.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val reduceMotion = remember {
+        listOf(android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE)
+            .any { android.provider.Settings.Global.getFloat(context.contentResolver, it, 1f) == 0f }
+    }
+    val phase = if (reduceMotion) -1f else {
+        val t = rememberInfiniteTransition(label = "shimmer")
+        t.animateFloat(
+            -1f, 1f, infiniteRepeatable(tween(1400, easing = androidx.compose.animation.core.LinearEasing), RepeatMode.Restart),
+            label = "phase",
+        ).value
+    }
     // Measure the box so the sweeping band is 0.6·width (iOS Shimmer.swift), not a
     // fixed pixel width; the band travels x = phase·1.4·width (iOS offset 1.4·w).
     BoxWithConstraints(

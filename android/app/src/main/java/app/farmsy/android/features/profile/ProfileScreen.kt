@@ -90,6 +90,30 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.CheckCircle
 import app.farmsy.android.core.LanguageStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.outlined.DirectionsWalk
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import app.farmsy.android.core.AvatarStore
+import app.farmsy.android.core.BadgeKind
+import app.farmsy.android.core.Contributions
+import coil.compose.AsyncImage
 
 /// Profile — opened from the Home header (iOS ProfileScreen). Identity,
 /// membership, what Farmsy knows about you (radius, alerts), preferences, legal,
@@ -111,6 +135,19 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showDeleteInfo by remember { mutableStateOf(false) }
     var showLanguage by remember { mutableStateOf(false) }
+    var showAccessibility by remember { mutableStateOf(false) }
+    var badgeSheet by remember { mutableStateOf<BadgeKind?>(null) }
+    val avatarUrl by AvatarStore.url.collectAsState()
+    val avatarBusy by AvatarStore.busy.collectAsState()
+    val stats by Contributions.stats.collectAsState()
+    val earned by Contributions.earned.collectAsState()
+    val userId = currentSession?.user?.id
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        val uid = userId ?: return@rememberLauncherForActivityResult
+        if (uri != null) scope.launch {
+            if (AvatarStore.upload(context, uri, uid)) tap()
+        }
+    }
     var showSurvey by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
     var deleteFailed by remember { mutableStateOf(false) }
@@ -121,6 +158,12 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
     var deletedState by remember { mutableStateOf<DeletedState?>(null) }
 
     LaunchedEffect(Unit) { session.refreshProfile() }
+    LaunchedEffect(userId) {
+        val uid = userId ?: return@LaunchedEffect
+        val token = currentSession?.accessToken ?: return@LaunchedEffect
+        AvatarStore.load(uid)
+        Contributions.refreshMine(token)
+    }
 
     fun open(url: String) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -165,8 +208,13 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
             // MARK: Identity
             if (isAuthenticated) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s3)) {
-                    Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) {
-                        // Two dashed rings around the initials (iOS StrokeStyle dash).
+                    val changePhoto = stringResource(R.string.change_photo)
+                    Box(
+                        Modifier.size(96.dp).semantics { contentDescription = changePhoto }
+                            .clickable { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        // Two dashed rings around the picture (iOS StrokeStyle dash).
                         Canvas(Modifier.size(96.dp)) {
                             val w = 2.dp.toPx()
                             drawCircle(FarmsyColors.vivid.copy(alpha = 0.9f), radius = (96.dp.toPx() - w) / 2,
@@ -174,8 +222,18 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
                             drawCircle(FarmsyColors.farmGreen.copy(alpha = 0.35f), radius = (84.dp.toPx() - w) / 2,
                                 style = Stroke(w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 6.dp.toPx()))))
                         }
-                        Box(Modifier.size(72.dp).background(FarmsyColors.surface, CircleShape), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(72.dp).clip(CircleShape).background(FarmsyColors.surface), contentAlignment = Alignment.Center) {
                             Text(initials, style = ui(26.sp, FontWeight.Bold), color = FarmsyColors.farmGreen)
+                            avatarUrl?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.size(72.dp)) }
+                        }
+                        // The camera badge says "this is tappable" without a label.
+                        Box(
+                            Modifier.align(Alignment.BottomEnd).offset(4.dp, 4.dp).size(32.dp)
+                                .background(FarmsyColors.cream, CircleShape).padding(2.dp).background(FarmsyColors.ink, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (avatarBusy) CircularProgressIndicator(Modifier.size(14.dp), color = androidx.compose.ui.graphics.Color.White, strokeWidth = 2.dp)
+                            else Icon(Icons.Filled.CameraAlt, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(15.dp))
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
@@ -195,7 +253,10 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
 
             // Membership. Only for signed-in users — a guest has no subscription to
             // manage, and the paywall is where they'd start one.
-            if (isAuthenticated) MembershipSection(profile = profile)
+            if (isAuthenticated) {
+                MembershipSection(profile = profile)
+                ContributionsCard(stats = stats, earned = { kind -> earned.any { it.badge == kind.wire } }) { tap(); badgeSheet = it }
+            }
 
             RowGroup(stringResource(R.string.farmsy)) {
                 var menu by remember { mutableStateOf(false) }
@@ -232,6 +293,7 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
                             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                     )
                 }
+                ListRow(Icons.Outlined.DirectionsWalk, stringResource(R.string.accessibility)) { showAccessibility = true }
             }
 
             RowGroup(stringResource(R.string.community)) {
@@ -268,6 +330,9 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
             }
         }
     }
+
+    if (showAccessibility) AccessibilitySheet(onDismiss = { showAccessibility = false })
+    badgeSheet?.let { kind -> BadgeSheet(kind, earned = earned.any { it.badge == kind.wire }, onDismiss = { badgeSheet = null }) }
 
     // Feedback opens the survey in feedback mode, as a modal over the profile.
     if (showSurvey) {
@@ -393,6 +458,58 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
 }
 
 private data class DeletedState(val remindStore: Boolean, val source: String?)
+
+/// Three numbers and the eight circles. Locked ones are tappable too: the
+/// rule is the invitation.
+@Composable
+private fun ContributionsCard(
+    stats: app.farmsy.android.core.ContributionStats?,
+    earned: (BadgeKind) -> Boolean,
+    onBadge: (BadgeKind) -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().card(), verticalArrangement = Arrangement.spacedBy(Space.s4)) {
+        Text(stringResource(R.string.your_contributions), style = role(TextRole.HEADING), color = FarmsyColors.ink)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Stat(stats?.reports?.toString() ?: "—", stringResource(R.string.stat_reports), Icons.Filled.Flag, Modifier.weight(1f))
+            VerticalDivider(Modifier.height(36.dp), color = FarmsyColors.hairline)
+            Stat(stats?.farms?.toString() ?: "—", stringResource(R.string.stat_farms), Icons.Filled.Map, Modifier.weight(1f))
+            VerticalDivider(Modifier.height(36.dp), color = FarmsyColors.hairline)
+            Stat(stats?.badges?.toString() ?: "—", stringResource(R.string.stat_badges), Icons.Filled.EmojiEvents, Modifier.weight(1f))
+        }
+        HorizontalDivider(color = FarmsyColors.hairline)
+        // Eight badges in four columns: two rows of a fixed height, so the grid
+        // lays out inside the scrolling column without its own scrolling.
+        LazyVerticalGrid(
+            GridCells.Fixed(4), Modifier.fillMaxWidth().height(200.dp), userScrollEnabled = false,
+            verticalArrangement = Arrangement.spacedBy(Space.s4),
+        ) {
+            items(BadgeKind.entries) { kind ->
+                val on = earned(kind)
+                Column(
+                    Modifier.fillMaxWidth().clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { onBadge(kind) },
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(Modifier.size(44.dp).background(if (on) FarmsyColors.vivid else FarmsyColors.creamFill, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(kind.icon, null, tint = if (on) FarmsyColors.ink else FarmsyColors.inkFaint, modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        stringResource(kind.titleRes), style = role(TextRole.CAPTION), color = if (on) FarmsyColors.ink else FarmsyColors.inkFaint,
+                        textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Stat(value: String, label: String, icon: ImageVector, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Icon(icon, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(16.dp))
+        Text(value, style = role(TextRole.HEADING), color = FarmsyColors.ink)
+        Text(label, style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)
+    }
+}
 
 /// Shown once the server confirms the account is erased. The person is signed out
 /// and can't do anything here but acknowledge — so it's a dead-simple confirmation,

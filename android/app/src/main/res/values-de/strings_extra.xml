@@ -277,4 +277,24 @@
     <string name="badge_rule_photographer">Poste ein Foto von einem Hof.</string>
     <string name="badge_rule_regular">Melde in vier verschiedenen Wochen.</string>
     <string name="badge_rule_collector">Speichere fünf Höfe.</string>
+
+    <!-- Profile: photo, your contributions, Accessibility sheet -->
+    <string name="your_contributions">Deine Beiträge</string>
+    <string name="stat_reports">Meldungen</string>
+    <string name="stat_farms">Höfe</string>
+    <string name="stat_badges">Abzeichen</string>
+    <string name="change_photo">Foto ändern</string>
+    <string name="accessibility">Barrierefreiheit</string>
+    <string name="haptics">Vibrationen</string>
+    <string name="haptics_caption">Schaltet jede Vibration in Farmsy aus, auch das Tippen beim Melden eines Hofs.</string>
+    <string name="android_settings">Android-Einstellungen</string>
+    <string name="reduce_motion">Bewegung reduzieren</string>
+    <string name="on">Ein</string>
+    <string name="off">Aus</string>
+    <string name="text_size">Textgröße</string>
+    <string name="default_size">Standard</string>
+    <string name="open_settings">Einstellungen öffnen</string>
+    <string name="accessibility_caption">Farmsy folgt diesen Einstellungen: dekorative Bewegung stoppt und der Text skaliert.</string>
+    <string name="earned">Erhalten</string>
+    <string name="locked">Gesperrt</string>
 </resources>
