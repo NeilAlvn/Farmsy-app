@@ -68,7 +68,7 @@ struct ShoppingScreen: View {
             VStack(spacing: Space.s2) {
                 ForEach(picked) { item in
                     HStack(spacing: Space.s3) {
-                        Text(item.emoji).font(.system(size: 22)).frame(width: 32)
+                        ProductImage(slug: item.imageSlug, fallback: item.emoji, size: 36, corner: 8)
                         Text(item.label).role(.body)
                         Spacer()
                         Button {

@@ -106,6 +106,12 @@ struct ShoppingItem: Decodable, Identifiable, Equatable, Sendable {
     let en: String
     /// Every word that means this, already narrowed and pluralised by the web.
     let terms: [String]
+    /// The picker group (dairy, eggs, vegetables, …). Older servers omit it.
+    let category: String?
+    /// Slug of the bundled tile photograph. Older servers omit it; the id
+    /// itself is the file name for every shopping item, so it falls back to that.
+    let image: String?
+    var imageSlug: String { image ?? id }
 
     /// Dutch or English, the same rule the website applies. fr and de fall back
     /// to English rather than showing an id — the labels only exist in two.
@@ -130,6 +136,19 @@ struct ShoppingItem: Decodable, Identifiable, Equatable, Sendable {
     }
 }
 
+extension ShoppingItem {
+    /// Build an item in code — the picker uses fetched items, but tests and any
+    /// call site that predates product photos want the four-field shape. Lives in
+    /// an extension on purpose: it keeps the synthesized memberwise initializer
+    /// (the full `category`/`image` form) *and* the synthesized `Decodable`, so a
+    /// real item off `/api/shopping/items` still decodes both new fields. A stored
+    /// default (`let image: String? = nil`) would make Swift silently drop them
+    /// from the decode path; this keeps `category` and `image` as decoded `let`s.
+    init(id: String, nl: String, en: String, terms: [String]) {
+        self.init(id: id, nl: nl, en: en, terms: terms, category: nil, image: nil)
+    }
+}
+
 /// How many farms near here sell a thing, and how close the nearest is.
 struct ProductNearby: Identifiable {
     let item: ShoppingItem
@@ -145,6 +164,7 @@ final class ShoppingItems {
     static let shared = ShoppingItems()
 
     private(set) var items: [ShoppingItem] = []
+    private(set) var categories: [ShoppingCategory] = []
     private(set) var loadFailed = false
     private var loading: Task<Void, Never>?
 
@@ -164,6 +184,7 @@ final class ShoppingItems {
             }
             await MainActor.run {
                 self?.items = decoded.items
+                self?.categories = decoded.categories ?? []
                 self?.loadFailed = false
             }
         }
@@ -174,7 +195,16 @@ final class ShoppingItems {
 
     func item(id: String) -> ShoppingItem? { items.first { $0.id == id } }
 
-    private struct Payload: Decodable { let items: [ShoppingItem] }
+    private struct Payload: Decodable { let items: [ShoppingItem]; let categories: [ShoppingCategory]? }
+}
+
+/// A picker group, as the server orders them.
+struct ShoppingCategory: Decodable, Identifiable, Equatable, Sendable {
+    let id: String
+    let nl: String
+    let en: String
+    let image: String
+    var label: String { Locale.current.language.languageCode?.identifier == "nl" ? nl : en }
 }
 
 // MARK: - Planner

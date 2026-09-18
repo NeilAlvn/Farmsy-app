@@ -59,6 +59,7 @@ import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.MultiImageFarmCard
 import app.farmsy.android.features.whatsnew.PingCard
 import app.farmsy.android.features.whatsnew.SkeletonBox
+import app.farmsy.android.ui.ProductImage
 import app.farmsy.android.ui.theme.CardShape
 import app.farmsy.android.ui.theme.Chip
 import app.farmsy.android.ui.theme.FarmsyColors
@@ -194,7 +195,7 @@ fun DiscoverScreen() {
                                             .padding(Space.s4),
                                         verticalArrangement = Arrangement.spacedBy(Space.s2),
                                     ) {
-                                        Text(item.emoji, fontSize = 28.sp)
+                                        ProductImage(item.imageSlug, item.emoji, 64.dp)
                                         Text(item.label(language), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(
                                             if (count == 1) stringResource(R.string.one_farm) else stringResource(R.string.n_farms_arg, count),
