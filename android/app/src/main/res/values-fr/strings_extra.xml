@@ -241,4 +241,6 @@
     <string name="farms_search_placeholder">Rechercher une ferme par nom ou lieu</string>
     <string name="no_farm_matches">Aucune ferme ne correspond</string>
     <string name="try_fewer_words">Essayez moins de mots, ou retirez un filtre.</string>
+    <string name="push_channel_alerts">Alertes des fermes</string>
+    <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
 </resources>

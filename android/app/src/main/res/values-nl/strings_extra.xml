@@ -241,4 +241,6 @@
     <string name="farms_search_placeholder">Zoek boerderijen op naam of plaats</string>
     <string name="no_farm_matches">Geen boerderij gevonden</string>
     <string name="try_fewer_words">Probeer minder woorden, of zet een filter uit.</string>
+    <string name="push_channel_alerts">Meldingen van boerderijen</string>
+    <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>

@@ -34,6 +34,10 @@ final class FarmsStore {
     var filterOpenNow = false
     var filterOpenSaturday = false
     var filterOpenSunday = false
+    /// Plus: only farms a visitor reported open today. The set comes from
+    /// RecentReports; the map hands it over so this store stays network-free.
+    var filterConfirmedToday = false
+    var confirmedTodayIds: Set<String> = []
 
     // The two new axes from Aviah's taxonomy (multi-select, combine with the
     // categories rather than replacing them). Values are language-neutral ids; the
@@ -75,7 +79,7 @@ final class FarmsStore {
     /// which moved into Pro per Aviah's later-3). Used to show the "Pro filters active"
     /// state and to clear them when membership lapses.
     var anyProFilterOn: Bool {
-        filterOpenNow || filterOpenSaturday || filterOpenSunday
+        filterOpenNow || filterOpenSaturday || filterOpenSunday || filterConfirmedToday
             || !selectedPlaceTypes.isEmpty || !selectedMethods.isEmpty
     }
 
@@ -218,6 +222,7 @@ final class FarmsStore {
         filterVerified = false; filterOpenToday = false
         filterAutomaat = false; filterZelfpluk = false; filterHasPhotos = false
         filterOpenNow = false; filterOpenSaturday = false; filterOpenSunday = false
+        filterConfirmedToday = false
         selectedPlaceTypes = []; selectedMethods = []
     }
 
@@ -337,6 +342,7 @@ final class FarmsStore {
         if filterOpenNow      { result = result.filter { FarmFilters.isOpenNow($0.openingHours) } }
         if filterOpenSaturday { result = result.filter { FarmFilters.isOpenOnDay($0.openingHours, dayMon: 5) } }
         if filterOpenSunday   { result = result.filter { FarmFilters.isOpenOnDay($0.openingHours, dayMon: 6) } }
+        if filterConfirmedToday { result = result.filter { confirmedTodayIds.contains($0.osmId) } }
         if filterHasPhotos { result = result.filter { $0.image != nil } }
         if filterAutomaat  { result = result.filter { FarmFilters.looksLikeAutomaat($0.name, openingHours: $0.openingHours) } }
         if filterZelfpluk  { result = result.filter { FarmFilters.looksLikeZelfpluk($0.name) } }

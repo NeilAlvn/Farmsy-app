@@ -241,4 +241,6 @@
     <string name="farms_search_placeholder">Höfe nach Name oder Ort suchen</string>
     <string name="no_farm_matches">Kein Hof gefunden</string>
     <string name="try_fewer_words">Versuche weniger Wörter oder entferne einen Filter.</string>
+    <string name="push_channel_alerts">Hof-Benachrichtigungen</string>
+    <string name="confirmed_open_today_arg">Heute bestätigt geöffnet · %1$d</string>
 </resources>

@@ -153,6 +153,19 @@ struct ShoppingItem: Decodable, Identifiable, Equatable, Sendable {
     }
 }
 
+extension ShoppingItem {
+    /// Build an item in code — the picker uses fetched items, but tests and any
+    /// call site that predates product photos want the four-field shape. Lives in
+    /// an extension on purpose: it keeps the synthesized memberwise initializer
+    /// (the full `category`/`image` form) *and* the synthesized `Decodable`, so a
+    /// real item off `/api/shopping/items` still decodes both new fields. A stored
+    /// default (`let image: String? = nil`) would make Swift silently drop them
+    /// from the decode path; this keeps `category` and `image` as decoded `let`s.
+    init(id: String, nl: String, en: String, terms: [String]) {
+        self.init(id: id, nl: nl, en: en, terms: terms, category: nil, image: nil)
+    }
+}
+
 /// How many farms near here sell a thing, and how close the nearest is.
 struct ProductNearby: Identifiable {
     let item: ShoppingItem

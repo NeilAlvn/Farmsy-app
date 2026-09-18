@@ -173,3 +173,23 @@ class FreshnessTest {
         assertNull(FarmStatus.freshness(emptyList(), now))
     }
 }
+
+/// The set behind the map's "Confirmed open today" chip: open reports from
+/// today's Amsterdam day, nothing else.
+class ConfirmedOpenTodayTest {
+    // 2026-06-01T10:00Z = 12:00 Amsterdam.
+    private val now: Instant = Instant.parse("2026-06-01T10:00:00Z")
+    private fun r(id: String, status: String, at: String) = RecentReport(farmOsmId = id, status = status, createdAt = at)
+
+    @Test
+    fun `today's open reports count, yesterday's and closed ones do not`() {
+        val ids = RecentReports.confirmedOpenToday(listOf(
+            r("open-today", "open", "2026-06-01T06:00:00Z"),
+            r("open-late-yesterday-utc", "open", "2026-05-31T22:30:00Z"),  // 00:30 Amsterdam: today
+            r("closed-today", "closed", "2026-06-01T08:00:00Z"),
+            r("open-yesterday", "open", "2026-05-31T10:00:00Z"),
+            r("bad-date", "open", "not a date"),
+        ), now)
+        assertEquals(setOf("open-today", "open-late-yesterday-utc"), ids)
+    }
+}

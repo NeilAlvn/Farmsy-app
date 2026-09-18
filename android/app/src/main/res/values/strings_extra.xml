@@ -239,4 +239,6 @@
     <string name="farms_search_placeholder">Search farms by name or place</string>
     <string name="no_farm_matches">No farm matches</string>
     <string name="try_fewer_words">Try fewer words, or clear a chip.</string>
+    <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>
