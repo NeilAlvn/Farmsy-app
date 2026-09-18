@@ -214,4 +214,5 @@
     <string name="report_today">vandaag</string>
     <string name="report_yesterday">gisteren</string>
     <string name="report_days_ago_arg">%1$d dagen geleden</string>
+    <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>
