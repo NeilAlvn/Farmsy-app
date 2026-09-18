@@ -15,6 +15,11 @@ struct SeasonalItem: Decodable, Identifiable, Sendable {
     let months: [Int]
     let peak: [Int]
     let category: String
+    /// Slug of the bundled tile photograph. Older servers omit it; most seasonal
+    /// slugs are their own file, the aliased ones (aardbei → strawberry) show
+    /// the emoji until the server sends the mapping.
+    let image: String?
+    var imageSlug: String { image ?? slug }
     let storage: String?
     let note: String?
     /// Every word that means this, for matching a farm's produce text.

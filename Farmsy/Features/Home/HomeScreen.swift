@@ -204,7 +204,7 @@ struct HomeScreen: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: Space.s2) {
-                Text(p.item.emoji).font(.system(size: 28))
+                ProductImage(slug: p.item.imageSlug, fallback: p.item.emoji, size: 64)
                 Text(p.item.label).role(.subheading).lineLimit(1)
                 Text("\(p.count) farms · \(p.nearestKm.formatted(.number.precision(.fractionLength(1)))) km")
                     .role(.caption, .inkMuted)
@@ -270,19 +270,18 @@ struct HomeScreen: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: Space.s2) {
-                HStack {
-                    Text(item.emoji).font(.system(size: 28))
-                    Spacer()
+                ZStack(alignment: .topTrailing) {
+                    ProductImage(slug: item.imageSlug, fallback: item.emoji, size: 124, corner: Radius.tile)
                     if item.isPeak(month: seasons.month) {
-                        Badge(text: String(localized: "PEAK"), fill: .vivid, ink: .ink)
+                        Badge(text: String(localized: "PEAK"), fill: .vivid, ink: .ink).padding(Space.s2)
                     }
                 }
                 Text(item.label).role(.subheading).lineLimit(1)
                 Text(String(localized: "Find it nearby")).role(.caption, .inkMuted)
             }
-            .frame(width: 140, alignment: .leading)
-            .padding(Space.s4)
-            .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+            .frame(width: 124, alignment: .leading)
+            .padding(Space.s3)
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         }
         .buttonStyle(.plain)
     }
