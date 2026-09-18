@@ -113,6 +113,23 @@ struct ShoppingItem: Decodable, Identifiable, Equatable, Sendable {
     let image: String?
     var imageSlug: String { image ?? id }
 
+    /// Something typed that the picker does not know. The id carries the text
+    /// so it survives in `wantedProducts` like any other id; matching uses the
+    /// folded text as its one term under the search rule, so "geitenkaas"
+    /// finds "geitenkaas" and "boerengeitenkaas" but "ui" stays a whole word.
+    static let customPrefix = "custom:"
+    var isCustom: Bool { id.hasPrefix(Self.customPrefix) }
+
+    static func custom(_ text: String) -> ShoppingItem {
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ShoppingItem(id: customPrefix + ProductMatch.fold(clean), nl: clean, en: clean,
+                            terms: [ProductMatch.fold(clean)], category: "other", image: nil)
+    }
+
+    init(id: String, nl: String, en: String, terms: [String], category: String?, image: String?) {
+        self.id = id; self.nl = nl; self.en = en; self.terms = terms; self.category = category; self.image = image
+    }
+
     /// Dutch or English, the same rule the website applies. fr and de fall back
     /// to English rather than showing an id — the labels only exist in two.
     var label: String {
@@ -180,7 +197,12 @@ final class ShoppingItems {
         loading = nil
     }
 
-    func item(id: String) -> ShoppingItem? { items.first { $0.id == id } }
+    func item(id: String) -> ShoppingItem? {
+        if id.hasPrefix(ShoppingItem.customPrefix) {
+            return .custom(String(id.dropFirst(ShoppingItem.customPrefix.count)))
+        }
+        return items.first { $0.id == id }
+    }
 
     private struct Payload: Decodable { let items: [ShoppingItem]; let categories: [ShoppingCategory]? }
 }
@@ -209,9 +231,10 @@ enum ShoppingPlanner {
     }
 
     /// One stop, and the list items it answers (item ids, in the picked order).
-    struct Pick: Equatable {
+    struct Pick: Equatable, Identifiable {
         let osmId: String
         let covers: [String]
+        var id: String { osmId }
     }
 
     struct Plan: Equatable {
@@ -280,5 +303,37 @@ enum ShoppingPlanner {
         }
 
         return Plan(picks: picks, missing: order.filter { remaining.contains($0) })
+    }
+
+    /// Other farms that could take a stop's place: inside the radius, not
+    /// already in the plan, and selling at least one of the things that stop
+    /// was for. Most of that stop's items first, then nearest. Up to `limit`.
+    static func alternatives(
+        to pick: Pick,
+        in plan: Plan,
+        wanted: [ShoppingItem],
+        farms: [Candidate],
+        origin: CLLocationCoordinate2D,
+        radiusKm: Double = 25,
+        limit: Int = 5
+    ) -> [Pick] {
+        let taken = Set(plan.picks.map(\.osmId))
+        let items = wanted.filter { pick.covers.contains($0.id) }
+        var out: [(Pick, Int, Double)] = []
+        for farm in farms where !farm.sells.isEmpty && !taken.contains(farm.osmId) {
+            let km = TripGeometry.haversineKm(origin, farm.coord)
+            guard km <= radiusKm else { continue }
+            let hit = items.filter { ProductMatch.covers(farm.sells, terms: $0.terms) }.map(\.id)
+            if !hit.isEmpty { out.append((Pick(osmId: farm.osmId, covers: hit), hit.count, km)) }
+        }
+        return out.sorted { a, b in a.1 != b.1 ? a.1 > b.1 : a.2 < b.2 }.prefix(limit).map(\.0)
+    }
+
+    /// The plan with one stop swapped for another. Items the new farm does not
+    /// sell go back to `missing` rather than quietly disappearing.
+    static func replacing(_ old: Pick, with new: Pick, in plan: Plan) -> Plan {
+        let picks = plan.picks.map { $0.osmId == old.osmId ? new : $0 }
+        let lost = old.covers.filter { !new.covers.contains($0) }
+        return Plan(picks: picks, missing: plan.missing + lost)
     }
 }
