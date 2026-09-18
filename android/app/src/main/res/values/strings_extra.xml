@@ -295,4 +295,8 @@
     <string name="accessibility_caption">Farmsy follows these: it stops decorative motion and scales its type.</string>
     <string name="earned">Earned</string>
     <string name="locked">Locked</string>
+    <string name="calendar_failed">The calendar didn\'t load</string>
+    <string name="check_connection">Check your connection and try again.</string>
+    <string name="nothing_new_yet">Nothing new yet</string>
+    <string name="nothing_new_yet_sub">Posts and finds from farms near you land here. Allow location, or check back later.</string>
 </resources>

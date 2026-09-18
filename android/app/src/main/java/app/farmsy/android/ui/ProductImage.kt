@@ -45,7 +45,19 @@ fun ProductImage(slug: String?, fallback: String, size: Dp, corner: Dp = 12.dp) 
 object ProductImageIds {
     private val cache = HashMap<String, Int>()
 
-    fun resolve(context: android.content.Context, slug: String): Int = cache.getOrPut(slug) {
+    /// A seasonal product that is the same thing as a shopping item shares its
+    /// photograph. The server sends the mapping as `image`; this is the same
+    /// table (farmsy-web src/lib/productImages.ts) for builds that run against
+    /// a server that does not yet.
+    val alias = mapOf(
+        "aardbei" to "strawberry", "appel" to "apples", "peer" to "pears", "asperge" to "asparagus",
+        "pompoen" to "pumpkin", "tomaat" to "tomatoes", "ui" to "onions", "wortel" to "carrot",
+        "paddenstoel" to "mushrooms", "aardappel" to "potatoes", "honing" to "honey",
+        "eieren" to "eggs", "kaas" to "cheese",
+    )
+
+    fun resolve(context: android.content.Context, raw: String): Int = cache.getOrPut(raw) {
+        val slug = alias[raw] ?: raw
         val name = "product_" + slug.replace('-', '_')
         context.resources.getIdentifier(name, "drawable", context.packageName)
     }
