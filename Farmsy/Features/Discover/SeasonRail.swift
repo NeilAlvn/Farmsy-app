@@ -14,7 +14,11 @@ struct SeasonRail: View {
     private var months: [Int] { Array(1...12) }
 
     var body: some View {
-        if !seasons.loaded {
+        if seasons.loadFailed && !seasons.loaded {
+            EmptyState(icon: "wifi.slash", title: String(localized: "The calendar didn't load"),
+                       text: String(localized: "Check your connection and try again."),
+                       action: (String(localized: "Try again"), { Task { await seasons.loadIfNeeded() } }))
+        } else if !seasons.loaded {
             ForEach(0..<4, id: \.self) { _ in SkeletonBox(cornerRadius: Radius.card).frame(height: 84) }
         } else {
             Text(String(localized: "What is ripe, month by month, and what to make with it. Tap a month."))

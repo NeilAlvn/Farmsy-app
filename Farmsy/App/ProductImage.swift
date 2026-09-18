@@ -39,7 +39,19 @@ enum ProductImageCache {
     private static var cache: [String: UIImage] = [:]
     private static var missing: Set<String> = []
 
-    static func image(_ slug: String) -> UIImage? {
+    /// A seasonal product that is the same thing as a shopping item shares its
+    /// photograph. The server sends the mapping as `image`; this is the same
+    /// table (farmsy-web src/lib/productImages.ts) for builds that run against
+    /// a server that does not yet.
+    static let alias: [String: String] = [
+        "aardbei": "strawberry", "appel": "apples", "peer": "pears", "asperge": "asparagus",
+        "pompoen": "pumpkin", "tomaat": "tomatoes", "ui": "onions", "wortel": "carrot",
+        "paddenstoel": "mushrooms", "aardappel": "potatoes", "honing": "honey",
+        "eieren": "eggs", "kaas": "cheese",
+    ]
+
+    static func image(_ raw: String) -> UIImage? {
+        let slug = alias[raw] ?? raw
         if let hit = cache[slug] { return hit }
         if missing.contains(slug) { return nil }
         guard let url = Bundle.main.url(forResource: "product-" + slug, withExtension: "webp"),

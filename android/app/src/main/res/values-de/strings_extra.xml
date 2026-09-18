@@ -297,4 +297,8 @@
     <string name="accessibility_caption">Farmsy folgt diesen Einstellungen: dekorative Bewegung stoppt und der Text skaliert.</string>
     <string name="earned">Erhalten</string>
     <string name="locked">Gesperrt</string>
+    <string name="calendar_failed">Der Kalender wurde nicht geladen</string>
+    <string name="check_connection">Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="nothing_new_yet">Noch nichts Neues</string>
+    <string name="nothing_new_yet_sub">Beiträge und Funde von Höfen in deiner Nähe landen hier. Erlaube den Standort oder schau später wieder vorbei.</string>
 </resources>

@@ -9,20 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.ShoppingBasket
-import androidx.compose.material.icons.outlined.Eco
-import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.ShoppingBasket
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.DrawableRes
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -123,12 +114,14 @@ import kotlinx.coroutines.launch
 /// before the redesign; Profile and Plus are modal sheets.
 private enum class SheetRoute { FARM, TRIPS }
 
-enum class AppTab(@StringRes val titleRes: Int, val icon: ImageVector, val filledIcon: ImageVector) {
-    HOME(R.string.home, Icons.Outlined.Home, Icons.Filled.Home),
-    SHOPPING(R.string.shopping, Icons.Outlined.ShoppingBasket, Icons.Filled.ShoppingBasket),
-    MAP(R.string.map, Icons.Outlined.Map, Icons.Filled.Map),
-    DISCOVER(R.string.discover, Icons.Outlined.Eco, Icons.Filled.Eco),
-    COMMUNITY(R.string.community, Icons.Outlined.Group, Icons.Filled.Group),
+/// Farmsy's own glyphs (res/drawable/ic_tab_*): a farmhouse, a basket, a
+/// folded map, a seedling, two people. Outline at rest, solid when selected.
+enum class AppTab(@StringRes val titleRes: Int, @DrawableRes val iconRes: Int, @DrawableRes val fillRes: Int) {
+    HOME(R.string.home, R.drawable.ic_tab_home, R.drawable.ic_tab_home_fill),
+    SHOPPING(R.string.shopping, R.drawable.ic_tab_shopping, R.drawable.ic_tab_shopping_fill),
+    MAP(R.string.map, R.drawable.ic_tab_map, R.drawable.ic_tab_map_fill),
+    DISCOVER(R.string.discover, R.drawable.ic_tab_discover, R.drawable.ic_tab_discover_fill),
+    COMMUNITY(R.string.community, R.drawable.ic_tab_community, R.drawable.ic_tab_community_fill),
 }
 
 /// What a screen can ask the shell to do.
@@ -169,8 +162,8 @@ fun FloatingTabBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Modif
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    if (on) tab.filledIcon else tab.icon, null,
-                    tint = if (on) FarmsyColors.ink else FarmsyColors.inkMuted, modifier = Modifier.size(24.dp),
+                    painterResource(if (on) tab.fillRes else tab.iconRes), null,
+                    tint = if (on) FarmsyColors.ink else FarmsyColors.inkMuted, modifier = Modifier.size(26.dp),
                 )
             }
         }

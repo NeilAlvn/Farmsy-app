@@ -297,4 +297,8 @@
     <string name="accessibility_caption">Farmsy volgt deze instellingen: decoratieve beweging stopt en de tekst schaalt mee.</string>
     <string name="earned">Behaald</string>
     <string name="locked">Vergrendeld</string>
+    <string name="calendar_failed">De kalender is niet geladen</string>
+    <string name="check_connection">Controleer je verbinding en probeer het opnieuw.</string>
+    <string name="nothing_new_yet">Nog niets nieuws</string>
+    <string name="nothing_new_yet_sub">Berichten en vondsten van boerderijen bij jou in de buurt komen hier. Sta locatie toe, of kom later terug.</string>
 </resources>

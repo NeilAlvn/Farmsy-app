@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -126,6 +127,7 @@ fun DiscoverScreen() {
     val catalogue by ShoppingItems.items.collectAsState()
     val tips by Tips.tips.collectAsState()
     var recent by remember { mutableStateOf<List<Ping>>(emptyList()) }
+    var recentLoaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(DiscoverTab.SEASON) }
     var openMonth by remember { mutableStateOf<Int?>(null) }
@@ -137,6 +139,7 @@ fun DiscoverScreen() {
     suspend fun loadRecent() {
         val since = Instant.now().minus(30, ChronoUnit.DAYS).toString()
         recent = FarmContentApi.feedPosts(limit = 60, sinceIso = since)
+        recentLoaded = true
     }
 
     LaunchedEffect(Unit) { farms.loadGalleriesIfNeeded() }
@@ -190,6 +193,10 @@ fun DiscoverScreen() {
     }
 
     fun LazyListScope.discoverTab() {
+        if (!recentLoaded && tips.isEmpty()) {
+            items(3) { SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(150.dp)) }
+            return
+        }
         if (justArrived.isNotEmpty()) {
             item {
                 Column {
@@ -280,6 +287,9 @@ fun DiscoverScreen() {
                 PingCard(ping = ping, farmName = farm?.name, onOpenFarm = { farm?.let { shell.openFarm(it) } })
             }
         }
+        if (recent.isEmpty() && tips.isEmpty() && pickYourOwn.isEmpty()) {
+            item { EmptyState(Icons.Filled.Eco, stringResource(R.string.nothing_new_yet), stringResource(R.string.nothing_new_yet_sub)) }
+        }
     }
 
     fun LazyListScope.farmsTab() {
@@ -350,7 +360,7 @@ fun DiscoverScreen() {
                 when (tab) {
                     DiscoverTab.SEASON -> {
                         if (seasonItems.isEmpty()) {
-                            item { SeasonSkeleton() }
+                            item { SeasonLoading() }
                         } else {
                             item {
                                 Text(

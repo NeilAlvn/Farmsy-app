@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -52,6 +53,7 @@ import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.features.main.AppTab
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
+import app.farmsy.android.ui.theme.EmptyState
 import app.farmsy.android.ui.ProductImage
 import app.farmsy.android.ui.theme.Badge
 import app.farmsy.android.ui.theme.CardShape
@@ -264,8 +266,17 @@ fun IdeaCard(kicker: String?, title: String, text: String, image: String, fallba
     }
 }
 
-/// Four skeleton rows while the calendar loads.
+/// Four skeleton rows while the calendar loads; a retry once the fetch failed.
 @Composable
-fun SeasonSkeleton() {
-    repeat(4) { SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(84.dp)) }
+fun SeasonLoading() {
+    val failed by Seasons.loadFailed.collectAsState()
+    val scope = rememberCoroutineScope()
+    if (failed) {
+        EmptyState(
+            Icons.Filled.WifiOff, stringResource(R.string.calendar_failed), stringResource(R.string.check_connection),
+            action = stringResource(R.string.try_again) to { scope.launch { Seasons.loadIfNeeded() } },
+        )
+    } else {
+        repeat(4) { SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(84.dp)) }
+    }
 }

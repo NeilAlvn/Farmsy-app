@@ -297,4 +297,8 @@
     <string name="accessibility_caption">Farmsy les respecte : les animations décoratives s\'arrêtent et le texte s\'adapte.</string>
     <string name="earned">Obtenu</string>
     <string name="locked">Verrouillé</string>
+    <string name="calendar_failed">Le calendrier n\'a pas chargé</string>
+    <string name="check_connection">Vérifiez votre connexion et réessayez.</string>
+    <string name="nothing_new_yet">Rien de nouveau pour l\'instant</string>
+    <string name="nothing_new_yet_sub">Les publications et découvertes des fermes près de chez vous arrivent ici. Autorisez la localisation, ou revenez plus tard.</string>
 </resources>

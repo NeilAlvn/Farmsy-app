@@ -72,7 +72,17 @@ final class SessionStore {
         #endif
         return session != nil
     }
-    var hasFullAccess: Bool { profile?.hasFullAccess ?? false }
+    /// Debug-only twin of `isDemoSession`: the demo account behaves as a Plus
+    /// member, so the paid shopping and route flows can be walked on a
+    /// simulator without a real subscription. Never true in release builds.
+    var isDemoPlus = false
+
+    var hasFullAccess: Bool {
+        #if DEBUG
+        if isDemoSession && isDemoPlus { return true }
+        #endif
+        return profile?.hasFullAccess ?? false
+    }
     var email: String {
         #if DEBUG
         if isDemoSession { return "preview@farmsy.app" }

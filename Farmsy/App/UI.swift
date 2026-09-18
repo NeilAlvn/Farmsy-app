@@ -19,8 +19,11 @@ struct FloatingTabBar: View {
                     if !on { Haptics.tap() }
                     selected = tab
                 } label: {
-                    Image(systemName: on ? tab.filledIcon : tab.icon)
-                        .font(.system(size: 22, weight: on ? .semibold : .regular))
+                    Image(on ? tab.filledIcon : tab.icon)
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 26, height: 26)
                         .foregroundStyle(on ? Color.ink : Color.inkMuted)
                         .frame(width: 56, height: 44)
                         .contentShape(Rectangle())

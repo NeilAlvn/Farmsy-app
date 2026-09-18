@@ -38,6 +38,7 @@ struct FarmsyApp: App {
         let store = SessionStore()
         #if DEBUG
         store.isDemoSession = CommandLine.arguments.contains("--demo-session")
+        store.isDemoPlus = CommandLine.arguments.contains("--demo-plus")
         #endif
         _session = State(initialValue: store)
         let farmsStore = FarmsStore()
