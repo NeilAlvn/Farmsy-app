@@ -222,4 +222,21 @@
     <string name="change_farm">Change farm</string>
     <string name="change_farm_sub">Other farms nearby that sell what this stop is for.</string>
     <string name="change_farm_none_arg">No other farm within %1$d km sells these.</string>
+    <!-- Discover: Season rail, tips, farm search -->
+    <string name="discover_tab_season">Season</string>
+    <string name="discover_tab_farms">Farms</string>
+    <string name="season_rail_intro">What is ripe, month by month, and what to make with it. Tap a month.</string>
+    <string name="now_badge">NOW</string>
+    <string name="season_stored">Stored crops and the greenhouse.</string>
+    <string name="season_count_arg">%1$d in season · %2$d ideas</string>
+    <string name="in_season">In season</string>
+    <string name="season_empty_month">Little grows outdoors this month. Farm shops sell what was stored: potatoes, onions, beets, apples, and the cheese and eggs that never stop.</string>
+    <string name="what_to_make">What to make with it</string>
+    <string name="put_on_my_list">Put it on my list</string>
+    <string name="grandmothers_tips">Grandmother\'s tips</string>
+    <string name="grandmothers_tips_sub">How to buy, keep and use farm food. The things people used to know.</string>
+    <string name="with_photos">With photos</string>
+    <string name="farms_search_placeholder">Search farms by name or place</string>
+    <string name="no_farm_matches">No farm matches</string>
+    <string name="try_fewer_words">Try fewer words, or clear a chip.</string>
 </resources>

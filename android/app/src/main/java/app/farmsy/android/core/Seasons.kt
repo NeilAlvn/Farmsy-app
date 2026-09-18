@@ -49,8 +49,34 @@ data class SeasonalItem(
     fun isPeak(month: Int): Boolean = month in peak
 }
 
+/// Copy in the four app languages, picked by the app's language.
 @Serializable
-private data class SeasonsPayload(val month: Int, val items: List<SeasonalItem> = emptyList())
+data class LocalizedText(val nl: String = "", val en: String = "", val fr: String = "", val de: String = "") {
+    fun text(language: String): String = when (language) {
+        "nl" -> nl; "fr" -> fr; "de" -> de
+        else -> en
+    }
+}
+
+/// What to make with what is in season: one card, tied to the products it
+/// needs so "put it on my list" is one tap.
+@Serializable
+data class SeasonIdea(
+    val slug: String,
+    val month: Int,
+    val title: LocalizedText,
+    val body: LocalizedText,
+    /// Shopping ids or seasonal slugs.
+    val ingredients: List<String> = emptyList(),
+    val image: String = "",
+)
+
+@Serializable
+private data class SeasonsPayload(
+    val month: Int,
+    val items: List<SeasonalItem> = emptyList(),
+    val ideas: List<SeasonIdea>? = null,
+)
 
 object Seasons {
     private val _month = MutableStateFlow(Calendar.getInstance().get(Calendar.MONTH) + 1)
@@ -59,7 +85,19 @@ object Seasons {
     private val _items = MutableStateFlow<List<SeasonalItem>>(emptyList())
     val items: StateFlow<List<SeasonalItem>> = _items.asStateFlow()
 
+    private val _ideas = MutableStateFlow<List<SeasonIdea>>(emptyList())
+    val ideas: StateFlow<List<SeasonIdea>> = _ideas.asStateFlow()
+
     private var loaded = false
+
+    /// Everything in season in a month, peak first. Unlike `thisMonth` this
+    /// keeps the year-round staples (eggs, cheese) out, so a month page is
+    /// about what changed.
+    fun items(month: Int, items: List<SeasonalItem> = _items.value): List<SeasonalItem> =
+        items.filter { month in it.months && it.months.size < 12 }
+            .sortedWith(compareByDescending<SeasonalItem> { it.isPeak(month) }.thenBy { it.slug })
+
+    fun ideas(month: Int, ideas: List<SeasonIdea> = _ideas.value): List<SeasonIdea> = ideas.filter { it.month == month }
 
     /// What is news this month: at peak first, then the rest that is in season.
     fun thisMonth(items: List<SeasonalItem> = _items.value, month: Int = _month.value): List<SeasonalItem> =
@@ -73,6 +111,7 @@ object Seasons {
             else lenientJson.decodeFromString<SeasonsPayload>(resp.bodyAsText())
         }.getOrNull() ?: return
         _items.value = payload.items
+        _ideas.value = payload.ideas ?: emptyList()
         _month.value = payload.month
         loaded = true
     }
