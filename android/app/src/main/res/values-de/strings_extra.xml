@@ -224,6 +224,23 @@
     <string name="change_farm">Anderen Hof wählen</string>
     <string name="change_farm_sub">Andere Höfe in der Nähe, die verkaufen, wofür dieser Stopp gedacht ist.</string>
     <string name="change_farm_none_arg">Kein anderer Hof im Umkreis von %1$d km verkauft das.</string>
+    <!-- Discover: Season rail, tips, farm search -->
+    <string name="discover_tab_season">Saison</string>
+    <string name="discover_tab_farms">Höfe</string>
+    <string name="season_rail_intro">Was reif ist, Monat für Monat, und was man daraus macht. Tippe auf einen Monat.</string>
+    <string name="now_badge">JETZT</string>
+    <string name="season_stored">Lagergemüse und das Gewächshaus.</string>
+    <string name="season_count_arg">%1$d in Saison · %2$d Ideen</string>
+    <string name="in_season">In Saison</string>
+    <string name="season_empty_month">Draußen wächst diesen Monat wenig. Hofläden verkaufen, was gelagert wurde: Kartoffeln, Zwiebeln, Rote Bete, Äpfel, und Käse und Eier, die nie aufhören.</string>
+    <string name="what_to_make">Was man daraus macht</string>
+    <string name="put_on_my_list">Auf meine Liste</string>
+    <string name="grandmothers_tips">Großmutters Tipps</string>
+    <string name="grandmothers_tips_sub">Wie man Hofprodukte kauft, lagert und verwendet. Was die Leute früher wussten.</string>
+    <string name="with_photos">Mit Fotos</string>
+    <string name="farms_search_placeholder">Höfe nach Name oder Ort suchen</string>
+    <string name="no_farm_matches">Kein Hof gefunden</string>
+    <string name="try_fewer_words">Versuche weniger Wörter oder entferne einen Filter.</string>
     <string name="push_channel_alerts">Hof-Benachrichtigungen</string>
     <string name="confirmed_open_today_arg">Heute bestätigt geöffnet · %1$d</string>
 </resources>

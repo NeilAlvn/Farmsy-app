@@ -224,6 +224,23 @@
     <string name="change_farm">Andere boerderij</string>
     <string name="change_farm_sub">Andere boerderijen in de buurt die verkopen waar deze stop voor is.</string>
     <string name="change_farm_none_arg">Geen andere boerderij binnen %1$d km verkoopt dit.</string>
+    <!-- Discover: Season rail, tips, farm search -->
+    <string name="discover_tab_season">Seizoen</string>
+    <string name="discover_tab_farms">Boerderijen</string>
+    <string name="season_rail_intro">Wat er rijp is, maand voor maand, en wat je ermee maakt. Tik op een maand.</string>
+    <string name="now_badge">NU</string>
+    <string name="season_stored">Bewaargroente en de kas.</string>
+    <string name="season_count_arg">%1$d in het seizoen · %2$d ideeën</string>
+    <string name="in_season">In het seizoen</string>
+    <string name="season_empty_month">Buiten groeit deze maand weinig. Boerderijwinkels verkopen wat bewaard is: aardappelen, uien, bieten, appels, en de kaas en eieren die nooit ophouden.</string>
+    <string name="what_to_make">Wat maak je ermee</string>
+    <string name="put_on_my_list">Zet op mijn lijst</string>
+    <string name="grandmothers_tips">Grootmoeders tips</string>
+    <string name="grandmothers_tips_sub">Hoe je boerderijeten koopt, bewaart en gebruikt. De dingen die mensen vroeger wisten.</string>
+    <string name="with_photos">Met foto\'s</string>
+    <string name="farms_search_placeholder">Zoek boerderijen op naam of plaats</string>
+    <string name="no_farm_matches">Geen boerderij gevonden</string>
+    <string name="try_fewer_words">Probeer minder woorden, of zet een filter uit.</string>
     <string name="push_channel_alerts">Meldingen van boerderijen</string>
     <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>
