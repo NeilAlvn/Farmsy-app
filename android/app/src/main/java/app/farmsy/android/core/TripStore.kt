@@ -2,6 +2,7 @@ package app.farmsy.android.core
 
 import android.content.Context
 import com.google.android.gms.maps.model.LatLng
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
@@ -56,8 +57,12 @@ object RouteAPI {
         if (stops.size < 2 || stops.size > 50) return null
         return try {
             val coords = stops.map { listOf(it.longitude, it.latitude) }
+            // A third stop is Plus; the server decides from the session. Two
+            // stops route for everyone, token or not.
+            val token = supabase.auth.currentAccessTokenOrNull()
             val resp = httpClient.post("${Backend.WEB_API}/route") {
                 header(HttpHeaders.ContentType, "application/json")
+                if (token != null) header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(lenientJson.encodeToString(Request(coords)))
             }
             if (resp.status.value != 200) return null
