@@ -222,4 +222,6 @@
     <string name="change_farm">Change farm</string>
     <string name="change_farm_sub">Other farms nearby that sell what this stop is for.</string>
     <string name="change_farm_none_arg">No other farm within %1$d km sells these.</string>
+    <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

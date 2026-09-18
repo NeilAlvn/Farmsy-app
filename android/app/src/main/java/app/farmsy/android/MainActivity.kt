@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.LanguageStore
 import app.farmsy.android.ui.theme.FarmsyTheme
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         captureReferral(intent)
+        PushRegistrar.deliver(intent)
         val app = application as FarmsyApp
         setContent {
             CompositionLocalProvider(
@@ -63,6 +65,11 @@ class MainActivity : ComponentActivity() {
         // come back still unpaid, poll briefly to catch the grant as it arrives. Stops
         // the moment access shows, and gives up quietly if nothing's changing (the
         // common case: the user just switched apps and came back).
+        // A token can rotate between launches, and permission may have been
+        // granted in Settings since last time.
+        app.appScope.launch {
+            PushRegistrar.sync(app.session.session.value?.user?.id, app.session.accessToken())
+        }
         app.appScope.launch {
             val wasPaid = app.session.hasFullAccess
             repeat(4) {
@@ -79,6 +86,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         captureReferral(intent)
+        PushRegistrar.deliver(intent)
     }
 
     /// Pull `?ref=CODE` out of a farmsy.app/join link and hold it until signup.

@@ -295,6 +295,14 @@ final class RecentReports {
         loadedAt = Date()
     }
 
+    /// Farms a visitor reported open today (Amsterdam day). What the map's
+    /// "Confirmed open today" chip and the vivid pin ring are built on.
+    var confirmedOpenToday: Set<String> {
+        let today = FarmStatus.amsterdamDay(Date())
+        return Set(reports.filter { $0.report.status == .open && FarmStatus.amsterdamDay($0.report.createdAt) == today }
+            .map(\.farmOsmId))
+    }
+
     /// Reports about farms within `radiusKm` of `origin`, using the pins the
     /// store already holds. No origin means everywhere.
     func near(_ origin: CLLocation?, radiusKm: Double, pins: [String: FarmPin]) -> [RecentReport] {

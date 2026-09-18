@@ -224,4 +224,6 @@
     <string name="change_farm">Changer de ferme</string>
     <string name="change_farm_sub">D\'autres fermes à proximité qui vendent ce pour quoi cet arrêt est prévu.</string>
     <string name="change_farm_none_arg">Aucune autre ferme à moins de %1$d km ne vend cela.</string>
+    <string name="push_channel_alerts">Alertes des fermes</string>
+    <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
 </resources>

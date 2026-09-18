@@ -84,6 +84,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -112,6 +113,8 @@ import app.farmsy.android.core.FarmAxis
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmsStore
+import app.farmsy.android.core.RecentReports
+import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.core.SmartSearchApi
 import app.farmsy.android.core.SmartSearchIntent
 import app.farmsy.android.ui.theme.Chip
@@ -136,11 +139,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
 import app.farmsy.android.ui.theme.FitText
 
-/// Compose maps slow down past a few hundred markers (same cap as iOS).
-private const val ANNOTATION_CAP = 130
-
-/// Marker bitmaps are expensive to rasterise — build one per category, once.
-private val pinIcons = HashMap<FarmCategory, BitmapDescriptor>()
+/// Marker bitmaps are expensive to rasterise — build one per category ×
+/// confirmed, once. MarkerComposable is far too slow for thousands of pins.
+private val pinIcons = HashMap<Pair<FarmCategory, Boolean>, BitmapDescriptor>()
+private val dotIcons = HashMap<Pair<FarmCategory, Boolean>, BitmapDescriptor>()
+private const val VIVID_POSITIVE_ARGB = 0xFF9BE15D.toInt()
 
 /// Teardrop pin, parameterised by the iOS FarmPinView sizes so the highlighted
 /// variant uses the *literal* manifest values (drop 38 normal / **50** highlighted,
@@ -148,15 +151,23 @@ private val pinIcons = HashMap<FarmCategory, BitmapDescriptor>()
 /// pixels by fixed factors (headR = drop·0.9, whiteR = circlePt, emojiPx = emojiPt·2.33)
 /// so `farmPinBitmap` reproduces the previous normal pin and the highlight scales
 /// off the same mapping.
-private fun pinBitmap(dropPt: Int, whiteCirclePt: Int, emojiPt: Int, bodyArgb: Int, emoji: String): BitmapDescriptor {
+private fun pinBitmap(dropPt: Int, whiteCirclePt: Int, emojiPt: Int, bodyArgb: Int, emoji: String, confirmed: Boolean = false): BitmapDescriptor {
     val headR = dropPt * 0.9f
-    val w = (headR * 2f + 16f).toInt()
+    val w = (headR * 2f + 24f).toInt()
     val h = (w * 1.29f).toInt()
     val cx = w / 2f
-    val headCy = headR + 4f
+    val headCy = headR + 8f
     val bmp = createBitmap(w, h)
     val canvas = Canvas(bmp)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    // Plus: a vivid ring around a farm a visitor confirmed open today (iOS 3pt).
+    if (confirmed) {
+        paint.color = VIVID_POSITIVE_ARGB
+        paint.style = Paint.Style.STROKE; paint.strokeWidth = 7f
+        canvas.drawCircle(cx, headCy, headR + 3.5f, paint)
+        paint.style = Paint.Style.FILL
+    }
 
     // Drop shadow
     paint.color = 0x33000000
@@ -186,77 +197,67 @@ private fun pinBitmap(dropPt: Int, whiteCirclePt: Int, emojiPt: Int, bodyArgb: I
 }
 
 /// The category pin — iOS FarmPinView normal (drop 38, white 22, emoji 12).
-private fun farmPinBitmap(cat: FarmCategory): BitmapDescriptor =
-    pinBitmap(dropPt = 38, whiteCirclePt = 22, emojiPt = 12, bodyArgb = cat.color.toArgb(), emoji = cat.emoji)
-
-/// A grid bucket of farms: one pin when it holds a single farm, a green count
-/// bubble when it holds several. Mirrors iOS MapCluster.
-private data class MapCluster(val id: String, val center: LatLng, val pins: List<FarmPin>)
-
-private const val GRID_CELLS_ACROSS = 10.0
-/// Below this latitude span (~neighbourhood zoom) stop clustering and draw every
-/// farm individually, so a dense area isn't stuck behind a bubble up close.
-private const val DECLUSTER_SPAN = 0.06
-
-/// Grid-cluster pins by the current span — cells merge when zoomed out and split
-/// when zoomed in. A bucket becomes a bubble only at 10+ farms; 2–9 draw as their
-/// own pins (a small bubble is just a tap away from being useful). Mirrors iOS.
-private fun clusterPins(pins: List<FarmPin>, latSpan: Double, lngSpan: Double): List<MapCluster> {
-    if (latSpan < DECLUSTER_SPAN) {
-        return pins.map { MapCluster(it.osmId, LatLng(it.lat, it.lng), listOf(it)) }
-    }
-    val cellLat = maxOf(latSpan / GRID_CELLS_ACROSS, 0.0001)
-    val cellLng = maxOf(lngSpan / GRID_CELLS_ACROSS, 0.0001)
-    val buckets = HashMap<String, MutableList<FarmPin>>()
-    for (pin in pins) {
-        val row = kotlin.math.floor(pin.lat / cellLat).toInt()
-        val col = kotlin.math.floor(pin.lng / cellLng).toInt()
-        buckets.getOrPut("${row}_$col") { mutableListOf() }.add(pin)
-    }
-    return buckets.flatMap { (key, group) ->
-        if (group.size < 10) group.map { MapCluster(it.osmId, LatLng(it.lat, it.lng), listOf(it)) }
-        else {
-            val lat = group.sumOf { it.lat } / group.size
-            val lng = group.sumOf { it.lng } / group.size
-            listOf(MapCluster(key, LatLng(lat, lng), group.toList()))
-        }
-    }
+private fun farmPinBitmap(cat: FarmCategory, confirmed: Boolean): BitmapDescriptor = pinIcons.getOrPut(cat to confirmed) {
+    pinBitmap(dropPt = 38, whiteCirclePt = 22, emojiPt = 12, bodyArgb = cat.color.toArgb(), emoji = cat.emoji, confirmed = confirmed)
 }
 
-private fun capClusters(list: List<MapCluster>, cap: Int): List<MapCluster> {
-    if (list.size <= cap) return list
-    val stride = list.size.toDouble() / cap
-    return (0 until cap).map { list[(it * stride).toInt()] }
-}
-
-/// A green count bubble for a cluster of 10+ farms.
-private val bubbleIcons = HashMap<Int, BitmapDescriptor>()
-private fun clusterBubbleBitmap(count: Int): BitmapDescriptor = bubbleIcons.getOrPut(count) {
-    val label = if (count > 999) "999+" else count.toString()
-    val s = 96
+/// A farm at province zoom — iOS FarmDotView: a 10dp dot in the category colour
+/// with a 1.5dp white stroke, plus the 3dp vivid ring when confirmed today.
+/// `scale` is px per dp; density does not change under a running map.
+private fun farmDotBitmap(cat: FarmCategory, confirmed: Boolean, scale: Float): BitmapDescriptor = dotIcons.getOrPut(cat to confirmed) {
+    val r = 5f * scale
+    val ring = 3f * scale
+    val s = ((r + ring) * 2f + 4f).toInt()
+    val c = s / 2f
     val bmp = createBitmap(s, s)
-    val c = Canvas(bmp)
+    val canvas = Canvas(bmp)
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    p.color = 0x33000000
-    c.drawCircle(s / 2f, s / 2f + 2f, s / 2f - 8f, p)
-    p.color = 0xFF4E7F54.toInt()
-    c.drawCircle(s / 2f, s / 2f, s / 2f - 8f, p)
-    val t = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        textAlign = Paint.Align.CENTER
-        textSize = if (label.length >= 4) 24f else 32f
-        isFakeBoldText = true
+    if (confirmed) {
+        p.color = VIVID_POSITIVE_ARGB; p.style = Paint.Style.STROKE; p.strokeWidth = ring
+        canvas.drawCircle(c, c, r + ring / 2f, p)
+        p.style = Paint.Style.FILL
     }
-    val fm = t.fontMetrics
-    c.drawText(label, s / 2f, s / 2f - (fm.ascent + fm.descent) / 2f, t)
+    p.color = cat.color.toArgb()
+    canvas.drawCircle(c, c, r, p)
+    p.color = android.graphics.Color.WHITE; p.style = Paint.Style.STROKE; p.strokeWidth = 1.5f * scale
+    canvas.drawCircle(c, c, r - p.strokeWidth / 2f, p)
     BitmapDescriptorFactory.fromBitmap(bmp)
+}
+
+/// Every farm is its own pin: a count bubble hides the one farm somebody is
+/// looking for. What keeps it fast: zoomed out (span >= DOT_SPAN) the pins are
+/// thinned to one per screen cell of about 7dp and drawn as dots. Two farms on
+/// the same pixels draw as one dot at that farm's own coordinate; zooming in
+/// separates them. Mirrors iOS MapScreen.visiblePins.
+private const val DOT_SPAN = 0.06
+/// Screen cells across the width at province zoom; 7pt dots on a 402pt phone.
+private const val CELLS_ACROSS = 56.0
+
+/// Viewport cull at 1.2× the span, then thin to one pin per screen cell when
+/// zoomed out. First pin wins so the choice is stable while panning.
+internal fun visiblePins(pins: List<FarmPin>, centerLat: Double, centerLng: Double, latSpan: Double, lngSpan: Double): List<FarmPin> {
+    val latHalf = latSpan / 2 * 1.2
+    val lngHalf = lngSpan / 2 * 1.2
+    val inView = pins.filter {
+        kotlin.math.abs(it.lat - centerLat) < latHalf && kotlin.math.abs(it.lng - centerLng) < lngHalf
+    }
+    if (latSpan < DOT_SPAN) return inView
+    val cellLng = lngSpan / CELLS_ACROSS
+    val cellLat = cellLng * 0.62   // dots are round; latitude degrees are longer
+    val seen = HashSet<Long>()
+    val out = ArrayList<FarmPin>(minOf(inView.size, 2000))
+    for (pin in inView) {
+        val key = kotlin.math.floor(pin.lat / cellLat).toLong() * 1_000_003L + kotlin.math.floor(pin.lng / cellLng).toLong()
+        if (seen.add(key)) out.add(pin)
+    }
+    return out
 }
 
 /// The selected pin — iOS FarmPinView(isHighlighted:) with the literal manifest
 /// values: drop **50**, white circle **28**, emoji **15**, in farmGreenDeep.
-private val highlightIcons = HashMap<FarmCategory, BitmapDescriptor>()
-private fun highlightedPinBitmap(cat: FarmCategory): BitmapDescriptor = highlightIcons.getOrPut(cat) {
-    pinBitmap(dropPt = 50, whiteCirclePt = 28, emojiPt = 15, bodyArgb = 0xFF18321A.toInt(), emoji = cat.emoji)
+private val highlightIcons = HashMap<Pair<FarmCategory, Boolean>, BitmapDescriptor>()
+private fun highlightedPinBitmap(cat: FarmCategory, confirmed: Boolean): BitmapDescriptor = highlightIcons.getOrPut(cat to confirmed) {
+    pinBitmap(dropPt = 50, whiteCirclePt = 28, emojiPt = 15, bodyArgb = 0xFF18321A.toInt(), emoji = cat.emoji, confirmed = confirmed)
 }
 
 /// A numbered trip-stop marker — a green circle carrying the visiting order.
@@ -289,6 +290,8 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
     val farms = LocalFarms.current
     val locationHelper = LocalLocationHelper.current
     val trip = LocalTrip.current
+    val session = LocalSession.current
+    val shell = LocalShell.current
     val density = LocalDensity.current
     // iOS route widths are SwiftUI points (casing 8, line 5). Google Maps Compose
     // Polyline width is in *pixels*, so convert 8.dp / 5.dp → px at the current
@@ -323,6 +326,11 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
     val fPhotos by farms.filterHasPhotos.collectAsState()
     val placeTypes by farms.selectedPlaceTypes.collectAsState()
     val methods by farms.selectedMethods.collectAsState()
+    val fConfirmed by farms.filterConfirmedToday.collectAsState()
+    // Visitor reports, for the confirmed-today chip and ring.
+    val reports by RecentReports.reports.collectAsState()
+    val confirmedToday = remember(reports) { RecentReports.confirmedOpenToday(reports) }
+    LaunchedEffect(Unit) { RecentReports.refresh() }
     var showFilters by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -352,12 +360,9 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
         position = CameraPosition.fromLatLngZoom(LatLng(51.8, 4.7), 6.5f)
     }
 
-    // Maps slow down past a few hundred markers, so draw only the pins inside
-    // the current viewport, capped — same rule as iOS MapScreen.visiblePins.
-    // Zooming in therefore reveals the farms in that area.
     val filtered = remember(
         pins, searchText, selectedCategories, aiIntent,
-        fVerified, fOpen, fAutomaat, fZelfpluk, fPhotos, placeTypes, methods,
+        fVerified, fOpen, fAutomaat, fZelfpluk, fPhotos, placeTypes, methods, fConfirmed,
     ) { farms.filtered() }
 
     // The two axes filter against the flags feed (location_types / methods); pull
@@ -395,30 +400,24 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
             viewport = cameraPositionState.projection?.visibleRegion?.latLngBounds
         }
     }
-    // Group the visible farms into grid clusters: a lone farm draws as its pin, a
-    // dense cell (10+) as a green count bubble that splits when tapped/zoomed —
-    // the same declustering the iOS map uses instead of drawing thousands of pins.
-    val clusters = remember(filtered, viewport) {
+    // Trip stops are drawn as their own always-visible numbered markers.
+    val tripStopSet = remember(tripStopIds) { tripStopIds.toSet() }
+    val span = viewport?.let { it.northeast.latitude - it.southwest.latitude } ?: 3.4
+    val drawsDots = span >= DOT_SPAN
+    val visible = remember(filtered, viewport, tripStopSet) {
         val b = viewport
-        val inView: List<FarmPin>; val latSpan: Double; val lngSpan: Double
+        val all = filtered.filter { it.osmId !in tripStopSet }
         if (b != null) {
-            latSpan = b.northeast.latitude - b.southwest.latitude
-            lngSpan = b.northeast.longitude - b.southwest.longitude
-            val latPad = latSpan * 0.1; val lngPad = lngSpan * 0.1
-            inView = filtered.filter {
-                it.lat > b.southwest.latitude - latPad && it.lat < b.northeast.latitude + latPad &&
-                    it.lng > b.southwest.longitude - lngPad && it.lng < b.northeast.longitude + lngPad
-            }
+            visiblePins(all, b.center.latitude, b.center.longitude,
+                b.northeast.latitude - b.southwest.latitude, b.northeast.longitude - b.southwest.longitude)
         } else {
-            inView = filtered; latSpan = 3.4; lngSpan = 3.4
+            visiblePins(all, 51.8, 4.7, 3.4, 3.4)
         }
-        capClusters(clusterPins(inView, latSpan, lngSpan), ANNOTATION_CAP)
     }
 
     // Trip route pieces for the shared map (TripsScreen no longer draws its own).
     val pinIndex = remember(pins) { pins.associateBy { it.osmId } }
     val tripStops = remember(tripStopIds, pinIndex) { tripStopIds.mapNotNull { pinIndex[it] } }
-    val tripStopSet = remember(tripStopIds) { tripStopIds.toSet() }
     val tracedRoute = remember(tripRouteLine, tripTraceProgress) { trip.tracedLine() }
 
     // Selecting a farm flies the shared map, keeping the pin in the upper part of the
@@ -492,35 +491,21 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                     mapToolbarEnabled = false,
                 ),
             ) {
-                clusters.forEach { cluster ->
-                    if (cluster.pins.size == 1) {
-                        val pin = cluster.pins[0]
-                        // The focused pin is drawn highlighted below; trip stops are
-                        // drawn as numbered markers — skip both here to avoid doubles.
-                        if (pin.osmId == focusPin?.osmId || pin.osmId in tripStopSet) return@forEach
-                        val icon = pinIcons.getOrPut(pin.primaryCategory) { farmPinBitmap(pin.primaryCategory) }
+                visible.forEach { pin ->
+                    // The focused pin is drawn highlighted below — skip it here.
+                    if (pin.osmId == focusPin?.osmId) return@forEach
+                    val confirmed = session.hasFullAccess && pin.osmId in confirmedToday
+                    key(pin.osmId) {
                         Marker(
                             state = MarkerState(LatLng(pin.lat, pin.lng)),
                             title = pin.name,
                             snippet = pin.city,
-                            icon = icon,
-                            anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
+                            icon = if (drawsDots) farmDotBitmap(pin.primaryCategory, confirmed, density.density)
+                                   else farmPinBitmap(pin.primaryCategory, confirmed),
+                            anchor = if (drawsDots) androidx.compose.ui.geometry.Offset(0.5f, 0.5f)
+                                     else androidx.compose.ui.geometry.Offset(0.5f, 1f),
                             onClick = { onOpenFarm(pin); true },
                             onInfoWindowClick = { onOpenFarm(pin) },
-                        )
-                    } else {
-                        // A count bubble — tapping it zooms in, which splits it apart.
-                        Marker(
-                            state = MarkerState(cluster.center),
-                            icon = clusterBubbleBitmap(cluster.pins.size),
-                            anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
-                            onClick = {
-                                scope.launch {
-                                    val z = cameraPositionState.position.zoom + 1.8f
-                                    cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(cluster.center, z))
-                                }
-                                true
-                            },
                         )
                     }
                 }
@@ -558,7 +543,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                         Marker(
                             state = MarkerState(LatLng(fp.lat, fp.lng)),
                             title = fp.name, snippet = fp.city,
-                            icon = highlightedPinBitmap(fp.primaryCategory),
+                            icon = highlightedPinBitmap(fp.primaryCategory, session.hasFullAccess && fp.osmId in confirmedToday),
                             anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
                             zIndex = 4f,
                             onClick = { onOpenFarm(fp); true },
@@ -656,6 +641,25 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                 ) {
                     Chip(stringResource(R.string.open_now), selected = fOpenNow, dot = if (fOpenNow) null else FarmsyColors.vividPositive) { farms.filterOpenNow.value = !fOpenNow }
                     Chip(stringResource(R.string.open_today), selected = fOpenToday) { farms.filterOpenToday.value = !fOpenToday }
+                    // Plus: what visitors confirmed today. Free sees the number and
+                    // the lock; the number is what makes the lock worth tapping.
+                    val n = confirmedToday.size
+                    if (n > 0) {
+                        Chip(
+                            stringResource(R.string.confirmed_open_today_arg, n),
+                            icon = if (session.hasFullAccess) null else Icons.Filled.Lock,
+                            selected = fConfirmed,
+                            dot = if (fConfirmed) null else FarmsyColors.vividPositive,
+                        ) {
+                            if (session.hasFullAccess) {
+                                farms.confirmedTodayIds.value = confirmedToday
+                                farms.filterConfirmedToday.value = !fConfirmed
+                            } else {
+                                Observability.capture(AnalyticsEvent.PRO_FILTER_TAPPED, mapOf(AnalyticsProp.FILTER to "confirmed_today"))
+                                shell.openPlus()
+                            }
+                        }
+                    }
                     Chip(stringResource(R.string.filter_zelfpluk), emoji = "🍓", selected = fZelfpluk) { farms.filterZelfpluk.value = !fZelfpluk }
                     Chip(stringResource(R.string.axis_vending_machine), emoji = "🥚", selected = fAutomaat) { farms.filterAutomaat.value = !fAutomaat }
                 }
