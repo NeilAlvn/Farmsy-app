@@ -313,4 +313,5 @@
     <string name="add_to_list">Add to list</string>
     <string name="about_days_arg">About %1$d days</string>
     <string name="no_profile_yet">No profile for this product yet.</string>
+    <string name="recipe_of_the_week">Recipe of the week</string>
 </resources>

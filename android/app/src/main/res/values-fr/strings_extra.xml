@@ -315,4 +315,5 @@
     <string name="add_to_list">Ajouter à ma liste</string>
     <string name="about_days_arg">Environ %1$d jours</string>
     <string name="no_profile_yet">Pas encore de fiche pour ce produit.</string>
+    <string name="recipe_of_the_week">Recette de la semaine</string>
 </resources>

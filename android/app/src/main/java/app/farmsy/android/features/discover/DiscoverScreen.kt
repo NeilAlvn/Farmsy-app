@@ -54,7 +54,10 @@ import app.farmsy.android.core.FarmContentApi
 import app.farmsy.android.core.FarmFilters
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.Ping
+import app.farmsy.android.core.MonthState
 import app.farmsy.android.core.ProductMatch
+import app.farmsy.android.core.ProductProfile
+import app.farmsy.android.core.Products
 import app.farmsy.android.core.SearchRadius
 import app.farmsy.android.core.Seasons
 import app.farmsy.android.core.ShoppingItem
@@ -83,6 +86,8 @@ import app.farmsy.android.ui.theme.tapCard
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
+import java.time.temporal.IsoFields
 import java.time.temporal.ChronoUnit
 import kotlin.math.max
 
@@ -126,6 +131,7 @@ fun DiscoverScreen() {
     val seasonMonth by Seasons.month.collectAsState()
     val catalogue by ShoppingItems.items.collectAsState()
     val tips by Tips.tips.collectAsState()
+    val products by Products.all.collectAsState()
     var recent by remember { mutableStateOf<List<Ping>>(emptyList()) }
     var recentLoaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
@@ -146,6 +152,7 @@ fun DiscoverScreen() {
     LaunchedEffect(Unit) { Seasons.loadIfNeeded() }
     LaunchedEffect(Unit) { ShoppingItems.loadIfNeeded() }
     LaunchedEffect(Unit) { Tips.loadIfNeeded() }
+    LaunchedEffect(Unit) { Products.loadIfNeeded(Products.lang(context)) }
     LaunchedEffect(Unit) { loadRecent() }
 
     // "Just arrived": products people mentioned at farms in the last month,
@@ -185,6 +192,14 @@ fun DiscoverScreen() {
         farms.sortedByDistance(hits, location)
     }
 
+    /// One idea from a product at its peak this month, fixed for the ISO week
+    /// so everyone sees the same one and it changes on Monday (iOS recipeOfWeek).
+    val recipeOfWeek: Pair<ProductProfile, ProductProfile.Idea>? = remember(products) {
+        val today = LocalDate.now()
+        val pool = products.filter { it.state(today.monthValue) == MonthState.PEAK }.flatMap { p -> p.ideas.map { p to it } }
+        if (pool.isEmpty()) null else pool[today.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR) % pool.size]
+    }
+
     fun LazyListScope.discoverTab() {
         if (!recentLoaded && tips.isEmpty()) {
             items(3) { SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(150.dp)) }
@@ -214,6 +229,19 @@ fun DiscoverScreen() {
                                 )
                             }
                         }
+                    }
+                }
+            }
+        }
+        recipeOfWeek?.let { (p, idea) ->
+            item {
+                Column {
+                    SectionHeader(stringResource(R.string.recipe_of_the_week), p.name to { shell.openProduct(p.slug) })
+                    CardCarousel(listOf(idea)) {
+                        IdeaCard(
+                            kicker = null, title = it.title, text = it.body, image = it.image,
+                            fallbackImage = p.image, fallback = "🍽️", ingredients = it.ingredients,
+                        )
                     }
                 }
             }

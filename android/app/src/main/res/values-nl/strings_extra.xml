@@ -315,4 +315,5 @@
     <string name="add_to_list">Zet op mijn lijst</string>
     <string name="about_days_arg">Ongeveer %1$d dagen</string>
     <string name="no_profile_yet">Nog geen productpagina voor dit product.</string>
+    <string name="recipe_of_the_week">Recept van de week</string>
 </resources>
