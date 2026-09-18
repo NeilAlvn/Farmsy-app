@@ -241,4 +241,40 @@
     <string name="farms_search_placeholder">Zoek boerderijen op naam of plaats</string>
     <string name="no_farm_matches">Geen boerderij gevonden</string>
     <string name="try_fewer_words">Probeer minder woorden, of zet een filter uit.</string>
+
+    <!-- Community: Reports / Leaderboard tabs, report portal, badges -->
+    <string name="community_tab_reports">Meldingen</string>
+    <string name="community_tab_leaderboard">Ranglijst</string>
+    <string name="report_portal_title">Wat heb je vandaag gezien?</string>
+    <string name="report_portal_sub">Open, gesloten, uitverkocht, en wat er in het schap lag. Eén tik helpt iedereen na jou.</string>
+    <string name="leaderboard_intro">De mensen die de kaart eerlijk houden. Meldingen tellen; bevestigingen en foto\'s leveren badges op.</string>
+    <string name="all_time">Altijd</string>
+    <string name="this_month">Deze maand</string>
+    <string name="no_reports_yet">Nog geen meldingen</string>
+    <string name="no_reports_yet_sub">Wie als eerste een boerderij meldt, staat bovenaan.</string>
+    <string name="report_a_farm">Meld een boerderij</string>
+    <string name="you_reports_arg">Jij: %1$d meldingen · %2$d boerderijen</string>
+    <string name="you_badge">JIJ</string>
+    <string name="farms_badges_arg">%1$d boerderijen · %2$d badges</string>
+    <string name="reports_label">meldingen</string>
+    <string name="what_did_you_see">Wat heb je gezien?</string>
+    <string name="report_sent_body">Iedereen die overweegt er vandaag heen te rijden, ziet het nu.</string>
+    <string name="which_farm">Welke boerderij?</string>
+    <string name="allow_location_or_search">Sta locatie toe om de boerderijen om je heen te zien, of zoek op naam.</string>
+    <string name="badge_first_report">Eerste melding</string>
+    <string name="badge_early_bird">Vroege vogel</string>
+    <string name="badge_confirmer">Bevestiger</string>
+    <string name="badge_explorer">Verkenner</string>
+    <string name="badge_shelf_scout">Schapkenner</string>
+    <string name="badge_photographer">Fotograaf</string>
+    <string name="badge_regular">Vaste klant</string>
+    <string name="badge_collector">Verzamelaar</string>
+    <string name="badge_rule_first_report">Meld één keer of een boerderij open was.</string>
+    <string name="badge_rule_early_bird">Meld als eerste een boerderij die dag, vijf keer.</string>
+    <string name="badge_rule_confirmer">Bevestig tien keer wat iemand anders die dag meldde.</string>
+    <string name="badge_rule_explorer">Meld bij tien verschillende boerderijen.</string>
+    <string name="badge_rule_shelf_scout">Zeg in 25 meldingen wat er in het schap lag.</string>
+    <string name="badge_rule_photographer">Plaats een foto van een boerderij.</string>
+    <string name="badge_rule_regular">Meld in vier verschillende weken.</string>
+    <string name="badge_rule_collector">Bewaar vijf boerderijen.</string>
 </resources>
