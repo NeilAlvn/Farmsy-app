@@ -18,17 +18,10 @@ enum AppTab: String, CaseIterable, Identifiable {
         }
     }
 
-    var icon: String {
-        switch self {
-        case .home: "house"
-        case .shopping: "basket"
-        case .map: "map"
-        case .discover: "leaf"
-        case .community: "person.2"
-        }
-    }
-
-    var filledIcon: String { icon + ".fill" }
+    /// Farmsy's own glyphs (Assets.xcassets/Tabs): a farmhouse, a basket, a
+    /// folded map, a seedling, two people. Outline at rest, solid when selected.
+    var icon: String { "tab-" + rawValue }
+    var filledIcon: String { icon + "-fill" }
 }
 
 /// What a screen can ask the shell to do.
@@ -84,12 +77,15 @@ struct AppShell: View {
         ZStack(alignment: .bottom) {
             // A TabView with its own bar hidden: each tab keeps its scroll position,
             // camera and loaded state across switches, which a `switch` would drop.
+            // iOS 26 draws its glass tab bar unless every tab's own content
+            // hides it; the modifier on the TabView alone left a blank slab
+            // behind our pill.
             TabView(selection: $tab) {
-                HomeScreen().tag(AppTab.home)
-                ShoppingScreen().tag(AppTab.shopping)
-                MapScreen(onOpenFarm: { openFarm($0, source: .mapPin) }, focusPin: flyTarget).tag(AppTab.map)
-                DiscoverScreen().tag(AppTab.discover)
-                CommunityScreen().tag(AppTab.community)
+                HomeScreen().tag(AppTab.home).toolbar(.hidden, for: .tabBar)
+                ShoppingScreen().tag(AppTab.shopping).toolbar(.hidden, for: .tabBar)
+                MapScreen(onOpenFarm: { openFarm($0, source: .mapPin) }, focusPin: flyTarget).tag(AppTab.map).toolbar(.hidden, for: .tabBar)
+                DiscoverScreen().tag(AppTab.discover).toolbar(.hidden, for: .tabBar)
+                CommunityScreen().tag(AppTab.community).toolbar(.hidden, for: .tabBar)
             }
             .toolbar(.hidden, for: .tabBar)
 
