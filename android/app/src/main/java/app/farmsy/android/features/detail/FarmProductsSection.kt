@@ -174,7 +174,7 @@ fun ReportInfoSheet(pin: FarmPin, onDismiss: () -> Unit) {
             }.getOrDefault(false)
             sending = false
             if (ok) {
-                view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY)
+                if (app.farmsy.android.ui.theme.Haptics.enabled) view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY)
                 sent = true
             } else failed = true
         }

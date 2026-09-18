@@ -56,6 +56,7 @@ import app.farmsy.android.R
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.FitText
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.card
@@ -93,7 +94,8 @@ fun LockedAccessView(pin: FarmPin, onClaim: () -> Unit = {}, onRecheck: suspend 
     // View exposes CONFIRM on API 30+; below that fall back to the light tick (same
     // approach SplashScreen uses for a platform-level haptic).
     val successHaptic: () -> Unit = {
-        if (android.os.Build.VERSION.SDK_INT >= 30) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        if (!Haptics.enabled) Unit
+        else if (android.os.Build.VERSION.SDK_INT >= 30) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         else haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
@@ -362,7 +364,7 @@ internal fun PlanButton(
             )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() }, indication = null,
-            ) { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
+            ) { if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -389,5 +391,5 @@ private fun Modifier.noRippleClick(
 ): Modifier = this.composed {
     clickable(
         interactionSource = remember { MutableInteractionSource() }, indication = null,
-    ) { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
+    ) { if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
 }

@@ -10,6 +10,7 @@ import app.farmsy.android.core.PurchaseStore
 import app.farmsy.android.core.SearchRadius
 import app.farmsy.android.core.SessionStore
 import app.farmsy.android.core.TripStore
+import app.farmsy.android.ui.theme.Haptics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,7 @@ class FarmsyApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Observability.start(this)
+        Haptics.init(this)
         PurchaseStore.configure(this)
         session = SessionStore(appScope)
         farms = FarmsStore(appScope)
