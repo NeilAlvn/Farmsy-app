@@ -198,10 +198,7 @@ struct HomeScreen: View {
     private func productTile(_ p: ProductNearby) -> some View {
         Button {
             Haptics.tap()
-            Task {
-                await farms.showProduct(label: p.item.label, terms: p.item.terms, userLocation: location, radiusKm: radiusKm)
-                shell.showTab(.map)
-            }
+            shell.openProduct(p.item.id)
         } label: {
             VStack(alignment: .leading, spacing: Space.s2) {
                 ProductImage(slug: p.item.imageSlug, fallback: p.item.emoji, size: 64)
@@ -264,10 +261,7 @@ struct HomeScreen: View {
     private func seasonTile(_ item: SeasonalItem) -> some View {
         Button {
             Haptics.tap()
-            Task {
-                await farms.showProduct(label: item.label, terms: item.terms, userLocation: location, radiusKm: radiusKm)
-                shell.showTab(.map)
-            }
+            shell.openProduct(item.slug)
         } label: {
             VStack(alignment: .leading, spacing: Space.s2) {
                 ZStack(alignment: .topTrailing) {

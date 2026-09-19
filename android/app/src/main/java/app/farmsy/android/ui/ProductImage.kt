@@ -25,11 +25,14 @@ import app.farmsy.android.ui.theme.FarmsyColors
 /// product_<slug>.webp (resource names cannot hold a hyphen), so a new image is
 /// a file copy and nothing else. Falls back to the emoji the tile used to show,
 /// so a slug the app does not ship (a product added server-side before the
-/// next release) still reads as something.
+/// next release) still reads as something. `fallbackSlug` is a second file to
+/// try before the emoji: a recipe picture that is not bundled yet shows its
+/// product's photograph.
 @Composable
-fun ProductImage(slug: String?, fallback: String, size: Dp, corner: Dp = 12.dp) {
+fun ProductImage(slug: String?, fallback: String, size: Dp, corner: Dp = 12.dp, fallbackSlug: String? = null) {
     val context = LocalContext.current
-    val id = slug?.let { ProductImageIds.resolve(context, it) } ?: 0
+    val id = slug?.let { ProductImageIds.resolve(context, it) }?.takeIf { it != 0 }
+        ?: fallbackSlug?.let { ProductImageIds.resolve(context, it) } ?: 0
     val shape = RoundedCornerShape(corner)
     if (id != 0) {
         Image(painterResource(id), null, Modifier.size(size).clip(shape), contentScale = ContentScale.Crop)

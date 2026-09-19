@@ -301,4 +301,19 @@
     <string name="check_connection">Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="nothing_new_yet">Noch nichts Neues</string>
     <string name="nothing_new_yet_sub">Beiträge und Funde von Höfen in deiner Nähe landen hier. Erlaube den Standort oder schau später wieder vorbei.</string>
+
+    <!-- Product sheet: one page per product (iOS ProductSheet). -->
+    <string name="how_to_choose">So wählst du</string>
+    <string name="keeping">Aufbewahren</string>
+    <string name="preserving">Haltbar machen</string>
+    <string name="grandmothers_tip">Großmutters Tipp</string>
+    <string name="goes_with">Passt zu</string>
+    <string name="peak_legend">Hochsaison</string>
+    <string name="at_its_best_now">Jetzt am besten</string>
+    <string name="not_in_season_now">Jetzt keine Saison</string>
+    <string name="find_nearby">In der Nähe finden</string>
+    <string name="add_to_list">Auf meine Liste</string>
+    <string name="about_days_arg">Etwa %1$d Tage</string>
+    <string name="no_profile_yet">Noch keine Produktseite für dieses Produkt.</string>
+    <string name="recipe_of_the_week">Rezept der Woche</string>
 </resources>

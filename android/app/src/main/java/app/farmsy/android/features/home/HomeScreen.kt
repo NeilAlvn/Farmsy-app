@@ -44,7 +44,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,7 +97,6 @@ import app.farmsy.android.ui.theme.role
 import app.farmsy.android.ui.theme.tapCard
 import app.farmsy.android.ui.theme.ui
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
@@ -130,7 +128,6 @@ fun HomeScreen() {
     val locationHelper = LocalLocationHelper.current
     val shell = LocalShell.current
     val requestAuth = LocalRequestAuth.current
-    val scope = rememberCoroutineScope()
     val tap = rememberTapHaptic()
     val requestLocation = rememberLocationRequest()
 
@@ -264,12 +261,8 @@ fun HomeScreen() {
                 ) {
                     nearby.take(10).forEach { p ->
                         Column(
-                            Modifier.width(172.dp).background(FarmsyColors.surface, TileShape).tapCard {
-                                scope.launch {
-                                    farms.showProduct(p.item.label(language), p.item.terms, location, radiusKm)
-                                    shell.showTab(AppTab.MAP)
-                                }
-                            }.padding(Space.s4),
+                            Modifier.width(172.dp).background(FarmsyColors.surface, TileShape)
+                                .tapCard { shell.openProduct(p.item.id) }.padding(Space.s4),
                             verticalArrangement = Arrangement.spacedBy(Space.s2),
                         ) {
                             ProductImage(p.item.imageSlug, p.item.emoji, 64.dp)
@@ -305,12 +298,8 @@ fun HomeScreen() {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
                     seasonPicks.forEach { item ->
                         Column(
-                            Modifier.width(148.dp).background(FarmsyColors.surface, CardShape).tapCard {
-                                scope.launch {
-                                    farms.showProduct(item.label(language), item.terms, location, radiusKm)
-                                    shell.showTab(AppTab.MAP)
-                                }
-                            }.padding(Space.s3),
+                            Modifier.width(148.dp).background(FarmsyColors.surface, CardShape)
+                                .tapCard { shell.openProduct(item.slug) }.padding(Space.s3),
                             verticalArrangement = Arrangement.spacedBy(Space.s2),
                         ) {
                             Box {
