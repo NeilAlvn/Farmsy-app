@@ -11,8 +11,13 @@ struct MapScreen: View {
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
     @Environment(TripStore.self) private var trip
+    @Environment(SessionStore.self) private var session
+    @Environment(\.shell) private var shell
 
     @State private var showFilters = false
+    /// Visitor reports, for the confirmed-today chip and ring.
+    @State private var recent = RecentReports.shared
+    private var confirmedToday: Set<String> { recent.confirmedOpenToday }
     /// True while an AI-search parse is in flight (spinner in the bar).
     @State private var aiSearching = false
 
@@ -28,82 +33,56 @@ struct MapScreen: View {
     )
     @State private var visibleRegion: MKCoordinateRegion?
 
-    /// Drawing thousands of individual annotations is what made the map lag.
-    /// Instead the viewport is divided into a grid and the pins in each cell are
-    /// grouped into one marker — a single pin when a cell holds one farm, a green
-    /// count bubble when it holds several. Zooming in splits the clusters apart.
-    private static let gridCellsAcross = 10.0
-    /// Below this span (roughly neighbourhood zoom) stop clustering entirely and
-    /// draw every farm as its own pin — otherwise a dense area stays hidden behind
-    /// a count bubble even after the user has zoomed right onto it.
-    private static let declusterSpan = 0.06
+    /// Every farm is its own pin: a count bubble hides the one farm somebody is
+    /// looking for, and a farm shop map with nothing on it at province zoom reads
+    /// as empty.
+    ///
+    /// What keeps it fast: 8,000 SwiftUI annotations pin the CPU and never paint
+    /// a tile (so do 8,000 MapKit overlays; measured), so zoomed out the pins
+    /// are thinned to one per screen cell of about 7pt. Two farms that would sit
+    /// on the same pixels draw as one dot at that farm's own coordinate, and
+    /// zooming in separates them. No bubble, no count, nothing to zoom past.
+    private static let dotSpan = 0.06
+    /// Screen cells across the width at province zoom; 7pt dots on a 402pt phone.
+    private static let cellsAcross = 56.0
     /// The trip route colour — a blue that stands apart from the green markers.
     static let routeColor = Color(hex: 0x2563EB)
 
-    private var clusters: [MapCluster] {
-        // Trip stops are drawn as their own always-visible numbered markers, so
-        // keep them out of the clustering — otherwise a stop vanishes into a
-        // cluster when zoomed out and you lose sight of the route's ends.
+    private var span: Double { visibleRegion?.span.latitudeDelta ?? 3.4 }
+    private var drawsDots: Bool { span >= Self.dotSpan }
+
+    private var visiblePins: [FarmPin] {
+        // Trip stops are drawn as their own always-visible numbered markers.
         let tripSet = Set(trip.stopIds)
         let all = farms.filtered.filter { !tripSet.contains($0.osmId) }
-        guard let region = visibleRegion else {
-            return Self.cluster(all, span: MKCoordinateSpan(latitudeDelta: 3.4, longitudeDelta: 3.4))
-        }
+        let region = visibleRegion ?? MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 51.8, longitude: 4.7),
+            span: MKCoordinateSpan(latitudeDelta: 3.4, longitudeDelta: 3.4))
         let latHalf = region.span.latitudeDelta / 2 * 1.2
         let lngHalf = region.span.longitudeDelta / 2 * 1.2
         let inView = all.filter {
             abs($0.lat - region.center.latitude) < latHalf &&
             abs($0.lng - region.center.longitude) < lngHalf
         }
-        return Self.cluster(inView, span: region.span)
+        guard region.span.latitudeDelta >= Self.dotSpan else { return inView }
+        // Thin to one pin per screen cell. First pin wins so the choice is stable
+        // while panning; the cell is keyed to the span so it does not jitter.
+        let cellLng = region.span.longitudeDelta / Self.cellsAcross
+        let cellLat = cellLng * 0.62   // dots are round; latitude degrees are longer
+        var seen = Set<Int64>()
+        var out: [FarmPin] = []
+        out.reserveCapacity(min(inView.count, 2000))
+        for pin in inView {
+            let key = Int64((pin.lat / cellLat).rounded(.down)) &* 1_000_003 &+ Int64((pin.lng / cellLng).rounded(.down))
+            if seen.insert(key).inserted { out.append(pin) }
+        }
+        return out
     }
 
     /// The trip's stops, as pins, in visiting order — drawn on top of everything.
     private var tripStopPins: [(index: Int, pin: FarmPin)] {
         trip.stopIds.enumerated().compactMap { i, id in
             farms.pins.first { $0.osmId == id }.map { (i, $0) }
-        }
-    }
-
-    /// Grid-cluster pins by the current span. Cell size is the span divided by a
-    /// fixed number of cells across, so clusters merge when zoomed out and split
-    /// when zoomed in. The bucket's own centre positions the marker, so it does
-    /// not jitter as pins come and go from the viewport.
-    private static func cluster(_ pins: [FarmPin], span: MKCoordinateSpan) -> [MapCluster] {
-        // Zoomed in far enough to read as a neighbourhood: skip grouping and draw
-        // every farm individually, so nothing stays buried in a bubble up close.
-        if span.latitudeDelta < declusterSpan {
-            return pins.map { MapCluster(id: $0.osmId, coordinate: $0.coordinate, pins: [$0]) }
-        }
-        let cellLat = max(span.latitudeDelta / gridCellsAcross, 0.0001)
-        let cellLng = max(span.longitudeDelta / gridCellsAcross, 0.0001)
-        var buckets: [String: [FarmPin]] = [:]
-        for pin in pins {
-            let row = Int((pin.lat / cellLat).rounded(.down))
-            let col = Int((pin.lng / cellLng).rounded(.down))
-            buckets["\(row)_\(col)", default: []].append(pin)
-        }
-        return buckets.flatMap { key, group -> [MapCluster] in
-            // Only make a count bubble for double digits. A "2"–"9" bubble is just
-            // a handful of pins a tap away from being useful, so draw them as
-            // individual farm pins instead — no bubble a user has to zoom past.
-            if group.count < 10 {
-                return group.map { MapCluster(id: $0.osmId, coordinate: $0.coordinate, pins: [$0]) }
-            }
-            let lat = group.reduce(0.0) { $0 + $1.lat } / Double(group.count)
-            let lng = group.reduce(0.0) { $0 + $1.lng } / Double(group.count)
-            return [MapCluster(id: key, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), pins: group)]
-        }
-    }
-
-    private func zoomInto(_ cluster: MapCluster) {
-        let current = visibleRegion?.span ?? MKCoordinateSpan(latitudeDelta: 3.4, longitudeDelta: 3.4)
-        withAnimation(.easeInOut(duration: 0.4)) {
-            camera = .region(MKCoordinateRegion(
-                center: cluster.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: current.latitudeDelta / 3.2,
-                                       longitudeDelta: current.longitudeDelta / 3.2)
-            ))
         }
     }
 
@@ -127,6 +106,7 @@ struct MapScreen: View {
         }
         // An AI search that named a place flies the map there (the web doesn't yet).
         .onChange(of: farms.aiPlaceToken) { _, _ in flyToAIPlace() }
+        .task { await recent.refresh() }
         // First appearance: a search or product tap from another tab may already
         // be waiting; otherwise open on the user rather than on the whole country.
         .onAppear {
@@ -214,6 +194,23 @@ struct MapScreen: View {
                 Chip(label: String(localized: "Open now"), selected: farms.filterOpenNow,
                      dot: farms.filterOpenNow ? nil : Color.vividPositive) { farms.filterOpenNow.toggle() }
                 Chip(label: String(localized: "Open today"), selected: farms.filterOpenToday) { farms.filterOpenToday.toggle() }
+                // Plus: what visitors confirmed today. Free sees the number and
+                // the lock; the number is what makes the lock worth tapping.
+                let n = confirmedToday.count
+                if n > 0 {
+                    Chip(label: String(localized: "Confirmed open today · \(n)"),
+                         icon: session.hasFullAccess ? nil : "lock.fill",
+                         selected: farms.filterConfirmedToday,
+                         dot: farms.filterConfirmedToday ? nil : Color.vividPositive) {
+                        if session.hasFullAccess {
+                            farms.confirmedTodayIds = confirmedToday
+                            farms.filterConfirmedToday.toggle()
+                        } else {
+                            Observability.capture(.proFilterTapped, [AnalyticsProp.filter: "confirmed_today"])
+                            shell.openPlus()
+                        }
+                    }
+                }
                 Chip(label: String(localized: "Pick your own"), emoji: "🍓", selected: farms.filterZelfpluk) { farms.filterZelfpluk.toggle() }
                 Chip(label: String(localized: "Vending machine"), emoji: "🥚", selected: farms.filterAutomaat) { farms.filterAutomaat.toggle() }
             }
@@ -400,27 +397,24 @@ struct MapScreen: View {
     private var mapCard: some View {
         Map(position: $camera) {
             UserAnnotation()
-            ForEach(clusters) { cluster in
-                if cluster.isCluster {
-                    Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .center) {
-                        ClusterBubble(count: cluster.pins.count)
-                            .onTapGesture {
-                                Haptics.tap()
-                                zoomInto(cluster)
-                            }
+            ForEach(visiblePins) { pin in
+                Annotation(pin.osmId, coordinate: pin.coordinate, anchor: drawsDots ? .center : .bottom) {
+                    let confirmed = session.hasFullAccess && confirmedToday.contains(pin.osmId)
+                    Group {
+                        if drawsDots {
+                            FarmDotView(category: pin.primaryCategory, isConfirmed: confirmed)
+                        } else {
+                            FarmPinView(category: pin.primaryCategory,
+                                        isHighlighted: pin.osmId == focusPin?.osmId,
+                                        isConfirmed: confirmed)
+                        }
                     }
-                    .annotationTitles(.hidden)
-                } else {
-                    Annotation(cluster.id, coordinate: cluster.coordinate, anchor: .bottom) {
-                        FarmPinView(category: cluster.representative.primaryCategory,
-                                    isHighlighted: cluster.representative.osmId == focusPin?.osmId)
-                            .onTapGesture {
-                                Haptics.tap()
-                                onOpenFarm(cluster.representative)
-                            }
+                    .onTapGesture {
+                        Haptics.tap()
+                        onOpenFarm(pin)
                     }
-                    .annotationTitles(.hidden)
                 }
+                .annotationTitles(.hidden)
             }
             // The active trip's road line, above the map's own labels. A white
             // casing under a bright-blue line — deliberately a different colour
@@ -557,35 +551,21 @@ struct CircleMapButton: View {
     }
 }
 
-/// A cluster of farms, drawn as a green count bubble (the map green used on the
-/// buttons). Tapping it zooms the map in so the cluster splits apart.
-struct MapCluster: Identifiable {
-    let id: String
-    let coordinate: CLLocationCoordinate2D
-    let pins: [FarmPin]
-    var isCluster: Bool { pins.count > 1 }
-    var representative: FarmPin { pins[0] }
-}
-
-struct ClusterBubble: View {
-    let count: Int
-
-    private var size: CGFloat {
-        switch count {
-        case ..<10: 38
-        case ..<100: 46
-        default: 54
-        }
-    }
+/// A farm at province zoom: a 10pt dot in the category colour. Plus users see a
+/// vivid ring around farms a visitor confirmed open today.
+struct FarmDotView: View {
+    let category: FarmCategory
+    var isConfirmed = false
 
     var body: some View {
-        Text(count > 999 ? "999+" : "\(count)")
-            .font(.ui(count > 99 ? 13 : 15, .bold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(Color.farmGreenMap, in: Circle())
-            .overlay(Circle().stroke(.white, lineWidth: 2.5))
-            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+        Circle()
+            .fill(category.color)
+            .frame(width: 10, height: 10)
+            .overlay(Circle().stroke(.white, lineWidth: 1.5))
+            .overlay(Circle().stroke(Color.vividPositive, lineWidth: isConfirmed ? 3 : 0).padding(-3))
+            // A dot is too small to hit; give the finger 28pt.
+            .frame(width: 28, height: 28)
+            .contentShape(Circle())
     }
 }
 
@@ -608,6 +588,7 @@ struct TripStopMarker: View {
 struct FarmPinView: View {
     let category: FarmCategory
     var isHighlighted = false
+    var isConfirmed = false
 
     var body: some View {
         ZStack {
@@ -623,6 +604,12 @@ struct FarmPinView: View {
             Text(category.emoji)
                 .font(.system(size: isHighlighted ? 15 : 12))
                 .offset(y: isHighlighted ? -7 : -5)
+            if isConfirmed {
+                Circle()
+                    .stroke(Color.vividPositive, lineWidth: 3)
+                    .frame(width: isHighlighted ? 36 : 30, height: isHighlighted ? 36 : 30)
+                    .offset(y: isHighlighted ? -7 : -5)
+            }
         }
         .animation(.spring(duration: 0.3), value: isHighlighted)
     }

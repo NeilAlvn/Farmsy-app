@@ -314,4 +314,6 @@
     <string name="about_days_arg">About %1$d days</string>
     <string name="no_profile_yet">No profile for this product yet.</string>
     <string name="recipe_of_the_week">Recipe of the week</string>
+    <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

@@ -316,4 +316,6 @@
     <string name="about_days_arg">Environ %1$d jours</string>
     <string name="no_profile_yet">Pas encore de fiche pour ce produit.</string>
     <string name="recipe_of_the_week">Recette de la semaine</string>
+    <string name="push_channel_alerts">Alertes des fermes</string>
+    <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
 </resources>
