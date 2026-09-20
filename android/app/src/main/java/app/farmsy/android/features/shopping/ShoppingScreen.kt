@@ -88,6 +88,7 @@ import app.farmsy.android.ui.theme.TileShape
 import app.farmsy.android.ui.theme.card
 import app.farmsy.android.ui.theme.rememberTapHaptic
 import app.farmsy.android.ui.theme.role
+import app.farmsy.android.ui.theme.tapCard
 import app.farmsy.android.ui.theme.ui
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
@@ -236,8 +237,13 @@ fun ShoppingScreen() {
                                     .padding(horizontal = Space.s4, vertical = Space.s2),
                                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
                             ) {
-                                ProductImage(item.imageSlug, item.emoji, 36.dp, corner = 8.dp)
-                                Text(item.label(language), style = role(TextRole.BODY), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
+                                Row(
+                                    Modifier.weight(1f).then(if (item.isCustom) Modifier else Modifier.tapCard { shell.openProduct(item.id) }),
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s3),
+                                ) {
+                                    ProductImage(item.imageSlug, item.emoji, 36.dp, corner = 8.dp)
+                                    Text(item.label(language), style = role(TextRole.BODY), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
+                                }
                                 Box(
                                     Modifier.size(32.dp).clickable { tap(); trip.toggleProduct(item.id) }.semantics { contentDescription = remove },
                                     contentAlignment = Alignment.Center,

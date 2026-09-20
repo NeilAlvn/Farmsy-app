@@ -41,17 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.farmsy.android.LocalFarms
-import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
-import app.farmsy.android.core.SearchRadius
 import app.farmsy.android.core.SeasonalItem
 import app.farmsy.android.core.Seasons
 import app.farmsy.android.core.ShoppingItem
 import app.farmsy.android.core.ShoppingItems
-import app.farmsy.android.features.main.AppTab
-import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.whatsnew.SkeletonBox
 import app.farmsy.android.ui.theme.EmptyState
 import app.farmsy.android.ui.ProductImage
@@ -138,12 +133,8 @@ fun SeasonNode(m: Int, now: Int, items: List<SeasonalItem>, ideas: Int, onOpen: 
 /// button that puts its ingredients on the shopping list. Sheet content.
 @Composable
 fun MonthSheet(month: Int, onDismiss: () -> Unit) {
-    val farms = LocalFarms.current
-    val shell = LocalShell.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val location by LocalLocationHelper.current.location.collectAsState()
-    val radiusKm by SearchRadius.km.collectAsState()
+    var openProduct by remember { mutableStateOf<SeasonalItem?>(null) }
     val language = remember { ShoppingItems.language(context) }
     val seasonItems by Seasons.items.collectAsState()
     val seasonIdeas by Seasons.ideas.collectAsState()
@@ -165,13 +156,7 @@ fun MonthSheet(month: Int, onDismiss: () -> Unit) {
                 Row(Modifier.fillMaxWidth().padding(bottom = Space.s1), horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
                     rowItems.forEach { item ->
                         Column(
-                            Modifier.weight(1f).tapCard {
-                                scope.launch {
-                                    farms.showProduct(item.label(language), item.terms, location, radiusKm)
-                                    onDismiss()
-                                    shell.showTab(AppTab.MAP)
-                                }
-                            },
+                            Modifier.weight(1f).tapCard { openProduct = item },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(Space.s2),
                         ) {
@@ -198,6 +183,9 @@ fun MonthSheet(month: Int, onDismiss: () -> Unit) {
             }
         }
     }
+    openProduct?.let { item ->
+        ProductBottomSheet(item.slug, fallbackLabel = item.label(language), fallbackEmoji = item.emoji) { openProduct = null }
+    }
 }
 
 /// Full-width cards that snap one per page, with dots. The Nime "For you"
@@ -222,7 +210,11 @@ fun <T> CardCarousel(items: List<T>, content: @Composable (T) -> Unit) {
 /// Image, kicker, title, body, and one button that puts the ingredients on
 /// the shopping list. Shared by the season ideas and the tips.
 @Composable
-fun IdeaCard(kicker: String?, title: String, text: String, image: String, fallback: String, ingredients: List<String>) {
+fun IdeaCard(
+    kicker: String?, title: String, text: String, image: String, fallback: String, ingredients: List<String>,
+    /// Shown when `image` is not bundled (a recipe picture not generated yet).
+    fallbackImage: String? = null,
+) {
     val context = LocalContext.current
     val trip = LocalTrip.current
     val language = remember { ShoppingItems.language(context) }
@@ -247,7 +239,7 @@ fun IdeaCard(kicker: String?, title: String, text: String, image: String, fallba
         Modifier.fillMaxSize().background(FarmsyColors.surface, CardShape).padding(Space.s5),
         verticalArrangement = Arrangement.spacedBy(Space.s3),
     ) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { ProductImage(image, fallback, 160.dp, corner = Radius.tile) }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { ProductImage(image, fallback, 160.dp, corner = Radius.tile, fallbackSlug = fallbackImage) }
         if (kicker != null) Text(kicker.uppercase(), style = role(TextRole.LABEL), color = FarmsyColors.farmGreen)
         Text(title, style = role(TextRole.HEADING), color = FarmsyColors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(text, style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted, maxLines = 4, overflow = TextOverflow.Ellipsis)

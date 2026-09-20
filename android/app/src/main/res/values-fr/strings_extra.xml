@@ -301,6 +301,21 @@
     <string name="check_connection">Vérifiez votre connexion et réessayez.</string>
     <string name="nothing_new_yet">Rien de nouveau pour l\'instant</string>
     <string name="nothing_new_yet_sub">Les publications et découvertes des fermes près de chez vous arrivent ici. Autorisez la localisation, ou revenez plus tard.</string>
+
+    <!-- Product sheet: one page per product (iOS ProductSheet). -->
+    <string name="how_to_choose">Comment choisir</string>
+    <string name="keeping">Conserver</string>
+    <string name="preserving">Conserves</string>
+    <string name="grandmothers_tip">Le conseil de grand-mère</string>
+    <string name="goes_with">Se marie avec</string>
+    <string name="peak_legend">Pleine saison</string>
+    <string name="at_its_best_now">Au top en ce moment</string>
+    <string name="not_in_season_now">Pas de saison en ce moment</string>
+    <string name="find_nearby">Trouver près de moi</string>
+    <string name="add_to_list">Ajouter à ma liste</string>
+    <string name="about_days_arg">Environ %1$d jours</string>
+    <string name="no_profile_yet">Pas encore de fiche pour ce produit.</string>
+    <string name="recipe_of_the_week">Recette de la semaine</string>
     <string name="push_channel_alerts">Alertes des fermes</string>
     <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
 </resources>

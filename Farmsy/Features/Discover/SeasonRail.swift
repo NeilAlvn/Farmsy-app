@@ -114,6 +114,7 @@ struct MonthSheet: View {
     @Environment(LocationManager.self) private var locationManager
     @AppStorage("searchRadiusKm") private var radiusKm = 15.0
     @State private var seasons = Seasons.shared
+    @State private var openProduct: SeasonalItem?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -131,12 +132,7 @@ struct MonthSheet: View {
                         ForEach(items) { item in
                             Button {
                                 Haptics.tap()
-                                Task {
-                                    await farms.showProduct(label: item.label, terms: item.terms,
-                                                            userLocation: locationManager.location, radiusKm: radiusKm)
-                                    dismiss()
-                                    shell.showTab(.map)
-                                }
+                                openProduct = item
                             } label: {
                                 VStack(spacing: Space.s2) {
                                     ZStack(alignment: .topTrailing) {
@@ -165,6 +161,12 @@ struct MonthSheet: View {
             }
         }
         .background(Color.cream.ignoresSafeArea())
+        .sheet(item: $openProduct) { item in
+            ProductSheet(slug: item.slug, fallbackLabel: item.label, fallbackEmoji: item.emoji)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
     }
 }
 
@@ -212,6 +214,8 @@ struct IdeaCard: View {
     let title: String
     let text: String
     let image: String
+    /// Shown when `image` is not bundled (a recipe picture not generated yet).
+    var fallbackImage: String? = nil
     let fallback: String
     let ingredients: [String]
 
@@ -239,7 +243,7 @@ struct IdeaCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            ProductImage(slug: image, fallback: fallback, size: 160, corner: Radius.tile)
+            ProductImage(slug: image, fallbackSlug: fallbackImage, fallback: fallback, size: 160, corner: Radius.tile)
                 .frame(maxWidth: .infinity)
             if let kicker {
                 Text(kicker).role(.label, .farmGreen).textCase(.uppercase)

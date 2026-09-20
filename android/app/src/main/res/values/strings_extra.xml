@@ -299,6 +299,21 @@
     <string name="check_connection">Check your connection and try again.</string>
     <string name="nothing_new_yet">Nothing new yet</string>
     <string name="nothing_new_yet_sub">Posts and finds from farms near you land here. Allow location, or check back later.</string>
+
+    <!-- Product sheet: one page per product (iOS ProductSheet). -->
+    <string name="how_to_choose">How to choose</string>
+    <string name="keeping">Keeping</string>
+    <string name="preserving">Preserving</string>
+    <string name="grandmothers_tip">Grandmother\'s tip</string>
+    <string name="goes_with">Goes with</string>
+    <string name="peak_legend">Peak</string>
+    <string name="at_its_best_now">At its best now</string>
+    <string name="not_in_season_now">Not in season now</string>
+    <string name="find_nearby">Find nearby</string>
+    <string name="add_to_list">Add to list</string>
+    <string name="about_days_arg">About %1$d days</string>
+    <string name="no_profile_yet">No profile for this product yet.</string>
+    <string name="recipe_of_the_week">Recipe of the week</string>
     <string name="push_channel_alerts">Farm alerts</string>
     <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>
