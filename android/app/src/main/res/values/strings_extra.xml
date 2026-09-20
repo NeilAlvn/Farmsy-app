@@ -239,6 +239,42 @@
     <string name="farms_search_placeholder">Search farms by name or place</string>
     <string name="no_farm_matches">No farm matches</string>
     <string name="try_fewer_words">Try fewer words, or clear a chip.</string>
+
+    <!-- Community: Reports / Leaderboard tabs, report portal, badges -->
+    <string name="community_tab_reports">Reports</string>
+    <string name="community_tab_leaderboard">Leaderboard</string>
+    <string name="report_portal_title">What did you see today?</string>
+    <string name="report_portal_sub">Open, closed, sold out, and what was on the shelf. One tap helps everyone after you.</string>
+    <string name="leaderboard_intro">The people who keep the map honest. Reports count; confirmations and photos earn badges.</string>
+    <string name="all_time">All time</string>
+    <string name="this_month">This month</string>
+    <string name="no_reports_yet">No reports yet</string>
+    <string name="no_reports_yet_sub">The first person to report a farm tops this list.</string>
+    <string name="report_a_farm">Report a farm</string>
+    <string name="you_reports_arg">You: %1$d reports · %2$d farms</string>
+    <string name="you_badge">YOU</string>
+    <string name="farms_badges_arg">%1$d farms · %2$d badges</string>
+    <string name="reports_label">reports</string>
+    <string name="what_did_you_see">What did you see?</string>
+    <string name="report_sent_body">Everyone deciding whether to drive there today can see it now.</string>
+    <string name="which_farm">Which farm?</string>
+    <string name="allow_location_or_search">Allow location to see the farms around you, or search by name.</string>
+    <string name="badge_first_report">First report</string>
+    <string name="badge_early_bird">Early bird</string>
+    <string name="badge_confirmer">Confirmer</string>
+    <string name="badge_explorer">Explorer</string>
+    <string name="badge_shelf_scout">Shelf scout</string>
+    <string name="badge_photographer">Photographer</string>
+    <string name="badge_regular">Regular</string>
+    <string name="badge_collector">Collector</string>
+    <string name="badge_rule_first_report">Tell the app whether a farm was open, once.</string>
+    <string name="badge_rule_early_bird">Be the first to report a farm that day, five times.</string>
+    <string name="badge_rule_confirmer">Confirm what someone else reported that day, ten times.</string>
+    <string name="badge_rule_explorer">Report at ten different farms.</string>
+    <string name="badge_rule_shelf_scout">Say what was on the shelf in 25 reports.</string>
+    <string name="badge_rule_photographer">Post a photo from a farm.</string>
+    <string name="badge_rule_regular">Report in four different weeks.</string>
+    <string name="badge_rule_collector">Save five farms.</string>
     <string name="push_channel_alerts">Farm alerts</string>
     <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

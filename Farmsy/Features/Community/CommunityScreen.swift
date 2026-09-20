@@ -18,6 +18,21 @@ struct CommunityScreen: View {
     @State private var lightbox: LightboxSource?
     @State private var recent = RecentReports.shared
     @State private var confirming: String?
+    @State private var contributions = Contributions.shared
+    @State private var tab: Tab = .reports
+    @State private var boardMonth = false
+    @State private var reporting = false
+
+    enum Tab: String, CaseIterable, Identifiable {
+        case reports, leaderboard
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .reports: String(localized: "Reports")
+            case .leaderboard: String(localized: "Leaderboard")
+            }
+        }
+    }
 
     /// One card per farm + status + Amsterdam day.
     struct ReportGroup: Identifiable {
@@ -72,32 +87,28 @@ struct CommunityScreen: View {
         VStack(spacing: 0) {
             ScreenHeader(String(localized: "Community"))
                 .padding(.top, Space.s2)
+            HStack(spacing: Space.s2) {
+                ForEach(Tab.allCases) { t in
+                    Chip(label: t.title, selected: tab == t) { tab = t }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.bottom, Space.s3)
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: Space.s2) {
-                    SectionHeader(title: String(localized: "Near you"))
-                        .padding(.top, 0)
-                    if loading {
-                        ForEach(0..<3, id: \.self) { _ in
-                            SkeletonBox(cornerRadius: Radius.card).frame(height: 150)
-                        }
-                    } else if feed.isEmpty {
-                        EmptyState(icon: "bubble.left.and.bubble.right",
-                                   title: String(localized: "Nothing posted yet"),
-                                   text: String(localized: "Visit a farm and tell people what you found."),
-                                   action: (String(localized: "Open the map"), { shell.showTab(.map) }))
-                    } else {
-                        ForEach(feed) { entry in
-                            switch entry {
-                            case .ping(let ping): pingCard(ping)
-                            case .report(let group): reportCard(group)
-                            }
-                        }
+                    switch tab {
+                    case .reports: reportsTab
+                    case .leaderboard: leaderboardTab
                     }
                 }
                 .padding(.horizontal, Space.s4)
                 .padding(.bottom, TabBarInset.content)
             }
-            .refreshable { await load(force: true) }
+            .refreshable {
+                await load(force: true)
+                await contributions.refreshLeaderboard()
+            }
         }
         .background(Color.cream.ignoresSafeArea())
         .fullScreenCover(item: $lightbox) { src in
@@ -107,7 +118,125 @@ struct CommunityScreen: View {
             }
             .presentationBackground(.clear)
         }
+        .sheet(isPresented: $reporting) {
+            ReportSheet { await recent.refresh(force: true) }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+        }
         .task { await load() }
+        .task { await contributions.refreshLeaderboard() }
+    }
+
+    // MARK: - Reports tab
+
+    @ViewBuilder
+    private var reportsTab: some View {
+        // The portal: report without opening a farm card first.
+        Button {
+            Haptics.tap()
+            if session.isAuthenticated { reporting = true } else { requestAuth() }
+        } label: {
+            HStack(spacing: Space.s3) {
+                Image(systemName: "door.left.hand.open")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.ink)
+                    .frame(width: 44, height: 44)
+                    .background(Color.vivid, in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "What did you see today?")).role(.subheading)
+                    Text(String(localized: "Open, closed, sold out, and what was on the shelf. One tap helps everyone after you."))
+                        .role(.caption, .inkMuted)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.inkMuted)
+            }
+            .card(soft: true)
+        }
+        .buttonStyle(.plain)
+        SectionHeader(title: String(localized: "Near you"))
+        if loading {
+            ForEach(0..<3, id: \.self) { _ in
+                SkeletonBox(cornerRadius: Radius.card).frame(height: 150)
+            }
+        } else if feed.isEmpty {
+            EmptyState(icon: "bubble.left.and.bubble.right",
+                       title: String(localized: "Nothing posted yet"),
+                       text: String(localized: "Visit a farm and tell people what you found."),
+                       action: (String(localized: "Open the map"), { shell.showTab(.map) }))
+        } else {
+            ForEach(feed) { entry in
+                switch entry {
+                case .ping(let ping): pingCard(ping)
+                case .report(let group): reportCard(group)
+                }
+            }
+        }
+    }
+
+    // MARK: - Leaderboard tab
+
+    private var rows: [LeaderRow] { boardMonth ? contributions.leaderboardMonth : contributions.leaderboard }
+    private var myId: String? { session.session?.user.id.uuidString.lowercased() }
+
+    @ViewBuilder
+    private var leaderboardTab: some View {
+        Text(String(localized: "The people who keep the map honest. Reports count; confirmations and photos earn badges."))
+            .role(.bodySm, .inkMuted)
+        HStack(spacing: Space.s2) {
+            Chip(label: String(localized: "All time"), selected: !boardMonth) { boardMonth = false }
+            Chip(label: String(localized: "This month"), selected: boardMonth) { boardMonth = true }
+        }
+        .padding(.vertical, Space.s2)
+        if rows.isEmpty {
+            EmptyState(icon: "trophy", title: String(localized: "No reports yet"),
+                       text: String(localized: "The first person to report a farm tops this list."),
+                       action: (String(localized: "Report a farm"), { reporting = true }))
+        } else {
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                    leaderRow(rank: i + 1, row: row, me: row.userId == myId)
+                    if i < rows.count - 1 { Divider().overlay(Color.hairline).padding(.leading, 112) }
+                }
+            }
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            if let myId, !rows.contains(where: { $0.userId == myId }), let stats = contributions.stats {
+                Text(String(localized: "You: \(stats.reports) reports · \(stats.farms) farms"))
+                    .role(.caption, .inkMuted)
+                    .padding(.top, Space.s2)
+            }
+        }
+    }
+
+    private func leaderRow(rank: Int, row: LeaderRow, me: Bool) -> some View {
+        let initials = row.name.split(separator: " ").compactMap(\.first).prefix(2).map(String.init).joined()
+        return HStack(spacing: Space.s3) {
+            ZStack {
+                Circle().fill(Color.creamFill).frame(width: 32, height: 32)
+                if rank <= 3 {
+                    Image(systemName: "trophy.fill").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.vivid)
+                } else {
+                    Text(verbatim: "\(rank)").font(.ui(12, .semibold)).foregroundStyle(Color.ink)
+                }
+            }
+            Text(initials.uppercased()).font(.ui(13, .semibold)).foregroundStyle(Color.ink)
+                .frame(width: 40, height: 40).background(Color.creamFill, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: Space.s2) {
+                    Text(row.name).role(.subheading).lineLimit(1)
+                    if me { Badge(text: String(localized: "YOU"), fill: .vivid, ink: .ink) }
+                }
+                Text(String(localized: "\(row.farms) farms · \(row.badges) badges")).role(.caption, .inkMuted)
+            }
+            Spacer(minLength: Space.s2)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(verbatim: "\(row.reports)").role(.subheading)
+                Text(String(localized: "reports")).role(.caption, .inkFaint)
+            }
+        }
+        .padding(.horizontal, Space.s4)
+        .padding(.vertical, Space.s3)
+        .background(me ? Color.farmGreenSoft : Color.clear)
     }
 
     // MARK: - Cards
