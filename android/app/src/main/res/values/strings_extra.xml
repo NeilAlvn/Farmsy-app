@@ -299,4 +299,6 @@
     <string name="check_connection">Check your connection and try again.</string>
     <string name="nothing_new_yet">Nothing new yet</string>
     <string name="nothing_new_yet_sub">Posts and finds from farms near you land here. Allow location, or check back later.</string>
+    <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

@@ -301,4 +301,6 @@
     <string name="check_connection">Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="nothing_new_yet">Noch nichts Neues</string>
     <string name="nothing_new_yet_sub">Beiträge und Funde von Höfen in deiner Nähe landen hier. Erlaube den Standort oder schau später wieder vorbei.</string>
+    <string name="push_channel_alerts">Hof-Benachrichtigungen</string>
+    <string name="confirmed_open_today_arg">Heute bestätigt geöffnet · %1$d</string>
 </resources>

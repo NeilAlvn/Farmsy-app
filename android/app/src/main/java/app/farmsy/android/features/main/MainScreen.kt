@@ -61,6 +61,7 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,8 +87,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.farmsy.android.LocalRequestAuth
+import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.AnalyticsEvent
 import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
@@ -200,6 +203,7 @@ fun MainScreen() {
     var surveyGate by remember { mutableStateOf<SurveyGate?>(null) }
     LaunchedEffect(session.isAuthenticated) {
         surveyGate = SurveyApi.gate(session.accessToken())
+        PushRegistrar.sync(session.session.value?.user?.id, session.accessToken())
     }
     // The arrow points only while there is an unanswered survey to point at — role no
     // longer matters, only `answered`.
@@ -259,6 +263,17 @@ fun MainScreen() {
             openProfile = { showProfile = true },
             openPlus = { requireAuth { showPlus = true } },
         )
+    }
+
+    // A notification tap lands here: open the farm it was about.
+    val farmsForPush = LocalFarms.current
+    val pinCount by farmsForPush.pins.collectAsState()
+    val pendingPush by PushRegistrar.pendingOsmId.collectAsState()
+    LaunchedEffect(pendingPush, pinCount.size) {
+        val id = pendingPush ?: return@LaunchedEffect
+        val pin = farmsForPush.pinForOsmId(id) ?: return@LaunchedEffect
+        PushRegistrar.consumePending()
+        openFarm(pin, AnalyticsValue.Source.WHATS_NEW)
     }
 
     // Partial-detent height per route (fraction of the screen), matching iOS.

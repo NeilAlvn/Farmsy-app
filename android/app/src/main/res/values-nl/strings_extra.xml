@@ -301,4 +301,6 @@
     <string name="check_connection">Controleer je verbinding en probeer het opnieuw.</string>
     <string name="nothing_new_yet">Nog niets nieuws</string>
     <string name="nothing_new_yet_sub">Berichten en vondsten van boerderijen bij jou in de buurt komen hier. Sta locatie toe, of kom later terug.</string>
+    <string name="push_channel_alerts">Meldingen van boerderijen</string>
+    <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>

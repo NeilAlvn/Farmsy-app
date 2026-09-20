@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.gms.google-services")
 }
 
 // Google Maps key from local secrets (never committed):
@@ -130,6 +131,12 @@ dependencies {
     // with purchase options" model (which our lifetime uses) is invisible to Billing 7,
     // so an older SDK silently drops the lifetime package from the offering.
     implementation("com.revenuecat.purchases:purchases:10.13.0")
+
+    // Push (alerts about products and followed farms). The token goes to
+    // POST /api/profile/push-token; the server sends through FCM HTTP v1.
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
     // Crash reporting + product analytics
     implementation("io.sentry:sentry-android:7.20.0")
