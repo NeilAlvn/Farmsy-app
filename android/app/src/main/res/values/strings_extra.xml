@@ -275,4 +275,6 @@
     <string name="badge_rule_photographer">Post a photo from a farm.</string>
     <string name="badge_rule_regular">Report in four different weeks.</string>
     <string name="badge_rule_collector">Save five farms.</string>
+    <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

@@ -277,4 +277,6 @@
     <string name="badge_rule_photographer">Plaats een foto van een boerderij.</string>
     <string name="badge_rule_regular">Meld in vier verschillende weken.</string>
     <string name="badge_rule_collector">Bewaar vijf boerderijen.</string>
+    <string name="push_channel_alerts">Meldingen van boerderijen</string>
+    <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>

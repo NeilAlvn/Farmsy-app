@@ -277,4 +277,6 @@
     <string name="badge_rule_photographer">Publiez une photo d\'une ferme.</string>
     <string name="badge_rule_regular">Signalez sur quatre semaines différentes.</string>
     <string name="badge_rule_collector">Enregistrez cinq fermes.</string>
+    <string name="push_channel_alerts">Alertes des fermes</string>
+    <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
 </resources>
