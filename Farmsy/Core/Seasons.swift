@@ -79,6 +79,9 @@ final class Seasons {
     private(set) var items: [SeasonalItem] = []
     private(set) var ideas: [SeasonIdea] = []
     private(set) var loaded = false
+    /// The last fetch failed; the rail shows a retry instead of a skeleton
+    /// that never ends.
+    private(set) var loadFailed = false
     private var loading: Task<Void, Never>?
 
     private init() {}
@@ -113,8 +116,9 @@ final class Seasons {
             guard let (data, resp) = try? await URLSession.shared.data(from: url),
                   (resp as? HTTPURLResponse)?.statusCode == 200,
                   let decoded = try? JSONDecoder().decode(Payload.self, from: data)
-            else { return }
+            else { await MainActor.run { self?.loadFailed = true }; return }
             await MainActor.run {
+                self?.loadFailed = false
                 self?.items = decoded.items
                 self?.ideas = decoded.ideas ?? []
                 self?.month = decoded.month

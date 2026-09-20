@@ -105,10 +105,18 @@ struct DiscoverScreen: View {
 
     @ViewBuilder
     private var discoverTab: some View {
-        justArrivedSection
-        tipsSection
-        pickYourOwnSection
-        communitySection
+        if !recentLoaded && tips.tips.isEmpty {
+            ForEach(0..<3, id: \.self) { _ in SkeletonBox(cornerRadius: Radius.card).frame(height: 150) }
+        } else {
+            justArrivedSection
+            tipsSection
+            pickYourOwnSection
+            communitySection
+            if recent.isEmpty && tips.tips.isEmpty && pickYourOwn.isEmpty {
+                EmptyState(icon: "leaf", title: String(localized: "Nothing new yet"),
+                           text: String(localized: "Posts and finds from farms near you land here. Allow location, or check back later."))
+            }
+        }
     }
 
     @ViewBuilder

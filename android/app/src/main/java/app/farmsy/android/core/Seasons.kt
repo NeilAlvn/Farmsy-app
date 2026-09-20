@@ -90,6 +90,11 @@ object Seasons {
 
     private var loaded = false
 
+    /// The last fetch failed; the rail shows a retry instead of a skeleton
+    /// that never ends.
+    private val _loadFailed = MutableStateFlow(false)
+    val loadFailed: StateFlow<Boolean> = _loadFailed.asStateFlow()
+
     /// Everything in season in a month, peak first. Unlike `thisMonth` this
     /// keeps the year-round staples (eggs, cheese) out, so a month page is
     /// about what changed.
@@ -109,7 +114,8 @@ object Seasons {
             val resp = httpClient.get("${Backend.WEB_API}/seasons")
             if (resp.status.value != 200) null
             else lenientJson.decodeFromString<SeasonsPayload>(resp.bodyAsText())
-        }.getOrNull() ?: return
+        }.getOrNull() ?: run { _loadFailed.value = true; return }
+        _loadFailed.value = false
         _items.value = payload.items
         _ideas.value = payload.ideas ?: emptyList()
         _month.value = payload.month
