@@ -277,6 +277,26 @@
     <string name="badge_rule_photographer">Plaats een foto van een boerderij.</string>
     <string name="badge_rule_regular">Meld in vier verschillende weken.</string>
     <string name="badge_rule_collector">Bewaar vijf boerderijen.</string>
+
+    <!-- Profile: photo, your contributions, Accessibility sheet -->
+    <string name="your_contributions">Jouw bijdragen</string>
+    <string name="stat_reports">meldingen</string>
+    <string name="stat_farms">boerderijen</string>
+    <string name="stat_badges">badges</string>
+    <string name="change_photo">Foto wijzigen</string>
+    <string name="accessibility">Toegankelijkheid</string>
+    <string name="haptics">Trillingen</string>
+    <string name="haptics_caption">Zet elke trilling in Farmsy uit, ook het tikje als je een boerderij meldt.</string>
+    <string name="android_settings">Android-instellingen</string>
+    <string name="reduce_motion">Beweging verminderen</string>
+    <string name="on">Aan</string>
+    <string name="off">Uit</string>
+    <string name="text_size">Tekstgrootte</string>
+    <string name="default_size">Standaard</string>
+    <string name="open_settings">Instellingen openen</string>
+    <string name="accessibility_caption">Farmsy volgt deze instellingen: decoratieve beweging stopt en de tekst schaalt mee.</string>
+    <string name="earned">Behaald</string>
+    <string name="locked">Vergrendeld</string>
     <string name="push_channel_alerts">Meldingen van boerderijen</string>
     <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>

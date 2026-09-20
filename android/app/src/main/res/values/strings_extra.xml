@@ -275,6 +275,26 @@
     <string name="badge_rule_photographer">Post a photo from a farm.</string>
     <string name="badge_rule_regular">Report in four different weeks.</string>
     <string name="badge_rule_collector">Save five farms.</string>
+
+    <!-- Profile: photo, your contributions, Accessibility sheet -->
+    <string name="your_contributions">Your contributions</string>
+    <string name="stat_reports">reports</string>
+    <string name="stat_farms">farms</string>
+    <string name="stat_badges">badges</string>
+    <string name="change_photo">Change photo</string>
+    <string name="accessibility">Accessibility</string>
+    <string name="haptics">Haptics</string>
+    <string name="haptics_caption">Turns off every vibration in Farmsy, including the tap when you report a farm.</string>
+    <string name="android_settings">Android settings</string>
+    <string name="reduce_motion">Reduce motion</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="text_size">Text size</string>
+    <string name="default_size">Default</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="accessibility_caption">Farmsy follows these: it stops decorative motion and scales its type.</string>
+    <string name="earned">Earned</string>
+    <string name="locked">Locked</string>
     <string name="push_channel_alerts">Farm alerts</string>
     <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

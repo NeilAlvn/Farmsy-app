@@ -73,6 +73,7 @@ import app.farmsy.android.core.Ping
 import app.farmsy.android.core.Review
 import app.farmsy.android.features.whatsnew.FixedImageRow
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 
@@ -475,9 +476,10 @@ private fun openUrl(context: Context, url: String) {
 }
 
 // Haptics — light tap + success, the S8/C8-established platform-View route.
-private fun HapticFeedback.tapTick() = performHapticFeedback(HapticFeedbackType.TextHandleMove)
+private fun HapticFeedback.tapTick() { if (Haptics.enabled) performHapticFeedback(HapticFeedbackType.TextHandleMove) }
 
 private fun android.view.View.successTick() {
+    if (!Haptics.enabled) return
     if (Build.VERSION.SDK_INT >= 30) performHapticFeedback(HapticFeedbackConstants.CONFIRM)
     else performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
 }

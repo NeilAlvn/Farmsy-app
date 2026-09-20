@@ -64,6 +64,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.zIndex
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.geist
 import coil.compose.SubcomposeAsyncImage
 import kotlinx.coroutines.delay
@@ -196,11 +197,11 @@ private fun LightboxContent(source: LightboxSource, onClose: () -> Unit) {
                 index = index,
                 hasMany = hasMany,
                 onCloseTapped = {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     close()
                 },
                 onStep = { delta ->
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     step(delta)
                 },
             )

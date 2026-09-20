@@ -287,7 +287,7 @@ fun Modifier.tapCard(
                 val inExcluded = excludePx != null &&
                     pos.x > size.width - excludePx && pos.y < excludePx
                 if (!inExcluded) {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onTap()
                 }
             })
@@ -357,11 +357,24 @@ fun ExpandableText(
 // MARK: - The primitive kit (iOS UI.swift), measured from Nime and drawn with
 // Farmsy's tokens. The floating tab bar lives with AppTab in features/main.
 
+/// Every vibration in the app checks here first, so the one switch in
+/// Profile → Accessibility turns all of them off (iOS Theme.swift Haptics).
+object Haptics {
+    const val KEY = "hapticsEnabled"
+    private var prefs: android.content.SharedPreferences? = null
+    fun init(context: android.content.Context) {
+        prefs = context.getSharedPreferences("farmsy", android.content.Context.MODE_PRIVATE)
+    }
+    var enabled: Boolean
+        get() = prefs?.getBoolean(KEY, true) ?: true
+        set(value) { prefs?.edit()?.putBoolean(KEY, value)?.apply() }
+}
+
 /// Light tick before an action, matching iOS `Haptics.tap()`.
 @Composable
 fun rememberTapHaptic(): () -> Unit {
     val haptics = LocalHapticFeedback.current
-    return { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+    return { if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
 }
 
 /// Two forms. Large: 28sp title left, icon buttons right — tab roots. Compact:

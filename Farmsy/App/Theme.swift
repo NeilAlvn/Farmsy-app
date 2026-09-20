@@ -182,10 +182,17 @@ struct RingingBell: View {
     }
 }
 
+/// Every vibration in the app goes through here, so the one switch in
+/// Profile → Accessibility turns all of them off.
 enum Haptics {
-    static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-    static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+    static let key = "hapticsEnabled"
+    static var enabled: Bool {
+        get { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+    static func tap() { if enabled { UIImpactFeedbackGenerator(style: .light).impactOccurred() } }
+    static func success() { if enabled { UINotificationFeedbackGenerator().notificationOccurred(.success) } }
+    static func warning() { if enabled { UINotificationFeedbackGenerator().notificationOccurred(.warning) } }
 }
 
 /// Primary pill: ink on white, 56pt. Green is the app's answer, so it is not

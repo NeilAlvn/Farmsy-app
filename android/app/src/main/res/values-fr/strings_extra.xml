@@ -277,6 +277,26 @@
     <string name="badge_rule_photographer">Publiez une photo d\'une ferme.</string>
     <string name="badge_rule_regular">Signalez sur quatre semaines différentes.</string>
     <string name="badge_rule_collector">Enregistrez cinq fermes.</string>
+
+    <!-- Profile: photo, your contributions, Accessibility sheet -->
+    <string name="your_contributions">Vos contributions</string>
+    <string name="stat_reports">signalements</string>
+    <string name="stat_farms">fermes</string>
+    <string name="stat_badges">badges</string>
+    <string name="change_photo">Changer la photo</string>
+    <string name="accessibility">Accessibilité</string>
+    <string name="haptics">Vibrations</string>
+    <string name="haptics_caption">Désactive toutes les vibrations dans Farmsy, y compris le petit retour quand vous signalez une ferme.</string>
+    <string name="android_settings">Réglages Android</string>
+    <string name="reduce_motion">Réduire les animations</string>
+    <string name="on">Activé</string>
+    <string name="off">Désactivé</string>
+    <string name="text_size">Taille du texte</string>
+    <string name="default_size">Par défaut</string>
+    <string name="open_settings">Ouvrir les Réglages</string>
+    <string name="accessibility_caption">Farmsy les respecte : les animations décoratives s\'arrêtent et le texte s\'adapte.</string>
+    <string name="earned">Obtenu</string>
+    <string name="locked">Verrouillé</string>
     <string name="push_channel_alerts">Alertes des fermes</string>
     <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
 </resources>
