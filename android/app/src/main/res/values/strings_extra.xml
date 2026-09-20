@@ -295,4 +295,6 @@
     <string name="accessibility_caption">Farmsy follows these: it stops decorative motion and scales its type.</string>
     <string name="earned">Earned</string>
     <string name="locked">Locked</string>
+    <string name="push_channel_alerts">Farm alerts</string>
+    <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
 </resources>

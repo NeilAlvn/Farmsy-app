@@ -297,4 +297,6 @@
     <string name="accessibility_caption">Farmsy folgt diesen Einstellungen: dekorative Bewegung stoppt und der Text skaliert.</string>
     <string name="earned">Erhalten</string>
     <string name="locked">Gesperrt</string>
+    <string name="push_channel_alerts">Hof-Benachrichtigungen</string>
+    <string name="confirmed_open_today_arg">Heute bestätigt geöffnet · %1$d</string>
 </resources>

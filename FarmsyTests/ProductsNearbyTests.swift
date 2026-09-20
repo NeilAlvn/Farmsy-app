@@ -42,4 +42,32 @@ struct ProductsNearbyTests {
                                             produce: ["a": "kaas"], origin: Self.origin, radiusKm: 15)
         #expect(out.isEmpty)
     }
+
+    /// `category` and `image` must survive the decoder. They are `let`s decoded
+    /// off `/api/shopping/items`; giving them stored defaults would make Swift
+    /// silently drop them (only a warning), and the hand-built items above would
+    /// never catch it. Decode from JSON — the shape the endpoint returns.
+    @Test("decoded category and image arrive; imageSlug prefers image")
+    func decodesNewFields() throws {
+        let json = """
+        {"id":"cheese","nl":"Kaas","en":"Cheese","terms":["cheese","kaas"],"category":"dairy","image":"cheese-tile"}
+        """
+        let item = try JSONDecoder().decode(ShoppingItem.self, from: Data(json.utf8))
+        #expect(item.category == "dairy")
+        #expect(item.image == "cheese-tile")
+        #expect(item.imageSlug == "cheese-tile")
+    }
+
+    /// An older server omits both fields: they decode to nil and imageSlug falls
+    /// back to the id, which is the tile file name for every shopping item.
+    @Test("missing category and image decode to nil, imageSlug falls back to id")
+    func decodesWithoutNewFields() throws {
+        let json = """
+        {"id":"eggs","nl":"Eieren","en":"Eggs","terms":["eggs","eieren"]}
+        """
+        let item = try JSONDecoder().decode(ShoppingItem.self, from: Data(json.utf8))
+        #expect(item.category == nil)
+        #expect(item.image == nil)
+        #expect(item.imageSlug == "eggs")
+    }
 }

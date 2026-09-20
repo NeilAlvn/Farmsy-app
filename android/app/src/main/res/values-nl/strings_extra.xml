@@ -297,4 +297,6 @@
     <string name="accessibility_caption">Farmsy volgt deze instellingen: decoratieve beweging stopt en de tekst schaalt mee.</string>
     <string name="earned">Behaald</string>
     <string name="locked">Vergrendeld</string>
+    <string name="push_channel_alerts">Meldingen van boerderijen</string>
+    <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
 </resources>

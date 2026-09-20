@@ -266,6 +266,8 @@ class SessionStore(private val scope: CoroutineScope) {
             .getOrDefault(emptyList())
 
     suspend fun signOut() {
+        // Drop the device token first, while the access token still works.
+        freshAccessToken()?.let { PushRegistrar.unregister(it) }
         runCatching { supabase.auth.signOut() }
         _session.value = null
         _profile.value = null

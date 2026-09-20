@@ -63,6 +63,10 @@ class FarmsStore(private val scope: CoroutineScope) {
     val filterOpenNow = MutableStateFlow(false)
     val filterOpenSaturday = MutableStateFlow(false)
     val filterOpenSunday = MutableStateFlow(false)
+    /// Plus: only farms a visitor reported open today. The set comes from
+    /// RecentReports; the map hands it over so this store stays network-free.
+    val filterConfirmedToday = MutableStateFlow(false)
+    val confirmedTodayIds = MutableStateFlow<Set<String>>(emptySet())
 
     /// Any of the quick-filter toggles on (Verified / Open today / Automaat /
     /// Zelfpluk / Has photos) — excludes categories and the two axes. Mirrors iOS.
@@ -73,7 +77,7 @@ class FarmsStore(private val scope: CoroutineScope) {
     /// Any of the five Pro groups active (three time filters + the two axis groups,
     /// which moved into Pro per Aviah's later-3). Mirrors iOS anyProFilterOn.
     fun anyProFilterOn(): Boolean =
-        filterOpenNow.value || filterOpenSaturday.value || filterOpenSunday.value ||
+        filterOpenNow.value || filterOpenSaturday.value || filterOpenSunday.value || filterConfirmedToday.value ||
             selectedPlaceTypes.value.isNotEmpty() || selectedMethods.value.isNotEmpty()
 
     fun anyFilterOn(): Boolean =
@@ -103,6 +107,7 @@ class FarmsStore(private val scope: CoroutineScope) {
         filterVerified.value = false; filterOpenToday.value = false
         filterAutomaat.value = false; filterZelfpluk.value = false; filterHasPhotos.value = false
         filterOpenNow.value = false; filterOpenSaturday.value = false; filterOpenSunday.value = false
+        filterConfirmedToday.value = false
         selectedPlaceTypes.value = emptySet(); selectedMethods.value = emptySet()
     }
 
@@ -293,6 +298,7 @@ class FarmsStore(private val scope: CoroutineScope) {
         if (filterOpenNow.value) result = result.filter { FarmFilters.isOpenNow(it.openingHours) }
         if (filterOpenSaturday.value) result = result.filter { FarmFilters.isOpenOnDay(it.openingHours, 5) }
         if (filterOpenSunday.value) result = result.filter { FarmFilters.isOpenOnDay(it.openingHours, 6) }
+        if (filterConfirmedToday.value) { val ids = confirmedTodayIds.value; result = result.filter { it.osmId in ids } }
         if (filterHasPhotos.value) result = result.filter { it.image != null }
         if (filterAutomaat.value) result = result.filter { FarmFilters.looksLikeAutomaat(it.name, it.openingHours) }
         if (filterZelfpluk.value) result = result.filter { FarmFilters.looksLikeZelfpluk(it.name) }
