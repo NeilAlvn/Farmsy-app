@@ -309,18 +309,16 @@ struct ShoppingScreen: View {
     /// (that collided with the pinned action bar's identical CTA); the whole
     /// blurred block is itself the tap target, and the pinned bar is the
     /// visible CTA. Never a padlock on an empty screen.
+    ///
+    /// The blur, the tap target and the accessibility shape now live in
+    /// `LockedSample`, shared with the trip planner's "Shop from a list" sheet.
     private func sampleView(_ plan: ShoppingPlanner.Plan) -> some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text(String(localized: "We found \(plan.coveredCount) of \(picked.count) products at \(plan.picks.count) farms within \(Int(radiusKm)) km."))
-                .role(.heading)
+        LockedSample(
+            coverage: String(localized: "We found \(plan.coveredCount) of \(picked.count) products at \(plan.picks.count) farms within \(Int(radiusKm)) km."),
+            label: String(localized: "See which farms"),
+            onUnlock: openPlusFromSample
+        ) {
             planView
-                .blur(radius: 7)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-                .contentShape(Rectangle())
-                .onTapGesture { openPlusFromSample() }
-                .accessibilityLabel(String(localized: "See which farms"))
-                .accessibilityAddTraits(.isButton)
         }
     }
 

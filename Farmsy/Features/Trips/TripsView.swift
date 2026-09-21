@@ -28,6 +28,11 @@ struct TripsView: View {
     @State private var reorderNote: String?
     @State private var showOriginSearch = false
     @State private var showShoppingList = false
+    /// Set when the shopping-list sheet's lock was tapped: Plus is opened from
+    /// `onDismiss`, once that sheet is really gone (this view is its presenter
+    /// and Plus's, and SwiftUI silently drops a second request from a presenter
+    /// that still has one up).
+    @State private var unlockAfterShoppingList = false
     /// R5 corridor chips read the same served catalogue as the shopping list
     /// (GET /api/shopping/items) — one runtime source, no bundled table.
     @State private var catalogue = ShoppingItems.shared
@@ -96,11 +101,16 @@ struct TripsView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $showShoppingList) {
+        .sheet(isPresented: $showShoppingList, onDismiss: {
+            guard unlockAfterShoppingList else { return }
+            unlockAfterShoppingList = false
+            openPlusFromShoppingList()
+        }) {
             // Plans from the trip's starting point, falling back to where the
             // phone is — a list is worth nothing without somewhere to drive from.
             if let from = trip.originCoord ?? locationManager.location?.coordinate {
-                ShoppingListSheet(origin: from)
+                ShoppingListSheet(origin: from,
+                                  onUnlock: { unlockAfterShoppingList = true; showShoppingList = false })
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             } else {
@@ -516,9 +526,15 @@ struct TripsView: View {
             }
             .blur(radius: 7)
             .allowsHitTesting(false)
+            // Final review #4: hidden and a label on one chain is not a
+            // labelled button — hidden wins and the whole block leaves the
+            // VoiceOver tree. The blurred rows are what's hidden; the
+            // container below is the element that carries the label, the
+            // button trait and the tap.
             .accessibilityHidden(true)
             .contentShape(Rectangle())
             .onTapGesture { openPlusFromSample() }
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "Unlock the route"))
             .accessibilityAddTraits(.isButton)
 
@@ -551,6 +567,15 @@ struct TripsView: View {
         Haptics.tap()
         Observability.capture(.paywallViewed,
                               [AnalyticsProp.trigger: AnalyticsValue.Trigger.routePreview.rawValue])
+        shell.openPlus()
+    }
+
+    /// The shopping-list sheet's lock sells the same thing the Shopping tab's
+    /// does — which farms cover the list — so it reports as that sample, not as
+    /// the route preview. Called from the list sheet's `onDismiss`.
+    private func openPlusFromShoppingList() {
+        Observability.capture(.paywallViewed,
+                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.shoppingSample.rawValue])
         shell.openPlus()
     }
 

@@ -169,6 +169,16 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
         shell.openPlus()
     }
 
+    /// The shopping-list sheet's lock sells which farms cover the list, not the
+    /// route, so it reports as that sample.
+    fun openPlusFromShoppingList() {
+        Observability.capture(
+            AnalyticsEvent.PAYWALL_VIEWED,
+            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.SHOPPING_SAMPLE.key),
+        )
+        shell.openPlus()
+    }
+
     var planTab by remember { mutableStateOf(true) }
     var naming by remember { mutableStateOf(false) }
     var tripName by remember { mutableStateOf("") }
@@ -498,7 +508,15 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     if (showShoppingList) {
         val from = originCoord ?: locationHelper.location.value?.let { LatLng(it.latitude, it.longitude) }
         if (from != null) {
-            ShoppingListSheet(origin = from, onDismiss = { showShoppingList = false })
+            ShoppingListSheet(
+                origin = from,
+                // The list sheet's lock sells the same thing the Shopping tab's
+                // does — which farms cover the list — so it reports as that
+                // sample, not as the route preview. The sheet closes first, the
+                // way iOS has to, so both platforms land on the same screen.
+                onUnlock = { showShoppingList = false; openPlusFromShoppingList() },
+                onDismiss = { showShoppingList = false },
+            )
         } else {
             showShoppingList = false
         }

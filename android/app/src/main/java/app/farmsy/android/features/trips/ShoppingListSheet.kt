@@ -44,11 +44,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
+import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.LanguageStore
 import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.core.ShoppingPlanner
+import app.farmsy.android.features.shopping.LockedSample
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.card
@@ -56,6 +59,10 @@ import app.farmsy.android.ui.theme.geist
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 import java.util.Locale
+
+/// The planner's own radius — `ShoppingPlanner.plan`'s default, spelled here
+/// because the coverage sentence has to name it.
+private const val RADIUS_KM = 25.0
 
 /// "I need eggs, milk and potatoes — where do I drive?" — mirrors iOS
 /// ShoppingListSheet.
@@ -70,9 +77,10 @@ import java.util.Locale
 /// somebody asking for lamb to a beef farm.
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ShoppingListSheet(origin: LatLng, onDismiss: () -> Unit) {
+fun ShoppingListSheet(origin: LatLng, onUnlock: () -> Unit, onDismiss: () -> Unit) {
     val farms = LocalFarms.current
     val trip = LocalTrip.current
+    val session = LocalSession.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -81,6 +89,10 @@ fun ShoppingListSheet(origin: LatLng, onDismiss: () -> Unit) {
     val pins by farms.pins.collectAsState()
     val catalogue by ShoppingItems.items.collectAsState()
     val loadFailed by ShoppingItems.loadFailed.collectAsState()
+    // Collected, not read off the store, so buying Plus mid-session unlocks
+    // this sheet instead of leaving it blurred (final review #2).
+    val profile by session.profile.collectAsState()
+    val hasFullAccess = profile?.hasFullAccess == true
 
     var plan by remember { mutableStateOf<ShoppingPlanner.Plan?>(null) }
     var isPlanning by remember { mutableStateOf(false) }
@@ -112,7 +124,7 @@ fun ShoppingListSheet(origin: LatLng, onDismiss: () -> Unit) {
             val candidates = pins.map {
                 ShoppingPlanner.Candidate(it.osmId, LatLng(it.lat, it.lng), farms.produceFor(it.osmId) ?: "")
             }
-            plan = ShoppingPlanner.plan(wanted = picked, farms = candidates, origin = origin)
+            plan = ShoppingPlanner.plan(wanted = picked, farms = candidates, origin = origin, radiusKm = RADIUS_KM)
             isPlanning = false
         }
     }
@@ -175,65 +187,53 @@ fun ShoppingListSheet(origin: LatLng, onDismiss: () -> Unit) {
                     }
                 }
 
-                // The answer
+                // The answer. Which farms cover the list is the paid half — the
+                // same answer the Shopping tab blurs — so a free visitor gets
+                // the identical locked sample instead of the named farms
+                // (final review #1).
                 plan?.let { p ->
-                    Column(
-                        Modifier.fillMaxWidth().card(16),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        if (p.isEmpty) {
-                            Text(stringResource(R.string.shopping_list_none), style = geist(14.sp), color = FarmsyColors.inkMuted)
-                        } else {
-                            p.picks.forEachIndexed { i, pick ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Box(
-                                        Modifier.size(24.dp).background(FarmsyColors.farmGreenMap, CircleShape),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text("${i + 1}", style = geist(13.sp, FontWeight.Bold), color = Color.White)
-                                    }
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            pins.firstOrNull { it.osmId == pick.osmId }?.name ?: pick.osmId,
-                                            style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink, maxLines = 1,
-                                        )
-                                        Text(
-                                            labels(pick.covers),
-                                            style = geist(13.sp), color = FarmsyColors.inkMuted, maxLines = 2,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        // Said out loud rather than quietly dropped: a list that
-                        // half worked is only useful if you know which half.
-                        if (p.missing.isNotEmpty()) {
-                            Text(
-                                stringResource(R.string.shopping_list_missing_arg, labels(p.missing)),
-                                style = geist(13.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
-                            )
+                    if (hasFullAccess || p.isEmpty) {
+                        ResultCard(p, pins, ::labels)
+                    } else {
+                        LockedSample(
+                            coverage = stringResource(
+                                R.string.shopping_sample_coverage_arg,
+                                p.coveredCount, wanted.size, p.picks.size, RADIUS_KM.toInt(),
+                            ),
+                            label = stringResource(R.string.see_which_farms),
+                            onUnlock = onUnlock,
+                        ) {
+                            ResultCard(p, pins, ::labels)
                         }
                     }
                 }
 
-                // Action
+                // Action. Planning is free (it is what draws the sample);
+                // adding the farms it found to the trip is the paid half, so
+                // for a free visitor the button says what it does and opens Plus.
                 val ready = plan?.isEmpty == false
+                val locked = ready && !hasFullAccess
                 if (isPlanning) {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = FarmsyColors.farmGreen)
                     }
                 } else {
                     PrimaryButton(
-                        if (ready) stringResource(R.string.shopping_list_add_stops_arg, plan!!.picks.size)
-                        else stringResource(R.string.shopping_list_plan),
+                        when {
+                            locked -> stringResource(R.string.see_which_farms)
+                            ready -> stringResource(R.string.shopping_list_add_stops_arg, plan!!.picks.size)
+                            else -> stringResource(R.string.shopping_list_plan)
+                        },
                         enabled = wanted.isNotEmpty(),
                     ) {
-                        if (ready) {
-                            trip.addStops(plan!!.picks.map { it.osmId })
-                            trip.requestFit()
-                            onDismiss()
-                        } else {
-                            buildPlan()
+                        when {
+                            locked -> onUnlock()
+                            ready -> {
+                                trip.addStops(plan!!.picks.map { it.osmId })
+                                trip.requestFit()
+                                onDismiss()
+                            }
+                            else -> buildPlan()
                         }
                     }
                 }
@@ -249,6 +249,54 @@ fun ShoppingListSheet(origin: LatLng, onDismiss: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(4.dp))
+        }
+    }
+}
+
+/// The numbered farms the plan picked, and what it could not find. Drawn sharp
+/// for a member and blurred inside `LockedSample` for everybody else — the same
+/// rows either way, because the sample has to be the real answer.
+@Composable
+private fun ResultCard(
+    plan: ShoppingPlanner.Plan,
+    pins: List<FarmPin>,
+    labels: (List<String>) -> String,
+) {
+    Column(
+        Modifier.fillMaxWidth().card(16),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (plan.isEmpty) {
+            Text(stringResource(R.string.shopping_list_none), style = geist(14.sp), color = FarmsyColors.inkMuted)
+        } else {
+            plan.picks.forEachIndexed { i, pick ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        Modifier.size(24.dp).background(FarmsyColors.farmGreenMap, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("${i + 1}", style = geist(13.sp, FontWeight.Bold), color = Color.White)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            pins.firstOrNull { it.osmId == pick.osmId }?.name ?: pick.osmId,
+                            style = geist(15.sp, FontWeight.SemiBold), color = FarmsyColors.ink, maxLines = 1,
+                        )
+                        Text(
+                            labels(pick.covers),
+                            style = geist(13.sp), color = FarmsyColors.inkMuted, maxLines = 2,
+                        )
+                    }
+                }
+            }
+        }
+        // Said out loud rather than quietly dropped: a list that half worked is
+        // only useful if you know which half.
+        if (plan.missing.isNotEmpty()) {
+            Text(
+                stringResource(R.string.shopping_list_missing_arg, labels(plan.missing)),
+                style = geist(13.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
+            )
         }
     }
 }

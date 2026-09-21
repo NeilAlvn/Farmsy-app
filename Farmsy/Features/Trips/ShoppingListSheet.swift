@@ -19,9 +19,15 @@ struct ShoppingListSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(FarmsStore.self) private var farms
     @Environment(TripStore.self) private var trip
+    @Environment(SessionStore.self) private var session
+    @Environment(\.shell) private var shell
 
     /// The starting point to plan from — the trip's origin, or the device.
     let origin: CLLocationCoordinate2D
+    /// Opening Plus is the presenter's job, not this sheet's: Plus presents from
+    /// `TripsView`, which cannot raise a second sheet while this one is up, so
+    /// the owner dismisses this sheet first and opens Plus on the way out.
+    var onUnlock: () -> Void = {}
 
     @State private var catalogue = ShoppingItems.shared
     @State private var plan: ShoppingPlanner.Plan?
@@ -116,8 +122,32 @@ struct ShoppingListSheet: View {
         }
     }
 
+    /// Which farms cover the list is the paid answer — the same one the Shopping
+    /// tab blurs. This sheet handed it out sharp, named and addable (final
+    /// review #1), so a free visitor now gets the identical locked sample:
+    /// the real coverage sentence, the real rows blurred, the block itself the
+    /// way into Plus.
     @ViewBuilder
     private func result(_ plan: ShoppingPlanner.Plan) -> some View {
+        if session.hasFullAccess || plan.isEmpty {
+            resultCard(plan)
+        } else {
+            LockedSample(
+                coverage: String(localized: "We found \(plan.coveredCount) of \(picked.count) products at \(plan.picks.count) farms within \(Int(Self.radiusKm)) km."),
+                label: String(localized: "See which farms"),
+                onUnlock: openPlusFromSample
+            ) {
+                resultCard(plan)
+            }
+        }
+    }
+
+    /// The planner's own radius — `ShoppingPlanner.plan`'s default, spelled here
+    /// because the coverage sentence has to name it.
+    private static let radiusKm = 25.0
+
+    @ViewBuilder
+    private func resultCard(_ plan: ShoppingPlanner.Plan) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if plan.isEmpty {
                 Text("No farm within 25 km lists any of this.")
@@ -151,8 +181,14 @@ struct ShoppingListSheet: View {
     }
 
     private var actions: some View {
-        VStack(spacing: 10) {
+        // Planning is free (it is what draws the sample); adding the farms it
+        // found to the trip is the paid half, so for a free visitor the button
+        // says what it does — see which farms — and opens Plus.
+        let ready = plan?.isEmpty == false
+        let locked = ready && !session.hasFullAccess
+        return VStack(spacing: 10) {
             Button {
+                if locked { openPlusFromSample(); return }
                 Haptics.tap()
                 if let plan, !plan.isEmpty { addToTrip(plan) } else { buildPlan() }
             } label: {
@@ -160,13 +196,15 @@ struct ShoppingListSheet: View {
                     if isPlanning {
                         ProgressView().tint(.white)
                     } else {
-                        Image(systemName: plan?.isEmpty == false ? "plus" : "sparkles")
+                        Image(systemName: locked ? "lock.fill" : (ready ? "plus" : "sparkles"))
                             .font(.system(size: 13, weight: .semibold))
                     }
                     // Two Text views rather than a ternary inside one: each
                     // literal is then its own catalog key, which a ternary of
                     // interpolated literals is not guaranteed to be.
-                    if let plan, !plan.isEmpty {
+                    if locked {
+                        Text("See which farms").font(.ui(14, .semibold))
+                    } else if let plan, !plan.isEmpty {
                         Text("Add \(plan.picks.count) stops to my trip").font(.ui(14, .semibold))
                     } else {
                         Text("Plan my trip").font(.ui(14, .semibold))
@@ -209,9 +247,16 @@ struct ShoppingListSheet: View {
                                           coord: $0.coordinate,
                                           sells: farms.produceByOsm[$0.osmId] ?? "")
             }
-            plan = ShoppingPlanner.plan(wanted: picked, farms: candidates, origin: origin)
+            plan = ShoppingPlanner.plan(wanted: picked, farms: candidates, origin: origin, radiusKm: Self.radiusKm)
             isPlanning = false
         }
+    }
+
+    /// The one place this sheet opens Plus — the locked sample block and the
+    /// locked action button both come here.
+    private func openPlusFromSample() {
+        Haptics.tap()
+        onUnlock()
     }
 
     private func addToTrip(_ plan: ShoppingPlanner.Plan) {

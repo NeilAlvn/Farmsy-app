@@ -1,7 +1,6 @@
 package app.farmsy.android.features.shopping
 
 import android.content.Context
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,15 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -311,7 +306,21 @@ fun ShoppingScreen() {
                                         farms.pinForOsmId(osmId)?.let { shell.openFarm(it) }
                                     }, onSwap = { swapping = it }, km = ::km)
                                 } else if (p != null && !p.isEmpty) {
-                                    ShoppingSample(p, picked.size, radiusKm, ::labels, ::km, onUnlock = ::openPlusFromSample)
+                                    // The free sample: the real coverage sentence, plus the real
+                                    // stop rows blurred. No button drawn on top (that collided
+                                    // with the pinned action bar's identical CTA); the whole
+                                    // blurred block is the tap target, the pinned bar is the
+                                    // visible CTA. Shared with the trip planner's list sheet.
+                                    LockedSample(
+                                        coverage = stringResource(
+                                            R.string.shopping_sample_coverage_arg,
+                                            p.coveredCount, picked.size, p.picks.size, radiusKm.toInt(),
+                                        ),
+                                        label = stringResource(R.string.see_which_farms),
+                                        onUnlock = ::openPlusFromSample,
+                                    ) {
+                                        PlanView(p, picked.size, ::labels, onOpen = {}, onSwap = {}, km = ::km, locked = true)
+                                    }
                                 } else if (isPlanning) {
                                     // The planner runs for everyone the moment `n` is known, so this
                                     // is just the gap before it lands — never shown once planning
@@ -506,7 +515,6 @@ private fun PlanView(
     /// whole thing is cleared from the accessibility tree rather than read
     /// out from behind the blur.
     locked: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
     val farms = LocalFarms.current
     if (plan == null) {
@@ -517,10 +525,7 @@ private fun PlanView(
         Text(stringResource(R.string.shopping_nothing_covers), style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)
         return
     }
-    Column(
-        modifier.then(if (locked) Modifier.clearAndSetSemantics {} else Modifier),
-        verticalArrangement = Arrangement.spacedBy(Space.s2),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
         plan.picks.forEachIndexed { i, pick ->
             val pin = farms.pinForOsmId(pick.osmId)
             Column(Modifier.fillMaxWidth().background(FarmsyColors.creamFill, TileShape).padding(Space.s3), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
@@ -549,47 +554,3 @@ private fun PlanView(
     }
 }
 
-/// The free sample: the real coverage sentence, plus the real stop rows
-/// blurred — looking is free, the farms are Plus. No button drawn on top
-/// (that collided with the pinned action bar's identical CTA); the whole
-/// blurred block is itself the tap target, and the pinned bar is the visible
-/// CTA. Never a padlock on an empty screen.
-@Composable
-private fun ShoppingSample(
-    plan: ShoppingPlanner.Plan,
-    total: Int,
-    radiusKm: Double,
-    labels: (List<String>) -> List<String>,
-    km: (String) -> Double?,
-    onUnlock: () -> Unit,
-) {
-    // Modifier.blur() needs a RenderEffect, API 31+; older devices get a flat
-    // scrim over the same content instead of no obscuring at all.
-    val hide = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Modifier.blur(7.dp)
-    } else {
-        Modifier.drawWithContent {
-            drawContent()
-            drawRect(FarmsyColors.surface.copy(alpha = 0.85f))
-        }
-    }
-    val seeWhichFarms = stringResource(R.string.see_which_farms)
-    Column(verticalArrangement = Arrangement.spacedBy(Space.s3)) {
-        Text(
-            stringResource(R.string.shopping_sample_coverage_arg, plan.coveredCount, total, plan.picks.size, radiusKm.toInt()),
-            style = role(TextRole.HEADING), color = FarmsyColors.ink,
-        )
-        Box(
-            Modifier
-                // The wrapped `PlanView` clears its own semantics (it's the
-                // child, this `Box` is the parent, so that clear doesn't
-                // reach up here) — without an explicit name this node would
-                // reach TalkBack as an unnamed button; `onClickLabel` alone is
-                // only the action hint, not the name.
-                .semantics { contentDescription = seeWhichFarms }
-                .clickable(onClickLabel = seeWhichFarms, role = Role.Button, onClick = onUnlock),
-        ) {
-            PlanView(plan, total, labels, onOpen = {}, onSwap = {}, km = km, locked = true, modifier = hide)
-        }
-    }
-}
