@@ -19,6 +19,7 @@ struct TripsView: View {
     @Environment(LocationManager.self) private var locationManager
     @Environment(SessionStore.self) private var session
     @Environment(TripStore.self) private var trip
+    @Environment(\.shell) private var shell
 
     @State private var tab: Tab = .plan
     @State private var naming = false
@@ -37,6 +38,9 @@ struct TripsView: View {
     /// A route needs at least two points — either a starting point + one farm, or
     /// two farms.
     private var canRoute: Bool { (trip.originCoord != nil && stops.count >= 1) || stops.count >= 2 }
+    /// Task 4: looking is free, ordering stops and drawing the road is Plus. A
+    /// single stop is a plain directions request either way, so it stays free.
+    private var isLocked: Bool { TripStore.isRouteLocked(hasFullAccess: session.hasFullAccess, stopCount: stops.count) }
     private var pinIndex: [String: FarmPin] {
         Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -67,10 +71,15 @@ struct TripsView: View {
             }
         }
         .background(Color.cream.ignoresSafeArea())
-        .task { await trip.refreshRoute(pins: pinIndex) }
+        .task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) }
         .task { if let uid { await trip.loadTrips(userId: uid) } }
         .task { await catalogue.loadIfNeeded() }
-        .onChange(of: trip.stopIds) { _, _ in Task { await trip.refreshRoute(pins: pinIndex) } }
+        .onChange(of: trip.stopIds) { _, _ in Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) } }
+        // Fix round 1 #1: buying Plus mid-session flips `isLocked` without the
+        // stops changing, so the route fetch above never re-fires on its own —
+        // the sheet would stay unblurred but with a nil/never-fetched route.
+        // Re-key on the lock flag too.
+        .onChange(of: isLocked) { _, _ in Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) } }
         .alert("Name your trip", isPresented: $naming) {
             TextField("My weekend trip", text: $tripName)
             Button("Save") { Task { await save() } }
@@ -80,7 +89,7 @@ struct TripsView: View {
             PlaceSearchSheet(
                 onPick: { coord, label in
                     trip.setOrigin(coord, label: label)   // flies via fitToken
-                    Task { await trip.refreshRoute(pins: pinIndex) }
+                    Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) }
                     withAnimation { detent = .fraction(0.5) }
                 },
                 onLocate: { Task { await locate() } })
@@ -312,9 +321,21 @@ struct TripsView: View {
                     Divider()
                     ScrollView(showsIndicators: true) {
                         VStack(spacing: 0) {
-                            ForEach(0..<rows, id: \.self) { i in
-                                if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
-                                if i < rows - 1 { Divider().padding(.leading, 60) }
+                            if isLocked {
+                                // Task 4: the first stop is a real, interactive row like
+                                // any other. Farmsy ordering the rest and drawing the
+                                // road between them is the Plus work, so those rows —
+                                // real, not placeholders — are blurred behind one unlock
+                                // row rather than hidden outright (never a padlock on an
+                                // empty screen).
+                                filledRow(i: 0, pin: stops[0])
+                                if rows > 1 { Divider().padding(.leading, 60) }
+                                lockedStopsBlock(rows: rows)
+                            } else {
+                                ForEach(0..<rows, id: \.self) { i in
+                                    if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
+                                    if i < rows - 1 { Divider().padding(.leading, 60) }
+                                }
                             }
                         }
                         // R4 · farms on the way. Shown once there's a road to measure
@@ -360,8 +381,10 @@ struct TripsView: View {
 
             // "Best order" only when expanded — at the small detent every point of
             // height matters for keeping the header and actions on screen.
+            // Fix round 1 #3: reordering IS the paid work, so a locked trip opens
+            // Plus instead of running it for free.
             if !collapsed, stops.count >= 3 {
-                Button { reorder() } label: {
+                Button { if isLocked { openPlusFromSample() } else { reorder() } } label: {
                     Text("Best order").font(.ui(14, .semibold)).foregroundStyle(Color.farmGreen)
                 }.buttonStyle(.plain)
             }
@@ -378,13 +401,20 @@ struct TripsView: View {
     private var planActions: some View {
         VStack(spacing: 10) {
             modeSelector
-            totalsBar
+            // Task 4: the totals are the full ordered route's answer — Plus
+            // work — so the line is left out entirely for a locked trip rather
+            // than shown with a blurred/fake distance.
+            if !isLocked { totalsBar }
             HStack(spacing: 10) {
-                outlineButton("Save trip", icon: "bookmark") { naming = true; tripName = "" }
-                    .disabled(stops.isEmpty)
+                outlineButton("Save trip", icon: "bookmark") {
+                    if isLocked { openPlusFromSample(); return }
+                    naming = true; tripName = ""
+                }
+                .disabled(stops.isEmpty)
                 filledButton("Show route", icon: "location.north.fill") {
+                    if isLocked { openPlusFromSample(); return }
                     Task {
-                        await trip.refreshRoute(pins: pinIndex)
+                        await trip.refreshRoute(pins: pinIndex, locked: isLocked)
                         // Fly the map to frame the whole route once it's computed,
                         // so the user sees where the trip actually goes.
                         trip.requestFit()
@@ -393,8 +423,11 @@ struct TripsView: View {
                 }
                 .disabled(!canRoute)
             }
-            outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") { openGoogleMaps() }
-                .disabled(stops.isEmpty)
+            outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") {
+                if isLocked { openPlusFromSample(); return }
+                openGoogleMaps()
+            }
+            .disabled(stops.isEmpty)
         }
     }
 
@@ -404,7 +437,7 @@ struct TripsView: View {
                 Button {
                     Haptics.tap()
                     trip.setMode(m)
-                    Task { await trip.refreshRoute(pins: pinIndex) }
+                    Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) }
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: m.icon).font(.system(size: 13, weight: .semibold))
@@ -460,6 +493,65 @@ struct TripsView: View {
             Spacer()
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
+    }
+
+    /// Task 4's free sample: every row from the second stop on, drawn for real
+    /// and blurred — never a padlock on an empty screen — with one unlock row
+    /// underneath. The whole blurred block is also a tap target, so both paths
+    /// go through the same `openPlusFromSample()` as the button.
+    private func lockedStopsBlock(rows: Int) -> some View {
+        // Fix round 1 #4 put the sentence + button on top of the blur instead
+        // of below it (which sat unreachable inside the stop list's own
+        // ScrollView). Fix round 2: at the sheet's half-open detent that
+        // ScrollView only has ~120pt below the first stop, and a centred,
+        // 168pt-tall overlay pushed the button below the visible edge — so
+        // this is now top-aligned and compact: ~8pt padding, a 2-line capped
+        // sentence, an 8pt gap, then the small pill button. ~96pt total.
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                ForEach(1..<rows, id: \.self) { i in
+                    if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
+                    if i < rows - 1 { Divider().padding(.leading, 60) }
+                }
+            }
+            .blur(radius: 7)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+            .contentShape(Rectangle())
+            .onTapGesture { openPlusFromSample() }
+            .accessibilityLabel(String(localized: "Unlock the route"))
+            .accessibilityAddTraits(.isButton)
+
+            // The real, readable control: a soft surface-coloured backing
+            // keeps the sentence legible over the blur; only the stop rows
+            // above are hidden from accessibility, so this text and button
+            // read normally.
+            VStack(spacing: 8) {
+                Text(String(localized: "Your route has \(stops.count) stops. Farmsy Plus orders them and draws the road."))
+                    .font(.ui(12)).foregroundStyle(Color.ink)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                Button(String(localized: "Unlock the route")) { openPlusFromSample() }
+                    .buttonStyle(PillButtonStyle(.primary, size: .small))
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            .padding(.horizontal, 16)
+            .background(Color.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 24)
+        }
+        .frame(minHeight: 104)
+    }
+
+    /// The one place free users open Plus from the route preview — the unlock
+    /// button, the blurred stop block, and the locked Save/Show route/Maps
+    /// actions all call this, so `paywall_viewed` only ever fires from one spot.
+    private func openPlusFromSample() {
+        Haptics.tap()
+        Observability.capture(.paywallViewed,
+                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.routePreview.rawValue])
+        shell.openPlus()
     }
 
     private var totalsBar: some View {
@@ -658,7 +750,7 @@ struct TripsView: View {
             CLLocation(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)).first?.locality)
             ?? String(format: "%.3f, %.3f", loc.coordinate.latitude, loc.coordinate.longitude)
         trip.setOrigin(loc.coordinate, label: label ?? "Here")
-        await trip.refreshRoute(pins: pinIndex)
+        await trip.refreshRoute(pins: pinIndex, locked: isLocked)
         withAnimation { detent = .fraction(0.5) }
     }
 
@@ -667,7 +759,7 @@ struct TripsView: View {
         let saved = trip.optimise(pins: pinIndex)
         reorderNote = saved >= 0.5 ? String(localized: "Reordered · about \(Int(saved)) km shorter")
                                     : String(localized: "Already the shortest order")
-        Task { await trip.refreshRoute(pins: pinIndex) }
+        Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) }
     }
 
     private func save() async {

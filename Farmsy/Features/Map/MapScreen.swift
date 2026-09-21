@@ -18,6 +18,10 @@ struct MapScreen: View {
     /// Visitor reports, for the confirmed-today chip and ring.
     @State private var recent = RecentReports.shared
     private var confirmedToday: Set<String> { recent.confirmedOpenToday }
+    /// Task 4: the same lock the Trips sheet applies — a free user's multi-stop
+    /// trip never asks the server for the ordered road, even when the stop is
+    /// added from the map rather than from the sheet.
+    private var isRouteLocked: Bool { TripStore.isRouteLocked(hasFullAccess: session.hasFullAccess, stopCount: trip.stopIds.count) }
     /// True while an AI-search parse is in flight (spinner in the bar).
     @State private var aiSearching = false
 
@@ -138,9 +142,14 @@ struct MapScreen: View {
         // while the Trips sheet is open. On add, fit the camera to the trip so the
         // whole trace is visible; a single stop just centres on that farm.
         .onChange(of: trip.stopIds) { old, new in
-            Task { await trip.refreshRoute(pins: pinLookup) }
+            let locked = TripStore.isRouteLocked(hasFullAccess: session.hasFullAccess, stopCount: new.count)
+            Task { await trip.refreshRoute(pins: pinLookup, locked: locked) }
             if new.count > old.count { fitToTrip() }
         }
+        // Fix round 1 #1: buying Plus mid-session flips the lock without the
+        // stops changing, so the onChange above never re-fires on its own —
+        // the route would stay nil/never-fetched. Re-key on the lock flag too.
+        .onChange(of: isRouteLocked) { _, _ in Task { await trip.refreshRoute(pins: pinLookup, locked: isRouteLocked) } }
         // An explicit fit request — opening a saved trip, or setting the origin.
         .onChange(of: trip.fitToken) { _, _ in fitToTrip() }
     }

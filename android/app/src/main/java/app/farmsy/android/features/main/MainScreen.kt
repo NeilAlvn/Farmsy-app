@@ -339,6 +339,15 @@ fun MainScreen() {
         if (route != null) { route = null; selectedPin = null; focusPin = null } else tab = AppTab.HOME
     }
 
+    // Task 4 fix round 3: `sheetContent` and the trailing `content` lambda below
+    // are sibling slots in BottomSheetScaffold's own composition — a provider
+    // placed only inside `content` (as this used to be, further down) never
+    // reaches `sheetContent`, so `TripsScreen`'s `LocalShell.current` (and
+    // `FarmDetailScreen`'s, same bug, pre-dating this task) silently resolved
+    // to the default no-op `ShellActions()`. Every `shell.*` call made from
+    // the Trips or Farm sheet — including Task 4's "Unlock the route" —  did
+    // nothing. Wrapping the whole `BottomSheetScaffold` call fixes both.
+    CompositionLocalProvider(LocalShell provides shell) {
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = peek,
@@ -369,7 +378,6 @@ fun MainScreen() {
         // loaded state across switches, which a `when` would drop.
         val pager = rememberPagerState(initialPage = tab.ordinal) { AppTab.entries.size }
         LaunchedEffect(tab) { pager.scrollToPage(tab.ordinal) }
-        CompositionLocalProvider(LocalShell provides shell) {
         Box(Modifier.fillMaxSize().background(FarmsyColors.cream)) {
             HorizontalPager(
                 state = pager, userScrollEnabled = false, beyondViewportPageCount = AppTab.entries.size - 1,
@@ -439,7 +447,7 @@ fun MainScreen() {
                 }
             }
         }
-        }
+    }
     }
 
     if (showProfile) {

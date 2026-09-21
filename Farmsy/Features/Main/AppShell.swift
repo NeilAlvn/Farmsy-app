@@ -101,8 +101,6 @@ struct AppShell: View {
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
-        .environment(\.requestAuth, { showAuth = true })
-        .environment(\.shell, actions)
         // A notification tap lands here: open the farm it was about.
         .onChange(of: push.pendingOsmId, initial: true) { _, osmId in
             guard let osmId, let pin = farms.pin(forOsmId: osmId) else { return }
@@ -124,6 +122,19 @@ struct AppShell: View {
                     .presentationContentInteraction(.scrolls)
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(Radius.sheet)
+                    // Same reason as Profile/Trips below: `FarmStatusSection`'s
+                    // "Confirmed today — see when with Plus" row calls
+                    // `shell.openPlus()` from inside this sheet, which needs
+                    // to present ON TOP of the farm card, not get dropped by
+                    // the same one-sheet-per-presenter limit.
+                    .sheet(isPresented: showPlusInFarmCard) { plusSheetContent() }
+                    // Task 4 fix round 5: the farm card is reachable signed
+                    // out, and `openPlus`'s `requireAuth` else-branch sets
+                    // `showAuth` (not `showPlus`) for a signed-out tap on that
+                    // same "see when with Plus" row — same limit, same fix.
+                    // Dismissing this (on sign-in success) returns to the farm
+                    // card; re-tapping Plus is on the person, no auto-reopen.
+                    .sheet(isPresented: showAuthInFarmCard) { AuthView() }
             }
         }
         .sheet(isPresented: $showProfile) {
@@ -131,6 +142,13 @@ struct AppShell: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
+                // Task 4 fix round 3: SwiftUI can only present one sheet per
+                // presenter at a time, so a sibling `.sheet(isPresented: $showPlus)`
+                // on the root view is silently ignored while this sheet is up.
+                // Nesting it here lets it present ON TOP of Profile instead.
+                // `showPlusInProfile` is one of three views onto the single
+                // `showPlus` (see below); its setter still writes `showPlus`.
+                .sheet(isPresented: showPlusInProfile) { plusSheetContent() }
         }
         .sheet(isPresented: $showTrips) {
             TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
@@ -138,6 +156,11 @@ struct AppShell: View {
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
+                // Same reason as Profile above: nested so the route-preview
+                // "Unlock the route" / "Show route" taps (Task 4) actually open
+                // Plus instead of doing nothing while the trip sheet is up, and
+                // so closing/purchasing returns to the same trip, now unlocked.
+                .sheet(isPresented: showPlusInTrips) { plusSheetContent() }
         }
         .sheet(item: $productSlug) { r in
             ProductSheet(slug: r.slug)
@@ -145,13 +168,73 @@ struct AppShell: View {
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
         }
-        .sheet(isPresented: $showPlus) {
-            ProUpsellSheet()
-                .presentationDetents([.fraction(0.92)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(Radius.sheet)
-        }
-        .sheet(isPresented: $showAuth) { AuthView() }
+        // The root presentation — used when none of Trips, Profile or the farm
+        // card owns the request (every other Plus entry point — Shopping's
+        // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus()`
+        // while no AppShell-owned sheet is up, so this is the one they hit).
+        .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
+        // Root presentation for Auth, same shape as Plus above: used only
+        // when the farm card (the one place signed-out `requireAuth` can
+        // fire while an AppShell sheet is up — see the trace in the fix
+        // round 5 report) doesn't own the request.
+        .sheet(isPresented: showAuthAtRoot) { AuthView() }
+        // Task 4 fix round 4: a sheet's presented content inherits the
+        // environment of the view its `.sheet(...)` modifier is attached to —
+        // and every `.sheet` above is attached to the chain built so far, so
+        // these two have to be the LAST modifiers, after every `.sheet`, or
+        // none of the sheets (Trips, Profile, the farm card, ProductSheet,
+        // the nested Plus sheets) see them and every `shell.*`/`requestAuth`
+        // call from inside one silently reads the environment's default
+        // no-op `ShellActions()` / no-op closure instead. This was also why
+        // `onOpenFarm` had to be passed to `TripsView` as an explicit
+        // parameter rather than read from `\.shell` — the same bug, worked
+        // around in one place instead of fixed at the root.
+        .environment(\.requestAuth, { showAuth = true })
+        .environment(\.shell, actions)
+    }
+
+    /// One source of truth, `showPlus` — presented from whichever surface is
+    /// frontmost. SwiftUI drops a second `.sheet(isPresented:)` request from a
+    /// presenter that already has one up, so the same boolean is exposed as
+    /// four bindings (root / inside Trips / inside Profile / inside the farm
+    /// card), each true only when that surface should own the presentation,
+    /// each writing back to the single `showPlus` on set. Trips, Profile and
+    /// the farm card are mutually exclusive at the root (the same
+    /// one-sheet-per-presenter limit keeps more than one of them from being up
+    /// together), so exactly one of the four is ever true.
+    private var showPlusAtRoot: Binding<Bool> {
+        Binding(get: { showPlus && !showTrips && !showProfile && selectedPin == nil }, set: { showPlus = $0 })
+    }
+    private var showPlusInTrips: Binding<Bool> {
+        Binding(get: { showPlus && showTrips }, set: { showPlus = $0 })
+    }
+    private var showPlusInProfile: Binding<Bool> {
+        Binding(get: { showPlus && showProfile }, set: { showPlus = $0 })
+    }
+    private var showPlusInFarmCard: Binding<Bool> {
+        Binding(get: { showPlus && selectedPin != nil }, set: { showPlus = $0 })
+    }
+
+    /// The same one-source-of-truth split as `showPlus` above, for `showAuth`.
+    /// Only the farm card needs the nested form today (see the fix round 5
+    /// report's trace of every `requestAuth`/`requireAuth` call reachable from
+    /// an AppShell sheet) — Trips can't be reached signed out, and every
+    /// Profile trigger dismisses Profile before asking for auth.
+    private var showAuthAtRoot: Binding<Bool> {
+        Binding(get: { showAuth && selectedPin == nil }, set: { showAuth = $0 })
+    }
+    private var showAuthInFarmCard: Binding<Bool> {
+        Binding(get: { showAuth && selectedPin != nil }, set: { showAuth = $0 })
+    }
+
+    /// The Plus sheet's one content definition, reused by whichever binding
+    /// above is presenting it — never duplicated, so there's still exactly one
+    /// `ProUpsellSheet` and no risk of double-firing its analytics.
+    private func plusSheetContent() -> some View {
+        ProUpsellSheet()
+            .presentationDetents([.fraction(0.92)])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(Radius.sheet)
     }
 
     /// Farm cards open for everyone, signed out included. Opening a farm from

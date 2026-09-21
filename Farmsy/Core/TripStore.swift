@@ -526,7 +526,25 @@ final class TripStore {
         coords.map { String(format: "%.5f,%.5f", $0.latitude, $0.longitude) }.joined(separator: ";")
     }
 
-    func refreshRoute(pins: [String: FarmPin]) async {
+    /// Free users with 2+ stops: ordering the stops and drawing the road between
+    /// them is the Plus work (Task 4). `stopCount` is the trip's farm stops, not
+    /// the leg count — a single farm is always free to route to.
+    ///
+    /// `nonisolated`: a pure function of its two arguments, touching no store
+    /// state — callable from a unit test (or anywhere) without hopping to the
+    /// main actor the rest of this @MainActor class requires.
+    nonisolated static func isRouteLocked(hasFullAccess: Bool, stopCount: Int) -> Bool {
+        !hasFullAccess && stopCount >= 2
+    }
+
+    /// `locked`: the caller has already decided (via `isRouteLocked`) that this
+    /// is a free user's multi-stop trip. Skip the request entirely rather than
+    /// let the server 402 it — and drop any stale line/totals so the locked
+    /// screen never shows the paid answer.
+    func refreshRoute(pins: [String: FarmPin], locked: Bool = false) async {
+        guard !locked else {
+            setRouteLine([]); distanceMeters = nil; durationSeconds = nil; onRoads = false; return
+        }
         let coords = legs(pins: pins)
         guard coords.count >= 2 else {
             setRouteLine([]); distanceMeters = nil; durationSeconds = nil; onRoads = false; return

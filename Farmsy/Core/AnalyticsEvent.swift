@@ -84,6 +84,7 @@ enum AnalyticsValue {
         case filterRow = "filter_row"
         case farmDetail = "farm_detail"
         case shoppingSample = "shopping_sample"
+        case routePreview = "route_preview"
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis
