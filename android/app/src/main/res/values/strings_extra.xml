@@ -42,9 +42,6 @@
     <string name="i_subscribed_on_the_web">I subscribed on the web</string>
     <string name="yearly_arg">Yearly — %1$s/year</string>
     <string name="lifetime_arg">Lifetime — %1$s</string>
-    <string name="one_payment_yours_forever">One payment, yours forever</string>
-    <string name="plan_yearly">Yearly</string>
-    <string name="plan_lifetime">Lifetime</string>
     <string name="price_per_year_arg">%1$s / year</string>
     <string name="first_name">First name</string>
     <string name="last_name">Last name</string>

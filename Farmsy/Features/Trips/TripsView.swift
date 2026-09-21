@@ -359,7 +359,7 @@ struct TripsView: View {
                                 chips: catalogue.items,
                                 selectedProducts: trip.selectedProducts,
                                 onToggleProduct: { trip.toggleCorridorProduct($0) },
-                                onOpenFarm: { pin in onOpenFarm(pin) },
+                                onOpenFarm: { pin in dismiss(); onOpenFarm(pin) },
                                 // toggle changes stopIds, and .onChange(of: trip.stopIds)
                                 // above re-routes — so the farm re-sorts against the new
                                 // road without an explicit refresh here.

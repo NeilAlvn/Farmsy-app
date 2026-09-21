@@ -66,7 +66,6 @@
     <string name="how_should_we_verify_you">How should we verify you?</string>
     <string name="i_ve_upgraded_check_again">I\'ve upgraded — check again</string>
     <string name="invalid_email_or_password">Invalid email or password.</string>
-    <string name="is_arg_yours_claim_it">Is %1$s yours? Claim it</string>
     <string name="is_this_your_farm_claim_it">Is this your farm? Claim it</string>
     <string name="kvk_number">KVK number</string>
     <string name="kvk_number_2">KVK number *</string>
@@ -83,7 +82,6 @@
     <string name="markets">Markets</string>
     <string name="meat">Meat</string>
     <string name="member">Member</string>
-    <string name="members_only">Members only</string>
     <string name="netherlands">Netherlands</string>
     <string name="new_farm_shops_join_farmsy_every_week">New farm shops join Farmsy every week.</string>
     <string name="new_to_farmsy">New to Farmsy?</string>
@@ -136,7 +134,6 @@
     <string name="the_essentials">The essentials</string>
     <string name="too_many_attempts_please_wait_a_few_minutes_and_try_again">Too many attempts. Please wait a few minutes and try again.</string>
     <string name="trial">Trial</string>
-    <string name="unlock_every_farm_s">Unlock every farm\'s </string>
     <string name="use_an_email_address_on_your_farm_s_own_domain_and_we_can_ve">Use an email address on your farm\'s own domain and we can verify you fastest.</string>
     <string name="use_my_location">Use my location</string>
     <string name="verification">Verification</string>
@@ -154,8 +151,6 @@
     <string name="your_account_doesn_t_have_full_access_yet">Your account doesn\'t have full access yet</string>
     <string name="your_full_name">Your full name *</string>
     <string name="your_session_expired_please_sign_in_again">Your session expired — please sign in again.</string>
-    <string name="farm_shops">farm shops</string>
-    <string name="full_story">full story</string>
     <string name="in_review">in review</string>
     <string name="near_you">near you</string>
     <string name="your_location">your location</string>
@@ -343,7 +338,6 @@
     <string name="today">Today</string>
     <string name="tomorrow">Tomorrow</string>
     <string name="farmsy_for_android_arg">Farmsy for Android %1$s</string>
-    <string name="farmsy_pro">Farmsy Pro</string>
     <string name="pro_open_now">Open right now</string>
     <string name="pro_open_saturday">Open Saturday</string>
     <string name="pro_open_sunday">Open Sunday</string>
@@ -375,25 +369,16 @@
     <string name="survey_feedback_more">Add something else</string>
     <string name="survey_feedback_failed">Sending failed. Please try again.</string>
 
-    <!-- S8 LockedAccessView + S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
-    <string name="stat_thousands">1000s</string>
-    <string name="categories">categories</string>
-    <string name="coverage">coverage</string>
-    <string name="membership_expired_title">Your membership has expired</string>
-    <string name="unlock_every_farm">Unlock every farm</string>
-    <string name="lock_body_expired">Resubscribe to reopen opening hours, contact details, photos and more — for %1$s and every other farm on the map.</string>
-    <string name="lock_body_normal">Opening hours, contact details, photos and more — for %1$s and every other farm on the map.</string>
+    <!-- S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
     <string name="memberships_cant_load">Memberships can\'t be loaded right now.</string>
-    <string name="memberships_load_retry">Please check your connection and try again.</string>
     <string name="start_from_my_location">Choose a starting point</string>
-    <string name="saved_trips_pro">Saved trips are a Farmsy Pro feature.</string>
-    <string name="pro_unlock_title">Unlock Farmsy Pro</string>
-    <string name="pro_unlock_sub">Find what is open at this minute, and filter by the kind of place. Cancel anytime.</string>
+    <string name="pro_unlock_title">Farmsy Plus</string>
+    <string name="pro_unlock_sub">Farmsy finds it, plans it, and tells you when it\'s fresh.</string>
     <string name="pro_included_in_both">Included in both plans</string>
-    <string name="pro_feature_open_now">The fewest farms that cover your shopping list, and the route between them</string>
-    <string name="pro_feature_filter">How recently a farm was confirmed open, and by how many people</string>
-    <string name="pro_feature_email">An alert when a product you follow turns up within your radius</string>
-    <string name="pro_feature_everything">Everything new we add to Plus, included</string>
+    <string name="pro_feature_open_now">The farms that cover your shopping list</string>
+    <string name="pro_feature_filter">A route past all of them, in the best order</string>
+    <string name="pro_feature_email">Alerts when your products arrive nearby</string>
+    <string name="pro_feature_everything">Confirmed open today, by people who were just there</string>
     <string name="pro_get_yearly">Get yearly</string>
     <string name="pro_buy_lifetime">Buy lifetime access</string>
     <string name="pro_lifetime_onetime">One-time · no renewals</string>

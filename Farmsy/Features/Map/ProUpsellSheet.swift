@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// A farm-free membership panel — the iOS twin of the web `SubscriptionGateModal`
-/// (title, a line on what Pro is, the four feature lines, the plan buttons, a close).
-/// Presented from a locked Pro filter tap (Aviah later-7, option 2): unlike
-/// `LockedAccessView` it takes no farm, so it can front the Pro filters as well as any
-/// other non-farm upsell. The plan buttons + purchase flow reuse `PlanButton` and the
-/// `PurchaseStore`, identical to `LockedAccessView`. Copy is the web's `account.gate*`
-/// keys, authored here as en catalog strings (not yet in a shared app catalog).
+/// The one Plus sheet, presented everywhere via `shell.openPlus()` — root, Trips,
+/// Profile, farm card. Farm-free: it takes no farm, so it fronts any non-farm upsell
+/// too. Story is "Farmsy finds it, plans it, tells you when it's fresh" (owner
+/// decision, 2026-09-21): finding the right farms, the route, alerts and live
+/// availability are Plus; looking (map, farm details, filters) stays free. The plan
+/// buttons + purchase flow reuse `PlanButton` and the `PurchaseStore`.
 struct ProUpsellSheet: View {
     var onClose: () -> Void = {}
 
@@ -15,22 +14,20 @@ struct ProUpsellSheet: View {
     @Environment(SessionStore.self) private var session
     @State private var isChecking = false
 
-    // Corrected copy — web `account.gateFeature1-4` at bbe3d0d. The old lines sold
-    // saving + trip-planning (both free since 29 Aug) and called the filters
-    // "coming" when they've shipped; Aviah fixed both. Lead with open-now (the line
-    // with numbers behind it).
+    // Owner copy, 2026-09-21: looking is free, Farmsy doing the work is Plus — the
+    // sheet sells finding, planning and freshness, not filters (those are free).
     // String(localized:) rather than bare literals: Text(String) does not look
     // the catalog up, so these four lines were English in every language.
     private let features: [String] = [
-        String(localized: "The fewest farms that cover your shopping list, and the route between them"),
-        String(localized: "How recently a farm was confirmed open, and by how many people"),
-        String(localized: "An alert when a product you follow turns up within your radius"),
-        String(localized: "Everything new we add to Plus, included"),
+        String(localized: "The farms that cover your shopping list"),
+        String(localized: "A route past all of them, in the best order"),
+        String(localized: "Alerts when your products arrive nearby"),
+        String(localized: "Confirmed open today, by people who were just there"),
     ]
 
     /// Poll the profile after a purchase — the grant lands a few seconds after the
-    /// call returns (RevenueCat's webhook writes subscription_status). Same shape as
-    /// LockedAccessView.awaitGrant; on success the sheet closes.
+    /// call returns (RevenueCat's webhook writes subscription_status). On success the
+    /// sheet closes.
     private func awaitGrant() async {
         isChecking = true
         for _ in 0..<12 {
@@ -59,14 +56,14 @@ struct ProUpsellSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    // Header: "Farmsy" kicker + the reason title (a filter tap = unlock).
+                    // Header: "Farmsy" kicker + the one Plus title, everywhere it's sold.
                     Kicker(text: String(localized: "Farmsy"))
                         .padding(.top, 4)
-                    Text("Unlock Farmsy Pro")
+                    Text("Farmsy Plus")
                         .font(.ui(28, .semibold)).foregroundStyle(Color.ink)
                         .multilineTextAlignment(.center)
-                    // Subheading (account.gateSubUnlock) — leads with open-now.
-                    Text("Find what is open at this minute, and filter by the kind of place. Cancel anytime.")
+                    // Subheading — the one Plus story, everywhere it's sold.
+                    Text("Farmsy finds it, plans it, and tells you when it's fresh.")
                         .font(.ui(14)).foregroundStyle(Color.inkMuted)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20)
@@ -143,10 +140,6 @@ struct ProUpsellSheet: View {
                     }
                 }
                 if let price = purchases.lifetimePrice {
-                    // NOTE: Aviah's spec adds a "Best value" badge + a struck-through
-                    // €59.99 anchor to the lifetime card — not expressible in the shared
-                    // single-button PlanButton; flagged as a follow-up (needs custom
-                    // plan cards). Copy + button text are correct here.
                     PlanButton(label: String(localized: "Buy lifetime access"),
                                detail: "\(price) · " + String(localized: "One-time · no renewals"),
                                filled: false) {

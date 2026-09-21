@@ -66,7 +66,6 @@
     <string name="how_should_we_verify_you">Wie sollen wir Sie verifizieren?</string>
     <string name="i_ve_upgraded_check_again">Ich habe aktualisiert — erneut prüfen</string>
     <string name="invalid_email_or_password">Ungültige E-Mail oder Passwort.</string>
-    <string name="is_arg_yours_claim_it">Gehört %1$s Ihnen? Beanspruchen Sie ihn</string>
     <string name="is_this_your_farm_claim_it">Ist das Ihr Hof? Beanspruchen Sie ihn</string>
     <string name="kvk_number">KVK-Nummer</string>
     <string name="kvk_number_2">KVK-Nummer *</string>
@@ -83,7 +82,6 @@
     <string name="markets">Märkte</string>
     <string name="meat">Fleisch</string>
     <string name="member">Mitglied</string>
-    <string name="members_only">Nur für Mitglieder</string>
     <string name="netherlands">Niederlande</string>
     <string name="new_farm_shops_join_farmsy_every_week">Jede Woche kommen neue Hofläden zu Farmsy.</string>
     <string name="new_to_farmsy">Neu bei Farmsy?</string>
@@ -136,7 +134,6 @@
     <string name="the_essentials">Das Wesentliche</string>
     <string name="too_many_attempts_please_wait_a_few_minutes_and_try_again">Zu viele Versuche. Bitte warten Sie einige Minuten und versuchen Sie es erneut.</string>
     <string name="trial">Testversion</string>
-    <string name="unlock_every_farm_s">Entsperren Sie jeden Hof </string>
     <string name="use_an_email_address_on_your_farm_s_own_domain_and_we_can_ve">Verwenden Sie eine E-Mail-Adresse auf der eigenen Domain Ihres Hofes, dann können wir Sie am schnellsten verifizieren.</string>
     <string name="use_my_location">Meinen Standort verwenden</string>
     <string name="verification">Verifizierung</string>
@@ -154,8 +151,6 @@
     <string name="your_account_doesn_t_have_full_access_yet">Ihr Konto hat noch keinen vollständigen Zugriff</string>
     <string name="your_full_name">Ihr vollständiger Name *</string>
     <string name="your_session_expired_please_sign_in_again">Ihre Sitzung ist abgelaufen — bitte melden Sie sich erneut an.</string>
-    <string name="farm_shops">Hofläden</string>
-    <string name="full_story">ganze Geschichte</string>
     <string name="in_review">in Prüfung</string>
     <string name="near_you">in Ihrer Nähe</string>
     <string name="your_location">Ihr Standort</string>
@@ -319,7 +314,6 @@
     <string name="today">Heute</string>
     <string name="tomorrow">Morgen</string>
     <string name="farmsy_for_android_arg">Farmsy für Android %1$s</string>
-    <string name="farmsy_pro">Farmsy Pro</string>
     <string name="pro_open_now">Jetzt geöffnet</string>
     <string name="pro_open_saturday">Samstag geöffnet</string>
     <string name="pro_open_sunday">Sonntag geöffnet</string>
@@ -351,21 +345,16 @@
     <string name="survey_feedback_more">Noch etwas hinzufügen</string>
     <string name="survey_feedback_failed">Senden fehlgeschlagen. Bitte noch einmal versuchen.</string>
 
-    <!-- S8 LockedAccessView + S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
-    <string name="stat_thousands">Tausende</string>
-    <string name="categories">Kategorien</string>
-    <string name="coverage">Abdeckung</string>
-    <string name="membership_expired_title">Deine Mitgliedschaft ist abgelaufen</string>
-    <string name="unlock_every_farm">Alle Höfe freischalten</string>
-    <string name="lock_body_expired">Schließe erneut ab, um Öffnungszeiten, Kontaktdaten, Fotos und mehr zu sehen — für %1$s und jeden anderen Hof auf der Karte.</string>
-    <string name="lock_body_normal">Öffnungszeiten, Kontaktdaten, Fotos und mehr — für %1$s und jeden anderen Hof auf der Karte.</string>
+    <!-- S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
     <string name="memberships_cant_load">Mitgliedschaften können gerade nicht geladen werden.</string>
-    <string name="memberships_load_retry">Prüfe deine Verbindung und versuch es erneut.</string>
     <string name="start_from_my_location">Wähle einen Ausgangspunkt</string>
-    <string name="saved_trips_pro">Gespeicherte Touren sind eine Farmsy-Pro-Funktion.</string>
-    <string name="pro_unlock_title">Farmsy Pro freischalten</string>
-    <string name="pro_unlock_sub">Finde, was in dieser Minute geöffnet ist, und filtere nach Art des Orts. Jederzeit kündbar.</string>
+    <string name="pro_unlock_title">Farmsy Plus</string>
+    <string name="pro_unlock_sub">Farmsy findet es, plant es und sagt dir, wann es frisch ist.</string>
     <string name="pro_included_in_both">In beiden Tarifen enthalten</string>
+    <string name="pro_feature_open_now">Die Höfe, die deine Einkaufsliste abdecken</string>
+    <string name="pro_feature_filter">Eine Route an allen vorbei, in der besten Reihenfolge</string>
+    <string name="pro_feature_email">Ein Hinweis, wenn deine Produkte in deiner Nähe eintreffen</string>
+    <string name="pro_feature_everything">Heute geöffnet, bestätigt von Leuten, die gerade dort waren</string>
     <string name="pro_get_yearly">Jährlich holen</string>
     <string name="pro_buy_lifetime">Lebenslangen Zugang kaufen</string>
     <string name="pro_lifetime_onetime">Einmalig · keine Verlängerung</string>

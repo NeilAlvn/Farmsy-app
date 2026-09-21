@@ -1,10 +1,10 @@
 import SwiftUI
 import MapKit
 
-/// Farm detail. The full payload only exists behind the farmsy.app API's
-/// subscription check — without access we show the locked state instead.
-/// There is intentionally no purchase button or external link in this app;
-/// membership is handled on the Farmsy website.
+/// Farm detail. Looking is free — everyone sees the full farm: address, phone,
+/// opening times, what they sell (owner decision, 2026-09-21). Farmsy doing the
+/// work (finding, routing, alerts, live availability) is Plus, sold from
+/// `shell.openPlus()`, never from this screen.
 struct FarmDetailView: View {
     let pin: FarmPin
 
@@ -30,8 +30,8 @@ struct FarmDetailView: View {
     @State private var galleryLoaded = false
 
     var body: some View {
-        // The card is open to everyone — paid fields are locked *inside* it. The
-        // footer is pinned outside the scroll; everything else scrolls.
+        // The card is open to everyone — nothing in it is locked. The footer is
+        // pinned outside the scroll; everything else scrolls.
         VStack(spacing: 0) {
             pinnedHeader
             ScrollView(showsIndicators: false) {
@@ -599,217 +599,6 @@ struct SocialChip: View {
                 .background(Color.farmGreenSoft, in: Capsule())
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Locked state (no purchase CTA, no external links — by design)
-
-struct LockedAccessView: View {
-    let pin: FarmPin
-    var onClaim: () -> Void = {}
-    var onRecheck: () async -> Void
-
-    @Environment(FarmsStore.self) private var farms
-    @Environment(PurchaseStore.self) private var purchases
-    @Environment(SessionStore.self) private var session
-    @State private var isChecking = false
-
-    /// Access is granted by the server after RevenueCat's webhook writes
-    /// subscription_status — which lands a few seconds *after* the purchase call
-    /// returns. Re-checking once, immediately, races the webhook and finds the
-    /// profile still 'free'. Poll a few times so the screen unlocks on its own
-    /// when the grant lands.
-    private func awaitGrant() async {
-        isChecking = true
-        // Only nudge the profile — FarmDetailView watches it and opens the farm the
-        // moment access appears, so this loop doesn't have to win a race against the
-        // webhook to be correct. It just saves waiting on the next natural refresh.
-        for _ in 0..<12 {
-            await session.refreshProfile()
-            if session.hasFullAccess { break }
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-        }
-        isChecking = false
-    }
-
-    private let emojiGrid = ["🥬", "🥛", "🧀", "🥚", "🥩", "🐟",
-                             "🍯", "🍷", "🧺", "🌱", "🍎", "🥔"]
-
-    /// A returning member whose subscription has lapsed — frame the paywall as a
-    /// "welcome back / resubscribe", not a first-time "become a member".
-    private var isExpired: Bool {
-        let s = session.profile?.subscriptionStatus
-        return session.hasFullAccess == false && (s == "canceled" || s == "expired")
-    }
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 24) {
-                VStack(spacing: 10) {
-                    Kicker(text: isExpired ? String(localized: "Welcome back")
-                                           : String(localized: "Members only"))
-                    DisplayTitle(String(localized: "Unlock every farm's *full story*"), size: 32)
-                }
-                .padding(.top, 30)
-
-                HStack(spacing: 0) {
-                    StatTile(value: farms.pins.isEmpty ? String(localized: "1000s") : "\(farms.pins.count.formatted())+",
-                             caption: String(localized: "farm shops"))
-                    Divider().frame(height: 40)
-                    StatTile(value: "10", caption: String(localized: "categories"))
-                    Divider().frame(height: 40)
-                    StatTile(value: "NL + BE", caption: String(localized: "coverage"))
-                }
-                .card(padding: 14)
-
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 14) {
-                    ForEach(emojiGrid, id: \.self) { e in
-                        Text(e).font(.ui(28))
-                    }
-                }
-                .padding(.horizontal, 6)
-
-                VStack(spacing: 12) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 34))
-                        .foregroundStyle(Color.farmGreen)
-                    Text(isExpired ? "Your membership has expired" : "Unlock every farm")
-                        .font(.ui(19, .bold))
-                        .foregroundStyle(Color.ink)
-                        .multilineTextAlignment(.center)
-                    Text(isExpired
-                         ? "Resubscribe to reopen opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map."
-                         : "Opening hours, contact details, photos and more — for \(pin.name) and every other farm on the map.")
-                        .font(.ui(15))
-                        .foregroundStyle(Color.inkMuted)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(2)
-                }
-                .card(padding: 22)
-
-                if let error = purchases.purchaseError {
-                    Text(error)
-                        .font(.ui(14, .medium))
-                        .foregroundStyle(Color.warnRed)
-                        .multilineTextAlignment(.center)
-                }
-
-                // Buy. The server grants access (RevenueCat webhook writes
-                // subscription_status), so after a purchase we re-ask the API
-                // rather than trusting the client.
-                if purchases.isPurchasing || isChecking {
-                    ProgressView().tint(Color.farmGreen)
-                } else if purchases.productsUnavailable {
-                    // Fetched, but the store handed back nothing to sell (products
-                    // unavailable / rejected, or a network failure). Show a real
-                    // message + retry — never an endless spinner, which reads to a
-                    // reviewer as "can't access subscriptions" (guideline 2.1).
-                    VStack(spacing: 10) {
-                        Text("Memberships can't be loaded right now.")
-                            .font(.ui(15, .semibold))
-                            .foregroundStyle(Color.ink)
-                        Text("This is usually temporary — tap to try again.")
-                            .font(.ui(13))
-                            .foregroundStyle(Color.inkMuted)
-                            .multilineTextAlignment(.center)
-                        Button("Try again") {
-                            Haptics.tap()
-                            Task { await purchases.loadOffering(force: true) }
-                        }
-                        .font(.ui(14, .semibold))
-                        .foregroundStyle(Color.farmGreen)
-                        .padding(.top, 2)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                } else if purchases.yearlyPrice == nil {
-                    // Offering still loading — a spinner, not a half-drawn paywall.
-                    ProgressView().tint(Color.farmGreen)
-                } else {
-                    let uid = session.session?.user.id
-                    // With a trial, lead with the free days and put the price it
-                    // converts to underneath. Without one (a returning subscriber
-                    // isn't eligible, and StoreKit tells us so), just the price — we
-                    // never advertise a trial someone won't actually get.
-                    let trialDays = purchases.yearlyFreeTrialDays
-                    // The two plan cards sit tight together (8pt), then the outer
-                    // stack's larger gap separates them from the terms/restore below.
-                    VStack(spacing: 8) {
-                        PlanButton(
-                            label: trialDays.map { String(localized: "\($0) days free") }
-                                ?? String(localized: "Yearly"),
-                            detail: purchases.yearlyPrice.map { price in
-                                trialDays == nil
-                                    ? String(localized: "\(price) / year")
-                                    : String(localized: "then \(price) / year")
-                            },
-                            filled: true
-                        ) {
-                            Task {
-                                if await purchases.purchase(purchases.yearlyPackage, userId: uid) {
-                                    Haptics.success(); await awaitGrant()
-                                }
-                            }
-                        }
-                        if let price = purchases.lifetimePrice {
-                            PlanButton(label: String(localized: "Lifetime"),
-                                       detail: "\(price) · " + String(localized: "One payment, yours forever"),
-                                       filled: false) {
-                                Task {
-                                    if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
-                                        Haptics.success(); await awaitGrant()
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // The full terms, spelled out before the user can buy: how long
-                    // it's free, what it renews at, and how to get out. A trial that
-                    // quietly turns into a charge is exactly what guideline 3.1.2
-                    // exists to stop — and a rotten way to treat someone besides.
-                    if let days = trialDays, let price = purchases.yearlyPrice {
-                        Text("Free for \(days) days, then \(price) per year. Cancel anytime in Settings.")
-                            .font(.ui(12))
-                            .foregroundStyle(Color.inkMuted)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, 4)
-                    }
-
-                    // Restore only. "I subscribed on the web" removed — the app
-                    // already re-checks the server on open, so web subscribers get
-                    // access without it, and a manual "I paid elsewhere" control
-                    // reads as sketchy next to Apple's own purchase flow.
-                    Button("Restore purchases") {
-                        Haptics.tap()
-                        Task { if await purchases.restore() { await awaitGrant() } }
-                    }
-                    .font(.ui(14, .medium))
-                    .foregroundStyle(Color.inkMuted)
-                }
-
-                // Owners can claim without a membership.
-                Button {
-                    Haptics.tap()
-                    onClaim()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.seal")
-                            .font(.system(size: 13))
-                        Text("Is \(pin.name) yours? Claim it")
-                            .font(.ui(14, .semibold))
-                    }
-                    .foregroundStyle(Color.inkMuted)
-                }
-                .padding(.bottom, 26)
-            }
-            .padding(.horizontal, 20)
-        }
-        .onAppear {
-            Observability.capture(.paywallViewed,
-                                  [AnalyticsProp.trigger: AnalyticsValue.Trigger.farmDetail.rawValue])
-        }
-        .task { await purchases.loadOffering() }
     }
 }
 

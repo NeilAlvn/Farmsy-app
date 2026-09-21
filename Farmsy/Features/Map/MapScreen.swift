@@ -723,21 +723,6 @@ struct FilterSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
-    @Environment(SessionStore.self) private var session
-    @Environment(\.requestAuth) private var requestAuth
-
-    /// The farm-free Pro upsell (Aviah later-7 option 2). Shown when a locked Pro
-    /// filter is tapped by a signed-in non-member; a signed-out tap routes to sign-in
-    /// first (a membership hangs off an account).
-    @State private var showPro = false
-
-    /// The five Pro groups are gated when the account isn't a member — paid on both
-    /// platforms, no exception (Aviah later-8: the Android no-IAP concern was wrong,
-    /// Play IAP works and carries most revenue, so the escalation was withdrawn). The
-    /// time filters were never free; the two axis groups moved into Pro from the rail.
-    /// Time and place-type filters are free now: opening hours are the farm's own
-    /// information, not intelligence. Plus sells matching, routing and alerts.
-    private var proLocked: Bool { false }
 
     var body: some View {
         @Bindable var farms = farms
@@ -795,11 +780,9 @@ struct FilterSheet: View {
                         label: String(localized: "Has photos"), trailing: nil,
                         isOn: farms.filterHasPhotos) { farms.filterHasPhotos.toggle() }
 
-                    // FARMSY PRO — five groups (Aviah's closed set). Shown to
-                    // everyone, dimmed + a lock when the account isn't a member; a
-                    // locked tap opens the upsell (signed out → sign-in first) rather
-                    // than toggling. The three time filters were never free; the two
-                    // axis groups moved into Pro from the free rail.
+                    // Time filters + the two axis groups — free, like every other
+                    // filter (looking is free; Plus sells matching, routing and
+                    // alerts). `proRow` is just `row` under a former name.
                     divider
                     sectionHeader(String(localized: "When and what kind"))
                     proRow(id: AnalyticsValue.Filter.openNow, icon: "clock.badge.checkmark", label: String(localized: "Open right now"),
@@ -809,7 +792,7 @@ struct FilterSheet: View {
                     proRow(id: AnalyticsValue.Filter.openSunday, icon: "calendar", label: String(localized: "Open Sunday"),
                            isOn: farms.filterOpenSunday) { farms.filterOpenSunday.toggle() }
 
-                    // Type of place — an axis group, now Pro. Combines with categories.
+                    // Type of place — an axis group. Combines with categories.
                     divider
                     sectionHeader(String(localized: "Type of place"))
                     ForEach(FarmAxis.placeTypes) { v in
@@ -836,39 +819,16 @@ struct FilterSheet: View {
         .background(Color.cream.ignoresSafeArea())
         // The two new axes read from the flags maps — make sure they're loaded.
         .task { await farms.loadFlagsIfNeeded() }
-        .sheet(isPresented: $showPro) {
-            ProUpsellSheet()
-                .presentationDetents([.fraction(0.7), .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
-        }
     }
 
-    /// A Pro filter row: for a member it behaves like any toggle row; for a non-member
-    /// it renders dimmed with a lock and a tap opens the upsell (signed out → sign-in
-    /// first) instead of toggling — "shown, not hidden" so people see what Pro buys.
-    @ViewBuilder
+    /// A filter row for one of the "When and what kind" / axis groups — plain
+    /// toggle, same as every other row. Kept as its own function (rather than
+    /// inlined `row` calls) since these five groups used to gate on membership;
+    /// that lock is gone (Step 4, 2026-09-21) but the call sites still read well
+    /// grouped under this name.
     private func proRow(id: String, icon: String, label: String, isOn: Bool, toggle: @escaping () -> Void) -> some View {
-        if proLocked {
-            row(icon: icon, emoji: nil, tint: Color.inkMuted, label: label,
-                trailing: nil, isOn: false, lockedTrailing: true) {
-                Haptics.tap()
-                if session.isAuthenticated {
-                    // A signed-in non-member on a locked row: the tap, then the sheet
-                    // it opens. A signed-out tap goes to sign-in, not to a paywall.
-                    Observability.capture(.proFilterTapped, [AnalyticsProp.filter: id])
-                    Observability.capture(.paywallViewed,
-                                          [AnalyticsProp.trigger: AnalyticsValue.Trigger.filterRow.rawValue])
-                    showPro = true
-                } else {
-                    requestAuth()
-                }
-            }
-            .opacity(0.5)
-        } else {
-            row(icon: icon, emoji: nil, tint: Color.inkMuted, label: label,
-                trailing: nil, isOn: isOn) { toggle() }
-        }
+        row(icon: icon, emoji: nil, tint: Color.inkMuted, label: label,
+            trailing: nil, isOn: isOn) { toggle() }
     }
 
     private var divider: some View {
@@ -885,7 +845,7 @@ struct FilterSheet: View {
     }
 
     private func row(icon: String?, emoji: String?, tint: Color, label: String,
-                     trailing: String?, isOn: Bool, lockedTrailing: Bool = false,
+                     trailing: String?, isOn: Bool,
                      action: @escaping () -> Void) -> some View {
         HStack(spacing: 14) {
             ZStack {
@@ -910,12 +870,7 @@ struct FilterSheet: View {
                     .padding(.vertical, 3).padding(.horizontal, 8)
                     .background(Color(hex: 0xF3F4F6), in: Capsule())
             }
-            if lockedTrailing {
-                // A member-only row for a non-member: a lock instead of a checkmark.
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.inkMuted)
-            } else if isOn {
+            if isOn {
                 Image(systemName: "checkmark")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.farmGreenMap)

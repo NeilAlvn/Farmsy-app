@@ -2,6 +2,7 @@ package app.farmsy.android.features.map
 
 import android.app.Activity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -34,8 +35,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,23 +48,23 @@ import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalPurchases
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
-import app.farmsy.android.features.detail.PlanButton
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.FitText
+import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 
-/// A farm-free membership panel — the Android twin of iOS `ProUpsellSheet` and the
-/// web `SubscriptionGateModal` (title, a line on what Pro is, the four feature lines,
-/// the plan buttons, a close). Presented from a locked Pro filter tap (Aviah later-7,
-/// option 2): unlike `LockedAccessView` it takes no farm. The plan buttons use the
+/// The one Plus sheet — the Android twin of iOS `ProUpsellSheet`, presented
+/// everywhere via `LocalShell.current.openPlus`. Farm-free: it takes no farm. Story
+/// is "Farmsy finds it, plans it, tells you when it's fresh" (owner decision,
+/// 2026-09-21): finding the right farms, the route, alerts and live availability are
+/// Plus; looking (map, farm details, filters) stays free. The plan buttons use the
 /// SAME native Play purchase flow (`purchases.purchase(activity, pkg, userId)`) those
 /// 19 Play purchases came through — NOT a web billing URL (Aviah later-8). Copy is the
 /// web's `account.gate*` keys, localized in `pro_*` string resources (nl/fr/de) — P0-7.
-/// (iOS ProUpsellSheet still carries these same strings English-only in its catalog;
-/// flagged to Aviah so the canonical voice can be reconciled + backfilled there.)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProUpsellSheet(onDismiss: () -> Unit) {
@@ -92,9 +96,8 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
         if (session.hasFullAccess) onDismiss()
     }
 
-    // Corrected copy — web `account.gateFeature1-4` at bbe3d0d. The old lines sold
-    // saving + trip-planning (both free since 29 Aug) and called the filters "coming"
-    // when they've shipped; Aviah fixed both. Lead with open-now.
+    // Owner copy, 2026-09-21: looking is free, Farmsy doing the work is Plus — the
+    // sheet sells finding, planning and freshness, not filters (those are free).
     val features = listOf(
         stringResource(R.string.pro_feature_open_now),
         stringResource(R.string.pro_feature_filter),
@@ -111,11 +114,11 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Header: "Farmsy" kicker + the reason title (a filter tap = unlock).
+            // Header: "Farmsy" kicker + the one Plus title, everywhere it's sold.
             Spacer(Modifier.size(4.dp))
             Kicker("Farmsy")
             Text(stringResource(R.string.pro_unlock_title), style = display(28.sp, FontWeight.SemiBold), color = FarmsyColors.ink, textAlign = TextAlign.Center)
-            // Subheading (account.gateSubUnlock) — leads with open-now.
+            // Subheading — the one Plus story, everywhere it's sold.
             Text(
                 stringResource(R.string.pro_unlock_sub),
                 style = geist(14.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center,
@@ -155,10 +158,6 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                             scope.launch { if (purchases.purchase(activity, yearlyPkg, userId)) awaitGrant() }
                         }
                         purchases.lifetimePrice?.let { price ->
-                            // NOTE: Aviah's spec adds a "Best value" badge + a struck-
-                            // through €59.99 anchor to the lifetime card — not expressible
-                            // in the shared single-button PlanButton; flagged as a
-                            // follow-up (needs custom plan cards). Copy is correct here.
                             PlanButton(
                                 label = stringResource(R.string.pro_buy_lifetime),
                                 detail = "$price · ${stringResource(R.string.pro_lifetime_onetime)}",
@@ -171,7 +170,7 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                     }
                     // Trial-terms disclosure (App Review 3.1.2) — only when there is an
                     // actual offer; never rendered for a no-trial user (parity with iOS
-                    // ProUpsellSheet + LockedAccessView).
+                    // ProUpsellSheet).
                     val yPrice = purchases.yearlyPrice
                     if (trialDays != null && yPrice != null) {
                         Text(
@@ -202,6 +201,51 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+/// One purchasable plan — filled primary (yearly) or outlined secondary (lifetime).
+/// iOS PlanButton (FarmDetailView.swift): radius16, filled `farmGreenMap`, outlined
+/// white + `farmGreen@45` 1.5 stroke, vpad16, light haptic. Moved here from the
+/// now-deleted `LockedAccessView.kt` (dead paywall removed 2026-09-21) — this is the
+/// only remaining caller, so it's private rather than internal.
+@Composable
+private fun PlanButton(
+    label: String,
+    detail: String?,
+    filled: Boolean,
+    fallbackLabel: String,
+    onClick: () -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    val fg = if (filled) Color.White else FarmsyColors.farmGreen
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier.fillMaxWidth()
+            .clip(shape)
+            .then(
+                if (filled) Modifier.background(FarmsyColors.farmGreenMap, shape)
+                else Modifier.background(Color.White, shape).border(1.5.dp, FarmsyColors.farmGreen.copy(alpha = 0.45f), shape)
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() }, indication = null,
+            ) { if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        FitText(
+            if (detail == null) fallbackLabel else label,
+            style = geist(17.sp, FontWeight.SemiBold), color = fg,
+            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+        )
+        detail?.let {
+            FitText(
+                it, style = geist(14.sp),
+                color = if (filled) Color.White.copy(alpha = 0.9f) else FarmsyColors.ink,
+                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
