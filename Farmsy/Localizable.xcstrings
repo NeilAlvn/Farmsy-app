@@ -10217,118 +10217,6 @@
         }
       }
     },
-    "Unlock every farm": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Unlock every farm"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ontgrendel elke boerderij"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Débloquez toutes les fermes"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle Höfe freischalten"
-          }
-        }
-      }
-    },
-    "Unlock every farm's ": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Unlock every farm's "
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Débloquez chaque ferme "
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entsperren Sie jeden Hof "
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ontgrendel elke boerderij "
-          }
-        }
-      }
-    },
-    "Unlock every farm's *full story*": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Unlock every farm's *full story*"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ontgrendel het *volledige verhaal* van elke boerderij"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Découvrez *toute l'histoire* de chaque ferme"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entdecke die *ganze Geschichte* jedes Hofs"
-          }
-        }
-      }
-    },
-    "Unlock full details for every farm.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Unlock full details for every farm."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ontgrendel alle details van elke boerderij."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Débloquez tous les détails de chaque ferme."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schalte alle Details jedes Hofs frei."
-          }
-        }
-      }
-    },
     "Use an email address on your farm's own domain and we can verify you fastest.": {
       "localizations": {
         "en": {
@@ -11948,34 +11836,6 @@
         }
       }
     },
-    "full story": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "full story"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "hele verhaal"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ganze Geschichte"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "histoire complète"
-          }
-        }
-      }
-    },
     "https://…": {
       "shouldTranslate": false,
       "localizations": {
@@ -13277,28 +13137,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Heute geöffnet, bestätigt von Leuten, die gerade dort waren"
-          }
-        }
-      }
-    },
-    "Farmsy Plus picks the fewest farms that cover your list and builds the trip.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Farmsy Plus kiest zo min mogelijk boerderijen die je hele lijst dekken en maakt de rit."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste et prépare le trajet."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Farmsy Plus wählt so wenige Höfe wie möglich, die deine Liste abdecken, und plant die Fahrt."
           }
         }
       }
@@ -15499,28 +15337,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Höfe für meine Liste finden"
-          }
-        }
-      }
-    },
-    "Farmsy Plus picks the fewest farms that cover your list and builds the trip. Tap the button below.": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Farmsy Plus kiest zo min mogelijk boerderijen die je hele lijst dekken en maakt de rit. Tik op de knop hieronder."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste et prépare le trajet. Touchez le bouton ci-dessous."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Farmsy Plus wählt so wenige Höfe wie möglich, die deine Liste abdecken, und plant die Fahrt. Tippe auf den Button unten."
           }
         }
       }

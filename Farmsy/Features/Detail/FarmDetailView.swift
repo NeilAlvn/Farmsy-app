@@ -12,7 +12,6 @@ struct FarmDetailView: View {
     @Environment(FavoritesStore.self) private var favorites
     @Environment(FarmsStore.self) private var farms
     @Environment(TripStore.self) private var trip
-    @Environment(\.requestAuth) private var requestAuth
     @Environment(\.dismiss) private var dismiss
 
     @State private var detail: FarmDetail?

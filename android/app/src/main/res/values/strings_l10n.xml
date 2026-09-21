@@ -372,7 +372,6 @@
 
     <!-- S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
     <string name="memberships_cant_load">Memberships can\'t be loaded right now.</string>
-    <string name="start_from_my_location">Choose a starting point</string>
     <string name="pro_unlock_title">Farmsy Plus</string>
     <string name="pro_unlock_sub">Farmsy finds it, plans it, and tells you when it\'s fresh.</string>
     <string name="pro_included_in_both">Included in both plans</string>

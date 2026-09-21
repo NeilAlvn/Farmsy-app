@@ -67,7 +67,6 @@
     <string name="lifetime_never_expires">One payment, never expires. Nothing else to do.</string>
     <string name="upgrade_to_lifetime">Upgrade to Lifetime</string>
     <string name="no_membership_yet">You don\'t have a membership yet</string>
-    <string name="unlock_all_farms">Unlock full details for every farm.</string>
     <string name="manage_subscription">Manage subscription</string>
     <string name="trial_active">Your trial is active</string>
     <string name="membership_ends_arg">Access until %1$s</string>
@@ -213,7 +212,6 @@
     <string name="shopping_add_typed_arg">Add “%1$s”</string>
     <string name="shopping_build_route_stops_arg">Build my route · %1$d stops</string>
     <string name="shopping_find_farms_bar">Find farms for my list</string>
-    <string name="shopping_plus_hint_long">Farmsy Plus picks the fewest farms that cover your list and builds the trip. Tap the button below.</string>
     <string name="shopping_plus_hint_short">Farmsy Plus picks the fewest farms that cover your list. Tap the button below.</string>
     <string name="shopping_coverage_arg">%1$d of %2$d products</string>
     <string name="change_farm">Change farm</string>

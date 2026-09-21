@@ -433,7 +433,11 @@ struct TripsView: View {
                 }
                 .disabled(!canRoute)
             }
-            outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") {
+            // A Maps hand-off that silently becomes a paywall reads as
+            // bait-and-switch, so the locked one wears the padlock. Save trip /
+            // Show route stay as they are — they never promised to leave the app.
+            outlineButton("Open in Google Maps",
+                          icon: isLocked ? "lock.fill" : "arrow.up.forward.square") {
                 if isLocked { openPlusFromSample(); return }
                 openGoogleMaps()
             }
@@ -543,11 +547,14 @@ struct TripsView: View {
             // above are hidden from accessibility, so this text and button
             // read normally.
             VStack(spacing: 8) {
+                // Three lines and a lower floor: the German sentence is ~100
+                // characters and was ellipsised at large text sizes, where
+                // 0.85 of two lines is not enough room for it.
                 Text(String(localized: "Your route has \(stops.count) stops. Farmsy Plus orders them and draws the road."))
                     .font(.ui(12)).foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.7)
                 Button(String(localized: "Unlock the route")) { openPlusFromSample() }
                     .buttonStyle(PillButtonStyle(.primary, size: .small))
             }
@@ -557,7 +564,10 @@ struct TripsView: View {
             .background(Color.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .padding(.horizontal, 24)
         }
-        .frame(minHeight: 104)
+        // 104 + one more caption line (~14pt): the floor a 3-line sentence
+        // needs, and no more — the button sits at the top of the block, so it
+        // stays on screen at the sheet's half-open detent.
+        .frame(minHeight: 118)
     }
 
     /// The one place free users open Plus from the route preview — the unlock

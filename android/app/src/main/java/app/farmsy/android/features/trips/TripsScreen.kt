@@ -396,8 +396,14 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                         enabled = canRoute,
                     ) { if (isLocked) openPlusFromSample() else trip.requestFit() }
                 }
+                // A Maps hand-off that silently becomes a paywall reads as
+                // bait-and-switch, so the locked one wears the padlock. Save
+                // trip / Show route stay as they are — they never promised to
+                // leave the app.
                 OutlineAction(
-                    stringResource(R.string.open_in_google_maps), Icons.Filled.OpenInNew, Modifier.fillMaxWidth(),
+                    stringResource(R.string.open_in_google_maps),
+                    if (isLocked) Icons.Filled.Lock else Icons.Filled.OpenInNew,
+                    Modifier.fillMaxWidth(),
                     enabled = stops.isNotEmpty(),
                 ) { if (isLocked) openPlusFromSample() else openGoogleMaps(context, originCoord, stops, destinationCoord, mode) }
 
@@ -750,7 +756,10 @@ private fun LockedStopsBlock(
     // button below the visible edge — so this is now top-aligned and compact:
     // ~8dp padding, a 2-line capped sentence, an 8dp gap, then the small pill
     // button. ~96dp total.
-    Box(Modifier.fillMaxWidth().heightIn(min = 104.dp)) {
+    // 104 + one more caption line (~14dp): the floor a 3-line sentence needs,
+    // and no more — the button sits at the top of the block, so it stays on
+    // screen at the sheet's half-open detent.
+    Box(Modifier.fillMaxWidth().heightIn(min = 118.dp)) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -787,7 +796,9 @@ private fun LockedStopsBlock(
                 stringResource(R.string.route_stops_locked_arg, stops.size),
                 style = geist(12.sp), color = FarmsyColors.ink,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                // Three lines: the German sentence is ~100 characters and was
+                // ellipsised at large text sizes.
+                maxLines = 3, overflow = TextOverflow.Ellipsis,
             )
             PillButton(unlockLabel, PillVariant.PRIMARY, PillSize.SMALL, onClick = onUnlock)
         }

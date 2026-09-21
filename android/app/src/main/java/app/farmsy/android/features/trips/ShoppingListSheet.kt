@@ -93,6 +93,9 @@ fun ShoppingListSheet(origin: LatLng, onUnlock: () -> Unit, onDismiss: () -> Uni
     // this sheet instead of leaving it blurred (final review #2).
     val profile by session.profile.collectAsState()
     val hasFullAccess = profile?.hasFullAccess == true
+    // The picked list as catalogue items — what the coverage sentence counts
+    // against, the same "of N products" iOS says.
+    val picked = remember(wanted, catalogue) { wanted.mapNotNull { ShoppingItems.item(it) } }
 
     var plan by remember { mutableStateOf<ShoppingPlanner.Plan?>(null) }
     var isPlanning by remember { mutableStateOf(false) }
@@ -120,7 +123,6 @@ fun ShoppingListSheet(origin: LatLng, onUnlock: () -> Unit, onDismiss: () -> Uni
         scope.launch {
             farms.loadFlagsIfNeeded()
             ShoppingItems.loadIfNeeded()
-            val picked = wanted.mapNotNull { ShoppingItems.item(it) }
             val candidates = pins.map {
                 ShoppingPlanner.Candidate(it.osmId, LatLng(it.lat, it.lng), farms.produceFor(it.osmId) ?: "")
             }
@@ -198,7 +200,7 @@ fun ShoppingListSheet(origin: LatLng, onUnlock: () -> Unit, onDismiss: () -> Uni
                         LockedSample(
                             coverage = stringResource(
                                 R.string.shopping_sample_coverage_arg,
-                                p.coveredCount, wanted.size, p.picks.size, RADIUS_KM.toInt(),
+                                p.coveredCount, picked.size, p.picks.size, RADIUS_KM.toInt(),
                             ),
                             label = stringResource(R.string.see_which_farms),
                             onUnlock = onUnlock,
