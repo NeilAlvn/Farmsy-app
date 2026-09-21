@@ -252,9 +252,6 @@ struct ProfileScreen: View {
                             value: language.current == .system ? String(localized: "System") : language.current.name) {
                             showLanguage = true
                         }
-                        Row(icon: "app.badge", title: String(localized: "Notifications")) {
-                            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-                        }
                         Row(icon: "figure.walk", title: String(localized: "Accessibility")) { showAccessibility = true }
                     }
 
@@ -676,7 +673,10 @@ struct MembershipSection: View {
                     Text("You don't have a membership yet")
                         .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
-                    Text("Unlock full details for every farm.")
+                    // Farm details are free now (P0-2). The Plus sell is the
+                    // planning/alerts story, not "unlock the address" — same
+                    // line the paywall uses (ProUpsellSheet.swift).
+                    Text("Farmsy finds it, plans it, and tells you when it's fresh.")
                         .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 }

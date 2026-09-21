@@ -351,12 +351,6 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
                     Icons.Outlined.Language, stringResource(R.string.language),
                     value = if (currentLang == LanguageStore.Lang.SYSTEM) stringResource(R.string.system_default) else currentLang.displayName,
                 ) { showLanguage = true }
-                ListRow(Icons.Outlined.NotificationsActive, stringResource(R.string.notifications)) {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    )
-                }
                 ListRow(Icons.Outlined.DirectionsWalk, stringResource(R.string.accessibility)) { showAccessibility = true }
             }
 
@@ -747,8 +741,10 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
+                    // Farm details are free now (P0-2). Reuse the Plus paywall's own
+                    // planning/alerts line rather than "unlock every farm".
                     Text(
-                        stringResource(R.string.unlock_all_farms),
+                        stringResource(R.string.pro_unlock_sub),
                         style = geist(14.sp), color = FarmsyColors.inkMuted
                     )
                 }
