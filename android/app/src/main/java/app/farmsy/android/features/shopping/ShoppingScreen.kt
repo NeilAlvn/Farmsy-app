@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -219,6 +220,18 @@ fun ShoppingScreen() {
         shell.openTrips()
     }
 
+    /// The one place free users open Plus from Shopping — the pinned action
+    /// bar and the blurred sample block both call this, so `paywall_viewed`
+    /// only ever fires from one spot.
+    fun openPlusFromSample() {
+        tap()
+        Observability.capture(
+            AnalyticsEvent.PAYWALL_VIEWED,
+            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.SHOPPING_SAMPLE.key),
+        )
+        shell.openPlus()
+    }
+
     /// Enter in the search field: the one chip that matches, else a custom item.
     fun addTyped() {
         val text = query.trim()
@@ -298,19 +311,18 @@ fun ShoppingScreen() {
                                         farms.pinForOsmId(osmId)?.let { shell.openFarm(it) }
                                     }, onSwap = { swapping = it }, km = ::km)
                                 } else if (p != null && !p.isEmpty) {
-                                    ShoppingSample(p, picked.size, radiusKm, ::labels, ::km) {
-                                        tap()
-                                        Observability.capture(
-                                            AnalyticsEvent.PAYWALL_VIEWED,
-                                            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.SHOPPING_SAMPLE.key),
-                                        )
-                                        shell.openPlus()
-                                    }
-                                } else {
-                                    // The planner runs for everyone the moment `n` is known,
-                                    // so this is just the gap before it lands.
+                                    ShoppingSample(p, picked.size, radiusKm, ::labels, ::km, onUnlock = ::openPlusFromSample)
+                                } else if (isPlanning) {
+                                    // The planner runs for everyone the moment `n` is known, so this
+                                    // is just the gap before it lands — never shown once planning
+                                    // ends, even if the plan comes back empty (the two matchers,
+                                    // `ShoppingList.matches` for `n` and `ProductMatch.covers` for the
+                                    // plan, can disagree). The effect's keys don't include `plan`, so
+                                    // an empty result here can't retrigger a new plan and get stuck.
                                     SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(88.dp))
                                 }
+                                // Else: planning finished with nothing to show — the count
+                                // sentence above already said so.
                             }
                         }
                         else -> SkeletonBox(cornerRadius = Radius.card, modifier = Modifier.fillMaxWidth().height(88.dp))
@@ -395,12 +407,11 @@ fun ShoppingScreen() {
                     .alpha(if (enabled) 1f else 0.55f)
                     .background(FarmsyColors.ink, PillShape).clip(PillShape)
                     .clickable(enabled = enabled) {
-                        tap()
                         val p = plan
                         when {
-                            !session.hasFullAccess -> shell.openPlus()
-                            p != null && !p.isEmpty -> buildRoute(p)
-                            else -> findFarms()
+                            !session.hasFullAccess -> openPlusFromSample()
+                            p != null && !p.isEmpty -> { tap(); buildRoute(p) }
+                            else -> { tap(); findFarms() }
                         }
                     }
                     .padding(horizontal = Space.s5),
@@ -419,7 +430,8 @@ fun ShoppingScreen() {
                     if (!session.hasFullAccess) stringResource(R.string.see_which_farms)
                     else if (stops > 0) stringResource(R.string.shopping_build_route_stops_arg, stops)
                     else stringResource(R.string.shopping_find_farms_bar),
-                    style = ui(17.sp, FontWeight.SemiBold), color = Color.White, maxLines = 1, modifier = Modifier.weight(1f),
+                    style = ui(17.sp, FontWeight.SemiBold), color = Color.White, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
                 )
                 Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
             }
@@ -538,8 +550,10 @@ private fun PlanView(
 }
 
 /// The free sample: the real coverage sentence, plus the real stop rows
-/// blurred underneath the unlock button — looking is free, the farms are
-/// Plus. Never a padlock on an empty screen.
+/// blurred — looking is free, the farms are Plus. No button drawn on top
+/// (that collided with the pinned action bar's identical CTA); the whole
+/// blurred block is itself the tap target, and the pinned bar is the visible
+/// CTA. Never a padlock on an empty screen.
 @Composable
 private fun ShoppingSample(
     plan: ShoppingPlanner.Plan,
@@ -559,14 +573,14 @@ private fun ShoppingSample(
             drawRect(FarmsyColors.surface.copy(alpha = 0.85f))
         }
     }
+    val seeWhichFarms = stringResource(R.string.see_which_farms)
     Column(verticalArrangement = Arrangement.spacedBy(Space.s3)) {
         Text(
             stringResource(R.string.shopping_sample_coverage_arg, plan.coveredCount, total, plan.picks.size, radiusKm.toInt()),
             style = role(TextRole.HEADING), color = FarmsyColors.ink,
         )
-        Box(contentAlignment = Alignment.Center) {
+        Box(Modifier.clickable(onClickLabel = seeWhichFarms, role = Role.Button, onClick = onUnlock)) {
             PlanView(plan, total, labels, onOpen = {}, onSwap = {}, km = km, locked = true, modifier = hide)
-            PillButton(stringResource(R.string.see_which_farms), PillVariant.PRIMARY, PillSize.SMALL, icon = Icons.Filled.Lock, onClick = onUnlock)
         }
     }
 }

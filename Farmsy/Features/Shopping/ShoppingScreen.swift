@@ -188,9 +188,12 @@ struct ShoppingScreen: View {
     private var actionBar: some View {
         let stops = plan?.picks.count ?? 0
         return Button {
-            Haptics.tap()
-            guard session.hasFullAccess else { shell.openPlus(); return }
-            if let plan, !plan.isEmpty { buildRoute(plan) } else { findFarms() }
+            if session.hasFullAccess {
+                Haptics.tap()
+                if let plan, !plan.isEmpty { buildRoute(plan) } else { findFarms() }
+            } else {
+                openPlusFromSample()
+            }
         } label: {
             HStack(spacing: Space.s2) {
                 if isPlanning {
@@ -199,13 +202,17 @@ struct ShoppingScreen: View {
                     Image(systemName: !session.hasFullAccess ? "lock.fill" : (stops > 0 ? "car.fill" : "sparkles"))
                         .font(.system(size: 15, weight: .semibold))
                 }
-                if !session.hasFullAccess {
-                    Text(String(localized: "See which farms"))
-                } else if stops > 0 {
-                    Text(String(localized: "Build my route · \(stops) stops"))
-                } else {
-                    Text(String(localized: "Find farms for my list"))
+                Group {
+                    if !session.hasFullAccess {
+                        Text(String(localized: "See which farms"))
+                    } else if stops > 0 {
+                        Text(String(localized: "Build my route · \(stops) stops"))
+                    } else {
+                        Text(String(localized: "Find farms for my list"))
+                    }
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 Spacer()
                 Badge(text: "PLUS", fill: .vivid, ink: .ink)
             }
@@ -264,11 +271,20 @@ struct ShoppingScreen: View {
                             planView
                         } else if let plan, !plan.isEmpty {
                             sampleView(plan)
-                        } else {
+                        } else if isPlanning {
                             // The planner runs for everyone the moment `n` is
-                            // known, so this is just the gap before it lands.
+                            // known, so this is just the gap before it lands —
+                            // never shown once planning ends, even if the plan
+                            // that comes back is empty (the two matchers,
+                            // `ShoppingList.matches` for `n` and
+                            // `ProductMatch.covers` for the plan, can disagree).
+                            // `matchKey` doesn't depend on `plan`, so an empty
+                            // result here can't retrigger a new plan and get
+                            // stuck.
                             SkeletonBox(cornerRadius: Radius.card).frame(height: 88)
                         }
+                        // Else: planning finished with nothing to show — the
+                        // count sentence above already said so.
                     }
                 }
                 .card()
@@ -278,28 +294,33 @@ struct ShoppingScreen: View {
         }
     }
 
+    /// The one place free users open Plus from Shopping — the pinned action
+    /// bar and the blurred sample block both call this, so `paywall_viewed`
+    /// only ever fires from one spot.
+    private func openPlusFromSample() {
+        Haptics.tap()
+        Observability.capture(.paywallViewed,
+                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.shoppingSample.rawValue])
+        shell.openPlus()
+    }
+
     /// The free sample: the real coverage sentence, plus the real stop rows
-    /// blurred underneath the unlock button — looking is free, the farms are
-    /// Plus. Never a padlock on an empty screen.
+    /// blurred — looking is free, the farms are Plus. No button drawn on top
+    /// (that collided with the pinned action bar's identical CTA); the whole
+    /// blurred block is itself the tap target, and the pinned bar is the
+    /// visible CTA. Never a padlock on an empty screen.
     private func sampleView(_ plan: ShoppingPlanner.Plan) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text(String(localized: "We found \(plan.coveredCount) of \(picked.count) products at \(plan.picks.count) farms within \(Int(radiusKm)) km."))
                 .role(.heading)
-            ZStack {
-                planView
-                    .blur(radius: 7)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-                Button {
-                    Haptics.tap()
-                    Observability.capture(.paywallViewed,
-                                          [AnalyticsProp.trigger: AnalyticsValue.Trigger.shoppingSample.rawValue])
-                    shell.openPlus()
-                } label: {
-                    Label(String(localized: "See which farms"), systemImage: "lock.fill")
-                }
-                .buttonStyle(PillButtonStyle(.primary, size: .small))
-            }
+            planView
+                .blur(radius: 7)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+                .contentShape(Rectangle())
+                .onTapGesture { openPlusFromSample() }
+                .accessibilityLabel(String(localized: "See which farms"))
+                .accessibilityAddTraits(.isButton)
         }
     }
 
@@ -421,7 +442,14 @@ struct ShoppingScreen: View {
         isPlanning = true
         Task {
             await farms.loadFlagsIfNeeded()
-            plan = ShoppingPlanner.plan(wanted: picked, farms: candidates(), origin: origin, radiusKm: radiusKm)
+            // Same reason as `countMatches()`: this is a greedy set cover over
+            // thousands of farms, and now it runs for every visitor the moment
+            // there's something to plan, not just on a member's tap — off the
+            // main actor so it never blocks scrolling or input.
+            let wanted = picked, candidates = candidates(), radius = radiusKm
+            plan = await Task.detached(priority: .userInitiated) {
+                ShoppingPlanner.plan(wanted: wanted, farms: candidates, origin: origin, radiusKm: radius)
+            }.value
             isPlanning = false
         }
     }
