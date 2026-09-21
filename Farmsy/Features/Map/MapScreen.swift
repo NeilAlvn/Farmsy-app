@@ -97,6 +97,11 @@ struct MapScreen: View {
             VStack(spacing: 8) {
                 HStack(spacing: 10) {
                     searchRow
+                    // Route planner entry — its only other entrance is
+                    // Shopping → "Build my route", easy to miss.
+                    CircleMapButton(icon: "point.topleft.down.to.point.bottomright.curvepath",
+                                    size: 44, action: shell.openTrips)
+                        .accessibilityLabel(String(localized: "Plan a route"))
                     CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
                 }
                 if farms.aiIntent != nil { aiSummaryBar } else { quickChips }

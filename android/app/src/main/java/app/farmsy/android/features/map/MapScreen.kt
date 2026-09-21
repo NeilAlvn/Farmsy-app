@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.FrontHand
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Place
@@ -95,6 +96,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -611,6 +614,19 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                         if (filtersOn) {
                             Box(Modifier.size(7.dp).background(FarmsyColors.farmGreenMap, CircleShape))
                         }
+                    }
+                }
+                // Route planner entry, sharing the row with the locate button — its
+                // only other entrance is Shopping → "Build my route", easy to miss.
+                val planARoute = stringResource(R.string.plan_a_route)
+                Surface(
+                    Modifier.size(44.dp)
+                        .semantics { contentDescription = planARoute }
+                        .clickable { shell.openTrips() },
+                    shape = CircleShape, color = Color.White, shadowElevation = 8.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.NearMe, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
                     }
                 }
                 Surface(

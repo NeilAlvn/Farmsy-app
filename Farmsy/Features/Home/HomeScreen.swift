@@ -47,6 +47,7 @@ struct HomeScreen: View {
                 VStack(alignment: .leading, spacing: 0) {
                     greetingCard.padding(.top, -Space.s2)
                     availableSection
+                    routeCard
                     thisWeekSection
                     yourFarmsSection
                     forYouSection
@@ -233,6 +234,26 @@ struct HomeScreen: View {
             Button(String(localized: "Allow")) { Haptics.tap(); locationManager.request() }
                 .buttonStyle(PillButtonStyle(.primary, size: .small))
         }
+        .card()
+    }
+
+    // MARK: - Route planner entry
+
+    /// A second way into the route planner — the only other entrance is Shopping →
+    /// "Build my route", easy to miss. Sits right under what's for sale nearby.
+    private var routeCard: some View {
+        Button { Haptics.tap(); shell.openTrips() } label: {
+            HStack(spacing: Space.s4) {
+                Image(systemName: "car.fill").font(.system(size: 20, weight: .semibold)).foregroundStyle(Color.farmGreen)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Plan a farm route").role(.subheading)
+                    Text("Pick your stops, Farmsy orders them and draws the road.").role(.caption, .inkMuted)
+                }
+                Spacer()
+                if !session.hasFullAccess { Badge(text: "PLUS", fill: .vivid, ink: .ink) }
+            }
+        }
+        .buttonStyle(.plain)
         .card()
     }
 

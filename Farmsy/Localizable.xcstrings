@@ -17522,6 +17522,72 @@
           }
         }
       }
+    },
+    "Plan a route": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan een route"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifier un itinéraire"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route planen"
+          }
+        }
+      }
+    },
+    "Plan a farm route": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan een boerderijroute"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planifier un itinéraire de fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hofroute planen"
+          }
+        }
+      }
+    },
+    "Pick your stops, Farmsy orders them and draws the road.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies je stops, Farmsy zet ze op volgorde en tekent de weg."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez vos arrêts, Farmsy les met dans l'ordre et trace la route."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle deine Stopps, Farmsy bringt sie in die beste Reihenfolge und zeichnet die Route."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

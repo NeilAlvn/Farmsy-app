@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -289,6 +290,26 @@ fun HomeScreen() {
                         }
                     }
                 }
+            }
+
+            // MARK: Route planner entry — a second way in; the only other entrance is
+            // Shopping → "Build my route", easy to miss. Sits right under what's for
+            // sale nearby.
+            Row(
+                Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape)
+                    .tapCard { shell.openTrips() }.padding(Space.s5),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.s4),
+            ) {
+                Icon(Icons.Filled.DirectionsCar, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(R.string.plan_a_farm_route), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink)
+                    Text(
+                        stringResource(R.string.pick_your_stops_farmsy_orders_them_and_draws_the_road),
+                        style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted,
+                    )
+                }
+                if (!session.hasFullAccess) Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
             }
 
             // MARK: This week — season news. Renders nothing until the calendar has

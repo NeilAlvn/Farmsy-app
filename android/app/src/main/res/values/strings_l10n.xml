@@ -186,6 +186,9 @@
     <string name="rec_header">RECOMMENDATION</string>
     <string name="trips">Trips</string>
     <string name="plan_a_trip">Plan a trip</string>
+    <string name="plan_a_route">Plan a route</string>
+    <string name="plan_a_farm_route">Plan a farm route</string>
+    <string name="pick_your_stops_farmsy_orders_them_and_draws_the_road">Pick your stops, Farmsy orders them and draws the road.</string>
     <string name="my_trips">My trips</string>
     <string name="trip_overview">Trip overview</string>
     <string name="pick_farm_on_map">Pick a farm on the map</string>
