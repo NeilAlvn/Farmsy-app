@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -194,7 +197,13 @@ fun MonthSheet(month: Int, onDismiss: () -> Unit) {
 fun <T> CardCarousel(items: List<T>, content: @Composable (T) -> Unit) {
     val pager = rememberPagerState { items.size }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.s3)) {
-        HorizontalPager(state = pager, pageSpacing = 12.dp, modifier = Modifier.fillMaxWidth().height(380.dp)) { i ->
+        HorizontalPager(
+            state = pager,
+            contentPadding = PaddingValues(end = 32.dp),
+            pageSpacing = 12.dp,
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+        ) { i ->
             content(items[i])
         }
         if (items.size > 1) {
@@ -236,7 +245,7 @@ fun IdeaCard(
     val onList = added || (listIds.isNotEmpty() && listIds.all { it in wanted })
 
     Column(
-        Modifier.fillMaxSize().background(FarmsyColors.surface, CardShape).padding(Space.s5),
+        Modifier.fillMaxWidth().shadow(8.dp, CardShape).background(FarmsyColors.surface, CardShape).padding(Space.s5),
         verticalArrangement = Arrangement.spacedBy(Space.s3),
     ) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { ProductImage(image, fallback, 160.dp, corner = Radius.tile, fallbackSlug = fallbackImage) }

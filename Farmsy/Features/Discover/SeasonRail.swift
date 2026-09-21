@@ -154,6 +154,7 @@ struct MonthSheet: View {
                             IdeaCard(kicker: nil, title: idea.title.text, text: idea.body.text,
                                      image: idea.image, fallback: "🍽️", ingredients: idea.ingredients)
                         }
+                        .padding(.trailing, -Space.s4)
                     }
                 }
                 .padding(.horizontal, Space.s4)
@@ -175,30 +176,33 @@ struct MonthSheet: View {
 struct CardCarousel<Item: Identifiable, Content: View>: View {
     let items: [Item]
     @ViewBuilder let content: (Item) -> Content
-    @State private var page: Int = 0
+    @State private var page: Item.ID?
 
     var body: some View {
         VStack(spacing: Space.s3) {
-            GeometryReader { geo in
-                let w = geo.size.width
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: Space.s3) {
-                        ForEach(items) { item in
-                            content(item).frame(width: w)
-                        }
+            ScrollView(.horizontal, showsIndicators: false) {
+                // ponytail: HStack, not LazyHStack — a lazy stack sizes to the cards
+                // it has realised, so the row jumps in height while swiping. Fine up
+                // to a few dozen cards; page the data if a carousel ever grows past that.
+                HStack(alignment: .top, spacing: Space.s3) {
+                    ForEach(items) { item in
+                        content(item)
+                            // 32 pt narrower than the screen: the next card peeks in,
+                            // which is what tells a thumb this row swipes (Nime "For you").
+                            .containerRelativeFrame(.horizontal) { w, _ in w - 32 }
+                            .id(item.id)
                     }
-                    .scrollTargetLayout()
                 }
-                .scrollTargetBehavior(.viewAligned)
-                .scrollPosition(id: Binding(
-                    get: { items.indices.contains(page) ? items[page].id : nil },
-                    set: { id in if let i = items.firstIndex(where: { $0.id == id }) { page = i } }))
+                .scrollTargetLayout()
             }
-            .frame(height: 380)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $page)
+            .scrollClipDisabled()   // keep the card shadow
             if items.count > 1 {
                 HStack(spacing: 6) {
-                    ForEach(items.indices, id: \.self) { i in
-                        Circle().fill(i == page ? Color.ink : Color.hairline).frame(width: 6, height: 6)
+                    ForEach(items) { item in
+                        Circle().fill(item.id == (page ?? items.first?.id) ? Color.ink : Color.hairline)
+                            .frame(width: 6, height: 6)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -267,5 +271,6 @@ struct IdeaCard: View {
         .padding(Space.s5)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .shadow(color: Color.ink.opacity(0.06), radius: 12, y: 4)
     }
 }

@@ -91,6 +91,7 @@ struct ProductSheet: View {
                                          image: idea.image, fallbackImage: p.image, fallback: "🍽️",
                                          ingredients: idea.ingredients)
                             }
+                            .padding(.trailing, -Space.s4)
                         }
                         if !p.tips.isEmpty {
                             section(String(localized: "Grandmother's tip")) {
