@@ -727,8 +727,10 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
+                    // Farm details are free now (P0-2) — sell the renewal on the same
+                    // Plus story as everywhere else, not on "unlock the address".
                     Text(
-                        stringResource(R.string.renew_to_unlock),
+                        stringResource(R.string.renew_and_farmsy_finds_it_plans_it_and_tells_you_when_it_s_fres),
                         style = geist(14.sp), color = FarmsyColors.inkMuted
                     )
                 }

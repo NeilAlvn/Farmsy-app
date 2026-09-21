@@ -666,7 +666,9 @@ struct MembershipSection: View {
                     Text("Your membership has expired")
                         .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
-                    Text("Renew to unlock full details for every farm again.")
+                    // Farm details are free now (P0-2) — sell the renewal on the same
+                    // Plus story as everywhere else, not on "unlock the address".
+                    Text("Renew and Farmsy finds it, plans it, and tells you when it's fresh again.")
                         .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 } else {
