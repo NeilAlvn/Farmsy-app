@@ -218,4 +218,18 @@ class ShoppingPlannerTest {
         assertEquals(listOf("c", "b"), p.picks.map { it.osmId })
         assertEquals(listOf("strawberry", "cheese"), p.missing)
     }
+
+    // ── The free sample ─────────────────────────────────────────────────────
+
+    @Test
+    fun `coveredCount is items at least one pick answers, not raw pick totals`() {
+        val p = ShoppingPlanner.Plan(
+            picks = listOf(
+                ShoppingPlanner.Pick("a", listOf("eggs", "milk")),
+                ShoppingPlanner.Pick("b", listOf("milk", "honey")),
+            ),
+            missing = listOf("lamb"),
+        )
+        assertEquals(3, p.coveredCount)
+    }
 }

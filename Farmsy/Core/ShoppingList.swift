@@ -350,3 +350,8 @@ enum ShoppingPlanner {
         return Plan(picks: picks, missing: plan.missing + lost)
     }
 }
+
+extension ShoppingPlanner.Plan {
+    /// Items at least one stop answers. The number a free user sees.
+    var coveredCount: Int { Set(picks.flatMap(\.covers)).count }
+}

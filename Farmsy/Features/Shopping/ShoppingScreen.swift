@@ -60,7 +60,22 @@ struct ShoppingScreen: View {
         }
         .task { await catalogue.loadIfNeeded() }
         .task { await farms.loadFlagsIfNeeded() }
-        .task(id: matchKey) { await countMatches() }
+        .task(id: matchKey) {
+            await countMatches()
+            // The free half of the plan runs for everyone the moment there is
+            // something to plan. `matchKey` already carries list/origin/radius,
+            // so a change in any of them lands here and replaces `plan` — no
+            // second trigger needed. Setting `plan` never changes `matchKey`
+            // itself, so this cannot re-fire itself into a loop; `isPlanning`
+            // just keeps two runs from overlapping if the key changes again
+            // before the first finishes.
+            guard let matchingFarms else { return }
+            if matchingFarms > 0 {
+                if !isPlanning { findFarms() }
+            } else {
+                plan = nil
+            }
+        }
         .onChange(of: trip.wantedProducts) { _, _ in plan = nil }
     }
 
@@ -184,7 +199,9 @@ struct ShoppingScreen: View {
                     Image(systemName: !session.hasFullAccess ? "lock.fill" : (stops > 0 ? "car.fill" : "sparkles"))
                         .font(.system(size: 15, weight: .semibold))
                 }
-                if stops > 0 {
+                if !session.hasFullAccess {
+                    Text(String(localized: "See which farms"))
+                } else if stops > 0 {
                     Text(String(localized: "Build my route · \(stops) stops"))
                 } else {
                     Text(String(localized: "Find farms for my list"))
@@ -245,15 +262,43 @@ struct ShoppingScreen: View {
                     if n > 0 {
                         if session.hasFullAccess {
                             planView
+                        } else if let plan, !plan.isEmpty {
+                            sampleView(plan)
                         } else {
-                            Text("Farmsy Plus picks the fewest farms that cover your list and builds the trip. Tap the button below.")
-                                .role(.bodySm, .inkMuted)
+                            // The planner runs for everyone the moment `n` is
+                            // known, so this is just the gap before it lands.
+                            SkeletonBox(cornerRadius: Radius.card).frame(height: 88)
                         }
                     }
                 }
                 .card()
             } else {
                 SkeletonBox(cornerRadius: Radius.card).frame(height: 88)
+            }
+        }
+    }
+
+    /// The free sample: the real coverage sentence, plus the real stop rows
+    /// blurred underneath the unlock button — looking is free, the farms are
+    /// Plus. Never a padlock on an empty screen.
+    private func sampleView(_ plan: ShoppingPlanner.Plan) -> some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text(String(localized: "We found \(plan.coveredCount) of \(picked.count) products at \(plan.picks.count) farms within \(Int(radiusKm)) km."))
+                .role(.heading)
+            ZStack {
+                planView
+                    .blur(radius: 7)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                Button {
+                    Haptics.tap()
+                    Observability.capture(.paywallViewed,
+                                          [AnalyticsProp.trigger: AnalyticsValue.Trigger.shoppingSample.rawValue])
+                    shell.openPlus()
+                } label: {
+                    Label(String(localized: "See which farms"), systemImage: "lock.fill")
+                }
+                .buttonStyle(PillButtonStyle(.primary, size: .small))
             }
         }
     }

@@ -196,4 +196,14 @@ struct ShoppingPlannerTests {
         #expect(plan.isEmpty)
         #expect(plan.missing.isEmpty)
     }
+
+    // ── The free sample ─────────────────────────────────────────────────────
+
+    @Test("coveredCount is items at least one pick answers, not raw pick totals")
+    func coveredCountIsWantedMinusMissing() {
+        let plan = ShoppingPlanner.Plan(
+            picks: [.init(osmId: "a", covers: ["eggs", "milk"]), .init(osmId: "b", covers: ["milk", "honey"])],
+            missing: ["lamb"])
+        #expect(plan.coveredCount == 3)
+    }
 }

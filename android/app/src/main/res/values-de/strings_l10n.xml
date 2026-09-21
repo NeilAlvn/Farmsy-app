@@ -409,4 +409,6 @@
     <string name="shopping_list_none">Kein Hof im Umkreis von 25 km nennt davon etwas.</string>
     <string name="shopping_list_missing_arg">In der Nähe nicht gefunden: %1$s</string>
     <string name="shopping_list_catalogue_failed">Die Produktliste konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="shopping_sample_coverage_arg">Wir haben %1$d deiner %2$d Produkte bei %3$d Höfen im Umkreis von %4$d km gefunden.</string>
+    <string name="see_which_farms">Höfe anzeigen</string>
 </resources>

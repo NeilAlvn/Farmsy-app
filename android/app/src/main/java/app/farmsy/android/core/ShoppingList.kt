@@ -221,6 +221,9 @@ object ShoppingPlanner {
 
     data class Plan(val picks: List<Pick>, val missing: List<String>) {
         val isEmpty: Boolean get() = picks.isEmpty()
+
+        /// Items at least one stop answers. The number a free user sees.
+        val coveredCount: Int get() = picks.flatMap { it.covers }.toSet().size
     }
 
     /// Greedy: repeatedly take the farm that answers the most still-unanswered
