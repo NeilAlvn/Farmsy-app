@@ -145,6 +145,12 @@ fun ShoppingScreen() {
     val loadFailed by ShoppingItems.loadFailed.collectAsState()
     val radiusKm by SearchRadius.km.collectAsState()
     val language = remember { ShoppingItems.language(context) }
+    // Derived from the COLLECTED profile, never from `session.hasFullAccess`
+    // (a plain read of the backing field, which does not invalidate the
+    // composition) — so buying Plus mid-session sharpens the sample and
+    // switches the bar over instead of leaving this screen locked.
+    val profile by session.profile.collectAsState()
+    val hasFullAccess = profile?.hasFullAccess == true
 
     var plan by remember { mutableStateOf<ShoppingPlanner.Plan?>(null) }
     var matchingFarms by remember { mutableStateOf<Int?>(null) }
@@ -296,7 +302,7 @@ fun ShoppingScreen() {
                             )
                             if (n > 0) {
                                 val p = plan
-                                if (session.hasFullAccess) {
+                                if (hasFullAccess) {
                                     PlanView(plan, picked.size, ::labels, onOpen = { osmId ->
                                         farms.pinForOsmId(osmId)?.let { shell.openFarm(it) }
                                     }, onSwap = { swapping = it }, km = ::km)
@@ -413,7 +419,7 @@ fun ShoppingScreen() {
                     .clickable(enabled = enabled) {
                         val p = plan
                         when {
-                            !session.hasFullAccess -> openPlusFromSample()
+                            !hasFullAccess -> openPlusFromSample()
                             p != null && !p.isEmpty -> { tap(); buildRoute(p) }
                             else -> { tap(); findFarms() }
                         }
@@ -426,12 +432,12 @@ fun ShoppingScreen() {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
                     Icon(
-                        if (!session.hasFullAccess) Icons.Filled.Lock else if (stops > 0) Icons.Filled.DirectionsCar else Icons.Filled.AutoAwesome,
+                        if (!hasFullAccess) Icons.Filled.Lock else if (stops > 0) Icons.Filled.DirectionsCar else Icons.Filled.AutoAwesome,
                         null, tint = Color.White, modifier = Modifier.size(18.dp),
                     )
                 }
                 Text(
-                    if (!session.hasFullAccess) stringResource(R.string.see_which_farms)
+                    if (!hasFullAccess) stringResource(R.string.see_which_farms)
                     else if (stops > 0) stringResource(R.string.shopping_build_route_stops_arg, stops)
                     else stringResource(R.string.shopping_find_farms_bar),
                     style = ui(17.sp, FontWeight.SemiBold), color = Color.White, maxLines = 1,

@@ -152,7 +152,11 @@ fun HomeScreen() {
     LaunchedEffect(Unit) { farms.loadFlagsIfNeeded() }
     LaunchedEffect(Unit) { Seasons.loadIfNeeded() }
     // Plus: the recent-reports feed, for "confirmed 18 min ago" on a tile.
-    val plus = session.hasFullAccess
+    // Derived from the COLLECTED profile, never from `session.hasFullAccess`
+    // (a plain read of the backing field, which does not invalidate the
+    // composition) — so buying Plus mid-session unlocks this screen instead of
+    // leaving it locked until something else happens to recompose it.
+    val plus = profile?.hasFullAccess == true
     LaunchedEffect(plus) { if (plus) RecentReports.refresh() }
     val recentReports by RecentReports.reports.collectAsState()
     val nearReports = remember(recentReports, plus, location, radiusKm, pins) {
@@ -310,7 +314,7 @@ fun HomeScreen() {
                         style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted,
                     )
                 }
-                if (!session.hasFullAccess) Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
+                if (!plus) Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
             }
 
             // MARK: This week — season news. Renders nothing until the calendar has
@@ -357,7 +361,7 @@ fun HomeScreen() {
 
             // MARK: For you
             SectionHeader(stringResource(R.string.for_you))
-            if (session.hasFullAccess) {
+            if (plus) {
                 Box(Modifier.fillMaxWidth().background(FarmsyColors.surface, CardShape)) {
                     ListRow(Icons.Outlined.Notifications, stringResource(R.string.product_alerts), subtitle = stringResource(R.string.product_alerts_sub)) {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.farmsy.app/alerts")))

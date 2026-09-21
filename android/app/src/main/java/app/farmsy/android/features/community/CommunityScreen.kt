@@ -141,8 +141,11 @@ fun CommunityScreen() {
     val recentReports by RecentReports.reports.collectAsState()
     val items by ShoppingItems.items.collectAsState()
     val language = remember { ShoppingItems.language(context) }
-    session.profile.collectAsState().value
-    val plus = session.hasFullAccess
+    // Derived from the COLLECTED profile: `session.hasFullAccess` alone is a
+    // plain field read that invalidates nothing, so a membership bought
+    // mid-session would leave this tab locked.
+    val profile by session.profile.collectAsState()
+    val plus = profile?.hasFullAccess == true
     val myId = session.session.collectAsState().value?.user?.id
     val stats by Contributions.stats.collectAsState()
     val boardAll by Contributions.leaderboard.collectAsState()

@@ -122,9 +122,11 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
 
     val pins by farms.pins.collectAsState()
     val stopIds by trip.stopIds.collectAsState()
-    // Collected so `session.hasFullAccess` (below) recomposes when membership
-    // changes, not only when the auth session itself does.
+    // Collected, and the access flag derived from it, so a membership bought
+    // mid-session recomposes this screen — `session.hasFullAccess` is a plain
+    // read of the backing field and invalidates nothing on its own.
     val profile by session.profile.collectAsState()
+    val hasFullAccess = profile?.hasFullAccess == true
     val originCoord by trip.originCoord.collectAsState()
     // R8: the drive has an end of its own. Read here so the Maps hand-off can
     // tell a stop apart from the destination.
@@ -153,7 +155,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val canRoute = (originCoord != null && stops.isNotEmpty()) || stops.size >= 2
     // Task 4: looking is free, ordering stops and drawing the road is Plus. A
     // single stop is a plain directions request either way, so it stays free.
-    val isLocked = TripStore.isRouteLocked(session.hasFullAccess, stops.size)
+    val isLocked = TripStore.isRouteLocked(hasFullAccess, stops.size)
 
     // The one place free users open Plus from the route preview — the unlock
     // button, the blurred stop block, and the locked Save/Show route/Maps

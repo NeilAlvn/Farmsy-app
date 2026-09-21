@@ -94,8 +94,11 @@ fun FarmStatusSection(osmId: String, sells: String? = null, onNeedsSignIn: () ->
     var isSending by remember { mutableStateOf(false) }
 
     val currentSession by session.session.collectAsState()
-    session.profile.collectAsState().value
-    val plus = session.hasFullAccess
+    // Derived from the COLLECTED profile: `session.hasFullAccess` alone is a
+    // plain field read that invalidates nothing, so a membership bought
+    // mid-session would leave this row locked.
+    val profile by session.profile.collectAsState()
+    val plus = profile?.hasFullAccess == true
 
     suspend fun reload() {
         loaded = FarmStatusApi.load(osmId, session.accessToken())

@@ -337,9 +337,11 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
                 ) { onNotificationRowTap() }
                 ListRow(
                     Icons.Outlined.Notifications, stringResource(R.string.product_alerts),
-                    subtitle = if (session.hasFullAccess) null else stringResource(R.string.farmsy_plus),
+                    // `access`, the collected profile's flag, not
+                    // `session.hasFullAccess` — that one invalidates nothing.
+                    subtitle = if (access) null else stringResource(R.string.farmsy_plus),
                 ) {
-                    if (session.hasFullAccess) open("https://www.farmsy.app/alerts") else onOpenPlus()
+                    if (access) open("https://www.farmsy.app/alerts") else onOpenPlus()
                 }
             }
 
