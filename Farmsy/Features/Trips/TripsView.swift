@@ -75,6 +75,11 @@ struct TripsView: View {
         .task { if let uid { await trip.loadTrips(userId: uid) } }
         .task { await catalogue.loadIfNeeded() }
         .onChange(of: trip.stopIds) { _, _ in Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) } }
+        // Fix round 1 #1: buying Plus mid-session flips `isLocked` without the
+        // stops changing, so the route fetch above never re-fires on its own —
+        // the sheet would stay unblurred but with a nil/never-fetched route.
+        // Re-key on the lock flag too.
+        .onChange(of: isLocked) { _, _ in Task { await trip.refreshRoute(pins: pinIndex, locked: isLocked) } }
         .alert("Name your trip", isPresented: $naming) {
             TextField("My weekend trip", text: $tripName)
             Button("Save") { Task { await save() } }
@@ -376,8 +381,10 @@ struct TripsView: View {
 
             // "Best order" only when expanded — at the small detent every point of
             // height matters for keeping the header and actions on screen.
+            // Fix round 1 #3: reordering IS the paid work, so a locked trip opens
+            // Plus instead of running it for free.
             if !collapsed, stops.count >= 3 {
-                Button { reorder() } label: {
+                Button { if isLocked { openPlusFromSample() } else { reorder() } } label: {
                     Text("Best order").font(.ui(14, .semibold)).foregroundStyle(Color.farmGreen)
                 }.buttonStyle(.plain)
             }
@@ -493,7 +500,13 @@ struct TripsView: View {
     /// underneath. The whole blurred block is also a tap target, so both paths
     /// go through the same `openPlusFromSample()` as the button.
     private func lockedStopsBlock(rows: Int) -> some View {
-        VStack(spacing: 0) {
+        // Fix round 1 #4: the sentence + button used to sit below the blurred
+        // rows, inside the stop list's own scroll area — invisible until it
+        // was scrolled. Overlay them centred on the blur instead (a ZStack,
+        // not a sibling below it), with a floor height that fits the sentence
+        // (up to 3 lines at nl/de length) plus the button, so both are visible
+        // without scrolling.
+        ZStack {
             VStack(spacing: 0) {
                 ForEach(1..<rows, id: \.self) { i in
                     if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
@@ -508,9 +521,13 @@ struct TripsView: View {
             .accessibilityLabel(String(localized: "Unlock the route"))
             .accessibilityAddTraits(.isButton)
 
+            // The real, readable control: a soft surface-coloured backing
+            // keeps the sentence legible over the blur; only the stop rows
+            // above are hidden from accessibility, so this text and button
+            // read normally.
             VStack(spacing: 8) {
                 Text(String(localized: "Your route has \(stops.count) stops. Farmsy Plus orders them and draws the road."))
-                    .font(.ui(13)).foregroundStyle(Color.inkMuted)
+                    .font(.ui(13)).foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
                 Button(String(localized: "Unlock the route")) { openPlusFromSample() }
                     .font(.ui(14, .semibold)).foregroundStyle(.white)
@@ -518,8 +535,11 @@ struct TripsView: View {
                     .background(Color.farmGreenMap, in: Capsule())
                     .buttonStyle(.plain)
             }
-            .padding(14)
+            .padding(16)
+            .background(Color.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 24)
         }
+        .frame(minHeight: 168)
     }
 
     /// The one place free users open Plus from the route preview — the unlock

@@ -325,11 +325,14 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                 reorderNote?.let {
                     Text(it, style = geist(12.sp), color = FarmsyColors.farmGreen)
                 }
+                // Fix round 1 #3: reordering IS the paid work, so a locked trip
+                // opens Plus instead of running it for free.
                 if (stops.size >= 3) {
                     Text(
                         stringResource(R.string.best_order), style = geist(14.sp, FontWeight.SemiBold),
                         color = FarmsyColors.farmGreen,
                         modifier = Modifier.clickable {
+                            if (isLocked) { openPlusFromSample(); return@clickable }
                             val saved = trip.optimise(pinIndex)
                             reorderNote = if (saved >= 0.5)
                                 context.getString(R.string.reordered_km_shorter, saved.toInt())
@@ -660,9 +663,17 @@ private fun OriginRow(label: String?, onOpenSearch: () -> Unit, onClear: () -> U
 }
 
 @Composable
-private fun StopRow(index: Int, pin: FarmPin, legLabel: String, onRemove: () -> Unit, onOpen: () -> Unit) {
+private fun StopRow(
+    index: Int, pin: FarmPin, legLabel: String, onRemove: () -> Unit, onOpen: () -> Unit,
+    /// Task 4 fix round 1 #2: true for the blurred rows behind the route-preview
+    /// paywall. `clickable(enabled = false)` installs no tap handling at all, so
+    /// the outer unlock `Box`'s own `clickable` receives every tap on this row
+    /// instead of the row swallowing it first — the same `enabled = !locked`
+    /// approach `ShoppingScreen`'s `PlanView(locked:)` uses.
+    locked: Boolean = false,
+) {
     Row(
-        Modifier.fillMaxWidth().clickable { onOpen() }.padding(horizontal = 14.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clickable(enabled = !locked) { onOpen() }.padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -676,7 +687,7 @@ private fun StopRow(index: Int, pin: FarmPin, legLabel: String, onRemove: () -> 
         }
         Icon(
             Icons.Filled.Close, null, tint = FarmsyColors.inkMuted,
-            modifier = Modifier.size(16.dp).clickable { onRemove() },
+            modifier = Modifier.size(16.dp).clickable(enabled = !locked) { onRemove() },
         )
     }
 }
@@ -719,34 +730,51 @@ private fun LockedStopsBlock(
         }
     }
     val unlockLabel = stringResource(R.string.unlock_the_route)
-    Column {
+    // Fix round 1 #4: the sentence + button used to sit below the blurred rows,
+    // inside the stop list's own scroll area — invisible until it was scrolled.
+    // Overlay them centred on the blur instead (a `Box`, not a sibling
+    // `Column`), with a floor height that fits the sentence (up to 3 lines at
+    // nl/de length) plus the button, so both are visible without scrolling.
+    Box(Modifier.fillMaxWidth().heightIn(min = 168.dp)) {
         Box(
             Modifier
+                .fillMaxWidth()
                 .semantics { contentDescription = unlockLabel }
                 .clickable(onClickLabel = unlockLabel, role = Role.Button, onClick = onUnlock),
         ) {
             Column(hide.clearAndSetSemantics {}) {
                 for (i in 1 until rows) {
                     if (i < stops.size) {
-                        StopRow(i, stops[i], legLabel(i, stops, originCoord, mode), onRemove = {}, onOpen = {})
+                        // Fix round 1 #2: locked = true — no clickable is
+                        // installed on the row at all, so this outer Box's own
+                        // clickable receives the tap instead of the row
+                        // swallowing it with a no-op callback.
+                        StopRow(i, stops[i], legLabel(i, stops, originCoord, mode), onRemove = {}, onOpen = {}, locked = true)
                     } else {
                         EmptyStopRow(i)
                     }
                 }
             }
         }
+        // The real, readable control: a soft surface-coloured backing keeps the
+        // sentence legible over the blur; only the stop rows above are hidden
+        // from accessibility, so this text and button read normally.
         Column(
-            Modifier.fillMaxWidth().padding(14.dp),
+            Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp)
+                .background(FarmsyColors.surface.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
                 stringResource(R.string.route_stops_locked_arg, stops.size),
-                style = geist(13.sp), color = FarmsyColors.inkMuted,
+                style = geist(13.sp), color = FarmsyColors.ink,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
             Surface(
-                Modifier.clickable(onClick = onUnlock),
+                Modifier.clickable(onClickLabel = unlockLabel, role = Role.Button, onClick = onUnlock),
                 shape = RoundedCornerShape(50), color = FarmsyColors.farmGreenMap,
             ) {
                 Text(
