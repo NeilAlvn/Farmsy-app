@@ -211,12 +211,23 @@ struct AppShell: View {
     /// card), each true only when that surface should own the presentation,
     /// each writing back to the single `showPlus` on set.
     ///
-    /// What is actually guaranteed (final review #6 — the old comment claimed
-    /// "exactly one is ever true", which a pin tapped behind the half-open trip
-    /// sheet breaks: `selectedPin` is then set WHILE Trips is up): at least one
-    /// binding is true whenever `showPlus` is, and the frontmost surface wins,
-    /// because Trips and Profile both outrank the farm card and cannot be up
-    /// together themselves (the same one-presenter limit keeps them apart).
+    /// What is actually true — not "exactly one is ever true", which the old
+    /// comment claimed and which a pin tapped behind the half-open trip sheet
+    /// breaks: MORE THAN ONE getter may be true at once, and that is safe.
+    /// Only a MOUNTED sheet's nested `.sheet` can present anything, so a true
+    /// binding inside a sheet that is not on screen does nothing at all; and
+    /// the root binding presents only when no AppShell-owned sheet is up. So
+    /// the request lands on the surface that is actually in front, and never
+    /// twice.
+    ///
+    /// Do NOT "harden" the farm-card bindings with `!showTrips && !showProfile`
+    /// (that was tried and reverted): those flags go stale. Drag the farm card
+    /// to its half detent, tap "Plan a route" on the live map behind it, and
+    /// `showTrips` is set while the root presenter is busy with the card — so
+    /// Trips never mounts and the flag sticks. With the extra clauses the card's
+    /// own Plus row then had NO presenter at all: the farm-card binding was
+    /// false because of the stale flag, and `showPlusInTrips` lived inside a
+    /// `TripsView` that was never built.
     private var showPlusAtRoot: Binding<Bool> {
         Binding(get: { showPlus && !showTrips && !showProfile && selectedPin == nil }, set: { showPlus = $0 })
     }
@@ -227,10 +238,12 @@ struct AppShell: View {
         Binding(get: { showPlus && showProfile }, set: { showPlus = $0 })
     }
     private var showPlusInFarmCard: Binding<Bool> {
-        Binding(get: { showPlus && selectedPin != nil && !showTrips && !showProfile }, set: { showPlus = $0 })
+        Binding(get: { showPlus && selectedPin != nil }, set: { showPlus = $0 })
     }
 
-    /// The same one-source-of-truth split as `showPlus` above, for `showAuth`.
+    /// The same one-source-of-truth split as `showPlus` above, for `showAuth`,
+    /// and the same rule: overlapping getters are fine, an unmounted sheet
+    /// presents nothing, and the root only fires when nothing else is up.
     /// The farm card and Profile both need the nested form (Profile since final
     /// review #5: its "Sign in" no longer dismisses Profile first). Trips has
     /// none because it cannot be reached signed out, so nothing inside it ever
@@ -243,7 +256,7 @@ struct AppShell: View {
         Binding(get: { showAuth && showProfile }, set: { showAuth = $0 })
     }
     private var showAuthInFarmCard: Binding<Bool> {
-        Binding(get: { showAuth && selectedPin != nil && !showTrips && !showProfile }, set: { showAuth = $0 })
+        Binding(get: { showAuth && selectedPin != nil }, set: { showAuth = $0 })
     }
 
     /// The Plus sheet's one content definition, reused by whichever binding
