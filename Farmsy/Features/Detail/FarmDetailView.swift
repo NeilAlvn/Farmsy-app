@@ -258,9 +258,8 @@ struct FarmDetailView: View {
         if isLoading && detail == nil {
             SkeletonBox(cornerRadius: 16).frame(height: 44)
         } else {
-            // Trips are free now — no Pro-locked prompt. Everyone sees add/remove;
-            // a signed-out tap routes to sign-in. (Dropped the old `isLocked` dashed
-            // "Plan a trip with Farmsy Pro" prompt + its shut lock.)
+            // Trips are free — no locked-prompt dead end. Everyone sees add/remove;
+            // a signed-out tap routes to sign-in.
             let inTrip = trip.contains(pin.osmId)
             Button {
                 Haptics.tap()
