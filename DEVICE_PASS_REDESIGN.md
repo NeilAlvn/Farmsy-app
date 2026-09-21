@@ -93,6 +93,59 @@ Load, or fall back to emoji cleanly — no blank tiles.
 
 ---
 
+## 🟢 Relaunch batch (#53–#59) — run these once that batch is in the build
+
+The conversion pass: looking is free, Farmsy-does-the-work is Plus, every lock shows a real
+sample. These are on top of the checks above.
+
+### 12. Idea / tip cards no longer clip (#53)
+Discover → season ideas, and any product sheet's recipe cards.
+- **Expect:** the whole card shows (image top, button, rounded corners); the **next card
+  peeks** on the right; page dots follow the swipe.
+- **Watch for:** a card cut off top or bottom, or at **largest Text size** (Profile →
+  Accessibility) — the old bug was a fixed 380pt frame clipping it.
+
+### 13. Route planner is reachable (#54)
+- **Home:** a "**Plan a farm route**" card (PLUS badge if you're not a member) → opens the
+  planner.
+- **Map:** a floating route button (above the locate button) → opens the planner.
+- **Expect:** both open Trips (asks sign-in if needed). **Watch for:** either entry dead, or
+  the PLUS badge missing/mis-shown.
+
+### 14. Shopping free sample, then Plus (#55) — the core conversion
+Shopping with a few items, **not** signed into Plus.
+- **Expect:** the real **coverage sentence** ("N of M products") shows, and the stop rows
+  appear **blurred**; tapping the blurred block *or* the pinned bar opens the Plus sheet.
+- **Watch for:** a **padlock on an empty screen** (the thing the plan explicitly forbids), the
+  sample not blurred, or the tap not opening Plus. As a member: full unblurred rows, no sample.
+
+### 15. Route preview free, full route Plus (#56)
+- **Expect:** a non-member sees a **preview** of the route; going beyond the preview opens the
+  Plus sheet. Member sees the full planned route.
+
+### 16. One Plus sheet everywhere (#56/#57)
+Trigger the paywall from several places (shopping sample, route, a farm, membership row).
+- **Expect:** the **same** Plus sheet each time, same headline ("finds it, plans it, tells you
+  when it's fresh"). **Watch for:** the old `LockedAccessView` paywall still appearing anywhere
+  (it was deleted) — or a farm detail showing a paywall at all (details are free now).
+
+### 17. Notifications row in Profile (#58) — closes the upgrader gap
+Profile → **Notifications** row (this is new; supersedes note 10 above).
+- **Not yet asked:** shows "**Turn on**" → tap → system permission prompt → row flips to "**On**".
+- **Denied:** shows "**Open Settings**" → tap opens iOS/Android Settings; grant there and return →
+  row updates to "On" (it refreshes on foreground).
+- **Watch for:** the row stuck on "Turn on" after granting, or not reacting to a Settings change.
+
+### 18. Price + trial copy (depends on store setup, not the build)
+Open the Plus sheet.
+- **Expect (once store prices are set):** lifetime **€59,99**; on an account that never
+  subscribed, a **"Try 7 days free"** line on the yearly plan; on one that did, **no** trial line.
+- **Watch for:** old numbers (€49.99) or a struck-through "was" price — if the App Store /
+  Play prices and the 7-day yearly intro offer aren't set yet, the copy is wrong. **Not a code
+  bug** — it means the store config isn't in. Say so in the TestFlight note if it's not set.
+
+---
+
 ## After the pass
 
 - All green on a device → tell Neil; then (and only then) the version bump + store
