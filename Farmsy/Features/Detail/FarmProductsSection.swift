@@ -14,6 +14,9 @@ struct FarmProductsSection: View {
     @Environment(FarmsStore.self) private var farms
     @Environment(TripStore.self) private var trip
     @Environment(\.shell) private var shell
+    /// Dismisses the farm card itself — this section lives inside that sheet,
+    /// and AppShell's binding clears `selectedPin` when it closes.
+    @Environment(\.dismiss) private var dismiss
     @State private var catalogue = ShoppingItems.shared
 
     private var sells: String? {
@@ -48,7 +51,10 @@ struct FarmProductsSection: View {
                         for item in items where !trip.wantedProducts.contains(item.id) {
                             trip.toggleProduct(item.id)
                         }
-                        if allOnList { shell.showTab(.shopping) }
+                        // Close the card before switching tabs: it is a sheet
+                        // over the map, so switching underneath it left the
+                        // Shopping tab hidden behind an open farm card.
+                        if allOnList { dismiss(); shell.showTab(.shopping) }
                     }
                     .buttonStyle(PillButtonStyle(.text, size: .small))
                 }

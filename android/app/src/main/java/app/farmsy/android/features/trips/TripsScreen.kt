@@ -84,12 +84,9 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
-import app.farmsy.android.core.AnalyticsEvent
-import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.MapsHandoff
 import app.farmsy.android.core.FarmPin
-import app.farmsy.android.core.Observability
 import app.farmsy.android.core.SavedTrip
 import app.farmsy.android.core.TravelMode
 import app.farmsy.android.core.TripGeometry
@@ -125,9 +122,11 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
 
     val pins by farms.pins.collectAsState()
     val stopIds by trip.stopIds.collectAsState()
-    // Collected so `session.hasFullAccess` (below) recomposes when membership
-    // changes, not only when the auth session itself does.
+    // Collected, and the access flag derived from it, so a membership bought
+    // mid-session recomposes this screen — `session.hasFullAccess` is a plain
+    // read of the backing field and invalidates nothing on its own.
     val profile by session.profile.collectAsState()
+    val hasFullAccess = profile?.hasFullAccess == true
     val originCoord by trip.originCoord.collectAsState()
     // R8: the drive has an end of its own. Read here so the Maps hand-off can
     // tell a stop apart from the destination.
@@ -156,17 +155,19 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val canRoute = (originCoord != null && stops.isNotEmpty()) || stops.size >= 2
     // Task 4: looking is free, ordering stops and drawing the road is Plus. A
     // single stop is a plain directions request either way, so it stays free.
-    val isLocked = TripStore.isRouteLocked(session.hasFullAccess, stops.size)
+    val isLocked = TripStore.isRouteLocked(hasFullAccess, stops.size)
 
     // The one place free users open Plus from the route preview — the unlock
     // button, the blurred stop block, and the locked Save/Show route/Maps
-    // actions all call this, so `paywall_viewed` only ever fires from one spot.
+    // actions all call this. The Plus sheet reports the view with this trigger.
     fun openPlusFromSample() {
-        Observability.capture(
-            AnalyticsEvent.PAYWALL_VIEWED,
-            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.ROUTE_PREVIEW.key),
-        )
-        shell.openPlus()
+        shell.openPlus(AnalyticsValue.Trigger.ROUTE_PREVIEW)
+    }
+
+    /// The shopping-list sheet's lock sells which farms cover the list, not the
+    /// route, so it reports as that sample.
+    fun openPlusFromShoppingList() {
+        shell.openPlus(AnalyticsValue.Trigger.SHOPPING_SAMPLE)
     }
 
     var planTab by remember { mutableStateOf(true) }
@@ -395,8 +396,14 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                         enabled = canRoute,
                     ) { if (isLocked) openPlusFromSample() else trip.requestFit() }
                 }
+                // A Maps hand-off that silently becomes a paywall reads as
+                // bait-and-switch, so the locked one wears the padlock. Save
+                // trip / Show route stay as they are — they never promised to
+                // leave the app.
                 OutlineAction(
-                    stringResource(R.string.open_in_google_maps), Icons.Filled.OpenInNew, Modifier.fillMaxWidth(),
+                    stringResource(R.string.open_in_google_maps),
+                    if (isLocked) Icons.Filled.Lock else Icons.Filled.OpenInNew,
+                    Modifier.fillMaxWidth(),
                     enabled = stops.isNotEmpty(),
                 ) { if (isLocked) openPlusFromSample() else openGoogleMaps(context, originCoord, stops, destinationCoord, mode) }
 
@@ -498,7 +505,15 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     if (showShoppingList) {
         val from = originCoord ?: locationHelper.location.value?.let { LatLng(it.latitude, it.longitude) }
         if (from != null) {
-            ShoppingListSheet(origin = from, onDismiss = { showShoppingList = false })
+            ShoppingListSheet(
+                origin = from,
+                // The list sheet's lock sells the same thing the Shopping tab's
+                // does — which farms cover the list — so it reports as that
+                // sample, not as the route preview. The sheet closes first, the
+                // way iOS has to, so both platforms land on the same screen.
+                onUnlock = { showShoppingList = false; openPlusFromShoppingList() },
+                onDismiss = { showShoppingList = false },
+            )
         } else {
             showShoppingList = false
         }
@@ -741,7 +756,10 @@ private fun LockedStopsBlock(
     // button below the visible edge — so this is now top-aligned and compact:
     // ~8dp padding, a 2-line capped sentence, an 8dp gap, then the small pill
     // button. ~96dp total.
-    Box(Modifier.fillMaxWidth().heightIn(min = 104.dp)) {
+    // 104 + one more caption line (~14dp): the floor a 3-line sentence needs,
+    // and no more — the button sits at the top of the block, so it stays on
+    // screen at the sheet's half-open detent.
+    Box(Modifier.fillMaxWidth().heightIn(min = 118.dp)) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -778,7 +796,9 @@ private fun LockedStopsBlock(
                 stringResource(R.string.route_stops_locked_arg, stops.size),
                 style = geist(12.sp), color = FarmsyColors.ink,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                // Three lines: the German sentence is ~100 characters and was
+                // ellipsised at large text sizes.
+                maxLines = 3, overflow = TextOverflow.Ellipsis,
             )
             PillButton(unlockLabel, PillVariant.PRIMARY, PillSize.SMALL, onClick = onUnlock)
         }

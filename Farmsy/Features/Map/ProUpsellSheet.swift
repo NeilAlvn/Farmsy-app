@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The one Plus sheet, presented everywhere via `shell.openPlus()` — root, Trips,
+/// The one Plus sheet, presented everywhere via `shell.openPlus(_:)` — root, Trips,
 /// Profile, farm card. Farm-free: it takes no farm, so it fronts any non-farm upsell
 /// too. Story is "Farmsy finds it, plans it, tells you when it's fresh" (owner
 /// decision, 2026-09-21): finding the right farms, the route, alerts and live

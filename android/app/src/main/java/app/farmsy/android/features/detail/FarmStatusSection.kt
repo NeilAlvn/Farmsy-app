@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.FarmStatus
 import app.farmsy.android.core.FarmStatusApi
 import app.farmsy.android.core.FarmStatusLoaded
@@ -93,8 +94,11 @@ fun FarmStatusSection(osmId: String, sells: String? = null, onNeedsSignIn: () ->
     var isSending by remember { mutableStateOf(false) }
 
     val currentSession by session.session.collectAsState()
-    session.profile.collectAsState().value
-    val plus = session.hasFullAccess
+    // Derived from the COLLECTED profile: `session.hasFullAccess` alone is a
+    // plain field read that invalidates nothing, so a membership bought
+    // mid-session would leave this row locked.
+    val profile by session.profile.collectAsState()
+    val plus = profile?.hasFullAccess == true
 
     suspend fun reload() {
         loaded = FarmStatusApi.load(osmId, session.accessToken())
@@ -170,7 +174,7 @@ fun FarmStatusSection(osmId: String, sells: String? = null, onNeedsSignIn: () ->
             }
             if (!plus && freshness != null) {
                 Row(
-                    Modifier.clickable { shell.openPlus() },
+                    Modifier.clickable { shell.openPlus(AnalyticsValue.Trigger.FARM_DETAIL) },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {

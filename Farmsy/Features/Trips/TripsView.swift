@@ -28,6 +28,11 @@ struct TripsView: View {
     @State private var reorderNote: String?
     @State private var showOriginSearch = false
     @State private var showShoppingList = false
+    /// Set when the shopping-list sheet's lock was tapped: Plus is opened from
+    /// `onDismiss`, once that sheet is really gone (this view is its presenter
+    /// and Plus's, and SwiftUI silently drops a second request from a presenter
+    /// that still has one up).
+    @State private var unlockAfterShoppingList = false
     /// R5 corridor chips read the same served catalogue as the shopping list
     /// (GET /api/shopping/items) — one runtime source, no bundled table.
     @State private var catalogue = ShoppingItems.shared
@@ -96,11 +101,16 @@ struct TripsView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $showShoppingList) {
+        .sheet(isPresented: $showShoppingList, onDismiss: {
+            guard unlockAfterShoppingList else { return }
+            unlockAfterShoppingList = false
+            openPlusFromShoppingList()
+        }) {
             // Plans from the trip's starting point, falling back to where the
             // phone is — a list is worth nothing without somewhere to drive from.
             if let from = trip.originCoord ?? locationManager.location?.coordinate {
-                ShoppingListSheet(origin: from)
+                ShoppingListSheet(origin: from,
+                                  onUnlock: { unlockAfterShoppingList = true; showShoppingList = false })
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             } else {
@@ -423,7 +433,11 @@ struct TripsView: View {
                 }
                 .disabled(!canRoute)
             }
-            outlineButton("Open in Google Maps", icon: "arrow.up.forward.square") {
+            // A Maps hand-off that silently becomes a paywall reads as
+            // bait-and-switch, so the locked one wears the padlock. Save trip /
+            // Show route stay as they are — they never promised to leave the app.
+            outlineButton("Open in Google Maps",
+                          icon: isLocked ? "lock.fill" : "arrow.up.forward.square") {
                 if isLocked { openPlusFromSample(); return }
                 openGoogleMaps()
             }
@@ -516,9 +530,15 @@ struct TripsView: View {
             }
             .blur(radius: 7)
             .allowsHitTesting(false)
+            // Final review #4: hidden and a label on one chain is not a
+            // labelled button — hidden wins and the whole block leaves the
+            // VoiceOver tree. The blurred rows are what's hidden; the
+            // container below is the element that carries the label, the
+            // button trait and the tap.
             .accessibilityHidden(true)
             .contentShape(Rectangle())
             .onTapGesture { openPlusFromSample() }
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "Unlock the route"))
             .accessibilityAddTraits(.isButton)
 
@@ -527,11 +547,14 @@ struct TripsView: View {
             // above are hidden from accessibility, so this text and button
             // read normally.
             VStack(spacing: 8) {
+                // Three lines and a lower floor: the German sentence is ~100
+                // characters and was ellipsised at large text sizes, where
+                // 0.85 of two lines is not enough room for it.
                 Text(String(localized: "Your route has \(stops.count) stops. Farmsy Plus orders them and draws the road."))
                     .font(.ui(12)).foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.7)
                 Button(String(localized: "Unlock the route")) { openPlusFromSample() }
                     .buttonStyle(PillButtonStyle(.primary, size: .small))
             }
@@ -541,17 +564,25 @@ struct TripsView: View {
             .background(Color.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .padding(.horizontal, 24)
         }
-        .frame(minHeight: 104)
+        // 104 + one more caption line (~14pt): the floor a 3-line sentence
+        // needs, and no more — the button sits at the top of the block, so it
+        // stays on screen at the sheet's half-open detent.
+        .frame(minHeight: 118)
     }
 
     /// The one place free users open Plus from the route preview — the unlock
     /// button, the blurred stop block, and the locked Save/Show route/Maps
-    /// actions all call this, so `paywall_viewed` only ever fires from one spot.
+    /// actions all call this. The Plus sheet reports the view with this trigger.
     private func openPlusFromSample() {
         Haptics.tap()
-        Observability.capture(.paywallViewed,
-                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.routePreview.rawValue])
-        shell.openPlus()
+        shell.openPlus(.routePreview)
+    }
+
+    /// The shopping-list sheet's lock sells the same thing the Shopping tab's
+    /// does — which farms cover the list — so it reports as that sample, not as
+    /// the route preview. Called from the list sheet's `onDismiss`.
+    private func openPlusFromShoppingList() {
+        shell.openPlus(.shoppingSample)
     }
 
     private var totalsBar: some View {

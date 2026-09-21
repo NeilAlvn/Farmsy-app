@@ -348,7 +348,6 @@
 
     <!-- S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
     <string name="memberships_cant_load">Les abonnements ne peuvent pas être chargés pour le moment.</string>
-    <string name="start_from_my_location">Choisissez un point de départ</string>
     <string name="pro_unlock_title">Farmsy Plus</string>
     <string name="pro_unlock_sub">Farmsy le trouve, le planifie et vous dit quand c\'est frais.</string>
     <string name="pro_included_in_both">Inclus dans les deux formules</string>

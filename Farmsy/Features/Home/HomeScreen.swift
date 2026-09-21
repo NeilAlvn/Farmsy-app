@@ -389,7 +389,7 @@ struct HomeScreen: View {
         } else {
             PlusLockCard(title: String(localized: "Alerts and live availability"),
                          text: String(localized: "Hear when strawberries turn up within your radius, and see how recently a farm was confirmed open."),
-                         onUnlock: shell.openPlus)
+                         onUnlock: { shell.openPlus(.homeCard) })
         }
     }
 }

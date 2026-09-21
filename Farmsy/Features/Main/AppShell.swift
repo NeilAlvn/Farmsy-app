@@ -30,7 +30,10 @@ struct ShellActions {
     var showTab: (AppTab) -> Void = { _ in }
     var openTrips: () -> Void = {}
     var openProfile: () -> Void = {}
-    var openPlus: () -> Void = {}
+    /// Opens the one Plus sheet, saying what asked for it. The sheet reports
+    /// `paywall_viewed` with that trigger when it appears, so a call site can
+    /// neither forget to report nor report a paywall that never showed.
+    var openPlus: (AnalyticsValue.Trigger) -> Void = { _ in }
     /// A product page, by shopping id or seasonal slug.
     var openProduct: (String) -> Void = { _ in }
 }
@@ -61,6 +64,11 @@ struct AppShell: View {
     @State private var showProfile = false
     @State private var showTrips = false
     @State private var showPlus = false
+    /// What asked for the Plus sheet — read once by the sheet itself, in
+    /// `onAppear`, so `paywall_viewed` fires exactly once per presentation.
+    /// Set only on the path that really presents Plus: a signed-out tap goes to
+    /// the Auth sheet instead and reports nothing.
+    @State private var plusTrigger: AnalyticsValue.Trigger?
     @State private var productSlug: ProductRoute?
     @State private var showSurvey = false
     @State private var tripDetent: PresentationDetent = .fraction(0.92)
@@ -75,7 +83,7 @@ struct AppShell: View {
             showTab: { tab = $0 },
             openTrips: { requireAuth { showTrips = true } },
             openProfile: { showProfile = true },
-            openPlus: { requireAuth { showPlus = true } },
+            openPlus: { trigger in requireAuth { plusTrigger = trigger; showPlus = true } },
             openProduct: { productSlug = ProductRoute(slug: $0) })
     }
 
@@ -124,7 +132,7 @@ struct AppShell: View {
                     .presentationCornerRadius(Radius.sheet)
                     // Same reason as Profile/Trips below: `FarmStatusSection`'s
                     // "Confirmed today — see when with Plus" row calls
-                    // `shell.openPlus()` from inside this sheet, which needs
+                    // `shell.openPlus(_:)` from inside this sheet, which needs
                     // to present ON TOP of the farm card, not get dropped by
                     // the same one-sheet-per-presenter limit.
                     .sheet(isPresented: showPlusInFarmCard) { plusSheetContent() }
@@ -149,6 +157,10 @@ struct AppShell: View {
                 // `showPlusInProfile` is one of three views onto the single
                 // `showPlus` (see below); its setter still writes `showPlus`.
                 .sheet(isPresented: showPlusInProfile) { plusSheetContent() }
+                // Final review #5: Profile's "Sign in" used to `dismiss()` and
+                // then ask for Auth, which the root presenter — still animating
+                // Profile out — silently dropped. Same nesting as the farm card.
+                .sheet(isPresented: showAuthInProfile) { AuthView() }
         }
         .sheet(isPresented: $showTrips) {
             TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
@@ -170,13 +182,12 @@ struct AppShell: View {
         }
         // The root presentation — used when none of Trips, Profile or the farm
         // card owns the request (every other Plus entry point — Shopping's
-        // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus()`
+        // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus(_:)`
         // while no AppShell-owned sheet is up, so this is the one they hit).
         .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
-        // Root presentation for Auth, same shape as Plus above: used only
-        // when the farm card (the one place signed-out `requireAuth` can
-        // fire while an AppShell sheet is up — see the trace in the fix
-        // round 5 report) doesn't own the request.
+        // Root presentation for Auth, same shape as Plus above: used only when
+        // neither the farm card nor Profile — the two surfaces a signed-out
+        // `requireAuth`/`requestAuth` can fire from — owns the request.
         .sheet(isPresented: showAuthAtRoot) { AuthView() }
         // Task 4 fix round 4: a sheet's presented content inherits the
         // environment of the view its `.sheet(...)` modifier is attached to —
@@ -198,10 +209,25 @@ struct AppShell: View {
     /// presenter that already has one up, so the same boolean is exposed as
     /// four bindings (root / inside Trips / inside Profile / inside the farm
     /// card), each true only when that surface should own the presentation,
-    /// each writing back to the single `showPlus` on set. Trips, Profile and
-    /// the farm card are mutually exclusive at the root (the same
-    /// one-sheet-per-presenter limit keeps more than one of them from being up
-    /// together), so exactly one of the four is ever true.
+    /// each writing back to the single `showPlus` on set.
+    ///
+    /// What is actually true — not "exactly one is ever true", which the old
+    /// comment claimed and which a pin tapped behind the half-open trip sheet
+    /// breaks: MORE THAN ONE getter may be true at once, and that is safe.
+    /// Only a MOUNTED sheet's nested `.sheet` can present anything, so a true
+    /// binding inside a sheet that is not on screen does nothing at all; and
+    /// the root binding presents only when no AppShell-owned sheet is up. So
+    /// the request lands on the surface that is actually in front, and never
+    /// twice.
+    ///
+    /// Do NOT "harden" the farm-card bindings with `!showTrips && !showProfile`
+    /// (that was tried and reverted): those flags go stale. Drag the farm card
+    /// to its half detent, tap "Plan a route" on the live map behind it, and
+    /// `showTrips` is set while the root presenter is busy with the card — so
+    /// Trips never mounts and the flag sticks. With the extra clauses the card's
+    /// own Plus row then had NO presenter at all: the farm-card binding was
+    /// false because of the stale flag, and `showPlusInTrips` lived inside a
+    /// `TripsView` that was never built.
     private var showPlusAtRoot: Binding<Bool> {
         Binding(get: { showPlus && !showTrips && !showProfile && selectedPin == nil }, set: { showPlus = $0 })
     }
@@ -215,13 +241,19 @@ struct AppShell: View {
         Binding(get: { showPlus && selectedPin != nil }, set: { showPlus = $0 })
     }
 
-    /// The same one-source-of-truth split as `showPlus` above, for `showAuth`.
-    /// Only the farm card needs the nested form today (see the fix round 5
-    /// report's trace of every `requestAuth`/`requireAuth` call reachable from
-    /// an AppShell sheet) — Trips can't be reached signed out, and every
-    /// Profile trigger dismisses Profile before asking for auth.
+    /// The same one-source-of-truth split as `showPlus` above, for `showAuth`,
+    /// and the same rule: overlapping getters are fine, an unmounted sheet
+    /// presents nothing, and the root only fires when nothing else is up.
+    /// The farm card and Profile both need the nested form (Profile since final
+    /// review #5: its "Sign in" no longer dismisses Profile first). Trips has
+    /// none because it cannot be reached signed out, so nothing inside it ever
+    /// asks for auth — if that changes, it wants a `showAuthInTrips` exactly
+    /// like `showPlusInTrips`, and the root binding here already excludes it.
     private var showAuthAtRoot: Binding<Bool> {
-        Binding(get: { showAuth && selectedPin == nil }, set: { showAuth = $0 })
+        Binding(get: { showAuth && !showTrips && !showProfile && selectedPin == nil }, set: { showAuth = $0 })
+    }
+    private var showAuthInProfile: Binding<Bool> {
+        Binding(get: { showAuth && showProfile }, set: { showAuth = $0 })
     }
     private var showAuthInFarmCard: Binding<Bool> {
         Binding(get: { showAuth && selectedPin != nil }, set: { showAuth = $0 })
@@ -230,11 +262,21 @@ struct AppShell: View {
     /// The Plus sheet's one content definition, reused by whichever binding
     /// above is presenting it — never duplicated, so there's still exactly one
     /// `ProUpsellSheet` and no risk of double-firing its analytics.
+    ///
+    /// It is also the one place `paywall_viewed` is captured. Call sites used to
+    /// capture it themselves, which reported a paywall for signed-out taps that
+    /// actually got the sign-in sheet, and reported nothing at all for the four
+    /// entry points that never had a capture. `onAppear` runs once per
+    /// presentation, so one shown paywall is one event.
     private func plusSheetContent() -> some View {
         ProUpsellSheet()
             .presentationDetents([.fraction(0.92)])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(Radius.sheet)
+            .onAppear {
+                guard let trigger = plusTrigger else { return }
+                Observability.capture(.paywallViewed, [AnalyticsProp.trigger: trigger.rawValue])
+            }
     }
 
     /// Farm cards open for everyone, signed out included. Opening a farm from

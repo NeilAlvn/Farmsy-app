@@ -64,7 +64,6 @@
     <string name="lifetime_never_expires">Einmal zahlen, läuft nie ab. Sonst nichts zu tun.</string>
     <string name="upgrade_to_lifetime">Auf Lebenslang upgraden</string>
     <string name="no_membership_yet">Du hast noch keine Mitgliedschaft</string>
-    <string name="unlock_all_farms">Schalte alle Details jedes Hofs frei.</string>
     <string name="manage_subscription">Abo verwalten</string>
     <string name="trial_active">Deine Testphase läuft</string>
     <string name="membership_ends_arg">Zugang bis %1$s</string>
@@ -211,7 +210,6 @@
     <string name="shopping_add_typed_arg">„%1$s“ hinzufügen</string>
     <string name="shopping_build_route_stops_arg">Meine Route erstellen · %1$d Stopps</string>
     <string name="shopping_find_farms_bar">Höfe für meine Liste finden</string>
-    <string name="shopping_plus_hint_long">Farmsy Plus wählt so wenige Höfe wie möglich, die deine Liste abdecken, und plant die Fahrt. Tippe auf den Button unten.</string>
     <string name="shopping_plus_hint_short">Farmsy Plus wählt so wenige Höfe wie möglich, die deine Liste abdecken. Tippe auf den Button unten.</string>
     <string name="shopping_coverage_arg">%1$d von %2$d Produkten</string>
     <string name="change_farm">Anderen Hof wählen</string>

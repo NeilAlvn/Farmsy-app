@@ -64,7 +64,6 @@
     <string name="lifetime_never_expires">Un seul paiement, sans expiration. Rien d\'autre à faire.</string>
     <string name="upgrade_to_lifetime">Passer à l\'offre À vie</string>
     <string name="no_membership_yet">Vous n\'avez pas encore d\'abonnement</string>
-    <string name="unlock_all_farms">Débloquez tous les détails de chaque ferme.</string>
     <string name="manage_subscription">Gérer l\'abonnement</string>
     <string name="trial_active">Votre essai est actif</string>
     <string name="membership_ends_arg">Accès jusqu\'au %1$s</string>
@@ -211,7 +210,6 @@
     <string name="shopping_add_typed_arg">Ajouter « %1$s »</string>
     <string name="shopping_build_route_stops_arg">Créer mon trajet · %1$d arrêts</string>
     <string name="shopping_find_farms_bar">Trouver des fermes pour ma liste</string>
-    <string name="shopping_plus_hint_long">Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste et prépare le trajet. Touchez le bouton ci-dessous.</string>
     <string name="shopping_plus_hint_short">Farmsy Plus choisit le moins de fermes possible pour couvrir votre liste. Touchez le bouton ci-dessous.</string>
     <string name="shopping_coverage_arg">%1$d produits sur %2$d</string>
     <string name="change_farm">Changer de ferme</string>

@@ -302,6 +302,12 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
     val routeLinePx = with(density) { 5.dp.toPx() }
 
     val pins by farms.pins.collectAsState()
+    // Derived from the COLLECTED profile, never from `session.hasFullAccess`
+    // (a plain read of the backing field, which does not invalidate the
+    // composition) — so buying Plus mid-session unlocks the Confirmed-today
+    // chip and its pins instead of leaving them locked.
+    val profile by session.profile.collectAsState()
+    val hasFullAccess = profile?.hasFullAccess == true
     val isLoading by farms.isLoading.collectAsState()
     val loadError by farms.loadError.collectAsState()
     val searchText by farms.searchText.collectAsState()
@@ -495,7 +501,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                 visible.forEach { pin ->
                     // The focused pin is drawn highlighted below — skip it here.
                     if (pin.osmId == focusPin?.osmId) return@forEach
-                    val confirmed = session.hasFullAccess && pin.osmId in confirmedToday
+                    val confirmed = hasFullAccess && pin.osmId in confirmedToday
                     key(pin.osmId) {
                         Marker(
                             state = MarkerState(LatLng(pin.lat, pin.lng)),
@@ -544,7 +550,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                         Marker(
                             state = MarkerState(LatLng(fp.lat, fp.lng)),
                             title = fp.name, snippet = fp.city,
-                            icon = highlightedPinBitmap(fp.primaryCategory, session.hasFullAccess && fp.osmId in confirmedToday),
+                            icon = highlightedPinBitmap(fp.primaryCategory, hasFullAccess && fp.osmId in confirmedToday),
                             anchor = androidx.compose.ui.geometry.Offset(0.5f, 1f),
                             zIndex = 4f,
                             onClick = { onOpenFarm(fp); true },
@@ -661,16 +667,16 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                     if (n > 0) {
                         Chip(
                             stringResource(R.string.confirmed_open_today_arg, n),
-                            icon = if (session.hasFullAccess) null else Icons.Filled.Lock,
+                            icon = if (hasFullAccess) null else Icons.Filled.Lock,
                             selected = fConfirmed,
                             dot = if (fConfirmed) null else FarmsyColors.vividPositive,
                         ) {
-                            if (session.hasFullAccess) {
+                            if (hasFullAccess) {
                                 farms.confirmedTodayIds.value = confirmedToday
                                 farms.filterConfirmedToday.value = !fConfirmed
                             } else {
                                 Observability.capture(AnalyticsEvent.PRO_FILTER_TAPPED, mapOf(AnalyticsProp.FILTER to "confirmed_today"))
-                                shell.openPlus()
+                                shell.openPlus(AnalyticsValue.Trigger.FILTER_ROW)
                             }
                         }
                     }
