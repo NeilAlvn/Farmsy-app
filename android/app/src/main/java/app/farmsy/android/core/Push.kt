@@ -125,9 +125,28 @@ object PushRegistrar {
         if (ok) prefs.edit().putString(SENT_KEY, stamp).apply()
     }
 
-    private fun notificationsAllowed(ctx: Context): Boolean =
+    /// Whether the OS will let a notification actually show: the runtime
+    /// permission on API 33+, always true below it (there is none to check).
+    fun notificationsAllowed(ctx: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    /// Pure, so it is trivial to test: the Profile row never touches
+    /// `ContextCompat`/`ActivityCompat` itself, it asks this what to show.
+    ///
+    /// - [granted]: `POST_NOTIFICATIONS` is granted (API 33+), or always true below API 33.
+    /// - [enabled]: `NotificationManagerCompat.areNotificationsEnabled()` — the user can still
+    ///   have the channel/app muted in system settings even with the permission granted, or on
+    ///   an OS with no runtime permission at all.
+    /// - [canAsk]: the system will still show the permission dialog — i.e. either it has never
+    ///   been asked, or `shouldShowRequestPermissionRationale` is true. Ignored below API 33.
+    fun notificationRowState(granted: Boolean, enabled: Boolean, canAsk: Boolean): NotificationRowState = when {
+        granted && enabled -> NotificationRowState.ON
+        // Asking again only helps when the permission itself is the thing
+        // missing — a granted-but-muted channel has nothing left to request.
+        !granted && canAsk -> NotificationRowState.TURN_ON
+        else -> NotificationRowState.OPEN_SETTINGS
+    }
 
     private fun ensureChannel(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -166,6 +185,9 @@ object PushRegistrar {
     @Serializable private data class Register(val platform: String, val token: String, val locale: String)
     @Serializable private data class TokenOnly(val token: String)
 }
+
+/// What the Profile notifications row shows for the current permission state.
+enum class NotificationRowState { TURN_ON, OPEN_SETTINGS, ON }
 
 /// FCM's callbacks. Declared in the manifest; the system instantiates it.
 class FarmsyMessagingService : FirebaseMessagingService() {

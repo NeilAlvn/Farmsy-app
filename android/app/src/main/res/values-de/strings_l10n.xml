@@ -248,6 +248,7 @@
     <string name="farms_within_100km_of_arg">%1$d Höfe im Umkreis von 100 km um %2$s</string>
     <string name="farms_within_100km_of_you">%d Höfe im Umkreis von 100 km um dich</string>
     <string name="turn_on_notifications">Benachrichtigungen aktivieren</string>
+    <string name="turn_on">Aktivieren</string>
     <string name="maybe_later">Vielleicht später</string>
     <string name="ob_ready">Bereit</string>
     <string name="ob_youre_all">Du bist startklar</string>

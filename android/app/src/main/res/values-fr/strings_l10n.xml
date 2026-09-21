@@ -248,6 +248,7 @@
     <string name="farms_within_100km_of_arg">%1$d fermes dans un rayon de 100 km de %2$s</string>
     <string name="farms_within_100km_of_you">%d fermes dans un rayon de 100 km de vous</string>
     <string name="turn_on_notifications">Activer les notifications</string>
+    <string name="turn_on">Activer</string>
     <string name="maybe_later">Peut-être plus tard</string>
     <string name="ob_ready">Prêt</string>
     <string name="ob_youre_all">Vous êtes fin</string>
