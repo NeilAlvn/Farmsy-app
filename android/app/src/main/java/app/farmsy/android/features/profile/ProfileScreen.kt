@@ -1,8 +1,17 @@
 package app.farmsy.android.features.profile
 
+import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import app.farmsy.android.core.NotificationRowState
+import app.farmsy.android.core.PushRegistrar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -157,6 +166,50 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
     // for them to cancel.
     var deletedState by remember { mutableStateOf<DeletedState?>(null) }
 
+    // Notifications row. `permanentlyDenied` only turns true once a request this
+    // session came back denied with `shouldShowRequestPermissionRationale` false —
+    // that's the one signal that distinguishes "just said no" from "chose don't
+    // ask again". Before that we have no record, so a not-granted state defaults
+    // to "Turn on" rather than sending someone straight to Settings.
+    // ponytail: this resets each time Profile is recomposed from scratch (no
+    // SharedPreferences record of "was asked before"), so a permission denied
+    // permanently in an earlier session can briefly show "Turn on" again until
+    // the launcher round-trips once more. Persist the flag if that proves annoying.
+    var permanentlyDenied by remember { mutableStateOf(false) }
+    var notificationState by remember { mutableStateOf(NotificationRowState.TURN_ON) }
+    fun refreshNotificationState() {
+        val canAsk = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || !permanentlyDenied
+        notificationState = PushRegistrar.notificationRowState(
+            granted = PushRegistrar.notificationsAllowed(context),
+            enabled = NotificationManagerCompat.from(context).areNotificationsEnabled(),
+            canAsk = canAsk,
+        )
+    }
+    // Reuses PushRegistrar.sync — the same registration call onboarding's notify
+    // step makes after its own grant — so there is one path to a posted token.
+    val notifPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            scope.launch { PushRegistrar.sync(currentSession?.user?.id, session.accessToken()) }
+        } else {
+            val activity = context as? Activity
+            permanentlyDenied = activity != null &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+        }
+        refreshNotificationState()
+    }
+    fun onNotificationRowTap() {
+        when (notificationState) {
+            // Only reachable on API 33+ — see notificationRowState.
+            NotificationRowState.TURN_ON -> notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            NotificationRowState.OPEN_SETTINGS -> context.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            )
+            NotificationRowState.ON -> {}
+        }
+    }
+    LaunchedEffect(Unit) { refreshNotificationState() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refreshNotificationState() }
+
     LaunchedEffect(Unit) { session.refreshProfile() }
     LaunchedEffect(userId) {
         val uid = userId ?: return@LaunchedEffect
@@ -272,6 +325,17 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
                     }
                 }
                 ListRow(
+                    Icons.Outlined.NotificationsActive, stringResource(R.string.notifications),
+                    value = stringResource(
+                        when (notificationState) {
+                            NotificationRowState.TURN_ON -> R.string.turn_on
+                            NotificationRowState.OPEN_SETTINGS -> R.string.open_settings
+                            NotificationRowState.ON -> R.string.on
+                        }
+                    ),
+                    chevron = false,
+                ) { onNotificationRowTap() }
+                ListRow(
                     Icons.Outlined.Notifications, stringResource(R.string.product_alerts),
                     subtitle = if (session.hasFullAccess) null else stringResource(R.string.farmsy_plus),
                 ) {
@@ -287,12 +351,6 @@ fun ProfileScreen(onClose: () -> Unit, onOpenPlus: () -> Unit) {
                     Icons.Outlined.Language, stringResource(R.string.language),
                     value = if (currentLang == LanguageStore.Lang.SYSTEM) stringResource(R.string.system_default) else currentLang.displayName,
                 ) { showLanguage = true }
-                ListRow(Icons.Outlined.NotificationsActive, stringResource(R.string.notifications)) {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    )
-                }
                 ListRow(Icons.Outlined.DirectionsWalk, stringResource(R.string.accessibility)) { showAccessibility = true }
             }
 
@@ -669,8 +727,10 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
+                    // Farm details are free now (P0-2) — sell the renewal on the same
+                    // Plus story as everywhere else, not on "unlock the address".
                     Text(
-                        stringResource(R.string.renew_to_unlock),
+                        stringResource(R.string.renew_and_farmsy_finds_it_plans_it_and_tells_you_when_it_s_fres),
                         style = geist(14.sp), color = FarmsyColors.inkMuted
                     )
                 }
@@ -683,8 +743,10 @@ private fun MembershipSection(profile: app.farmsy.android.core.Profile?) {
                         style = geist(16.sp, FontWeight.Bold), color = FarmsyColors.ink
                     )
                     Spacer(Modifier.height(4.dp))
+                    // Farm details are free now (P0-2). Reuse the Plus paywall's own
+                    // planning/alerts line rather than "unlock every farm".
                     Text(
-                        stringResource(R.string.unlock_all_farms),
+                        stringResource(R.string.pro_unlock_sub),
                         style = geist(14.sp), color = FarmsyColors.inkMuted
                     )
                 }

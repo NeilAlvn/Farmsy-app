@@ -248,6 +248,7 @@
     <string name="farms_within_100km_of_arg">%1$d boerderijen binnen 100 km van %2$s</string>
     <string name="farms_within_100km_of_you">%d boerderijen binnen 100 km van jou</string>
     <string name="turn_on_notifications">Meldingen aanzetten</string>
+    <string name="turn_on">Aanzetten</string>
     <string name="maybe_later">Misschien later</string>
     <string name="ob_ready">Klaar</string>
     <string name="ob_youre_all">Je bent helemaal</string>

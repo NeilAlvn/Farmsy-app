@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreLocation
-import UserNotifications
 
 // MARK: - Flow container
 
@@ -727,8 +726,7 @@ private struct NotifyStep: View {
             VStack(spacing: 16) {
                 Button("Turn on notifications") {
                     Task {
-                        _ = try? await UNUserNotificationCenter.current()
-                            .requestAuthorization(options: [.alert, .badge, .sound])
+                        _ = await PushRegistrar.shared.requestAuthorization()
                         onContinue()
                     }
                 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UserNotifications
 
 /// Profile — opened from the Home header. Identity, membership, what Farmsy
 /// knows about you (radius, alerts), preferences, legal, and the way out.
@@ -11,8 +12,12 @@ struct ProfileScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestAuth) private var requestAuth
     @Environment(\.shell) private var shell
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var showLanguage = false
+    // Read on appear and again whenever the app returns to the foreground, so
+    // coming back from Settings (or granting the system prompt) updates the row.
+    @State private var notificationState: NotificationRowState = .turnOn
     @State private var showAccessibility = false
     @State private var avatar = AvatarStore.shared
     @State private var contributions = Contributions.shared
@@ -56,6 +61,33 @@ struct ProfileScreen: View {
     private var initials: String {
         let parts = session.displayName.split(separator: " ").prefix(2).compactMap { $0.first }
         return parts.isEmpty ? "?" : String(parts).uppercased()
+    }
+
+    private var notificationRowValue: String {
+        switch notificationState {
+        case .turnOn: String(localized: "Turn on")
+        case .openSettings: String(localized: "Open Settings")
+        case .on: String(localized: "On")
+        }
+    }
+
+    private func handleNotificationTap() {
+        switch notificationState {
+        case .turnOn:
+            Task {
+                _ = await PushRegistrar.shared.requestAuthorization()
+                await refreshNotificationState()
+            }
+        case .openSettings:
+            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+        case .on:
+            break   // Nothing to do — already on.
+        }
+    }
+
+    private func refreshNotificationState() async {
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        notificationState = PushRegistrar.notificationRowState(status)
     }
 
     @ViewBuilder
@@ -202,6 +234,9 @@ struct ProfileScreen: View {
                             Row(icon: "location", title: String(localized: "Search radius"),
                                 value: "\(Int(radiusKm)) km", chevron: false) {}
                         }
+                        Row(icon: "app.badge", title: String(localized: "Notifications"),
+                            value: notificationRowValue, chevron: false) { handleNotificationTap() }
+                            .accessibilityRemoveTraits(notificationState == .on ? .isButton : [])
                         Row(icon: "bell", title: String(localized: "Product alerts"),
                             subtitle: session.hasFullAccess ? nil : String(localized: "Farmsy Plus")) {
                             if session.hasFullAccess, let url = URL(string: "https://www.farmsy.app/alerts") {
@@ -216,9 +251,6 @@ struct ProfileScreen: View {
                         Row(icon: "globe", title: String(localized: "Language"),
                             value: language.current == .system ? String(localized: "System") : language.current.name) {
                             showLanguage = true
-                        }
-                        Row(icon: "app.badge", title: String(localized: "Notifications")) {
-                            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                         }
                         Row(icon: "figure.walk", title: String(localized: "Accessibility")) { showAccessibility = true }
                     }
@@ -270,6 +302,10 @@ struct ProfileScreen: View {
         }
         .background(Color.cream.ignoresSafeArea())
         .task { await session.refreshProfile() }
+        .task { await refreshNotificationState() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refreshNotificationState() } }
+        }
         .task(id: session.session?.user.id) {
             guard let uid = session.session?.user.id.uuidString.lowercased(), let token = session.session?.accessToken else { return }
             await avatar.load(userId: uid)
@@ -630,14 +666,19 @@ struct MembershipSection: View {
                     Text("Your membership has expired")
                         .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
-                    Text("Renew to unlock full details for every farm again.")
+                    // Farm details are free now (P0-2) — sell the renewal on the same
+                    // Plus story as everywhere else, not on "unlock the address".
+                    Text("Renew and Farmsy finds it, plans it, and tells you when it's fresh again.")
                         .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 } else {
                     Text("You don't have a membership yet")
                         .font(.ui(16, .bold))
                         .foregroundStyle(Color.ink)
-                    Text("Unlock full details for every farm.")
+                    // Farm details are free now (P0-2). The Plus sell is the
+                    // planning/alerts story, not "unlock the address" — same
+                    // line the paywall uses (ProUpsellSheet.swift).
+                    Text("Farmsy finds it, plans it, and tells you when it's fresh.")
                         .font(.ui(14))
                         .foregroundStyle(Color.inkMuted)
                 }

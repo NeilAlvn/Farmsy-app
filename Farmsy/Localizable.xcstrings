@@ -7652,30 +7652,30 @@
         }
       }
     },
-    "Renew to unlock full details for every farm again.": {
+    "Renew and Farmsy finds it, plans it, and tells you when it's fresh again.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Renew to unlock full details for every farm again."
+            "value": "Renew and Farmsy finds it, plans it, and tells you when it's fresh again."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verleng om weer alle details van elke boerderij te ontgrendelen."
+            "value": "Verleng en Farmsy vindt het, plant het en vertelt je weer wanneer het vers is."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Renouvelez pour débloquer à nouveau tous les détails de chaque ferme."
+            "value": "Renouvelez et Farmsy le trouve, le planifie et vous redit quand c'est frais."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verlängere, um wieder alle Details jedes Hofs freizuschalten."
+            "value": "Verlängere und Farmsy findet es, plant es und sagt dir wieder, wann es frisch ist."
           }
         }
       }
@@ -10129,6 +10129,34 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "%lld Tage kostenlos testen"
+          }
+        }
+      }
+    },
+    "Turn on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Turn on"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aanzetten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivieren"
           }
         }
       }

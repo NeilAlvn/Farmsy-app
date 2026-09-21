@@ -57,6 +57,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,11 +78,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalLocationHelper
+import app.farmsy.android.LocalSession
 import app.farmsy.android.R
 import app.farmsy.android.core.AnalyticsEvent
 import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.Observability
+import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmDetailApi
@@ -98,6 +101,7 @@ import app.farmsy.android.ui.theme.PrimaryButton
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /// Seven-screen onboarding — a 1:1 rebuild of iOS OnboardingView: a full-bleed
 /// welcome, a personalization pass (multi-select), a location pick with a radar
@@ -640,7 +644,15 @@ private fun RingingBell(size: Int = 76) {
 @Composable
 private fun NotifyStep(onContinue: () -> Unit) {
     val context = LocalContext.current
-    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onContinue() }
+    val session = LocalSession.current
+    val scope = rememberCoroutineScope()
+    // Fetches and posts the FCM token on a grant — the Profile notifications
+    // row calls the same PushRegistrar.sync after its own grant, so there is
+    // one registration path, not two.
+    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) scope.launch { PushRegistrar.sync(session.session.value?.user?.id, session.accessToken()) }
+        onContinue()
+    }
     Column(Modifier.fillMaxSize().navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.weight(1f))
         Column(Modifier.padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {

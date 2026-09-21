@@ -35,6 +35,16 @@ final class PushRegistrar {
 
     private init() {}
 
+    /// Requests notification permission and, on a grant, registers for a
+    /// device token. Onboarding's "notify" step and the Profile notifications
+    /// row both call this — the one request path.
+    func requestAuthorization() async -> Bool {
+        let granted = (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+        if granted { UIApplication.shared.registerForRemoteNotifications() }
+        return granted
+    }
+
     /// Called whenever the session changes and when the app comes to the
     /// foreground. Asks the system for a token when permission was granted
     /// (the onboarding "notify" step or Settings), which arrives in
@@ -87,6 +97,24 @@ final class PushRegistrar {
               (resp as? HTTPURLResponse)?.statusCode == 200 else { return }
         defaults.set(stamp, forKey: sentKey)
     }
+
+    /// Pure, so it is trivial to test: the Profile row never inspects
+    /// `UNAuthorizationStatus` itself, it asks this what to show.
+    nonisolated static func notificationRowState(_ status: UNAuthorizationStatus) -> NotificationRowState {
+        switch status {
+        case .denied: return .openSettings
+        case .authorized, .provisional, .ephemeral: return .on
+        default: return .turnOn   // .notDetermined, and any future case
+        }
+    }
+}
+
+/// What the Profile notifications row shows for a given system authorization
+/// status.
+enum NotificationRowState: Equatable {
+    case turnOn
+    case openSettings
+    case on
 }
 
 /// The UIKit hooks push needs: the token callback, and what a tap opens.
