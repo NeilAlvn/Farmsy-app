@@ -131,6 +131,13 @@ struct AppShell: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
+                // Task 4 fix round 3: SwiftUI can only present one sheet per
+                // presenter at a time, so a sibling `.sheet(isPresented: $showPlus)`
+                // on the root view is silently ignored while this sheet is up.
+                // Nesting it here lets it present ON TOP of Profile instead.
+                // `showPlusInProfile` is one of three views onto the single
+                // `showPlus` (see below); its setter still writes `showPlus`.
+                .sheet(isPresented: showPlusInProfile) { plusSheetContent() }
         }
         .sheet(isPresented: $showTrips) {
             TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
@@ -138,6 +145,11 @@ struct AppShell: View {
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.5)))
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
+                // Same reason as Profile above: nested so the route-preview
+                // "Unlock the route" / "Show route" taps (Task 4) actually open
+                // Plus instead of doing nothing while the trip sheet is up, and
+                // so closing/purchasing returns to the same trip, now unlocked.
+                .sheet(isPresented: showPlusInTrips) { plusSheetContent() }
         }
         .sheet(item: $productSlug) { r in
             ProductSheet(slug: r.slug)
@@ -145,13 +157,41 @@ struct AppShell: View {
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
         }
-        .sheet(isPresented: $showPlus) {
-            ProUpsellSheet()
-                .presentationDetents([.fraction(0.92)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(Radius.sheet)
-        }
+        // The root presentation — used when neither Trips nor Profile owns the
+        // request (every other Plus entry point: Shopping's pinned bar, Home's
+        // lock card, the Map chip, and Farm detail's lock rows all call
+        // `shell.openPlus()` while no AppShell-owned sheet is up, so this is
+        // the one they already hit).
+        .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
         .sheet(isPresented: $showAuth) { AuthView() }
+    }
+
+    /// One source of truth, `showPlus` — presented from whichever surface is
+    /// frontmost. SwiftUI drops a second `.sheet(isPresented:)` request from a
+    /// presenter that already has one up, so the same boolean is exposed as
+    /// three bindings (root / inside Trips / inside Profile), each true only
+    /// when that surface should own the presentation, each writing back to the
+    /// single `showPlus` on set. Trips and Profile are mutually exclusive at
+    /// the root (the same one-sheet-per-presenter limit keeps both from being
+    /// up together), so exactly one of the three is ever true.
+    private var showPlusAtRoot: Binding<Bool> {
+        Binding(get: { showPlus && !showTrips && !showProfile }, set: { showPlus = $0 })
+    }
+    private var showPlusInTrips: Binding<Bool> {
+        Binding(get: { showPlus && showTrips }, set: { showPlus = $0 })
+    }
+    private var showPlusInProfile: Binding<Bool> {
+        Binding(get: { showPlus && showProfile }, set: { showPlus = $0 })
+    }
+
+    /// The Plus sheet's one content definition, reused by whichever binding
+    /// above is presenting it — never duplicated, so there's still exactly one
+    /// `ProUpsellSheet` and no risk of double-firing its analytics.
+    private func plusSheetContent() -> some View {
+        ProUpsellSheet()
+            .presentationDetents([.fraction(0.92)])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(Radius.sheet)
     }
 
     /// Farm cards open for everyone, signed out included. Opening a farm from
