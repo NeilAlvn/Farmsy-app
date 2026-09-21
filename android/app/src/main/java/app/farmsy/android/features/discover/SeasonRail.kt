@@ -250,8 +250,11 @@ fun IdeaCard(
     ) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { ProductImage(image, fallback, 160.dp, corner = Radius.tile, fallbackSlug = fallbackImage) }
         if (kicker != null) Text(kicker.uppercase(), style = role(TextRole.LABEL), color = FarmsyColors.farmGreen)
-        Text(title, style = role(TextRole.HEADING), color = FarmsyColors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(text, style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted, maxLines = 4, overflow = TextOverflow.Ellipsis)
+        // Lines reserved, not just capped: HorizontalPager is lazy and measures only the
+        // realised page(s), so a shorter title/body on another card would otherwise shrink
+        // this page and the row would resize while swiping.
+        Text(title, style = role(TextRole.HEADING), color = FarmsyColors.ink, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(text, style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted, minLines = 4, maxLines = 4, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.weight(1f))
         if (ingredients.isNotEmpty()) {
             PillButton(

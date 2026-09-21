@@ -206,6 +206,9 @@ struct CardCarousel<Item: Identifiable, Content: View>: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                // Callers bleed the row's trailing edge by Space.s4 for the peek; match it
+                // here so the dots stay centred over the visible card, not the widened row.
+                .padding(.trailing, Space.s4)
             }
         }
     }
