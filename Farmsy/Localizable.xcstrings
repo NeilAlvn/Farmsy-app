@@ -17632,6 +17632,56 @@
           }
         }
       }
+    },
+    "Your route has %lld stops. Farmsy Plus orders them and draws the road.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Route hat %lld Stopps. Farmsy Plus bringt sie in die beste Reihenfolge und zeichnet die Route."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your route has %lld stops. Farmsy Plus orders them and draws the road."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre itinéraire compte %lld arrêts. Farmsy Plus les met dans l'ordre et trace la route."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je route heeft %lld stops. Farmsy Plus zet ze op volgorde en tekent de weg."
+          }
+        }
+      }
+    },
+    "Unlock the route": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route freischalten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Débloquer l'itinéraire"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontgrendel de route"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

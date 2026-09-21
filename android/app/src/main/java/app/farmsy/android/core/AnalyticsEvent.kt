@@ -84,6 +84,7 @@ object AnalyticsValue {
         FILTER_ROW("filter_row"),
         FARM_DETAIL("farm_detail"),
         SHOPPING_SAMPLE("shopping_sample"),
+        ROUTE_PREVIEW("route_preview"),
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

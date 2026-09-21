@@ -165,6 +165,14 @@ private data class SavedTripRow(
 /// POST /api/route and traces itself in.
 class TripStore(context: Context, private val scope: CoroutineScope) {
 
+    companion object {
+        /// Free users with 2+ stops: ordering the stops and drawing the road
+        /// between them is the Plus work (Task 4). `stopCount` is the trip's
+        /// farm stops, not the leg count — a single farm is always free to
+        /// route to.
+        fun isRouteLocked(hasFullAccess: Boolean, stopCount: Int): Boolean = !hasFullAccess && stopCount >= 2
+    }
+
     private val prefs = context.getSharedPreferences("farmsy_trip", Context.MODE_PRIVATE)
     private val stopsKey = "dlb_pending_trip"
     private val originKey = "dlb_trip_origin"
@@ -519,7 +527,15 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     private fun keyOf(coords: List<LatLng>): String =
         coords.joinToString(";") { "%.5f,%.5f".format(it.latitude, it.longitude) }
 
-    suspend fun refreshRoute(pins: Map<String, FarmPin>) {
+    /// `locked`: the caller has already decided (via `isRouteLocked`) that this
+    /// is a free user's multi-stop trip. Skip the request entirely rather than
+    /// let the server 402 it — and drop any stale line/totals so the locked
+    /// screen never shows the paid answer.
+    suspend fun refreshRoute(pins: Map<String, FarmPin>, locked: Boolean = false) {
+        if (locked) {
+            setRouteLine(emptyList()); _distanceMeters.value = null; _durationSeconds.value = null; _onRoads.value = false
+            return
+        }
         val coords = legs(pins)
         if (coords.size < 2) {
             setRouteLine(emptyList()); _distanceMeters.value = null; _durationSeconds.value = null; _onRoads.value = false

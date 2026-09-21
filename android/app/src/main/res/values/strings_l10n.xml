@@ -193,6 +193,9 @@
     <string name="trip_overview">Trip overview</string>
     <string name="pick_farm_on_map">Pick a farm on the map</string>
     <string name="best_order">Best order</string>
+    <!-- Task 4: free preview of the first stop, Plus for the rest. -->
+    <string name="route_stops_locked_arg">Your route has %1$d stops. Farmsy Plus orders them and draws the road.</string>
+    <string name="unlock_the_route">Unlock the route</string>
     <string name="mode_drive">Drive</string>
     <string name="mode_bike">Bike</string>
     <string name="mode_walk">Walk</string>

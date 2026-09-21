@@ -193,6 +193,8 @@
     <string name="trip_overview">Tourübersicht</string>
     <string name="pick_farm_on_map">Wähle einen Hof auf der Karte</string>
     <string name="best_order">Beste Reihenfolge</string>
+    <string name="route_stops_locked_arg">Deine Route hat %1$d Stopps. Farmsy Plus bringt sie in die beste Reihenfolge und zeichnet die Route.</string>
+    <string name="unlock_the_route">Route freischalten</string>
     <string name="mode_drive">Auto</string>
     <string name="mode_bike">Fahrrad</string>
     <string name="mode_walk">Zu Fuß</string>

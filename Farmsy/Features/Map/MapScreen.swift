@@ -138,7 +138,11 @@ struct MapScreen: View {
         // while the Trips sheet is open. On add, fit the camera to the trip so the
         // whole trace is visible; a single stop just centres on that farm.
         .onChange(of: trip.stopIds) { old, new in
-            Task { await trip.refreshRoute(pins: pinLookup) }
+            // Task 4: the same lock the Trips sheet applies — a free user's
+            // multi-stop trip never asks the server for the ordered road, even
+            // when the stop is added from the map rather than from the sheet.
+            let locked = TripStore.isRouteLocked(hasFullAccess: session.hasFullAccess, stopCount: new.count)
+            Task { await trip.refreshRoute(pins: pinLookup, locked: locked) }
             if new.count > old.count { fitToTrip() }
         }
         // An explicit fit request — opening a saved trip, or setting the origin.

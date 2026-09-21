@@ -3,6 +3,7 @@ package app.farmsy.android.features.trips
 import android.location.Geocoder
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,11 +66,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,14 +83,19 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.MapsHandoff
 import app.farmsy.android.core.FarmPin
+import app.farmsy.android.core.Observability
 import app.farmsy.android.core.SavedTrip
 import app.farmsy.android.core.TravelMode
 import app.farmsy.android.core.TripGeometry
 import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.core.TripStore
 import app.farmsy.android.features.discover.RecommendationCarousel
+import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.place.PlaceSearchSheet
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.geist
@@ -106,10 +116,14 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val session = LocalSession.current
     val locationHelper = LocalLocationHelper.current
     val context = LocalContext.current
+    val shell = LocalShell.current
     val scope = rememberCoroutineScope()
 
     val pins by farms.pins.collectAsState()
     val stopIds by trip.stopIds.collectAsState()
+    // Collected so `session.hasFullAccess` (below) recomposes when membership
+    // changes, not only when the auth session itself does.
+    val profile by session.profile.collectAsState()
     val originCoord by trip.originCoord.collectAsState()
     // R8: the drive has an end of its own. Read here so the Maps hand-off can
     // tell a stop apart from the destination.
@@ -136,6 +150,20 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
     val pinIndex = remember(pins) { pins.associateBy { it.osmId } }
     val stops = remember(stopIds, pinIndex) { stopIds.mapNotNull { pinIndex[it] } }
     val canRoute = (originCoord != null && stops.isNotEmpty()) || stops.size >= 2
+    // Task 4: looking is free, ordering stops and drawing the road is Plus. A
+    // single stop is a plain directions request either way, so it stays free.
+    val isLocked = TripStore.isRouteLocked(session.hasFullAccess, stops.size)
+
+    // The one place free users open Plus from the route preview — the unlock
+    // button, the blurred stop block, and the locked Save/Show route/Maps
+    // actions all call this, so `paywall_viewed` only ever fires from one spot.
+    fun openPlusFromSample() {
+        Observability.capture(
+            AnalyticsEvent.PAYWALL_VIEWED,
+            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.ROUTE_PREVIEW.key),
+        )
+        shell.openPlus()
+    }
 
     var planTab by remember { mutableStateOf(true) }
     var naming by remember { mutableStateOf(false) }
@@ -159,12 +187,12 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                 }.getOrNull()
             } ?: "%.3f, %.3f".format(loc.latitude, loc.longitude)
             trip.setOrigin(LatLng(loc.latitude, loc.longitude), label)
-            trip.refreshRoute(pinIndex)
+            trip.refreshRoute(pinIndex, locked = isLocked)
         }
     }
 
     // Recompute the route whenever the stops change; load saved trips once signed in.
-    LaunchedEffect(stopIds, originCoord) { trip.refreshRoute(pinIndex) }
+    LaunchedEffect(stopIds, originCoord, isLocked) { trip.refreshRoute(pinIndex, locked = isLocked) }
     LaunchedEffect(uid) { uid?.let { trip.loadTrips(it) } }
     // R5 corridor chips read the same served catalogue as the shopping list
     // (GET /api/shopping/items) — one runtime source, no bundled table.
@@ -205,7 +233,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                     // iOS OriginBar: tapping the bar opens the search sheet (not GPS
                     // directly). "Use my location" lives inside the sheet now.
                     onOpenSearch = { showOriginSearch = true },
-                    onClear = { trip.clearOrigin(); scope.launch { trip.refreshRoute(pinIndex) } },
+                    onClear = { trip.clearOrigin(); scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) } },
                 )
 
                 Spacer(Modifier.size(14.dp))
@@ -266,15 +294,29 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                             color = FarmsyColors.ink, modifier = Modifier.padding(14.dp),
                         )
                         val rows = maxOf(stops.size, 5)
-                        for (i in 0 until rows) {
-                            if (i < stops.size) {
-                                StopRow(
-                                    index = i, pin = stops[i], legLabel = legLabel(i, stops, originCoord, mode),
-                                    onRemove = { trip.remove(stops[i].osmId) },
-                                    onOpen = { onOpenFarm(stops[i]) },
-                                )
-                            } else {
-                                EmptyStopRow(i)
+                        if (isLocked) {
+                            // Task 4: the first stop is a real, interactive row like any
+                            // other. Farmsy ordering the rest and drawing the road
+                            // between them is the Plus work, so those rows — real, not
+                            // placeholders — are blurred behind one unlock row rather
+                            // than hidden outright (never a padlock on an empty screen).
+                            StopRow(
+                                index = 0, pin = stops[0], legLabel = legLabel(0, stops, originCoord, mode),
+                                onRemove = { trip.remove(stops[0].osmId) },
+                                onOpen = { onOpenFarm(stops[0]) },
+                            )
+                            LockedStopsBlock(rows, stops, originCoord, mode, onUnlock = ::openPlusFromSample)
+                        } else {
+                            for (i in 0 until rows) {
+                                if (i < stops.size) {
+                                    StopRow(
+                                        index = i, pin = stops[i], legLabel = legLabel(i, stops, originCoord, mode),
+                                        onRemove = { trip.remove(stops[i].osmId) },
+                                        onOpen = { onOpenFarm(stops[i]) },
+                                    )
+                                } else {
+                                    EmptyStopRow(i)
+                                }
                             }
                         }
                     }
@@ -292,7 +334,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                             reorderNote = if (saved >= 0.5)
                                 context.getString(R.string.reordered_km_shorter, saved.toInt())
                             else context.getString(R.string.already_shortest)
-                            scope.launch { trip.refreshRoute(pinIndex) }
+                            scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) }
                         },
                     )
                 }
@@ -300,50 +342,56 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                 // Mode selector
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ModeButton(TravelMode.CAR, Icons.Filled.DirectionsCar, R.string.mode_drive, mode, Modifier.weight(1f)) {
-                        trip.setMode(it); scope.launch { trip.refreshRoute(pinIndex) }
+                        trip.setMode(it); scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) }
                     }
                     ModeButton(TravelMode.BIKE, Icons.Filled.DirectionsBike, R.string.mode_bike, mode, Modifier.weight(1f)) {
-                        trip.setMode(it); scope.launch { trip.refreshRoute(pinIndex) }
+                        trip.setMode(it); scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) }
                     }
                     ModeButton(TravelMode.WALK, Icons.Filled.DirectionsWalk, R.string.mode_walk, mode, Modifier.weight(1f)) {
-                        trip.setMode(it); scope.launch { trip.refreshRoute(pinIndex) }
+                        trip.setMode(it); scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) }
                     }
                 }
 
-                // Totals bar
-                Row(
-                    Modifier.fillMaxWidth().background(Color(0xFFF3F6F2), RoundedCornerShape(16.dp)).padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.NearMe, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.size(10.dp))
-                    val text = when {
-                        !canRoute -> stringResource(R.string.add_farms_to_see)
-                        isRouting -> stringResource(R.string.finding_the_road)
-                        else -> totalsText(distanceMeters, durationSeconds, onRoads)
+                // Totals bar — Task 4: the totals are the full ordered route's
+                // answer, Plus work, so the row is left out entirely for a locked
+                // trip rather than shown with a blurred/fake distance.
+                if (!isLocked) {
+                    Row(
+                        Modifier.fillMaxWidth().background(Color(0xFFF3F6F2), RoundedCornerShape(16.dp)).padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.NearMe, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.size(10.dp))
+                        val text = when {
+                            !canRoute -> stringResource(R.string.add_farms_to_see)
+                            isRouting -> stringResource(R.string.finding_the_road)
+                            else -> totalsText(distanceMeters, durationSeconds, onRoads)
+                        }
+                        Text(
+                            text,
+                            style = if (canRoute && !isRouting) geist(14.sp, FontWeight.SemiBold) else geist(14.sp),
+                            color = if (canRoute && !isRouting) FarmsyColors.ink else FarmsyColors.inkMuted,
+                        )
                     }
-                    Text(
-                        text,
-                        style = if (canRoute && !isRouting) geist(14.sp, FontWeight.SemiBold) else geist(14.sp),
-                        color = if (canRoute && !isRouting) FarmsyColors.ink else FarmsyColors.inkMuted,
-                    )
                 }
 
-                // Actions
+                // Actions. Locked: Save trip / Show route / Open in Maps would each
+                // hand over the full ordered route, so they open Plus instead —
+                // same look, same enabled state, different action.
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlineAction(
                         stringResource(R.string.save_trip), Icons.Filled.Bookmark, Modifier.weight(1f),
                         enabled = stops.isNotEmpty() && uid != null,
-                    ) { tripName = ""; naming = true }
+                    ) { if (isLocked) openPlusFromSample() else { tripName = ""; naming = true } }
                     OutlineAction(
                         stringResource(R.string.show_route), Icons.Filled.NearMe, Modifier.weight(1f),
                         enabled = canRoute,
-                    ) { trip.requestFit() }
+                    ) { if (isLocked) openPlusFromSample() else trip.requestFit() }
                 }
                 OutlineAction(
                     stringResource(R.string.open_in_google_maps), Icons.Filled.OpenInNew, Modifier.fillMaxWidth(),
                     enabled = stops.isNotEmpty(),
-                ) { openGoogleMaps(context, originCoord, stops, destinationCoord, mode) }
+                ) { if (isLocked) openPlusFromSample() else openGoogleMaps(context, originCoord, stops, destinationCoord, mode) }
 
                 // R4 · farms on the way. Shown once there's a road to measure against.
                 // Fed the FILTERED pin set (the map's own list) so it never offers a
@@ -372,7 +420,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                         selectedProducts = selectedProducts,
                         onToggleProduct = { trip.toggleCorridorProduct(it) },
                         onOpenFarm = onOpenFarm,
-                        onAddStop = { pin -> trip.toggle(pin.osmId); scope.launch { trip.refreshRoute(pinIndex) } },
+                        onAddStop = { pin -> trip.toggle(pin.osmId); scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) } },
                     )
                 }
             } else {
@@ -431,7 +479,7 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
         PlaceSearchSheet(
             onPick = { coord, label ->
                 trip.setOrigin(coord, label)
-                scope.launch { trip.refreshRoute(pinIndex) }
+                scope.launch { trip.refreshRoute(pinIndex, locked = isLocked) }
             },
             onLocate = { useMyLocation() },
             onDismiss = { showOriginSearch = false },
@@ -645,6 +693,68 @@ private fun EmptyStopRow(index: Int) {
         ) { Text("${index + 1}", style = geist(12.sp, FontWeight.Bold), color = FarmsyColors.inkMuted.copy(alpha = 0.6f)) }
         Spacer(Modifier.size(12.dp))
         Text(stringResource(R.string.pick_farm_on_map), style = geist(15.sp), color = FarmsyColors.inkMuted)
+    }
+}
+
+/// Task 4's free sample: every row from the second stop on, drawn for real and
+/// blurred — never a padlock on an empty screen — with one unlock row
+/// underneath. The whole blurred block is also a tap target, so both paths call
+/// the same `onUnlock` (mirrors ShoppingScreen's `ShoppingSample`).
+@Composable
+private fun LockedStopsBlock(
+    rows: Int,
+    stops: List<FarmPin>,
+    originCoord: LatLng?,
+    mode: TravelMode,
+    onUnlock: () -> Unit,
+) {
+    // Modifier.blur() needs a RenderEffect, API 31+; older devices get a flat
+    // scrim over the same content instead of no obscuring at all.
+    val hide = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Modifier.blur(7.dp)
+    } else {
+        Modifier.drawWithContent {
+            drawContent()
+            drawRect(FarmsyColors.surface.copy(alpha = 0.85f))
+        }
+    }
+    val unlockLabel = stringResource(R.string.unlock_the_route)
+    Column {
+        Box(
+            Modifier
+                .semantics { contentDescription = unlockLabel }
+                .clickable(onClickLabel = unlockLabel, role = Role.Button, onClick = onUnlock),
+        ) {
+            Column(hide.clearAndSetSemantics {}) {
+                for (i in 1 until rows) {
+                    if (i < stops.size) {
+                        StopRow(i, stops[i], legLabel(i, stops, originCoord, mode), onRemove = {}, onOpen = {})
+                    } else {
+                        EmptyStopRow(i)
+                    }
+                }
+            }
+        }
+        Column(
+            Modifier.fillMaxWidth().padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.route_stops_locked_arg, stops.size),
+                style = geist(13.sp), color = FarmsyColors.inkMuted,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Surface(
+                Modifier.clickable(onClick = onUnlock),
+                shape = RoundedCornerShape(50), color = FarmsyColors.farmGreenMap,
+            ) {
+                Text(
+                    unlockLabel, style = geist(14.sp, FontWeight.SemiBold), color = Color.White,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                )
+            }
+        }
     }
 }
 

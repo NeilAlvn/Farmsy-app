@@ -193,6 +193,8 @@
     <string name="trip_overview">Overzicht</string>
     <string name="pick_farm_on_map">Kies een boerderij op de kaart</string>
     <string name="best_order">Beste volgorde</string>
+    <string name="route_stops_locked_arg">Je route heeft %1$d stops. Farmsy Plus zet ze op volgorde en tekent de weg.</string>
+    <string name="unlock_the_route">Ontgrendel de route</string>
     <string name="mode_drive">Auto</string>
     <string name="mode_bike">Fiets</string>
     <string name="mode_walk">Lopen</string>

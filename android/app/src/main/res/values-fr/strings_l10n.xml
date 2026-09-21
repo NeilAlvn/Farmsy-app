@@ -193,6 +193,8 @@
     <string name="trip_overview">Aperçu du trajet</string>
     <string name="pick_farm_on_map">Choisissez une ferme sur la carte</string>
     <string name="best_order">Meilleur ordre</string>
+    <string name="route_stops_locked_arg">Votre itinéraire compte %1$d arrêts. Farmsy Plus les met dans l\'ordre et trace la route.</string>
+    <string name="unlock_the_route">Débloquer l\'itinéraire</string>
     <string name="mode_drive">Voiture</string>
     <string name="mode_bike">Vélo</string>
     <string name="mode_walk">À pied</string>
