@@ -186,6 +186,9 @@
     <string name="rec_header">AANBEVELING</string>
     <string name="trips">Routes</string>
     <string name="plan_a_trip">Plan een route</string>
+    <string name="plan_a_route">Plan een route</string>
+    <string name="plan_a_farm_route">Plan een boerderijroute</string>
+    <string name="pick_your_stops_farmsy_orders_them_and_draws_the_road">Kies je stops, Farmsy zet ze op volgorde en tekent de weg.</string>
     <string name="my_trips">Mijn routes</string>
     <string name="trip_overview">Overzicht</string>
     <string name="pick_farm_on_map">Kies een boerderij op de kaart</string>

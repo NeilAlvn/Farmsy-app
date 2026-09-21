@@ -186,6 +186,9 @@
     <string name="rec_header">RECOMMANDATION</string>
     <string name="trips">Trajets</string>
     <string name="plan_a_trip">Planifier un trajet</string>
+    <string name="plan_a_route">Planifier un itinéraire</string>
+    <string name="plan_a_farm_route">Planifier un itinéraire de fermes</string>
+    <string name="pick_your_stops_farmsy_orders_them_and_draws_the_road">Choisissez vos arrêts, Farmsy les met dans l\'ordre et trace la route.</string>
     <string name="my_trips">Mes trajets</string>
     <string name="trip_overview">Aperçu du trajet</string>
     <string name="pick_farm_on_map">Choisissez une ferme sur la carte</string>

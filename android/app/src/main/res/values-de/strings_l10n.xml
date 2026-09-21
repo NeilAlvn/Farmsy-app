@@ -186,6 +186,9 @@
     <string name="rec_header">EMPFEHLUNG</string>
     <string name="trips">Touren</string>
     <string name="plan_a_trip">Tour planen</string>
+    <string name="plan_a_route">Route planen</string>
+    <string name="plan_a_farm_route">Hofroute planen</string>
+    <string name="pick_your_stops_farmsy_orders_them_and_draws_the_road">Wähle deine Stopps, Farmsy bringt sie in die beste Reihenfolge und zeichnet die Route.</string>
     <string name="my_trips">Meine Touren</string>
     <string name="trip_overview">Tourübersicht</string>
     <string name="pick_farm_on_map">Wähle einen Hof auf der Karte</string>
