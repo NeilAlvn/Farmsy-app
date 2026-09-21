@@ -17588,6 +17588,50 @@
           }
         }
       }
+    },
+    "We found %lld of %lld products at %lld farms within %lld km.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We vonden %lld van je %lld producten bij %lld boerderijen binnen %lld km."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous avons trouvé %1$lld de vos %2$lld produits dans %3$lld fermes à moins de %4$lld km."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir haben %1$lld deiner %2$lld Produkte bei %3$lld Höfen im Umkreis von %4$lld km gefunden."
+          }
+        }
+      }
+    },
+    "See which farms": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijk welke boerderijen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir quelles fermes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höfe anzeigen"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

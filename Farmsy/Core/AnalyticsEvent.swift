@@ -83,6 +83,7 @@ enum AnalyticsValue {
     enum Trigger: String {
         case filterRow = "filter_row"
         case farmDetail = "farm_detail"
+        case shoppingSample = "shopping_sample"
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

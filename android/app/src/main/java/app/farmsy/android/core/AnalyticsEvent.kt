@@ -83,6 +83,7 @@ object AnalyticsValue {
     enum class Trigger(val key: String) {
         FILTER_ROW("filter_row"),
         FARM_DETAIL("farm_detail"),
+        SHOPPING_SAMPLE("shopping_sample"),
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

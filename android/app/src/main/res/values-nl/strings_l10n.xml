@@ -409,4 +409,6 @@
     <string name="shopping_list_none">Geen boerderij binnen 25 km noemt hier iets van.</string>
     <string name="shopping_list_missing_arg">Niet gevonden in de buurt: %1$s</string>
     <string name="shopping_list_catalogue_failed">De productlijst kon niet worden geladen. Controleer je verbinding en probeer opnieuw.</string>
+    <string name="shopping_sample_coverage_arg">We vonden %1$d van je %2$d producten bij %3$d boerderijen binnen %4$d km.</string>
+    <string name="see_which_farms">Bekijk welke boerderijen</string>
 </resources>

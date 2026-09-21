@@ -409,4 +409,6 @@
     <string name="shopping_list_none">Aucune ferme dans un rayon de 25 km ne mentionne cela.</string>
     <string name="shopping_list_missing_arg">Introuvable à proximité : %1$s</string>
     <string name="shopping_list_catalogue_failed">La liste des produits n’a pas pu être chargée. Vérifiez votre connexion et réessayez.</string>
+    <string name="shopping_sample_coverage_arg">Nous avons trouvé %1$d de vos %2$d produits dans %3$d fermes à moins de %4$d km.</string>
+    <string name="see_which_farms">Voir quelles fermes</string>
 </resources>
