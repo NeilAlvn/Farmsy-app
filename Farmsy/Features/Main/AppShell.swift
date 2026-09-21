@@ -30,7 +30,10 @@ struct ShellActions {
     var showTab: (AppTab) -> Void = { _ in }
     var openTrips: () -> Void = {}
     var openProfile: () -> Void = {}
-    var openPlus: () -> Void = {}
+    /// Opens the one Plus sheet, saying what asked for it. The sheet reports
+    /// `paywall_viewed` with that trigger when it appears, so a call site can
+    /// neither forget to report nor report a paywall that never showed.
+    var openPlus: (AnalyticsValue.Trigger) -> Void = { _ in }
     /// A product page, by shopping id or seasonal slug.
     var openProduct: (String) -> Void = { _ in }
 }
@@ -61,6 +64,11 @@ struct AppShell: View {
     @State private var showProfile = false
     @State private var showTrips = false
     @State private var showPlus = false
+    /// What asked for the Plus sheet — read once by the sheet itself, in
+    /// `onAppear`, so `paywall_viewed` fires exactly once per presentation.
+    /// Set only on the path that really presents Plus: a signed-out tap goes to
+    /// the Auth sheet instead and reports nothing.
+    @State private var plusTrigger: AnalyticsValue.Trigger?
     @State private var productSlug: ProductRoute?
     @State private var showSurvey = false
     @State private var tripDetent: PresentationDetent = .fraction(0.92)
@@ -75,7 +83,7 @@ struct AppShell: View {
             showTab: { tab = $0 },
             openTrips: { requireAuth { showTrips = true } },
             openProfile: { showProfile = true },
-            openPlus: { requireAuth { showPlus = true } },
+            openPlus: { trigger in requireAuth { plusTrigger = trigger; showPlus = true } },
             openProduct: { productSlug = ProductRoute(slug: $0) })
     }
 
@@ -124,7 +132,7 @@ struct AppShell: View {
                     .presentationCornerRadius(Radius.sheet)
                     // Same reason as Profile/Trips below: `FarmStatusSection`'s
                     // "Confirmed today — see when with Plus" row calls
-                    // `shell.openPlus()` from inside this sheet, which needs
+                    // `shell.openPlus(_:)` from inside this sheet, which needs
                     // to present ON TOP of the farm card, not get dropped by
                     // the same one-sheet-per-presenter limit.
                     .sheet(isPresented: showPlusInFarmCard) { plusSheetContent() }
@@ -170,7 +178,7 @@ struct AppShell: View {
         }
         // The root presentation — used when none of Trips, Profile or the farm
         // card owns the request (every other Plus entry point — Shopping's
-        // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus()`
+        // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus(_:)`
         // while no AppShell-owned sheet is up, so this is the one they hit).
         .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
         // Root presentation for Auth, same shape as Plus above: used only
@@ -230,11 +238,21 @@ struct AppShell: View {
     /// The Plus sheet's one content definition, reused by whichever binding
     /// above is presenting it — never duplicated, so there's still exactly one
     /// `ProUpsellSheet` and no risk of double-firing its analytics.
+    ///
+    /// It is also the one place `paywall_viewed` is captured. Call sites used to
+    /// capture it themselves, which reported a paywall for signed-out taps that
+    /// actually got the sign-in sheet, and reported nothing at all for the four
+    /// entry points that never had a capture. `onAppear` runs once per
+    /// presentation, so one shown paywall is one event.
     private func plusSheetContent() -> some View {
         ProUpsellSheet()
             .presentationDetents([.fraction(0.92)])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(Radius.sheet)
+            .onAppear {
+                guard let trigger = plusTrigger else { return }
+                Observability.capture(.paywallViewed, [AnalyticsProp.trigger: trigger.rawValue])
+            }
     }
 
     /// Farm cards open for everyone, signed out included. Opening a farm from

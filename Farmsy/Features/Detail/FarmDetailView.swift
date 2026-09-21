@@ -4,7 +4,7 @@ import MapKit
 /// Farm detail. Looking is free — everyone sees the full farm: address, phone,
 /// opening times, what they sell (owner decision, 2026-09-21). Farmsy doing the
 /// work (finding, routing, alerts, live availability) is Plus, sold from
-/// `shell.openPlus()`, never from this screen.
+/// `shell.openPlus(_:)`, never from this screen.
 struct FarmDetailView: View {
     let pin: FarmPin
 

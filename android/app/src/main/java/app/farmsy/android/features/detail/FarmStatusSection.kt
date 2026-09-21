@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.FarmStatus
 import app.farmsy.android.core.FarmStatusApi
 import app.farmsy.android.core.FarmStatusLoaded
@@ -170,7 +171,7 @@ fun FarmStatusSection(osmId: String, sells: String? = null, onNeedsSignIn: () ->
             }
             if (!plus && freshness != null) {
                 Row(
-                    Modifier.clickable { shell.openPlus() },
+                    Modifier.clickable { shell.openPlus(AnalyticsValue.Trigger.FARM_DETAIL) },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {

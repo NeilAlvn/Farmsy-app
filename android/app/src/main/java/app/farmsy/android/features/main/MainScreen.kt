@@ -134,7 +134,10 @@ class ShellActions(
     val showTab: (AppTab) -> Unit = {},
     val openTrips: () -> Unit = {},
     val openProfile: () -> Unit = {},
-    val openPlus: () -> Unit = {},
+    /// Opens the one Plus sheet, saying what asked for it. The sheet reports
+    /// `paywall_viewed` with that trigger when it appears, so a call site can
+    /// neither forget to report nor report a paywall that never showed.
+    val openPlus: (AnalyticsValue.Trigger) -> Unit = {},
     /// A product page, by shopping id or seasonal slug.
     val openProduct: (String) -> Unit = {},
 )
@@ -188,6 +191,11 @@ fun MainScreen() {
     var focusPin by remember { mutableStateOf<FarmPin?>(null) }
     var showProfile by remember { mutableStateOf(false) }
     var showPlus by remember { mutableStateOf(false) }
+    // What asked for the Plus sheet — read once by the sheet itself, in a
+    // LaunchedEffect, so `paywall_viewed` fires exactly once per presentation.
+    // Set only on the path that really presents Plus: a signed-out tap goes to
+    // the sign-in sheet instead and reports nothing.
+    var plusTrigger by remember { mutableStateOf<AnalyticsValue.Trigger?>(null) }
     var productSlug by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
@@ -265,7 +273,7 @@ fun MainScreen() {
             showTab = { tab = it },
             openTrips = { requireAuth { route = SheetRoute.TRIPS } },
             openProfile = { showProfile = true },
-            openPlus = { requireAuth { showPlus = true } },
+            openPlus = { trigger -> requireAuth { plusTrigger = trigger; showPlus = true } },
             openProduct = { productSlug = it },
         )
     }
@@ -458,11 +466,18 @@ fun MainScreen() {
             shape = RoundedCornerShape(topStart = Radius.sheet, topEnd = Radius.sheet),
         ) {
             Box(Modifier.fillMaxWidth().fillMaxHeight(0.96f).navigationBarsPadding()) {
-                ProfileScreen(onClose = { showProfile = false }, onOpenPlus = { showProfile = false; showPlus = true })
+                ProfileScreen(
+                    onClose = { showProfile = false },
+                    onOpenPlus = {
+                        plusTrigger = AnalyticsValue.Trigger.PROFILE
+                        showProfile = false
+                        showPlus = true
+                    },
+                )
             }
         }
     }
-    if (showPlus) ProUpsellSheet(onDismiss = { showPlus = false })
+    if (showPlus) ProUpsellSheet(trigger = plusTrigger, onDismiss = { showPlus = false })
     productSlug?.let { s -> ProductBottomSheet(s, onDismiss = { productSlug = null }) }
 
     // The survey presents as a modal over the map (iOS `.sheet` at 0.92), like the

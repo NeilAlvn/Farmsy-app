@@ -60,6 +60,7 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.FarmFilters
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmsStore
@@ -363,7 +364,7 @@ fun HomeScreen() {
                     }
                 }
             } else {
-                PlusLockCard(stringResource(R.string.plus_alerts_title), stringResource(R.string.plus_alerts_text), onUnlock = shell.openPlus)
+                PlusLockCard(stringResource(R.string.plus_alerts_title), stringResource(R.string.plus_alerts_text)) { shell.openPlus(AnalyticsValue.Trigger.HOME_CARD) }
             }
         }
     }

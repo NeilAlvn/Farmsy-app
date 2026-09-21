@@ -670,7 +670,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                                 farms.filterConfirmedToday.value = !fConfirmed
                             } else {
                                 Observability.capture(AnalyticsEvent.PRO_FILTER_TAPPED, mapOf(AnalyticsProp.FILTER to "confirmed_today"))
-                                shell.openPlus()
+                                shell.openPlus(AnalyticsValue.Trigger.FILTER_ROW)
                             }
                         }
                     }

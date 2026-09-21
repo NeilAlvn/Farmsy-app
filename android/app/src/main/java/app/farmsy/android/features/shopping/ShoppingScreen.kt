@@ -59,10 +59,7 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
-import app.farmsy.android.core.AnalyticsEvent
-import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
-import app.farmsy.android.core.Observability
 import app.farmsy.android.core.ProductMatch
 import app.farmsy.android.core.SearchRadius
 import app.farmsy.android.core.ShoppingItem
@@ -216,15 +213,13 @@ fun ShoppingScreen() {
     }
 
     /// The one place free users open Plus from Shopping — the pinned action
-    /// bar and the blurred sample block both call this, so `paywall_viewed`
-    /// only ever fires from one spot.
+    /// bar and the blurred sample block both call this. The Plus sheet reports
+    /// the view with this trigger; a signed-out tap gets the sign-in sheet and
+    /// reports nothing, which is what the capture that used to sit here got
+    /// wrong.
     fun openPlusFromSample() {
         tap()
-        Observability.capture(
-            AnalyticsEvent.PAYWALL_VIEWED,
-            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.SHOPPING_SAMPLE.key),
-        )
-        shell.openPlus()
+        shell.openPlus(AnalyticsValue.Trigger.SHOPPING_SAMPLE)
     }
 
     /// Enter in the search field: the one chip that matches, else a custom item.

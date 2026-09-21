@@ -295,13 +295,13 @@ struct ShoppingScreen: View {
     }
 
     /// The one place free users open Plus from Shopping — the pinned action
-    /// bar and the blurred sample block both call this, so `paywall_viewed`
-    /// only ever fires from one spot.
+    /// bar and the blurred sample block both call this. The Plus sheet reports
+    /// the view with this trigger; a signed-out tap gets the sign-in sheet and
+    /// reports nothing, which is what the capture that used to sit here got
+    /// wrong.
     private func openPlusFromSample() {
         Haptics.tap()
-        Observability.capture(.paywallViewed,
-                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.shoppingSample.rawValue])
-        shell.openPlus()
+        shell.openPlus(.shoppingSample)
     }
 
     /// The free sample: the real coverage sentence, plus the real stop rows

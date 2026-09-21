@@ -242,7 +242,7 @@ struct ProfileScreen: View {
                             if session.hasFullAccess, let url = URL(string: "https://www.farmsy.app/alerts") {
                                 UIApplication.shared.open(url)
                             } else {
-                                dismiss(); shell.openPlus()
+                                dismiss(); shell.openPlus(.profile)
                             }
                         }
                     }

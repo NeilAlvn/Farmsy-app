@@ -84,12 +84,9 @@ import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
-import app.farmsy.android.core.AnalyticsEvent
-import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.MapsHandoff
 import app.farmsy.android.core.FarmPin
-import app.farmsy.android.core.Observability
 import app.farmsy.android.core.SavedTrip
 import app.farmsy.android.core.TravelMode
 import app.farmsy.android.core.TripGeometry
@@ -160,23 +157,15 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
 
     // The one place free users open Plus from the route preview — the unlock
     // button, the blurred stop block, and the locked Save/Show route/Maps
-    // actions all call this, so `paywall_viewed` only ever fires from one spot.
+    // actions all call this. The Plus sheet reports the view with this trigger.
     fun openPlusFromSample() {
-        Observability.capture(
-            AnalyticsEvent.PAYWALL_VIEWED,
-            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.ROUTE_PREVIEW.key),
-        )
-        shell.openPlus()
+        shell.openPlus(AnalyticsValue.Trigger.ROUTE_PREVIEW)
     }
 
     /// The shopping-list sheet's lock sells which farms cover the list, not the
     /// route, so it reports as that sample.
     fun openPlusFromShoppingList() {
-        Observability.capture(
-            AnalyticsEvent.PAYWALL_VIEWED,
-            mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.SHOPPING_SAMPLE.key),
-        )
-        shell.openPlus()
+        shell.openPlus(AnalyticsValue.Trigger.SHOPPING_SAMPLE)
     }
 
     var planTab by remember { mutableStateOf(true) }

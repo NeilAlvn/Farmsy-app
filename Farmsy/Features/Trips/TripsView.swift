@@ -562,21 +562,17 @@ struct TripsView: View {
 
     /// The one place free users open Plus from the route preview — the unlock
     /// button, the blurred stop block, and the locked Save/Show route/Maps
-    /// actions all call this, so `paywall_viewed` only ever fires from one spot.
+    /// actions all call this. The Plus sheet reports the view with this trigger.
     private func openPlusFromSample() {
         Haptics.tap()
-        Observability.capture(.paywallViewed,
-                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.routePreview.rawValue])
-        shell.openPlus()
+        shell.openPlus(.routePreview)
     }
 
     /// The shopping-list sheet's lock sells the same thing the Shopping tab's
     /// does — which farms cover the list — so it reports as that sample, not as
     /// the route preview. Called from the list sheet's `onDismiss`.
     private func openPlusFromShoppingList() {
-        Observability.capture(.paywallViewed,
-                              [AnalyticsProp.trigger: AnalyticsValue.Trigger.shoppingSample.rawValue])
-        shell.openPlus()
+        shell.openPlus(.shoppingSample)
     }
 
     private var totalsBar: some View {

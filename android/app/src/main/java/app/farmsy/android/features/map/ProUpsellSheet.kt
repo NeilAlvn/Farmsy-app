@@ -48,6 +48,10 @@ import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalPurchases
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsEvent
+import app.farmsy.android.core.AnalyticsProp
+import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.Observability
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.FitText
@@ -67,7 +71,7 @@ import kotlinx.coroutines.launch
 /// web's `account.gate*` keys, localized in `pro_*` string resources (nl/fr/de) — P0-7.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProUpsellSheet(onDismiss: () -> Unit) {
+fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Unit) {
     val session = LocalSession.current
     val purchases = LocalPurchases.current
     val context = LocalContext.current
@@ -82,6 +86,17 @@ fun ProUpsellSheet(onDismiss: () -> Unit) {
     var isChecking by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { purchases.loadOffering() }
+
+    // The one place `paywall_viewed` is captured. Call sites used to capture it
+    // themselves, which reported a paywall for signed-out taps that actually got
+    // the sign-in sheet, and reported nothing at all for the entry points that
+    // never had a capture. This effect runs once per presentation, so one shown
+    // paywall is one event.
+    LaunchedEffect(Unit) {
+        trigger?.let {
+            Observability.capture(AnalyticsEvent.PAYWALL_VIEWED, mapOf(AnalyticsProp.TRIGGER to it.key))
+        }
+    }
 
     // Poll the profile after a purchase — the grant lands a few seconds after the call
     // returns (RevenueCat's webhook writes subscription_status). On success, close.

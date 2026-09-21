@@ -79,12 +79,18 @@ enum AnalyticsValue {
     }
 
     /// `trigger` on paywall_viewed: what put the purchase sheet on screen.
-    /// P1-7 (phase 3) adds the rest when the paywall gets one decision point.
+    ///
+    /// Every entry point passes one to `shell.openPlus(_:)`, and the Plus sheet
+    /// itself reports the view when it appears — so the event fires once per
+    /// paywall actually shown, never on a signed-out tap that ends in the sign-in
+    /// sheet, and no entry point can forget to report.
     enum Trigger: String {
         case filterRow = "filter_row"
         case farmDetail = "farm_detail"
         case shoppingSample = "shopping_sample"
         case routePreview = "route_preview"
+        case homeCard = "home_card"
+        case profile = "profile"
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

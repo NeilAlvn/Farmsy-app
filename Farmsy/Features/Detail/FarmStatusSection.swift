@@ -102,7 +102,7 @@ struct FarmStatusSection: View {
             .fixedSize(horizontal: false, vertical: true)
             if !session.hasFullAccess, freshness != nil {
                 Button {
-                    shell.openPlus()
+                    shell.openPlus(.farmDetail)
                 } label: {
                     Label(String(localized: "Confirmed today — see when with Plus"), systemImage: "lock.fill")
                         .font(.ui(12, .semibold))

@@ -221,7 +221,7 @@ struct MapScreen: View {
                             farms.filterConfirmedToday.toggle()
                         } else {
                             Observability.capture(.proFilterTapped, [AnalyticsProp.filter: "confirmed_today"])
-                            shell.openPlus()
+                            shell.openPlus(.filterRow)
                         }
                     }
                 }
