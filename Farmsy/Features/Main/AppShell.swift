@@ -128,6 +128,13 @@ struct AppShell: View {
                     // to present ON TOP of the farm card, not get dropped by
                     // the same one-sheet-per-presenter limit.
                     .sheet(isPresented: showPlusInFarmCard) { plusSheetContent() }
+                    // Task 4 fix round 5: the farm card is reachable signed
+                    // out, and `openPlus`'s `requireAuth` else-branch sets
+                    // `showAuth` (not `showPlus`) for a signed-out tap on that
+                    // same "see when with Plus" row — same limit, same fix.
+                    // Dismissing this (on sign-in success) returns to the farm
+                    // card; re-tapping Plus is on the person, no auto-reopen.
+                    .sheet(isPresented: showAuthInFarmCard) { AuthView() }
             }
         }
         .sheet(isPresented: $showProfile) {
@@ -166,7 +173,11 @@ struct AppShell: View {
         // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus()`
         // while no AppShell-owned sheet is up, so this is the one they hit).
         .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
-        .sheet(isPresented: $showAuth) { AuthView() }
+        // Root presentation for Auth, same shape as Plus above: used only
+        // when the farm card (the one place signed-out `requireAuth` can
+        // fire while an AppShell sheet is up — see the trace in the fix
+        // round 5 report) doesn't own the request.
+        .sheet(isPresented: showAuthAtRoot) { AuthView() }
         // Task 4 fix round 4: a sheet's presented content inherits the
         // environment of the view its `.sheet(...)` modifier is attached to —
         // and every `.sheet` above is attached to the chain built so far, so
@@ -202,6 +213,18 @@ struct AppShell: View {
     }
     private var showPlusInFarmCard: Binding<Bool> {
         Binding(get: { showPlus && selectedPin != nil }, set: { showPlus = $0 })
+    }
+
+    /// The same one-source-of-truth split as `showPlus` above, for `showAuth`.
+    /// Only the farm card needs the nested form today (see the fix round 5
+    /// report's trace of every `requestAuth`/`requireAuth` call reachable from
+    /// an AppShell sheet) — Trips can't be reached signed out, and every
+    /// Profile trigger dismisses Profile before asking for auth.
+    private var showAuthAtRoot: Binding<Bool> {
+        Binding(get: { showAuth && selectedPin == nil }, set: { showAuth = $0 })
+    }
+    private var showAuthInFarmCard: Binding<Bool> {
+        Binding(get: { showAuth && selectedPin != nil }, set: { showAuth = $0 })
     }
 
     /// The Plus sheet's one content definition, reused by whichever binding
