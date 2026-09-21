@@ -157,7 +157,11 @@ struct ProfileScreen: View {
                 Text("Sign in to follow farms, plan trips and keep your list on every device.")
                     .role(.bodySm, .inkMuted)
                     .multilineTextAlignment(.center)
-                Button(String(localized: "Sign in")) { Haptics.tap(); dismiss(); requestAuth() }
+                // No `dismiss()` first: the root presenter is still animating
+                // Profile out when the flag flips, and SwiftUI drops the
+                // request. Auth presents ON TOP of Profile instead
+                // (`showAuthInProfile` in AppShell), the way Plus does below.
+                Button(String(localized: "Sign in")) { Haptics.tap(); requestAuth() }
                     .buttonStyle(PillButtonStyle(.primary, size: .medium))
             }
             .frame(maxWidth: .infinity)
@@ -242,7 +246,10 @@ struct ProfileScreen: View {
                             if session.hasFullAccess, let url = URL(string: "https://www.farmsy.app/alerts") {
                                 UIApplication.shared.open(url)
                             } else {
-                                dismiss(); shell.openPlus(.profile)
+                                // Same as the sign-in button above: Plus
+                                // presents on top of Profile, so dismissing
+                                // first only risks losing the request.
+                                shell.openPlus(.profile)
                             }
                         }
                     }

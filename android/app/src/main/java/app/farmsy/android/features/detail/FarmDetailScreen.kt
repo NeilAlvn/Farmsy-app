@@ -321,7 +321,7 @@ fun FarmDetailScreen(pin: FarmPin, onBack: () -> Unit) {
                             // public now, so it sits in the shared content, not behind a
                             // gate — a farm three people found shut is what a visitor
                             // deciding whether to drive needs, account or not.
-                            FarmProductsSection(pin = pin, detail = detail)
+                            FarmProductsSection(pin = pin, detail = detail, onClose = onBack)
                             FarmStatusSection(osmId = pin.osmId, sells = detail?.displayProduce, onNeedsSignIn = requestAuth)
                             FarmMemberSections(pin = pin, detail = detail, onClaim = { showClaim = true },
                                 onReport = { if (session.isAuthenticated) showReport = true else requestAuth() })

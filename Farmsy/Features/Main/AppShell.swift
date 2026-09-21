@@ -157,6 +157,10 @@ struct AppShell: View {
                 // `showPlusInProfile` is one of three views onto the single
                 // `showPlus` (see below); its setter still writes `showPlus`.
                 .sheet(isPresented: showPlusInProfile) { plusSheetContent() }
+                // Final review #5: Profile's "Sign in" used to `dismiss()` and
+                // then ask for Auth, which the root presenter — still animating
+                // Profile out — silently dropped. Same nesting as the farm card.
+                .sheet(isPresented: showAuthInProfile) { AuthView() }
         }
         .sheet(isPresented: $showTrips) {
             TripsView(onOpenFarm: { openFarm($0, source: .trips) }, selectedOsmId: selectedPin?.osmId, detent: $tripDetent)
@@ -181,10 +185,9 @@ struct AppShell: View {
         // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus(_:)`
         // while no AppShell-owned sheet is up, so this is the one they hit).
         .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
-        // Root presentation for Auth, same shape as Plus above: used only
-        // when the farm card (the one place signed-out `requireAuth` can
-        // fire while an AppShell sheet is up — see the trace in the fix
-        // round 5 report) doesn't own the request.
+        // Root presentation for Auth, same shape as Plus above: used only when
+        // neither the farm card nor Profile — the two surfaces a signed-out
+        // `requireAuth`/`requestAuth` can fire from — owns the request.
         .sheet(isPresented: showAuthAtRoot) { AuthView() }
         // Task 4 fix round 4: a sheet's presented content inherits the
         // environment of the view its `.sheet(...)` modifier is attached to —
@@ -206,10 +209,14 @@ struct AppShell: View {
     /// presenter that already has one up, so the same boolean is exposed as
     /// four bindings (root / inside Trips / inside Profile / inside the farm
     /// card), each true only when that surface should own the presentation,
-    /// each writing back to the single `showPlus` on set. Trips, Profile and
-    /// the farm card are mutually exclusive at the root (the same
-    /// one-sheet-per-presenter limit keeps more than one of them from being up
-    /// together), so exactly one of the four is ever true.
+    /// each writing back to the single `showPlus` on set.
+    ///
+    /// What is actually guaranteed (final review #6 — the old comment claimed
+    /// "exactly one is ever true", which a pin tapped behind the half-open trip
+    /// sheet breaks: `selectedPin` is then set WHILE Trips is up): at least one
+    /// binding is true whenever `showPlus` is, and the frontmost surface wins,
+    /// because Trips and Profile both outrank the farm card and cannot be up
+    /// together themselves (the same one-presenter limit keeps them apart).
     private var showPlusAtRoot: Binding<Bool> {
         Binding(get: { showPlus && !showTrips && !showProfile && selectedPin == nil }, set: { showPlus = $0 })
     }
@@ -220,19 +227,23 @@ struct AppShell: View {
         Binding(get: { showPlus && showProfile }, set: { showPlus = $0 })
     }
     private var showPlusInFarmCard: Binding<Bool> {
-        Binding(get: { showPlus && selectedPin != nil }, set: { showPlus = $0 })
+        Binding(get: { showPlus && selectedPin != nil && !showTrips && !showProfile }, set: { showPlus = $0 })
     }
 
     /// The same one-source-of-truth split as `showPlus` above, for `showAuth`.
-    /// Only the farm card needs the nested form today (see the fix round 5
-    /// report's trace of every `requestAuth`/`requireAuth` call reachable from
-    /// an AppShell sheet) — Trips can't be reached signed out, and every
-    /// Profile trigger dismisses Profile before asking for auth.
+    /// The farm card and Profile both need the nested form (Profile since final
+    /// review #5: its "Sign in" no longer dismisses Profile first). Trips has
+    /// none because it cannot be reached signed out, so nothing inside it ever
+    /// asks for auth — if that changes, it wants a `showAuthInTrips` exactly
+    /// like `showPlusInTrips`, and the root binding here already excludes it.
     private var showAuthAtRoot: Binding<Bool> {
-        Binding(get: { showAuth && selectedPin == nil }, set: { showAuth = $0 })
+        Binding(get: { showAuth && !showTrips && !showProfile && selectedPin == nil }, set: { showAuth = $0 })
+    }
+    private var showAuthInProfile: Binding<Bool> {
+        Binding(get: { showAuth && showProfile }, set: { showAuth = $0 })
     }
     private var showAuthInFarmCard: Binding<Bool> {
-        Binding(get: { showAuth && selectedPin != nil }, set: { showAuth = $0 })
+        Binding(get: { showAuth && selectedPin != nil && !showTrips && !showProfile }, set: { showAuth = $0 })
     }
 
     /// The Plus sheet's one content definition, reused by whichever binding

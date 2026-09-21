@@ -86,7 +86,7 @@ import kotlinx.serialization.json.put
 /// confirmed it.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FarmProductsSection(pin: FarmPin, detail: FarmDetail?) {
+fun FarmProductsSection(pin: FarmPin, detail: FarmDetail?, onClose: () -> Unit) {
     val farms = LocalFarms.current
     val trip = LocalTrip.current
     val shell = LocalShell.current
@@ -116,7 +116,10 @@ fun FarmProductsSection(pin: FarmPin, detail: FarmDetail?) {
                 stringResource(if (allOnList) R.string.on_your_list else R.string.add_all_to_shopping),
                 PillVariant.TEXT, PillSize.SMALL,
             ) {
-                if (allOnList) shell.showTab(AppTab.SHOPPING)
+                // Close the card before switching tabs: it is a sheet over the
+                // map, so switching underneath it left the Shopping tab hidden
+                // behind an open farm card (final review #7, iOS twin).
+                if (allOnList) { onClose(); shell.showTab(AppTab.SHOPPING) }
                 else items.filter { it.id !in wanted }.forEach { trip.toggleProduct(it.id) }
             }
         }
