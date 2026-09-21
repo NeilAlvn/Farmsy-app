@@ -66,7 +66,6 @@
     <string name="how_should_we_verify_you">Hoe moeten we je verifiëren?</string>
     <string name="i_ve_upgraded_check_again">Ik heb een upgrade uitgevoerd — controleer opnieuw</string>
     <string name="invalid_email_or_password">Ongeldig e-mailadres of wachtwoord.</string>
-    <string name="is_arg_yours_claim_it">Is %1$s van jou? Claim het</string>
     <string name="is_this_your_farm_claim_it">Is dit jouw boerderij? Claim het</string>
     <string name="kvk_number">KVK-nummer</string>
     <string name="kvk_number_2">KVK-nummer *</string>
@@ -83,7 +82,6 @@
     <string name="markets">Markten</string>
     <string name="meat">Vlees</string>
     <string name="member">Lid</string>
-    <string name="members_only">Alleen voor leden</string>
     <string name="netherlands">Nederland</string>
     <string name="new_farm_shops_join_farmsy_every_week">Elke week komen er nieuwe boerderijwinkels bij op Farmsy.</string>
     <string name="new_to_farmsy">Nieuw bij Farmsy?</string>
@@ -136,7 +134,6 @@
     <string name="the_essentials">De essentie</string>
     <string name="too_many_attempts_please_wait_a_few_minutes_and_try_again">Te veel pogingen. Wacht een paar minuten en probeer het opnieuw.</string>
     <string name="trial">Proefperiode</string>
-    <string name="unlock_every_farm_s">Ontgrendel elke boerderij </string>
     <string name="use_an_email_address_on_your_farm_s_own_domain_and_we_can_ve">Gebruik een e-mailadres op het domein van je boerderij, dan kunnen we je het snelst verifiëren.</string>
     <string name="use_my_location">Gebruik mijn locatie</string>
     <string name="verification">Verificatie</string>
@@ -154,8 +151,6 @@
     <string name="your_account_doesn_t_have_full_access_yet">Je account heeft nog geen volledige toegang</string>
     <string name="your_full_name">Je volledige naam *</string>
     <string name="your_session_expired_please_sign_in_again">Je sessie is verlopen — log opnieuw in.</string>
-    <string name="farm_shops">boerderijwinkels</string>
-    <string name="full_story">hele verhaal</string>
     <string name="in_review">in beoordeling</string>
     <string name="near_you">bij jou in de buurt</string>
     <string name="your_location">jouw locatie</string>
@@ -319,7 +314,6 @@
     <string name="today">Vandaag</string>
     <string name="tomorrow">Morgen</string>
     <string name="farmsy_for_android_arg">Farmsy voor Android %1$s</string>
-    <string name="farmsy_pro">Farmsy Pro</string>
     <string name="pro_open_now">Nu geopend</string>
     <string name="pro_open_saturday">Zaterdag geopend</string>
     <string name="pro_open_sunday">Zondag geopend</string>
@@ -351,21 +345,16 @@
     <string name="survey_feedback_more">Nog iets toevoegen</string>
     <string name="survey_feedback_failed">Versturen lukte niet. Probeer het nog eens.</string>
 
-    <!-- S8 LockedAccessView + S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
-    <string name="stat_thousands">Duizenden</string>
-    <string name="categories">categorieën</string>
-    <string name="coverage">dekking</string>
-    <string name="membership_expired_title">Je lidmaatschap is verlopen</string>
-    <string name="unlock_every_farm">Ontgrendel elke boerderij</string>
-    <string name="lock_body_expired">Word opnieuw lid om openingstijden, contactgegevens, foto\'s en meer te bekijken — voor %1$s en elke andere boerderij op de kaart.</string>
-    <string name="lock_body_normal">Openingstijden, contactgegevens, foto\'s en meer — voor %1$s en elke andere boerderij op de kaart.</string>
+    <!-- S7 ProUpsellSheet strings (compile-fix + P0-7 localization) -->
     <string name="memberships_cant_load">Lidmaatschappen kunnen nu niet worden geladen.</string>
-    <string name="memberships_load_retry">Controleer je verbinding en probeer het opnieuw.</string>
     <string name="start_from_my_location">Kies een vertrekpunt</string>
-    <string name="saved_trips_pro">Opgeslagen routes zijn een Farmsy Pro-functie.</string>
-    <string name="pro_unlock_title">Ontgrendel Farmsy Pro</string>
-    <string name="pro_unlock_sub">Vind wat op dit moment open is en filter op het soort plek. Altijd opzegbaar.</string>
+    <string name="pro_unlock_title">Farmsy Plus</string>
+    <string name="pro_unlock_sub">Farmsy vindt het, plant het en vertelt je wanneer het vers is.</string>
     <string name="pro_included_in_both">Inbegrepen bij beide abonnementen</string>
+    <string name="pro_feature_open_now">De boerderijen die je boodschappenlijst dekken</string>
+    <string name="pro_feature_filter">Een route langs allemaal, in de slimste volgorde</string>
+    <string name="pro_feature_email">Een seintje als jouw producten in de buurt binnenkomen</string>
+    <string name="pro_feature_everything">Vandaag open, bevestigd door mensen die er net waren</string>
     <string name="pro_get_yearly">Kies jaarlijks</string>
     <string name="pro_buy_lifetime">Koop levenslange toegang</string>
     <string name="pro_lifetime_onetime">Eenmalig · geen verlengingen</string>

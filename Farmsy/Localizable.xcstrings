@@ -3202,34 +3202,6 @@
         }
       }
     },
-    "Everything new we add to Pro, included": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Everything new we add to Pro, included"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Alles wat we aan Pro toevoegen, inbegrepen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Tout ce que nous ajoutons à Pro, inclus"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Alles Neue, das wir zu Pro hinzufügen, inklusive"
-          }
-        }
-      }
-    },
     "Expired": {
       "localizations": {
         "en": {
@@ -3756,34 +3728,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Finde Hofläden, Selbstpflück-Höfe und ehrliche Lebensmittel direkt von den Menschen, die sie anbauen."
-          }
-        }
-      }
-    },
-    "Find what is open at this minute, and filter by the kind of place. Cancel anytime.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Find what is open at this minute, and filter by the kind of place. Cancel anytime."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Zie wat nu open is en filter op soort plek. Opzeggen kan altijd."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Voyez ce qui est ouvert en ce moment et filtrez par type de lieu. Résiliable à tout moment."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Sieh, was gerade geöffnet ist, und filtere nach Art des Ortes. Jederzeit kündbar."
           }
         }
       }
@@ -7160,28 +7104,6 @@
         }
       }
     },
-    "Plan a trip with Farmsy Pro": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Route planen mit Farmsy Pro"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Planifier un trajet avec Farmsy Pro"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plan een route met Farmsy Pro"
-          }
-        }
-      }
-    },
     "Plan my trip": {
       "localizations": {
         "en": {
@@ -8381,34 +8303,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gespeichert"
-          }
-        }
-      }
-    },
-    "Saved trips are a Farmsy Pro feature.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Saved trips are a Farmsy Pro feature."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opgeslagen routes zijn een Farmsy Pro-functie."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les trajets enregistrés sont une fonction Farmsy Pro."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gespeicherte Touren sind eine Farmsy-Pro-Funktion."
           }
         }
       }
@@ -10291,34 +10185,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Art des Ortes"
-          }
-        }
-      }
-    },
-    "Unlock Farmsy Pro": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Unlock Farmsy Pro"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Ontgrendel Farmsy Pro"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Débloquez Farmsy Pro"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Farmsy Pro freischalten"
           }
         }
       }
@@ -12837,28 +12703,6 @@
         }
       }
     },
-    "An alert when a product you follow turns up within your radius": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Een melding als een product dat je volgt binnen je straal opduikt"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une alerte quand un produit que vous suivez apparaît dans votre rayon"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eine Benachrichtigung, wenn ein Produkt, dem du folgst, in deinem Umkreis auftaucht"
-          }
-        }
-      }
-    },
     "Available near you": {
       "localizations": {
         "nl": {
@@ -13299,6 +13143,116 @@
         }
       }
     },
+    "Farmsy finds it, plans it, and tells you when it's fresh.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy vindt het, plant het en vertelt je wanneer het vers is."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy le trouve, le planifie et vous dit quand c'est frais."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy findet es, plant es und sagt dir, wann es frisch ist."
+          }
+        }
+      }
+    },
+    "The farms that cover your shopping list": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De boerderijen die je boodschappenlijst dekken"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les fermes qui couvrent votre liste de courses"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Höfe, die deine Einkaufsliste abdecken"
+          }
+        }
+      }
+    },
+    "A route past all of them, in the best order": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Een route langs allemaal, in de slimste volgorde"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un itinéraire qui passe par toutes, dans le meilleur ordre"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Route an allen vorbei, in der besten Reihenfolge"
+          }
+        }
+      }
+    },
+    "Alerts when your products arrive nearby": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Een seintje als jouw producten in de buurt binnenkomen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une alerte quand vos produits arrivent près de chez vous"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Hinweis, wenn deine Produkte in deiner Nähe eintreffen"
+          }
+        }
+      }
+    },
+    "Confirmed open today, by people who were just there": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vandaag open, bevestigd door mensen die er net waren"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert aujourd'hui, confirmé par des personnes qui y étaient à l'instant"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute geöffnet, bestätigt von Leuten, die gerade dort waren"
+          }
+        }
+      }
+    },
     "Farmsy Plus picks the fewest farms that cover your list and builds the trip.": {
       "localizations": {
         "nl": {
@@ -13559,28 +13513,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start"
-          }
-        }
-      }
-    },
-    "How recently a farm was confirmed open, and by how many people": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hoe recent een boerderij open is bevestigd, en door hoeveel mensen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Depuis quand une ferme est confirmée ouverte, et par combien de personnes"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wie aktuell ein Hof als geöffnet bestätigt wurde, und von wie vielen Personen"
           }
         }
       }
@@ -14285,28 +14217,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tippe auf das Herz bei einem Hof, um ihn hier mit den heutigen Öffnungszeiten zu sehen."
-          }
-        }
-      }
-    },
-    "The fewest farms that cover your shopping list, and the route between them": {
-      "localizations": {
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zo min mogelijk boerderijen voor je hele boodschappenlijst, en de route ertussen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le moins de fermes possible pour toute votre liste, et le trajet entre elles"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "So wenige Höfe wie möglich für deine ganze Einkaufsliste, und die Route dazwischen"
           }
         }
       }

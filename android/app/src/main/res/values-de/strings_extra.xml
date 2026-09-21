@@ -39,9 +39,6 @@
     <string name="i_subscribed_on_the_web">Ich habe im Web abonniert</string>
     <string name="yearly_arg">Jährlich — %1$s/Jahr</string>
     <string name="lifetime_arg">Lebenslang — %1$s</string>
-    <string name="one_payment_yours_forever">Einmal zahlen, für immer</string>
-    <string name="plan_yearly">Jährlich</string>
-    <string name="plan_lifetime">Lebenslang</string>
     <string name="price_per_year_arg">%1$s / Jahr</string>
     <string name="first_name">Vorname</string>
     <string name="last_name">Nachname</string>
@@ -161,10 +158,6 @@
     <string name="peak">HOCHSAISON</string>
     <string name="find_it_nearby">In der Nähe finden</string>
     <string name="osm_attribution">Ortsdaten © OpenStreetMap-Mitwirkende</string>
-    <string name="pro_feature_open_now">So wenige Höfe wie möglich für deine ganze Einkaufsliste, und die Route dazwischen</string>
-    <string name="pro_feature_filter">Wie aktuell ein Hof als geöffnet bestätigt wurde, und von wie vielen Personen</string>
-    <string name="pro_feature_email">Eine Benachrichtigung, wenn ein Produkt, dem du folgst, in deinem Umkreis auftaucht</string>
-    <string name="pro_feature_everything">Alles Neue in Plus, inklusive</string>
 
     <!-- Five-tab redesign. -->
     <string name="products">Produkte</string>

@@ -101,9 +101,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.alpha
 import app.farmsy.android.LocalFarms
-import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalTrip
@@ -756,8 +754,6 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
 @Composable
 private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val session = LocalSession.current
-    val requestAuth = LocalRequestAuth.current
     val fVerified by farms.filterVerified.collectAsState()
     val fOpen by farms.filterOpenToday.collectAsState()
     val fAutomaat by farms.filterAutomaat.collectAsState()
@@ -771,22 +767,11 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
     val methods by farms.selectedMethods.collectAsState()
     val pins by farms.pins.collectAsState()
 
-    // Time and place-type filters are free now: opening hours are the farm's own
-    // information, not intelligence. Plus sells matching, routing and alerts.
-    val proLocked = false
-    var showPro by remember { mutableStateOf(false) }
-    fun onProTap(id: String, toggle: () -> Unit) {
-        if (!proLocked) { toggle(); return }
-        if (session.isAuthenticated) {
-            // A signed-in non-member on a locked row: the tap, then the sheet it
-            // opens. A signed-out tap goes to sign-in, not to a paywall.
-            Observability.capture(AnalyticsEvent.PRO_FILTER_TAPPED, mapOf(AnalyticsProp.FILTER to id))
-            Observability.capture(AnalyticsEvent.PAYWALL_VIEWED, mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.FILTER_ROW.key))
-            showPro = true
-        } else {
-            requestAuth()
-        }
-    }
+    // Time filters + the two axis groups — free, like every other filter (looking
+    // is free; Plus sells matching, routing and alerts). `onProTap` is just
+    // `toggle()` under a former name — kept so the five call sites below don't
+    // need to change shape (2026-09-21, mirrors iOS `proRow`).
+    fun onProTap(id: String, toggle: () -> Unit) = toggle()
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = FarmsyColors.cream) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
@@ -830,25 +815,25 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
             FilterDivider()
             FilterSectionHeader(stringResource(R.string.filter_when_and_what))
             FilterRow(icon = Icons.Filled.Schedule, label = stringResource(R.string.pro_open_now),
-                isOn = fOpenNow, lockedTrailing = proLocked, dimmed = proLocked) {
+                isOn = fOpenNow) {
                 onProTap(AnalyticsValue.Filter.OPEN_NOW) { farms.filterOpenNow.value = !fOpenNow }
             }
             FilterRow(icon = Icons.Filled.CalendarMonth, label = stringResource(R.string.pro_open_saturday),
-                isOn = fOpenSat, lockedTrailing = proLocked, dimmed = proLocked) {
+                isOn = fOpenSat) {
                 onProTap(AnalyticsValue.Filter.OPEN_SATURDAY) { farms.filterOpenSaturday.value = !fOpenSat }
             }
             FilterRow(icon = Icons.Filled.CalendarMonth, label = stringResource(R.string.pro_open_sunday),
-                isOn = fOpenSun, lockedTrailing = proLocked, dimmed = proLocked) {
+                isOn = fOpenSun) {
                 onProTap(AnalyticsValue.Filter.OPEN_SUNDAY) { farms.filterOpenSunday.value = !fOpenSun }
             }
 
-            // Type of place — an axis group, now Pro. Combines with categories.
+            // Type of place — an axis group. Combines with categories.
             FilterDivider()
             FilterSectionHeader(stringResource(R.string.filter_type_of_place))
             FarmAxis.placeTypes.forEach { v ->
                 val on = v.id in placeTypes
                 FilterRow(icon = axisIcon(v.id), label = stringResource(v.labelRes),
-                    isOn = on, lockedTrailing = proLocked, dimmed = proLocked) {
+                    isOn = on) {
                     onProTap(v.id) { farms.selectedPlaceTypes.value = placeTypes.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
                 }
             }
@@ -858,17 +843,13 @@ private fun FilterSheet(farms: FarmsStore, onDismiss: () -> Unit) {
             FarmAxis.methods.forEach { v ->
                 val on = v.id in methods
                 FilterRow(icon = axisIcon(v.id), label = stringResource(v.labelRes),
-                    isOn = on, lockedTrailing = proLocked, dimmed = proLocked) {
+                    isOn = on) {
                     onProTap(v.id) { farms.selectedMethods.value = methods.toMutableSet().apply { if (on) remove(v.id) else add(v.id) } }
                 }
             }
 
             Spacer(Modifier.height(24.dp))
         }
-    }
-
-    if (showPro) {
-        ProUpsellSheet(onDismiss = { showPro = false })
     }
 }
 
@@ -883,13 +864,10 @@ private fun FilterRow(
     icon: ImageVector? = null,
     tint: Color = FarmsyColors.inkMuted,
     trailing: String? = null,
-    lockedTrailing: Boolean = false,
-    dimmed: Boolean = false,
     onTap: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().tapCard { onTap() }.padding(horizontal = 16.dp, vertical = 11.dp)
-            .then(if (dimmed) Modifier.alpha(0.5f) else Modifier),
+        Modifier.fillMaxWidth().tapCard { onTap() }.padding(horizontal = 16.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -909,10 +887,7 @@ private fun FilterRow(
                 modifier = Modifier.background(Color(0xFFF3F4F6), CircleShape).padding(vertical = 3.dp, horizontal = 8.dp),
             )
         }
-        if (lockedTrailing) {
-            // A member-only row for a non-member: a lock instead of a checkmark.
-            Icon(Icons.Filled.Lock, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(13.dp))
-        } else if (isOn) {
+        if (isOn) {
             Icon(Icons.Filled.Check, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(14.dp))
         }
     }

@@ -39,9 +39,6 @@
     <string name="i_subscribed_on_the_web">Je me suis abonné sur le web</string>
     <string name="yearly_arg">Annuel — %1$s/an</string>
     <string name="lifetime_arg">À vie — %1$s</string>
-    <string name="one_payment_yours_forever">Un seul paiement, à vie</string>
-    <string name="plan_yearly">Annuel</string>
-    <string name="plan_lifetime">À vie</string>
     <string name="price_per_year_arg">%1$s / an</string>
     <string name="first_name">Prénom</string>
     <string name="last_name">Nom</string>
@@ -161,10 +158,6 @@
     <string name="peak">PIC</string>
     <string name="find_it_nearby">Trouver près d\'ici</string>
     <string name="osm_attribution">Données de lieux © contributeurs OpenStreetMap</string>
-    <string name="pro_feature_open_now">Le moins de fermes possible pour toute votre liste, et le trajet entre elles</string>
-    <string name="pro_feature_filter">Depuis quand une ferme est confirmée ouverte, et par combien de personnes</string>
-    <string name="pro_feature_email">Une alerte quand un produit que vous suivez apparaît dans votre rayon</string>
-    <string name="pro_feature_everything">Toutes les nouveautés de Plus, incluses</string>
 
     <!-- Five-tab redesign. -->
     <string name="products">Produits</string>
