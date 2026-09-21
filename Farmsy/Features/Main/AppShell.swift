@@ -101,8 +101,6 @@ struct AppShell: View {
         .background(Color.cream.ignoresSafeArea())
         .ignoresSafeArea(.keyboard)
         .tint(.farmGreen)
-        .environment(\.requestAuth, { showAuth = true })
-        .environment(\.shell, actions)
         // A notification tap lands here: open the farm it was about.
         .onChange(of: push.pendingOsmId, initial: true) { _, osmId in
             guard let osmId, let pin = farms.pin(forOsmId: osmId) else { return }
@@ -124,6 +122,12 @@ struct AppShell: View {
                     .presentationContentInteraction(.scrolls)
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(Radius.sheet)
+                    // Same reason as Profile/Trips below: `FarmStatusSection`'s
+                    // "Confirmed today — see when with Plus" row calls
+                    // `shell.openPlus()` from inside this sheet, which needs
+                    // to present ON TOP of the farm card, not get dropped by
+                    // the same one-sheet-per-presenter limit.
+                    .sheet(isPresented: showPlusInFarmCard) { plusSheetContent() }
             }
         }
         .sheet(isPresented: $showProfile) {
@@ -157,31 +161,47 @@ struct AppShell: View {
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
         }
-        // The root presentation — used when neither Trips nor Profile owns the
-        // request (every other Plus entry point: Shopping's pinned bar, Home's
-        // lock card, the Map chip, and Farm detail's lock rows all call
-        // `shell.openPlus()` while no AppShell-owned sheet is up, so this is
-        // the one they already hit).
+        // The root presentation — used when none of Trips, Profile or the farm
+        // card owns the request (every other Plus entry point — Shopping's
+        // pinned bar, Home's lock card, the Map chip — calls `shell.openPlus()`
+        // while no AppShell-owned sheet is up, so this is the one they hit).
         .sheet(isPresented: showPlusAtRoot) { plusSheetContent() }
         .sheet(isPresented: $showAuth) { AuthView() }
+        // Task 4 fix round 4: a sheet's presented content inherits the
+        // environment of the view its `.sheet(...)` modifier is attached to —
+        // and every `.sheet` above is attached to the chain built so far, so
+        // these two have to be the LAST modifiers, after every `.sheet`, or
+        // none of the sheets (Trips, Profile, the farm card, ProductSheet,
+        // the nested Plus sheets) see them and every `shell.*`/`requestAuth`
+        // call from inside one silently reads the environment's default
+        // no-op `ShellActions()` / no-op closure instead. This was also why
+        // `onOpenFarm` had to be passed to `TripsView` as an explicit
+        // parameter rather than read from `\.shell` — the same bug, worked
+        // around in one place instead of fixed at the root.
+        .environment(\.requestAuth, { showAuth = true })
+        .environment(\.shell, actions)
     }
 
     /// One source of truth, `showPlus` — presented from whichever surface is
     /// frontmost. SwiftUI drops a second `.sheet(isPresented:)` request from a
     /// presenter that already has one up, so the same boolean is exposed as
-    /// three bindings (root / inside Trips / inside Profile), each true only
-    /// when that surface should own the presentation, each writing back to the
-    /// single `showPlus` on set. Trips and Profile are mutually exclusive at
-    /// the root (the same one-sheet-per-presenter limit keeps both from being
-    /// up together), so exactly one of the three is ever true.
+    /// four bindings (root / inside Trips / inside Profile / inside the farm
+    /// card), each true only when that surface should own the presentation,
+    /// each writing back to the single `showPlus` on set. Trips, Profile and
+    /// the farm card are mutually exclusive at the root (the same
+    /// one-sheet-per-presenter limit keeps more than one of them from being up
+    /// together), so exactly one of the four is ever true.
     private var showPlusAtRoot: Binding<Bool> {
-        Binding(get: { showPlus && !showTrips && !showProfile }, set: { showPlus = $0 })
+        Binding(get: { showPlus && !showTrips && !showProfile && selectedPin == nil }, set: { showPlus = $0 })
     }
     private var showPlusInTrips: Binding<Bool> {
         Binding(get: { showPlus && showTrips }, set: { showPlus = $0 })
     }
     private var showPlusInProfile: Binding<Bool> {
         Binding(get: { showPlus && showProfile }, set: { showPlus = $0 })
+    }
+    private var showPlusInFarmCard: Binding<Bool> {
+        Binding(get: { showPlus && selectedPin != nil }, set: { showPlus = $0 })
     }
 
     /// The Plus sheet's one content definition, reused by whichever binding
