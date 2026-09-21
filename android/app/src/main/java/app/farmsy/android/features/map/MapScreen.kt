@@ -564,7 +564,7 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
             Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(horizontal = 14.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.End
         ) {
-            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val filtersOn = farms.anyFilterOn() || aiIntent != null
                 Surface(
                     Modifier.weight(1f), shape = CircleShape,
@@ -616,30 +616,28 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
                         }
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Route planner entry, directly above the locate button — its
-                    // only other entrance is Shopping → "Build my route", easy to miss.
-                    val planARoute = stringResource(R.string.plan_a_route)
-                    Surface(
-                        Modifier.size(44.dp)
-                            .semantics { contentDescription = planARoute }
-                            .clickable { shell.openTrips() },
-                        shape = CircleShape, color = Color.White, shadowElevation = 8.dp
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.NearMe, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
-                        }
+                // Route planner entry, sharing the row with the locate button — its
+                // only other entrance is Shopping → "Build my route", easy to miss.
+                val planARoute = stringResource(R.string.plan_a_route)
+                Surface(
+                    Modifier.size(44.dp)
+                        .semantics { contentDescription = planARoute }
+                        .clickable { shell.openTrips() },
+                    shape = CircleShape, color = Color.White, shadowElevation = 8.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.NearMe, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
                     }
-                    Surface(
-                        Modifier.size(44.dp).clickable {
-                            if (locationHelper.hasPermission()) locationHelper.request()
-                            else permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                        },
-                        shape = CircleShape, color = Color.White, shadowElevation = 8.dp
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
-                        }
+                }
+                Surface(
+                    Modifier.size(44.dp).clickable {
+                        if (locationHelper.hasPermission()) locationHelper.request()
+                        else permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    },
+                    shape = CircleShape, color = Color.White, shadowElevation = 8.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.MyLocation, null, tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(20.dp))
                     }
                 }
             }

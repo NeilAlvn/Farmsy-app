@@ -95,16 +95,14 @@ struct MapScreen: View {
         // What's New and account controls moved to the bottom panel.
         .overlay(alignment: .top) {
             VStack(spacing: 8) {
-                HStack(alignment: .top, spacing: 10) {
+                HStack(spacing: 10) {
                     searchRow
-                    VStack(spacing: 10) {
-                        // Route planner entry — its only other entrance is
-                        // Shopping → "Build my route", easy to miss.
-                        CircleMapButton(icon: "point.topleft.down.to.point.bottomright.curvepath",
-                                        size: 44, action: shell.openTrips)
-                            .accessibilityLabel(String(localized: "Plan a route"))
-                        CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
-                    }
+                    // Route planner entry — its only other entrance is
+                    // Shopping → "Build my route", easy to miss.
+                    CircleMapButton(icon: "point.topleft.down.to.point.bottomright.curvepath",
+                                    size: 44, action: shell.openTrips)
+                        .accessibilityLabel(String(localized: "Plan a route"))
+                    CircleMapButton(icon: "location.fill", size: 44, action: locateNearMe)
                 }
                 if farms.aiIntent != nil { aiSummaryBar } else { quickChips }
             }

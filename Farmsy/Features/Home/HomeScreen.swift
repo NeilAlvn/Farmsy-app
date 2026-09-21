@@ -246,8 +246,8 @@ struct HomeScreen: View {
             HStack(spacing: Space.s4) {
                 Image(systemName: "car.fill").font(.system(size: 20, weight: .semibold)).foregroundStyle(Color.farmGreen)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Plan a farm route").role(.heading)
-                    Text("Pick your stops, Farmsy orders them and draws the road.").role(.bodySm, .inkMuted)
+                    Text("Plan a farm route").role(.subheading)
+                    Text("Pick your stops, Farmsy orders them and draws the road.").role(.caption, .inkMuted)
                 }
                 Spacer()
                 if !session.hasFullAccess { Badge(text: "PLUS", fill: .vivid, ink: .ink) }

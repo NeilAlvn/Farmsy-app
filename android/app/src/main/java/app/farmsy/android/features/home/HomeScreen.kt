@@ -303,10 +303,10 @@ fun HomeScreen() {
             ) {
                 Icon(Icons.Filled.DirectionsCar, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(stringResource(R.string.plan_a_farm_route), style = role(TextRole.HEADING), color = FarmsyColors.ink)
+                    Text(stringResource(R.string.plan_a_farm_route), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink)
                     Text(
                         stringResource(R.string.pick_your_stops_farmsy_orders_them_and_draws_the_road),
-                        style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted,
+                        style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted,
                     )
                 }
                 if (!session.hasFullAccess) Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
