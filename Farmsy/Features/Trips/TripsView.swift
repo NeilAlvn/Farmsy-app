@@ -500,13 +500,14 @@ struct TripsView: View {
     /// underneath. The whole blurred block is also a tap target, so both paths
     /// go through the same `openPlusFromSample()` as the button.
     private func lockedStopsBlock(rows: Int) -> some View {
-        // Fix round 1 #4: the sentence + button used to sit below the blurred
-        // rows, inside the stop list's own scroll area — invisible until it
-        // was scrolled. Overlay them centred on the blur instead (a ZStack,
-        // not a sibling below it), with a floor height that fits the sentence
-        // (up to 3 lines at nl/de length) plus the button, so both are visible
-        // without scrolling.
-        ZStack {
+        // Fix round 1 #4 put the sentence + button on top of the blur instead
+        // of below it (which sat unreachable inside the stop list's own
+        // ScrollView). Fix round 2: at the sheet's half-open detent that
+        // ScrollView only has ~120pt below the first stop, and a centred,
+        // 168pt-tall overlay pushed the button below the visible edge — so
+        // this is now top-aligned and compact: ~8pt padding, a 2-line capped
+        // sentence, an 8pt gap, then the small pill button. ~96pt total.
+        ZStack(alignment: .top) {
             VStack(spacing: 0) {
                 ForEach(1..<rows, id: \.self) { i in
                     if i < stops.count { filledRow(i: i, pin: stops[i]) } else { emptyRow(i: i) }
@@ -527,19 +528,20 @@ struct TripsView: View {
             // read normally.
             VStack(spacing: 8) {
                 Text(String(localized: "Your route has \(stops.count) stops. Farmsy Plus orders them and draws the road."))
-                    .font(.ui(13)).foregroundStyle(Color.ink)
+                    .font(.ui(12)).foregroundStyle(Color.ink)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
                 Button(String(localized: "Unlock the route")) { openPlusFromSample() }
-                    .font(.ui(14, .semibold)).foregroundStyle(.white)
-                    .padding(.vertical, 10).padding(.horizontal, 20)
-                    .background(Color.farmGreenMap, in: Capsule())
-                    .buttonStyle(.plain)
+                    .buttonStyle(PillButtonStyle(.primary, size: .small))
             }
-            .padding(16)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            .padding(.horizontal, 16)
             .background(Color.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .padding(.horizontal, 24)
         }
-        .frame(minHeight: 168)
+        .frame(minHeight: 104)
     }
 
     /// The one place free users open Plus from the route preview — the unlock

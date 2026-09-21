@@ -76,6 +76,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
@@ -98,6 +99,9 @@ import app.farmsy.android.features.discover.RecommendationCarousel
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.place.PlaceSearchSheet
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.PillButton
+import app.farmsy.android.ui.theme.PillSize
+import app.farmsy.android.ui.theme.PillVariant
 import app.farmsy.android.ui.theme.geist
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -730,12 +734,14 @@ private fun LockedStopsBlock(
         }
     }
     val unlockLabel = stringResource(R.string.unlock_the_route)
-    // Fix round 1 #4: the sentence + button used to sit below the blurred rows,
-    // inside the stop list's own scroll area — invisible until it was scrolled.
-    // Overlay them centred on the blur instead (a `Box`, not a sibling
-    // `Column`), with a floor height that fits the sentence (up to 3 lines at
-    // nl/de length) plus the button, so both are visible without scrolling.
-    Box(Modifier.fillMaxWidth().heightIn(min = 168.dp)) {
+    // Fix round 1 #4 put the sentence + button on top of the blur instead of
+    // below it (which sat unreachable inside the stop list's own scroll area).
+    // Fix round 2: at the sheet's half-open detent that scroll area only has
+    // ~120dp below the first stop, and a centred, 168dp-tall overlay pushed the
+    // button below the visible edge — so this is now top-aligned and compact:
+    // ~8dp padding, a 2-line capped sentence, an 8dp gap, then the small pill
+    // button. ~96dp total.
+    Box(Modifier.fillMaxWidth().heightIn(min = 104.dp)) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -761,27 +767,20 @@ private fun LockedStopsBlock(
         // from accessibility, so this text and button read normally.
         Column(
             Modifier
-                .align(Alignment.Center)
+                .align(Alignment.TopCenter)
                 .padding(horizontal = 24.dp)
                 .background(FarmsyColors.surface.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 stringResource(R.string.route_stops_locked_arg, stops.size),
-                style = geist(13.sp), color = FarmsyColors.ink,
+                style = geist(12.sp), color = FarmsyColors.ink,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
-            Surface(
-                Modifier.clickable(onClickLabel = unlockLabel, role = Role.Button, onClick = onUnlock),
-                shape = RoundedCornerShape(50), color = FarmsyColors.farmGreenMap,
-            ) {
-                Text(
-                    unlockLabel, style = geist(14.sp, FontWeight.SemiBold), color = Color.White,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                )
-            }
+            PillButton(unlockLabel, PillVariant.PRIMARY, PillSize.SMALL, onClick = onUnlock)
         }
     }
 }
