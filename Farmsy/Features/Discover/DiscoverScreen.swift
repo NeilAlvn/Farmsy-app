@@ -187,6 +187,7 @@ struct DiscoverScreen: View {
                          image: tip.image, fallback: "🧺",
                          ingredients: tip.ingredient.map { [$0] } ?? [])
             }
+            .padding(.trailing, -Space.s4)
         }
     }
 
