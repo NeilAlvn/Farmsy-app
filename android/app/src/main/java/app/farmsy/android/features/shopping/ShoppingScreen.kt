@@ -579,7 +579,16 @@ private fun ShoppingSample(
             stringResource(R.string.shopping_sample_coverage_arg, plan.coveredCount, total, plan.picks.size, radiusKm.toInt()),
             style = role(TextRole.HEADING), color = FarmsyColors.ink,
         )
-        Box(Modifier.clickable(onClickLabel = seeWhichFarms, role = Role.Button, onClick = onUnlock)) {
+        Box(
+            Modifier
+                // The wrapped `PlanView` clears its own semantics (it's the
+                // child, this `Box` is the parent, so that clear doesn't
+                // reach up here) — without an explicit name this node would
+                // reach TalkBack as an unnamed button; `onClickLabel` alone is
+                // only the action hint, not the name.
+                .semantics { contentDescription = seeWhichFarms }
+                .clickable(onClickLabel = seeWhichFarms, role = Role.Button, onClick = onUnlock),
+        ) {
             PlanView(plan, total, labels, onOpen = {}, onSwap = {}, km = km, locked = true, modifier = hide)
         }
     }
