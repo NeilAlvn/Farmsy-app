@@ -46,9 +46,7 @@ struct TripsView: View {
     /// Task 4: looking is free, ordering stops and drawing the road is Plus. A
     /// single stop is a plain directions request either way, so it stays free.
     private var isLocked: Bool { TripStore.isRouteLocked(hasFullAccess: session.hasFullAccess, stopCount: stops.count) }
-    private var pinIndex: [String: FarmPin] {
-        Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
-    }
+    private var pinIndex: [String: FarmPin] { farms.pinsById }
     private let SLOTS = 8
     /// Visible rows before the plan list scrolls internally.
     private let PLAN_SLOTS = 5

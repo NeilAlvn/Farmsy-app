@@ -46,6 +46,7 @@ struct HomeScreen: View {
                 band
                 VStack(alignment: .leading, spacing: 0) {
                     greetingCard.padding(.top, -Space.s2)
+                    if !session.hasFullAccess { plusRow }
                     availableSection
                     routeCard
                     thisWeekSection
@@ -136,6 +137,29 @@ struct HomeScreen: View {
         .card()
     }
 
+    // MARK: - Plus
+
+    /// The one obvious way in for a free member, right under the greeting. The
+    /// lock card at the bottom sells a feature; this sells the membership.
+    private var plusRow: some View {
+        Button { Haptics.tap(); shell.openPlus(.homeRow) } label: {
+            HStack(spacing: Space.s3) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.farmGreen)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Upgrade to Farmsy Plus").role(.subheading)
+                    Text("Farmsy finds it, plans the route and tells you when it is fresh.").role(.caption, .inkMuted)
+                }
+                Spacer()
+                Badge(text: "PLUS", fill: .vivid, ink: .ink)
+            }
+        }
+        .buttonStyle(.plain)
+        .card()
+        .padding(.top, Space.s3)
+    }
+
     // MARK: - Available near you
 
     private var nearbyKey: String {
@@ -185,8 +209,7 @@ struct HomeScreen: View {
     /// product, as "confirmed 18 min ago". Free tiles say nothing about timing.
     private func confirmedLine(_ itemId: String) -> String? {
         guard session.hasFullAccess, let location else { return nil }
-        let pins = Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
-        let hit = recent.near(location, radiusKm: radiusKm, pins: pins)
+        let hit = recent.near(location, radiusKm: radiusKm, pins: farms.pinsById)
             .filter { $0.report.status == .open && $0.report.products.contains(itemId) }
             .max { $0.report.createdAt < $1.report.createdAt }
         guard let hit else { return nil }

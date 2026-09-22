@@ -56,9 +56,7 @@ struct CommunityScreen: View {
         }
     }
 
-    private var pinIndex: [String: FarmPin] {
-        Dictionary(farms.pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
-    }
+    private var pinIndex: [String: FarmPin] { farms.pinsById }
 
     private var groups: [ReportGroup] {
         // Everywhere when the phone has no location; the radius, widened to at

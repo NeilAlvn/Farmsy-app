@@ -187,10 +187,11 @@ struct ProductSheet: View {
             if let listId {
                 Button {
                     Haptics.success()
-                    if !onList { trip.toggleProduct(listId) }
+                    // Already on the list: the button used to be disabled, which
+                    // read as a tap that does nothing. Go to the list instead.
+                    if onList { dismiss(); shell.showTab(.shopping) } else { trip.toggleProduct(listId) }
                 } label: { Label(onList ? String(localized: "On your list") : String(localized: "Add to list"), systemImage: onList ? "checkmark" : "basket") }
                 .buttonStyle(PillButtonStyle(onList ? .soft : .secondary, size: .medium))
-                .disabled(onList)
             }
         }
     }

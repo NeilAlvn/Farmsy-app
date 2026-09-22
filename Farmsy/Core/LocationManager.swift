@@ -15,7 +15,11 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        status = manager.authorizationStatus
+        // No `status = manager.authorizationStatus` here: that is a synchronous
+        // round trip to locationd, made on the main thread inside `FarmsyApp.init`,
+        // before the first frame. Sampled blocking the launch for the whole
+        // window. Core Location calls `locationManagerDidChangeAuthorization`
+        // as soon as the manager exists, and that sets `status` without waiting.
     }
 
     func request() {

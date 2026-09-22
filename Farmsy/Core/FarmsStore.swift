@@ -1,13 +1,20 @@
 import Foundation
 import CoreLocation
 import Observation
+import Supabase
 
 /// All public farm pins, loaded once via the get_farms_pins RPC (paginated
 /// the same way the web map does) and filtered in memory.
 @MainActor
 @Observable
 final class FarmsStore {
-    private(set) var pins: [FarmPin] = []
+    private(set) var pins: [FarmPin] = [] {
+        didSet { pinsById = Dictionary(pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a }) }
+    }
+    /// Built once per load. Home, Community and Trips each used to rebuild this
+    /// dictionary of all 8,400 pins on every render, and `pin(forOsmId:)` was a
+    /// linear scan.
+    private(set) var pinsById: [String: FarmPin] = [:]
     private(set) var isLoading = false
     private(set) var loadError: String?
 
@@ -180,7 +187,7 @@ final class FarmsStore {
 
     /// The featured farms, in the frozen random order, resolved to pins.
     var featuredFarms: [FarmPin] {
-        featuredOrder.compactMap { id in pins.first { $0.osmId == id } }
+        featuredOrder.compactMap { pinsById[$0] }
     }
 
     /// Home's "Available near you": every list item with at least one farm in
@@ -268,19 +275,32 @@ final class FarmsStore {
         loadError = nil
         defer { isLoading = false }
 
-        var all: [FarmPin] = []
-        var from = 0
         do {
-            while true {
-                let page: [FarmPin] = try await supabase
-                    .rpc("get_farms_pins")
-                    .range(from: from, to: from + Self.pageSize - 1)
-                    .execute()
-                    .value
-                all.append(contentsOf: page)
-                if page.count < Self.pageSize { break }
-                from += Self.pageSize
+            // The first page also brings the total, so the other eight can go
+            // out side by side. In a row they took about three seconds before
+            // the map had a single pin; together, about one.
+            let first: PostgrestResponse<[FarmPin]> = try await supabase
+                .rpc("get_farms_pins")
+                .range(from: 0, to: Self.pageSize - 1)
+                .execute(options: FetchOptions(count: .exact))
+            var all = first.value
+            let total = first.count ?? all.count
+            let rest = try await withThrowingTaskGroup(of: (Int, [FarmPin]).self) { group in
+                for from in stride(from: Self.pageSize, to: total, by: Self.pageSize) {
+                    group.addTask {
+                        let page: [FarmPin] = try await supabase
+                            .rpc("get_farms_pins")
+                            .range(from: from, to: from + Self.pageSize - 1)
+                            .execute()
+                            .value
+                        return (from, page)
+                    }
+                }
+                var pages: [(Int, [FarmPin])] = []
+                for try await page in group { pages.append(page) }
+                return pages.sorted { $0.0 < $1.0 }
             }
+            for (_, page) in rest { all.append(contentsOf: page) }
             pins = all
         } catch {
             loadError = String(localized: "Couldn't load farms. Check your connection and try again.")
@@ -419,9 +439,7 @@ final class FarmsStore {
             .sorted { $0.1 > $1.1 }
     }
 
-    func pin(forOsmId osmId: String) -> FarmPin? {
-        pins.first { $0.osmId == osmId }
-    }
+    func pin(forOsmId osmId: String) -> FarmPin? { pinsById[osmId] }
 
     /// Random feed of farms that at least have a photo. When we know where
     /// the user is, farms within 75 km lead the feed (shuffled), with the
