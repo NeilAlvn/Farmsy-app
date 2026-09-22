@@ -136,13 +136,22 @@ Profile → **Notifications** row (this is new; supersedes note 10 above).
   row updates to "On" (it refreshes on foreground).
 - **Watch for:** the row stuck on "Turn on" after granting, or not reacting to a Settings change.
 
-### 18. Price + trial copy (depends on store setup, not the build)
-Open the Plus sheet.
-- **Expect (once store prices are set):** lifetime **€59,99**; on an account that never
-  subscribed, a **"Try 7 days free"** line on the yearly plan; on one that did, **no** trial line.
-- **Watch for:** old numbers (€49.99) or a struck-through "was" price — if the App Store /
-  Play prices and the 7-day yearly intro offer aren't set yet, the copy is wrong. **Not a code
-  bug** — it means the store config isn't in. Say so in the TestFlight note if it's not set.
+### 18. Price + trial copy (store config is set; price/trial come from the device, not RevenueCat)
+Open the Plus sheet. Prices are live: **€59.99 lifetime + 7-day yearly trial** on both stores.
+- **Expect:** lifetime **€59,99**; on an account that has **never subscribed**, a **"Try 7 days
+  free"** line on the yearly plan; on one that has, **no** trial line.
+- **Watch for:** old numbers (€49.99) or a struck-through "was" price — would mean a stale device
+  cache, not a config error. The app reads price via `storeProduct.localizedPriceString` and the
+  trial via `storeProduct.introductoryDiscount` (StoreKit / Play Billing) directly — **not** through
+  RevenueCat, which holds no price or trial value. So there's nothing to "wait to sync."
+
+> ⚠️ **The trial leg needs a FRESH account that has never subscribed.** The 7-day trial replaced a
+> 3-day one, and Apple's intro-offer eligibility is per-subscription-group, per-customer: an Apple
+> ID that already used the old 3-day trial is **ineligible** for the 7-day, so StoreKit reports **no
+> intro offer** and the sheet correctly shows **price only, no trial line**. On a device this looks
+> exactly like "the 7-day trial is broken" — it's the guard working. **Use a brand-new sandbox Apple
+> ID** (Neil's own account won't do — it's been testing since July). Same on Play: "New customer
+> acquisition / Never had any subscription" excludes any test account that has subscribed.
 
 ---
 
