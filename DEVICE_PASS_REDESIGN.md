@@ -12,6 +12,29 @@ pass is what decides whether that happens.
 
 ---
 
+## ⚠️ Before you start: you need THREE different test accounts (they conflict)
+
+Access is gated by role and subscription state, so **no single account can test every gate** —
+and an `admin` / `farmer` / `founding_member` account **never sees a paywall at all** (access is
+granted by role before any subscription check — this is correct, not a bug). Neil's own account is
+almost certainly `admin`, so it will pass straight through every Plus gate and show no trial line.
+
+To actually exercise the paid surfaces you need:
+
+1. **A fresh account that has NEVER subscribed** → to see the **"7 days free" trial** line on the
+   Plus sheet (checks 14, 18). An account that used the old 3-day trial, or ever subscribed, is
+   ineligible and correctly shows price-only.
+2. **A paid (Plus) account** → to reach the **Profile → Product alerts** row, which opens
+   `farmsy.app/alerts` (a free account correctly gets the Plus sheet and never follows the link).
+3. **A plain expired/canceled account** — a normal user (NOT admin/farmer/founding) whose sub has
+   lapsed → to see the **re-subscribe paywall**. On expiry the status becomes `canceled` with a null
+   end date, which correctly removes access.
+
+If a gate "doesn't work," check the account first: an admin/founding account showing no paywall, or
+a subscribed account showing no trial, is the gate working — not a bug.
+
+---
+
 ## 🔴 P0 — most likely to look broken / block launch
 
 ### 1. Product sheet with no profiles (#52 "empty by design")
