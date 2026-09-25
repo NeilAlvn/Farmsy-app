@@ -17436,6 +17436,50 @@
           }
         }
       }
+    },
+    "Upgrade to Farmsy Plus": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upgrade naar Farmsy Plus"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passer à Farmsy Plus"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf Farmsy Plus upgraden"
+          }
+        }
+      }
+    },
+    "Farmsy finds it, plans the route and tells you when it is fresh.": {
+      "localizations": {
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy vindt het, plant de route en zegt wanneer het vers is."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy le trouve, planifie l'itinéraire et vous dit quand c'est frais."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farmsy findet es, plant die Route und sagt dir, wann es frisch ist."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

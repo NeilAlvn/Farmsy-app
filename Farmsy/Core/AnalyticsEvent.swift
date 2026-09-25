@@ -90,6 +90,8 @@ enum AnalyticsValue {
         case shoppingSample = "shopping_sample"
         case routePreview = "route_preview"
         case homeCard = "home_card"
+        /// The "Upgrade to Farmsy Plus" row under Home's greeting.
+        case homeRow = "home_row"
         case profile = "profile"
     }
 

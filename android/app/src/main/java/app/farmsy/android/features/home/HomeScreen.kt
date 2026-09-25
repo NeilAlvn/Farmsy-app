@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.Schedule
@@ -244,6 +245,29 @@ fun HomeScreen() {
                     farms.clearAllFilters()
                     farms.filterOpenNow.value = true
                     shell.showTab(AppTab.MAP)
+                }
+            }
+
+            // MARK: Plus — the one obvious way in for a free member, right under
+            // the greeting. The lock card further down sells a feature; this sells
+            // the membership. Port of iOS HomeScreen.plusRow.
+            if (!plus) {
+                Row(
+                    Modifier.padding(top = Space.s3).fillMaxWidth()
+                        .background(FarmsyColors.surface, CardShape)
+                        .tapCard { shell.openPlus(AnalyticsValue.Trigger.HOME_ROW) }.padding(Space.s5),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.s4),
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(20.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(stringResource(R.string.plus_row_title), style = role(TextRole.SUBHEADING), color = FarmsyColors.ink)
+                        Text(
+                            stringResource(R.string.plus_row_text),
+                            style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted,
+                        )
+                    }
+                    Badge("PLUS", fill = FarmsyColors.vivid, ink = FarmsyColors.ink)
                 }
             }
 

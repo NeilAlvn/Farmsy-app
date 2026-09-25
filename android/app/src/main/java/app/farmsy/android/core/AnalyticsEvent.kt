@@ -90,6 +90,8 @@ object AnalyticsValue {
         SHOPPING_SAMPLE("shopping_sample"),
         ROUTE_PREVIEW("route_preview"),
         HOME_CARD("home_card"),
+        /// The "Upgrade to Farmsy Plus" row under Home's greeting.
+        HOME_ROW("home_row"),
         PROFILE("profile"),
     }
 

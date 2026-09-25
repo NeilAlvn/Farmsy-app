@@ -309,4 +309,6 @@
     <string name="recipe_of_the_week">Rezept der Woche</string>
     <string name="push_channel_alerts">Hof-Benachrichtigungen</string>
     <string name="confirmed_open_today_arg">Heute bestätigt geöffnet · %1$d</string>
+    <string name="plus_row_title">Auf Farmsy Plus upgraden</string>
+    <string name="plus_row_text">Farmsy findet es, plant die Route und sagt dir, wann es frisch ist.</string>
 </resources>

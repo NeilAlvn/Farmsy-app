@@ -2,22 +2,19 @@ import SwiftUI
 
 /// A tap that does *not* fire when the finger was actually scrolling.
 ///
-/// A plain `Button` inside a `ScrollView` fires on touch-up even when the touch
-/// was the start of a scroll — which is why tapping-through-scroll opened farms
-/// and photos by accident. This runs a zero-distance drag recogniser alongside
-/// the scroll (so scrolling still works) and only calls the action when the
-/// finger barely moved. Anything past the threshold is treated as a scroll and
-/// the tap is dropped.
+/// A plain `TapGesture`: the scroll view wins as soon as the finger moves, and
+/// the tap only lands when it did not. This used to be a zero-distance
+/// `DragGesture` run alongside the scroll, which on iOS 26 swallowed the
+/// scroll instead — a swipe that started on a card went nowhere, so the
+/// Discover farm list read as an app that had stopped responding.
 ///
 /// `excludeTopTrailing` carves a square out of the top-right corner (for a save
 /// heart or a close button that lives on the card), so a tap there doesn't also
 /// fire the card's own action.
 private struct TapActivate: ViewModifier {
     let action: () -> Void
-    var threshold: CGFloat = 12
     var excludeTopTrailing: CGFloat? = nil
 
-    @State private var moved = false
     @State private var size: CGSize = .zero
 
     func body(content: Content) -> some View {
@@ -30,24 +27,12 @@ private struct TapActivate: ViewModifier {
                         .onChange(of: geo.size) { _, s in size = s }
                 }
             )
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { v in
-                        if abs(v.translation.width) > threshold || abs(v.translation.height) > threshold {
-                            moved = true
-                        }
-                    }
-                    .onEnded { v in
-                        let inExcluded = excludeTopTrailing.map { s in
-                            v.startLocation.x > size.width - s && v.startLocation.y < s
-                        } ?? false
-                        if !moved && !inExcluded {
-                            Haptics.tap()
-                            action()
-                        }
-                        moved = false
-                    }
-            )
+            .onTapGesture { p in
+                let inExcluded = excludeTopTrailing.map { s in p.x > size.width - s && p.y < s } ?? false
+                guard !inExcluded else { return }
+                Haptics.tap()
+                action()
+            }
     }
 }
 
