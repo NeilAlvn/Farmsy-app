@@ -233,25 +233,60 @@ private fun farmDotBitmap(cat: FarmCategory, confirmed: Boolean, scale: Float): 
 private const val DOT_SPAN = 0.06
 /// Screen cells across the width at province zoom; 7pt dots on a 402pt phone.
 private const val CELLS_ACROSS = 56.0
+/// Hard ceiling on pins handed to the map, at any zoom.
+///
+/// The cell grid is keyed to the viewport, so its cell *count* is fixed at
+/// ~56 × 90 ≈ 5,000 however far out you are. At country zoom enough of those
+/// cells contain a farm that 2,000–3,000 markers get drawn, and on Android each
+/// one is a `Marker` composable carrying per-instance state and recomposition
+/// cost — which is what left the map stuck for real users (reported 24 Sep).
+/// iOS draws the same count as native MapKit annotations and copes, which is
+/// exactly why only Android froze. 400 still reads as a dense scatter of farms.
+internal const val MAX_PINS = 400
+
+/// One pin per grid cell. First pin wins, so the choice is stable while panning.
+private fun thinToCells(inView: List<FarmPin>, cellLat: Double, cellLng: Double): List<FarmPin> {
+    val seen = HashSet<Long>()
+    val out = ArrayList<FarmPin>(minOf(inView.size, MAX_PINS))
+    for (pin in inView) {
+        val key = kotlin.math.floor(pin.lat / cellLat).toLong() * 1_000_003L + kotlin.math.floor(pin.lng / cellLng).toLong()
+        if (seen.add(key)) out.add(pin)
+    }
+    return out
+}
+
+/// Thin, then double the cell and thin again until the count fits under
+/// MAX_PINS. Coarsening rather than truncating is the point: `take(MAX_PINS)`
+/// would keep whichever pins the list happens to start with and leave the rest
+/// of the map blank, because the pin list is not in screen order.
+private fun thinToFit(inView: List<FarmPin>, cellLat0: Double, cellLng0: Double): List<FarmPin> {
+    var cellLat = cellLat0
+    var cellLng = cellLng0
+    repeat(10) {
+        val out = thinToCells(inView, cellLat, cellLng)
+        if (out.size <= MAX_PINS) return out
+        cellLat *= 2.0
+        cellLng *= 2.0
+    }
+    return thinToCells(inView, cellLat, cellLng).take(MAX_PINS)
+}
 
 /// Viewport cull at 1.2× the span, then thin to one pin per screen cell when
-/// zoomed out. First pin wins so the choice is stable while panning.
+/// zoomed out, coarsening until the count fits under MAX_PINS.
 internal fun visiblePins(pins: List<FarmPin>, centerLat: Double, centerLng: Double, latSpan: Double, lngSpan: Double): List<FarmPin> {
     val latHalf = latSpan / 2 * 1.2
     val lngHalf = lngSpan / 2 * 1.2
     val inView = pins.filter {
         kotlin.math.abs(it.lat - centerLat) < latHalf && kotlin.math.abs(it.lng - centerLng) < lngHalf
     }
-    if (latSpan < DOT_SPAN) return inView
     val cellLng = lngSpan / CELLS_ACROSS
     val cellLat = cellLng * 0.62   // dots are round; latitude degrees are longer
-    val seen = HashSet<Long>()
-    val out = ArrayList<FarmPin>(minOf(inView.size, 2000))
-    for (pin in inView) {
-        val key = kotlin.math.floor(pin.lat / cellLat).toLong() * 1_000_003L + kotlin.math.floor(pin.lng / cellLng).toLong()
-        if (seen.add(key)) out.add(pin)
+    // Close in, every farm is its own pin — thin only if a dense patch would
+    // otherwise blow past the ceiling.
+    if (latSpan < DOT_SPAN) {
+        return if (inView.size <= MAX_PINS) inView else thinToFit(inView, cellLat, cellLng)
     }
-    return out
+    return thinToFit(inView, cellLat, cellLng)
 }
 
 /// The selected pin — iOS FarmPinView(isHighlighted:) with the literal manifest

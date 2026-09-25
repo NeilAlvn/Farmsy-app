@@ -49,6 +49,43 @@ struct MapScreen: View {
     private static let dotSpan = 0.06
     /// Screen cells across the width at province zoom; 7pt dots on a 402pt phone.
     private static let cellsAcross = 56.0
+    /// Hard ceiling on annotations handed to the map, at any zoom.
+    ///
+    /// The cell grid is keyed to the viewport, so its cell *count* is fixed at
+    /// ~56 × 90 ≈ 5,000 however far out you are. At country zoom enough of those
+    /// cells hold a farm that 2,000–3,000 annotations get drawn — the same
+    /// overload that froze the Android map, where each pin is a `Marker`
+    /// composable. MapKit copes better than Compose does, but this is also the
+    /// "crashes from too many pins" and the low-end-iPhone lag. 400 still reads
+    /// as a dense scatter of farms.
+    private static let maxPins = 400
+
+    /// One pin per grid cell. First pin wins, so the choice is stable while panning.
+    private static func thinToCells(_ inView: [FarmPin], cellLat: Double, cellLng: Double) -> [FarmPin] {
+        var seen = Set<Int64>()
+        var out: [FarmPin] = []
+        out.reserveCapacity(min(inView.count, maxPins))
+        for pin in inView {
+            let key = Int64((pin.lat / cellLat).rounded(.down)) &* 1_000_003 &+ Int64((pin.lng / cellLng).rounded(.down))
+            if seen.insert(key).inserted { out.append(pin) }
+        }
+        return out
+    }
+
+    /// Thin, then double the cell and thin again until the count fits under
+    /// `maxPins`. Coarsening rather than truncating is the point: `prefix` would
+    /// keep whichever pins the list happens to start with and leave the rest of
+    /// the map blank, because the pin list is not in screen order.
+    private static func thinToFit(_ inView: [FarmPin], cellLat: Double, cellLng: Double) -> [FarmPin] {
+        var cellLat = cellLat, cellLng = cellLng
+        for _ in 0..<10 {
+            let out = thinToCells(inView, cellLat: cellLat, cellLng: cellLng)
+            if out.count <= maxPins { return out }
+            cellLat *= 2
+            cellLng *= 2
+        }
+        return Array(thinToCells(inView, cellLat: cellLat, cellLng: cellLng).prefix(maxPins))
+    }
     /// The trip route colour — a blue that stands apart from the green markers.
     static let routeColor = Color(hex: 0x2563EB)
 
@@ -68,19 +105,19 @@ struct MapScreen: View {
             abs($0.lat - region.center.latitude) < latHalf &&
             abs($0.lng - region.center.longitude) < lngHalf
         }
-        guard region.span.latitudeDelta >= Self.dotSpan else { return inView }
-        // Thin to one pin per screen cell. First pin wins so the choice is stable
-        // while panning; the cell is keyed to the span so it does not jitter.
+        // Thin to one pin per screen cell, coarsening until the count fits under
+        // maxPins. First pin wins so the choice is stable while panning; the cell
+        // is keyed to the span so it does not jitter.
         let cellLng = region.span.longitudeDelta / Self.cellsAcross
         let cellLat = cellLng * 0.62   // dots are round; latitude degrees are longer
-        var seen = Set<Int64>()
-        var out: [FarmPin] = []
-        out.reserveCapacity(min(inView.count, 2000))
-        for pin in inView {
-            let key = Int64((pin.lat / cellLat).rounded(.down)) &* 1_000_003 &+ Int64((pin.lng / cellLng).rounded(.down))
-            if seen.insert(key).inserted { out.append(pin) }
+        // Close in, every farm is its own pin — thin only if a dense patch would
+        // otherwise blow past the ceiling.
+        guard region.span.latitudeDelta >= Self.dotSpan else {
+            return inView.count <= Self.maxPins
+                ? inView
+                : Self.thinToFit(inView, cellLat: cellLat, cellLng: cellLng)
         }
-        return out
+        return Self.thinToFit(inView, cellLat: cellLat, cellLng: cellLng)
     }
 
     /// The trip's stops, as pins, in visiting order — drawn on top of everything.
