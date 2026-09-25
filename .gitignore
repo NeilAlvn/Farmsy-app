@@ -42,3 +42,12 @@ Farmsy/Secrets.plist
 farmsy-*.json
 *service-account*.json
 gcloud-*.json
+
+# Billing and local drafts. This repo is PUBLIC — timesheets are billing data
+# and reply drafts are private correspondence. They are written into the repo
+# root as working files, so without these they sit one `git add -A` away from
+# being published.
+*Timesheet*
+*timesheet*
+*Reply*
+*-draft*
