@@ -2,10 +2,14 @@ package app.farmsy.android.core
 
 import android.location.Location
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Count
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -251,34 +255,85 @@ class FarmsStore(private val scope: CoroutineScope) {
         return km * 1000
     }
 
+    /// Offsets whose page failed on the last attempt. A page after the first
+    /// failing is not fatal — whatever arrived stays on the map — so the next
+    /// call tops up only these ranges instead of refetching all nine.
+    private var missingOffsets: List<Int> = emptyList()
+
+    private suspend fun fetchPage(from: Int): List<FarmPin> =
+        supabase.postgrest.rpc("get_farms_pins") {
+            range(from.toLong(), (from + pageSize - 1).toLong())
+        }.decodeList()
+
     fun loadIfNeeded() {
-        if (_pins.value.isNotEmpty() || _isLoading.value) return
+        if (_isLoading.value) return
+        // Re-entered deliberately when a previous load came back short: the pins
+        // are there, but some ranges are not. The map's retry link calls this.
+        if (_pins.value.isNotEmpty() && missingOffsets.isEmpty()) return
         scope.launch {
             _isLoading.value = true
             _loadError.value = null
             try {
                 // Network + JSON decode of thousands of pins must stay off the
                 // main thread, or the UI freezes (ANR) during startup.
-                val all = withContext(Dispatchers.IO) {
-                    val acc = mutableListOf<FarmPin>()
-                    var from = 0
-                    while (true) {
-                        val page = supabase.postgrest.rpc("get_farms_pins") {
-                            range(from.toLong(), (from + pageSize - 1).toLong())
-                        }.decodeList<FarmPin>()
-                        acc += page
-                        if (page.size < pageSize) break
-                        from += pageSize
-                    }
-                    acc
+                withContext(Dispatchers.IO) {
+                    if (missingOffsets.isEmpty()) loadAllPages() else loadMissingPages()
                 }
-                _pins.value = all
             } catch (e: Exception) {
                 _loadError.value = "load_failed"
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    /// The first page carries the exact total, so the remaining eight go out
+    /// together instead of in a queue — iOS FarmsStore.loadIfNeeded does the same,
+    /// and Luuk measured it there: about three seconds in a row, about one
+    /// together. The first page is published the moment it lands, because even
+    /// one second of a blank map reads as a map that is stuck. MapScreen's pin
+    /// ceiling is what makes drawing a partial set safe.
+    private suspend fun loadAllPages() = coroutineScope {
+        val head = supabase.postgrest.rpc("get_farms_pins") {
+            count(Count.EXACT)
+            range(0, (pageSize - 1).toLong())
+        }
+        val first = head.decodeList<FarmPin>()
+        missingOffsets = emptyList()
+        if (first.isEmpty()) {
+            _pins.value = emptyList()
+            return@coroutineScope
+        }
+        _pins.value = first
+
+        val total = head.countOrNull()?.toInt() ?: first.size
+        val pages = (pageSize until total step pageSize).map { from ->
+            async { from to runCatching { fetchPage(from) }.getOrNull() }
+        }.awaitAll()
+
+        val acc = ArrayList<FarmPin>(total)
+        acc += first
+        pages.sortedBy { it.first }.forEach { (_, page) -> page?.let { acc += it } }
+        _pins.value = acc
+        missingOffsets = pages.filter { it.second == null }.map { it.first }
+    }
+
+    /// Top up after a short load: ask only for the ranges that failed and merge
+    /// them into what is already drawn. Keyed by osmId rather than appended,
+    /// because a page boundary can shift if the dataset changed in between.
+    private suspend fun loadMissingPages() = coroutineScope {
+        val pages = missingOffsets.map { from ->
+            async { from to runCatching { fetchPage(from) }.getOrNull() }
+        }.awaitAll()
+
+        val recovered = pages.mapNotNull { it.second }.flatten()
+        if (recovered.isNotEmpty()) {
+            val byId = LinkedHashMap<String, FarmPin>(_pins.value.size + recovered.size)
+            _pins.value.forEach { byId[it.osmId] = it }
+            recovered.forEach { byId[it.osmId] = it }
+            _pins.value = byId.values.toList()
+        }
+        missingOffsets = pages.filter { it.second == null }.map { it.first }
     }
 
     /// Pins matching the current search + category filter, or the AI intent when
