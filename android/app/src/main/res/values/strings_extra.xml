@@ -311,4 +311,6 @@
     <string name="recipe_of_the_week">Recipe of the week</string>
     <string name="push_channel_alerts">Farm alerts</string>
     <string name="confirmed_open_today_arg">Confirmed open today · %1$d</string>
+    <string name="plus_row_title">Upgrade to Farmsy Plus</string>
+    <string name="plus_row_text">Farmsy finds it, plans the route and tells you when it is fresh.</string>
 </resources>

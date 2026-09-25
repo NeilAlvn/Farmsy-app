@@ -309,4 +309,6 @@
     <string name="recipe_of_the_week">Recette de la semaine</string>
     <string name="push_channel_alerts">Alertes des fermes</string>
     <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
+    <string name="plus_row_title">Passer à Farmsy Plus</string>
+    <string name="plus_row_text">Farmsy le trouve, planifie l\'itinéraire et vous dit quand c\'est frais.</string>
 </resources>
