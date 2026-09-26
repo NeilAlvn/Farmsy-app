@@ -230,14 +230,21 @@ struct MapScreen: View {
             return
         }
         let lats = coords.map(\.latitude), lngs = coords.map(\.longitude)
-        // Shift the centre north so the route sits in the upper half — the bottom
-        // is under the trips sheet. Pad generously so the ends clear the edges.
+        // Two framings, because the map is not the same shape in both cases.
+        // Opening a saved trip or setting the origin leaves the trips sheet up over
+        // the lower half, so the route is pushed north and padded hard to clear it.
+        // "Show route" dismisses that sheet and switches to the map, so the same
+        // bias would strand the route in the top third of an otherwise empty
+        // screen — there it is centred and padded just enough to breathe.
+        let shift = trip.fitCentered ? 0.0 : 0.55
+        let latMul = trip.fitCentered ? 1.35 : 2.6
+        let lngMul = trip.fitCentered ? 1.35 : 1.5
         let latPad = (lats.max()! - lats.min()!)
         let center = CLLocationCoordinate2D(
-            latitude: (lats.min()! + lats.max()!) / 2 - latPad * 0.55,
+            latitude: (lats.min()! + lats.max()!) / 2 - latPad * shift,
             longitude: (lngs.min()! + lngs.max()!) / 2)
-        let span = MKCoordinateSpan(latitudeDelta: max(latPad * 2.6, 0.06),
-                                    longitudeDelta: max((lngs.max()! - lngs.min()!) * 1.5, 0.06))
+        let span = MKCoordinateSpan(latitudeDelta: max(latPad * latMul, 0.06),
+                                    longitudeDelta: max((lngs.max()! - lngs.min()!) * lngMul, 0.06))
         withAnimation(.easeInOut(duration: 0.6)) {
             camera = .region(MKCoordinateRegion(center: center, span: span))
         }

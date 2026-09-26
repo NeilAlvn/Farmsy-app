@@ -165,6 +165,7 @@
     <string name="products_likely">likely</string>
     <string name="add_all_to_shopping">Add all to shopping</string>
     <string name="on_your_list">On your list</string>
+    <string name="view_my_list">View my list</string>
     <string name="products_tap_hint">Tap a product to put it on your shopping list.</string>
     <string name="report_what_is_wrong">What is wrong?</string>
     <string name="report_reason_closed">Closed permanently</string>

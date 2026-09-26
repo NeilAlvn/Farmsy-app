@@ -397,7 +397,10 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                         enabled = canRoute,
                     ) {
                         if (isLocked) openPlusFromSample() else {
-                            trip.requestFit()
+                            // centered: this dismisses the planner, so the default
+                            // upward bias would strand the route in the top third of
+                            // an otherwise empty map.
+                            trip.requestFit(centered = true)
                             // The route is drawn on the map, so go there. This used to
                             // only request the fit and leave the planner open over
                             // whichever tab was behind it, so "Show route" appeared to

@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -166,18 +167,29 @@ fun ProductSheet(slug: String, fallbackLabel: String, fallbackEmoji: String, onD
                 stringResource(R.string.find_nearby), PillVariant.PRIMARY, PillSize.MEDIUM, block = true,
                 icon = Icons.Outlined.LocationOn, modifier = Modifier.weight(1f),
             ) {
-                scope.launch {
-                    farms.showProduct(name, terms, location, radiusKm)
-                    onDismiss()
-                    shell.showTab(AppTab.MAP)
-                }
+                // Close first, search second. Awaiting showProduct before dismissing
+                // left this sheet on screen for as long as the search took, so the
+                // tap read as doing nothing. The search writes into the store the
+                // map reads; it does not need this sheet alive to finish.
+                onDismiss()
+                shell.showTab(AppTab.MAP)
+                scope.launch { farms.showProduct(name, terms, location, radiusKm) }
             }
             if (listId != null) {
                 PillButton(
-                    stringResource(if (onList) R.string.on_your_list else R.string.add_to_list),
+                    // "On your list" was a status on a disabled control, so the one
+                    // thing a user wants next — seeing the list — was unreachable
+                    // from here. Name the action and let it be tapped.
+                    stringResource(if (onList) R.string.view_my_list else R.string.add_to_list),
                     if (onList) PillVariant.SOFT else PillVariant.SECONDARY, PillSize.MEDIUM,
-                    icon = if (onList) Icons.Filled.Check else Icons.Filled.ShoppingBasket, enabled = !onList,
-                ) { if (!onList) trip.toggleProduct(listId) }
+                    block = true,
+                    icon = if (onList) Icons.AutoMirrored.Filled.ArrowForward else Icons.Filled.ShoppingBasket,
+                    // weight on both so the pair is one size; without it this one
+                    // hugged its label and the row looked accidental.
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (onList) { onDismiss(); shell.showTab(AppTab.SHOPPING) } else trip.toggleProduct(listId)
+                }
             }
         }
     }

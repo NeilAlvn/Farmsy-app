@@ -521,8 +521,23 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
         if (pts.size == 1) {
             cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(pts.first(), 12f))
         } else if (pts.size >= 2) {
-            val b = LatLngBounds.builder().apply { pts.forEach { include(it) } }.build()
-            runCatching { cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(b, 140)) }
+            val b0 = LatLngBounds.builder().apply { pts.forEach { include(it) } }.build()
+            // Two framings, mirroring iOS. "Show route" dismisses the planner, so
+            // the route is centred on a full map. Opening a saved trip or setting
+            // the origin leaves the sheet over the lower half, and fitting the bare
+            // bounds there centres the route *behind* it — so the south edge is
+            // stretched to push the route into the visible upper strip.
+            val b = if (trip.fitCentered) b0 else {
+                val latPad = b0.northeast.latitude - b0.southwest.latitude
+                LatLngBounds(
+                    LatLng(b0.southwest.latitude - latPad * 1.1, b0.southwest.longitude),
+                    b0.northeast,
+                )
+            }
+            runCatching {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngBounds(b, if (trip.fitCentered) 90 else 140))
+            }
         }
     }
 

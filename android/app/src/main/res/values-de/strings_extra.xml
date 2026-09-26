@@ -163,6 +163,7 @@
     <string name="products_likely">wahrscheinlich</string>
     <string name="add_all_to_shopping">Alles auf die Liste</string>
     <string name="on_your_list">Auf deiner Liste</string>
+    <string name="view_my_list">Meine Liste ansehen</string>
     <string name="products_tap_hint">Tippe auf ein Produkt, um es auf deine Einkaufsliste zu setzen.</string>
     <string name="report_what_is_wrong">Was stimmt nicht?</string>
     <string name="report_reason_closed">Dauerhaft geschlossen</string>
