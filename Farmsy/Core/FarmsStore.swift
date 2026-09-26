@@ -134,27 +134,48 @@ final class FarmsStore {
     private(set) var locationTypesByOsm: [String: [String]] = [:]
     private(set) var methodsByOsm: [String: [String]] = [:]
 
+    /// The four lookups, built away from the main actor and handed back in one
+    /// piece so the assignment below is a handful of stores rather than a loop.
+    private struct FlagMaps: Sendable {
+        var galleries: [String: [String]] = [:]
+        var produce: [String: String] = [:]
+        var locs: [String: [String]] = [:]
+        var meths: [String: [String]] = [:]
+    }
+
+    /// `nonisolated` on purpose. This class is `@MainActor`, so until this was
+    /// split out, decoding ~8,400 flag rows and building four dictionaries — a
+    /// `lowercased()` per row among them — all ran on the main thread. Sentry
+    /// recorded it as the app's single worst hang: 142 events across 35 users,
+    /// every one of them preceded by a 200 from /api/search/smart, because
+    /// `applyAISearch` awaits this before it can filter. The server was never
+    /// slow; we blocked the UI decoding its answer. Android has always done this
+    /// inside `withContext(Dispatchers.IO)`, so this restores parity too.
+    private nonisolated static func decodeFlags(_ data: Data) -> FlagMaps? {
+        guard let rows = try? JSONDecoder().decode([FarmFlag].self, from: data) else { return nil }
+        var out = FlagMaps()
+        for r in rows {
+            if (r.g?.count ?? 0) >= 2 { out.galleries[r.o] = r.g }
+            if let p = r.p, !p.isEmpty { out.produce[r.o] = p.lowercased() }
+            if let l = r.l, !l.isEmpty { out.locs[r.o] = l }
+            if let m = r.m, !m.isEmpty { out.meths[r.o] = m }
+        }
+        return out
+    }
+
     func loadFlagsIfNeeded() async {
         guard !flagsLoaded else { return }
         let url = Backend.webAPI.appending(path: "farms").appending(path: "flags")
         guard let (data, resp) = try? await URLSession.shared.data(from: url),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
-              let rows = try? JSONDecoder().decode([FarmFlag].self, from: data)
+              (resp as? HTTPURLResponse)?.statusCode == 200
         else { return }
-        var map: [String: [String]] = [:]
-        var produce: [String: String] = [:]
-        var locs: [String: [String]] = [:]
-        var meths: [String: [String]] = [:]
-        for r in rows {
-            if (r.g?.count ?? 0) >= 2 { map[r.o] = r.g }
-            if let p = r.p, !p.isEmpty { produce[r.o] = p.lowercased() }
-            if let l = r.l, !l.isEmpty { locs[r.o] = l }
-            if let m = r.m, !m.isEmpty { meths[r.o] = m }
-        }
-        galleries = map
-        produceByOsm = produce
-        locationTypesByOsm = locs
-        methodsByOsm = meths
+        guard let maps = await Task.detached(priority: .userInitiated, operation: {
+            Self.decodeFlags(data)
+        }).value else { return }
+        galleries = maps.galleries
+        produceByOsm = maps.produce
+        locationTypesByOsm = maps.locs
+        methodsByOsm = maps.meths
         flagsLoaded = true
     }
 
