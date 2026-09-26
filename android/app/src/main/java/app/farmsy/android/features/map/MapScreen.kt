@@ -484,8 +484,19 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
     // `visibleRegion ?? cap`.
     LaunchedEffect(focusPin?.osmId) {
         val p = focusPin ?: return@LaunchedEffect
-        val current = viewport?.let { it.northeast.latitude - it.southwest.latitude } ?: 0.15
-        val delta = minOf(current, 0.15)
+        // Land close enough that the tapped farm draws as its teardrop with the
+        // category icon, not as an anonymous dot. Derived from DOT_SPAN rather than
+        // written as a second literal, because that is exactly how the two drifted
+        // apart: the cap was 0.15 while pins only stop being dots below 0.06, so
+        // tapping a pin zoomed to a level where it still had no icon. The 0.6 is
+        // margin — fitting a bounds box to the view's aspect returns a span wider
+        // than the one asked for, so targeting DOT_SPAN exactly still draws dots.
+        val target = DOT_SPAN * 0.6
+        val current = viewport?.let { it.northeast.latitude - it.southwest.latitude } ?: target
+        // minOf only — this may never zoom out. The measured span is the already
+        // expanded one, so feeding it back as the next request made repeated pin
+        // taps ratchet outwards until the map was zoomed right out. Mirrors iOS.
+        val delta = minOf(current, target)
         val centerLat = p.lat - delta * 0.28
         val half = delta / 2.0
         val bounds = LatLngBounds(

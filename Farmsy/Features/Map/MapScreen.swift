@@ -415,12 +415,24 @@ struct MapScreen: View {
 
     private func flyToFocus() {
         guard let pin = focusPin else { return }
-        // Recenter on the farm but keep the user's current zoom when they're already
-        // zoomed in — forcing a fixed span zoomed the map out and dissolved the
-        // clusters around the pin. Only zoom in if they were further out than this.
-        let cap = 0.15
-        let current = visibleRegion?.span.latitudeDelta ?? cap
-        let delta = min(current, cap)
+        // Land close enough that the tapped farm draws as its teardrop with the
+        // category icon, not as an anonymous dot. Derived from `dotSpan` rather
+        // than written as a second literal, because that is exactly how the two
+        // drifted apart: the cap here was 0.15 while pins only stop being dots
+        // below 0.06, so tapping a pin zoomed to a level where it still had no
+        // icon — the farm you asked about looked identical to every other dot.
+        //
+        // The 0.6 is margin, not decoration. MapKit fits a requested region to
+        // the view's aspect, so the span that comes back in `visibleRegion` is
+        // ~1.2x the one asked for; requesting exactly `dotSpan` would settle just
+        // above it and still draw dots.
+        let target = Self.dotSpan * 0.6
+        let current = visibleRegion?.span.latitudeDelta ?? target
+        // `min` only — this may never zoom out. The reported span is the already
+        // expanded one, so feeding it back as the next request is what made
+        // repeated pin taps ratchet outwards (0.04 → 0.086 → 0.19 → …) until the
+        // map was zoomed right out. Capping at a fixed target makes it converge.
+        let delta = min(current, target)
         // Shift the map centre south of the pin so the pin sits in the upper part
         // of the map — the detail sheet covers the lower ~55%, so centring exactly
         // would hide it. ~0.28·span lands it around the top quarter of the screen,

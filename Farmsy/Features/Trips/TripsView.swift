@@ -427,6 +427,12 @@ struct TripsView: View {
                         // so the user sees where the trip actually goes.
                         trip.requestFit()
                     }
+                    // The route is drawn on the map, but dismissing only closes this
+                    // sheet — it returns to whatever tab is underneath, which is Home
+                    // if that is where the planner was opened from. "Show route" then
+                    // appeared to do nothing and the user had to find the map tab
+                    // themselves. Ask for the map explicitly.
+                    shell.showTab(.map)
                     dismiss()
                 }
                 .disabled(!canRoute)
