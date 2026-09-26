@@ -408,7 +408,12 @@ fun ShoppingScreen() {
         // Plus sheet from either.
         if (picked.isNotEmpty()) {
             val stops = plan?.picks?.size ?: 0
-            val enabled = !isPlanning && origin != null
+            // Not `origin != null` any more: this bar is pinned to the bottom while
+            // the "Allow location" card that explains a missing origin sits in a
+            // section that scrolls away, so the one control always on screen was
+            // transparent and dead with the reason out of view. It now asks for
+            // location, which is exactly what unblocks everything below.
+            val enabled = !isPlanning
             Row(
                 Modifier.align(Alignment.BottomCenter)
                     .padding(horizontal = 16.dp).padding(bottom = TabBarInset.height + 24.dp)
@@ -419,6 +424,7 @@ fun ShoppingScreen() {
                     .clickable(enabled = enabled) {
                         val p = plan
                         when {
+                            origin == null -> { tap(); requestLocation() }
                             !hasFullAccess -> openPlusFromSample()
                             p != null && !p.isEmpty -> { tap(); buildRoute(p) }
                             else -> { tap(); findFarms() }
