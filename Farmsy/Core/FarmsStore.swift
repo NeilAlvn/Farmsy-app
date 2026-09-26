@@ -11,8 +11,7 @@ final class FarmsStore {
     private(set) var pins: [FarmPin] = [] {
         didSet {
             pinsById = Dictionary(pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
-            searchHaystacks = Dictionary(
-                pins.map { ($0.osmId, Self.haystack(for: $0)) }, uniquingKeysWith: { a, _ in a })
+            rebuildHaystacks()
         }
     }
     /// Built once per load. Home, Community and Trips each used to rebuild this
@@ -28,11 +27,43 @@ final class FarmsStore {
     /// ~25,000 String allocations per character typed, on the main actor. Android
     /// does not have this because `filtered()` sits behind `remember(...)`.
     ///
-    /// Done in `didSet` rather than lazily: it is one pass at load, where it
-    /// disappears behind the network, instead of a stall on the first keystroke.
+    /// Built off the main actor, so it is absent for a moment after each load —
+    /// which is safe only because the search filter falls back to the live fields
+    /// when a pin has no entry. That fallback was added as belt-and-braces; it is
+    /// what makes building this asynchronously free.
     private(set) var searchHaystacks: [String: String] = [:]
 
-    private static func haystack(for pin: FarmPin) -> String {
+    /// Discards a build whose pins have already been replaced. `pins` is now
+    /// assigned up to four times per load (empty, first page, full set, top-up),
+    /// so without this an earlier, slower build could land last and overwrite a
+    /// newer one with a map of 1,000 farms.
+    @ObservationIgnored private var haystackToken = 0
+
+    private func rebuildHaystacks() {
+        haystackToken &+= 1
+        let token = haystackToken
+        let snapshot = pins
+        guard !snapshot.isEmpty else {
+            searchHaystacks = [:]
+            return
+        }
+        // Off the main actor on purpose. Built synchronously in `didSet` this ran
+        // two to four times per load — 8,400 haystacks each time — on the main
+        // thread, at exactly the moment the parallel fetch is trying to get the map
+        // on screen. That is the same main-thread pattern this store has been
+        // fixing everywhere else; no reason to reintroduce it to avoid a hitch that
+        // the fallback path already covers.
+        Task.detached(priority: .utility) { [weak self] in
+            let built = Dictionary(
+                snapshot.map { ($0.osmId, Self.haystack(for: $0)) }, uniquingKeysWith: { a, _ in a })
+            await MainActor.run {
+                guard let self, self.haystackToken == token else { return }
+                self.searchHaystacks = built
+            }
+        }
+    }
+
+    private nonisolated static func haystack(for pin: FarmPin) -> String {
         var s = pin.name.lowercased()
         if let city = pin.city, !city.isEmpty { s += "\n" + city.lowercased() }
         if let pc = pin.postalCode, !pc.isEmpty { s += "\n" + pc.lowercased() }

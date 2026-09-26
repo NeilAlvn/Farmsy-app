@@ -33,6 +33,39 @@ To actually exercise the paid surfaces you need:
 If a gate "doesn't work," check the account first: an admin/founding account showing no paywall, or
 a subscribed account showing no trial, is the gate working — not a bug.
 
+### "Account" means two unrelated things here, and mixing them up wastes an afternoon
+
+This has now confused two people, so it is spelled out:
+
+| | what it controls | where it is set |
+|---|---|---|
+| **Farmsy account** | role, `subscription_status`, `founding_member` — i.e. free / paid / expired | our database |
+| **Apple ID / Google account** | whether a purchase is sandbox, and **trial eligibility** | the phone |
+
+They are independent. A Farmsy account can be `expired` while the Apple ID has never bought anything.
+
+**You do NOT need a sandbox Apple ID to keep purchases safe.** TestFlight in-app purchases are
+*always* sandbox, whichever Apple ID is signed in. No real money can be taken from a TestFlight build.
+
+**You DO need a fresh sandbox tester to see the 7-day trial.** Apple tracks intro-offer eligibility
+**per Apple ID, per subscription group**, forever. An Apple ID that has ever started a Farmsy trial
+gets **no offer** from StoreKit, the paywall correctly shows price-only, and the trial looks broken
+when it is not.
+
+- Fix: **App Store Connect → Users and Access → Sandbox → Clear Purchase History** on that tester
+  (or create a new one), then sign in under **Settings → App Store → Sandbox Account** on the device.
+- ✅ Done 26 Sep for `neilmedallon1@gmail.com` — Last Purchase is now empty, so it is trial-eligible.
+  Clearing is repeatable, so do it again between runs if you buy on it.
+- **Resetting our `trial_started_at` does nothing for this.** Different system entirely.
+
+**Android:** the Google account must be on the **licence-tester list** for internal-testing purchases
+to be free, and the Play offer is set to "Never had any subscription" — so the same fresh-account rule
+applies.
+
+**Sandbox subscriptions renew on an accelerated clock** (a month is minutes), so a sandbox account you
+bought on keeps re-granting access and will not look free again for a while. Test the free/trial leg
+*first*, then buy.
+
 ---
 
 ## 🔴 P0 — most likely to look broken / block launch
