@@ -9,12 +9,35 @@ import Supabase
 @Observable
 final class FarmsStore {
     private(set) var pins: [FarmPin] = [] {
-        didSet { pinsById = Dictionary(pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a }) }
+        didSet {
+            pinsById = Dictionary(pins.map { ($0.osmId, $0) }, uniquingKeysWith: { a, _ in a })
+            searchHaystacks = Dictionary(
+                pins.map { ($0.osmId, Self.haystack(for: $0)) }, uniquingKeysWith: { a, _ in a })
+        }
     }
     /// Built once per load. Home, Community and Trips each used to rebuild this
     /// dictionary of all 8,400 pins on every render, and `pin(forOsmId:)` was a
     /// linear scan.
     private(set) var pinsById: [String: FarmPin] = [:]
+
+    /// `name + city + postalCode`, lowercased once at load, for the search filter.
+    ///
+    /// That filter used to call `lowercased()` on all three fields per pin, per
+    /// evaluation — and `searchText` is bound straight to the TextField on an
+    /// `@Observable`, so every keystroke re-ran it over all 8,400 pins. Up to
+    /// ~25,000 String allocations per character typed, on the main actor. Android
+    /// does not have this because `filtered()` sits behind `remember(...)`.
+    ///
+    /// Done in `didSet` rather than lazily: it is one pass at load, where it
+    /// disappears behind the network, instead of a stall on the first keystroke.
+    private(set) var searchHaystacks: [String: String] = [:]
+
+    private static func haystack(for pin: FarmPin) -> String {
+        var s = pin.name.lowercased()
+        if let city = pin.city, !city.isEmpty { s += "\n" + city.lowercased() }
+        if let pc = pin.postalCode, !pc.isEmpty { s += "\n" + pc.lowercased() }
+        return s
+    }
     private(set) var isLoading = false
     private(set) var loadError: String?
 
@@ -380,10 +403,15 @@ final class FarmsStore {
 
         let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
         if !query.isEmpty {
-            result = result.filter {
-                $0.name.lowercased().contains(query)
-                    || ($0.city?.lowercased().contains(query) ?? false)
-                    || ($0.postalCode?.lowercased().contains(query) ?? false)
+            // One prebuilt haystack per pin (see `searchHaystacks`), so a keystroke
+            // costs a lookup and a `contains` rather than three `lowercased()`
+            // allocations per pin. Falls back to the live fields if a pin somehow
+            // has no entry, so a missing haystack can never hide a farm.
+            result = result.filter { pin in
+                if let hay = searchHaystacks[pin.osmId] { return hay.contains(query) }
+                return pin.name.lowercased().contains(query)
+                    || (pin.city?.lowercased().contains(query) ?? false)
+                    || (pin.postalCode?.lowercased().contains(query) ?? false)
             }
         }
         return result

@@ -132,6 +132,33 @@ class FarmsStore(private val scope: CoroutineScope) {
     /// Lowercase `produce` text for one farm, or null when it never said what it
     /// sells. Read by the shopping-list planner, which matches against it.
     fun produceFor(osmId: String): String? = produceByOsm[osmId]
+
+    // `name + city + postalCode`, lowercased once per pin, for the search filter.
+    // That filter used to call `lowercase()` on all three fields per pin on every
+    // pass — up to ~25,000 String allocations over 8,400 farms. iOS had it worse
+    // (no `remember`, so once per keystroke); this is the same fix on both sides.
+    //
+    // Rebuilt when the pin list instance changes, and only on the first pass that
+    // actually searches, so a user who never types pays nothing. iOS builds it
+    // eagerly in `pins.didSet` instead — Kotlin has no property observer here, and
+    // the visible behaviour is identical either way.
+    private var haystackSource: List<FarmPin>? = null
+    private var haystackCache: Map<String, String> = emptyMap()
+    private val searchHaystacks: Map<String, String>
+        get() {
+            val current = _pins.value
+            if (current !== haystackSource) {
+                haystackSource = current
+                haystackCache = current.associate { pin ->
+                    pin.osmId to buildString {
+                        append(pin.name.lowercase())
+                        pin.city?.takeIf { it.isNotEmpty() }?.let { append('\n').append(it.lowercase()) }
+                        pin.postalCode?.takeIf { it.isNotEmpty() }?.let { append('\n').append(it.lowercase()) }
+                    }
+                }
+            }
+            return haystackCache
+        }
     private var locationTypesByOsm: Map<String, List<String>> = emptyMap()
     private var methodsByOsm: Map<String, List<String>> = emptyMap()
 
@@ -310,8 +337,15 @@ class FarmsStore(private val scope: CoroutineScope) {
         }
         val query = searchText.value.trim().lowercase()
         if (query.isNotEmpty()) {
+            // One prebuilt haystack per pin (see `searchHaystacks`), so a pass costs
+            // a lookup and a `contains` rather than three `lowercase()` allocations
+            // per pin. Falls back to the live fields if a pin has no entry, so a
+            // missing haystack can never hide a farm. Mirrors iOS.
+            val hays = searchHaystacks   // hoisted: the getter checks the cache
             result = result.filter {
-                it.name.lowercase().contains(query) ||
+                val hay = hays[it.osmId]
+                if (hay != null) hay.contains(query)
+                else it.name.lowercase().contains(query) ||
                     (it.city?.lowercase()?.contains(query) ?: false) ||
                     (it.postalCode?.lowercase()?.contains(query) ?: false)
             }
