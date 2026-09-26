@@ -163,8 +163,27 @@ final class FarmsStore {
         return out
     }
 
+    /// The load in flight, so callers arriving together share one fetch.
+    /// `flagsLoaded` only becomes true on the last line and there are two awaits
+    /// before it, so without this two callers both pass the guard and both fetch
+    /// and decode the whole payload. Moving the decode off the main actor made
+    /// that worse rather than better: it turns one main-thread decode into two
+    /// concurrent ones. Set before any await, so on the main actor it is atomic.
+    @ObservationIgnored private var flagsTask: Task<Void, Never>?
+
     func loadFlagsIfNeeded() async {
         guard !flagsLoaded else { return }
+        if let inFlight = flagsTask {
+            await inFlight.value
+            return
+        }
+        let task = Task { await self.loadFlags() }
+        flagsTask = task
+        await task.value
+        flagsTask = nil
+    }
+
+    private func loadFlags() async {
         let url = Backend.webAPI.appending(path: "farms").appending(path: "flags")
         guard let (data, resp) = try? await URLSession.shared.data(from: url),
               (resp as? HTTPURLResponse)?.statusCode == 200
