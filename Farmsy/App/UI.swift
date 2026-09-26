@@ -155,6 +155,15 @@ struct PillButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.ui(variant == .text && size == .small ? 15 : 17, .semibold))
+            // One line that shrinks rather than wraps or truncates. Without these a
+            // label too wide for its button either wrapped to two lines — which
+            // changes the button's height and looks accidental next to a one-line
+            // sibling — or was cut mid-word. It bites hardest in nl/fr/de, where the
+            // same label is longer, and on any block/weighted button that cannot
+            // grow. 0.7 keeps it legible; below that the copy is too long, not the
+            // button too small. Mirrors Android's FitText.
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             .foregroundStyle(label)
             .frame(maxWidth: block ? .infinity : nil,
                    minHeight: variant == .text ? nil : size.height)

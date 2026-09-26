@@ -473,7 +473,13 @@ fun PillButton(
         horizontalArrangement = Arrangement.spacedBy(Space.s2, Alignment.CenterHorizontally),
     ) {
         icon?.let { Icon(it, null, tint = label, modifier = Modifier.size(18.dp)) }
-        Text(text, style = ui(if (isText && size == PillSize.SMALL) 15.sp else 17.sp, FontWeight.SemiBold), color = label, maxLines = 1)
+        // FitText, not Text: `maxLines = 1` with no shrink meant any label too wide
+        // for its button was simply cut — "Find nearby" rendered as "Find", "View my
+        // list" as "View my". It bites hardest in nl/fr/de, where the same label is
+        // longer, and on every block/weighted button, which cannot grow to fit.
+        // FitText falls back to the plain size when constraints are unbounded, so
+        // wrap-content buttons are unchanged.
+        FitText(text, style = ui(if (isText && size == PillSize.SMALL) 15.sp else 17.sp, FontWeight.SemiBold), color = label)
     }
 }
 
@@ -540,7 +546,8 @@ fun Chip(
 @Composable
 fun Badge(text: String, fill: Color = FarmsyColors.farmGreen, ink: Color = Color.White, modifier: Modifier = Modifier) {
     Box(modifier.height(22.dp).background(fill, PillShape).padding(horizontal = Space.s2), contentAlignment = Alignment.Center) {
-        Text(text, style = ui(12.sp, FontWeight.SemiBold), letterSpacing = 0.3.sp, color = ink)
+        Text(text, style = ui(12.sp, FontWeight.SemiBold), letterSpacing = 0.3.sp, color = ink,
+            maxLines = 1, softWrap = false)
     }
 }
 
@@ -696,7 +703,11 @@ fun PlusLockCard(title: String, text: String, modifier: Modifier = Modifier, onU
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
-                Text(title, style = role(TextRole.SUBHEADING), color = FarmsyColors.ink)
+                // The title takes the weight so the badge keeps its intrinsic width.
+                // Without it the title claimed the whole row and PLUS was squeezed
+                // down to "P".
+                Text(title, style = role(TextRole.SUBHEADING), color = FarmsyColors.ink,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Badge("PLUS")
             }
             Text(text, style = role(TextRole.BODY_SM), color = FarmsyColors.inkMuted)

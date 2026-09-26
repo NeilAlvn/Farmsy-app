@@ -276,7 +276,12 @@ fun MainScreen() {
             // happened. `FarmProductsSection` was already working around it by
             // calling `onClose()` first; this makes that the default rather than
             // something each call site has to remember.
-            showTab = { tab = it; route = null },
+            // Switching tab closes whatever is covering it. Clearing `route` alone
+            // was not enough: a product sheet lives in `productSlug` and a profile
+            // in `showProfile`, so "take me to Shopping" from inside one of those
+            // changed the tab underneath and left the sheet on top, which reads as
+            // nothing having happened.
+            showTab = { tab = it; route = null; productSlug = null; showProfile = false },
             openTrips = { requireAuth { route = SheetRoute.TRIPS } },
             openProfile = { showProfile = true },
             openPlus = { trigger -> requireAuth { plusTrigger = trigger; showPlus = true } },

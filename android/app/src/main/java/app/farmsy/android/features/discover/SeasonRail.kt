@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ShoppingBasket
 import androidx.compose.material.icons.filled.WifiOff
@@ -46,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.features.main.LocalShell
+import app.farmsy.android.features.main.AppTab
 import app.farmsy.android.core.SeasonalItem
 import app.farmsy.android.core.Seasons
 import app.farmsy.android.core.ShoppingItem
@@ -226,6 +229,7 @@ fun IdeaCard(
 ) {
     val context = LocalContext.current
     val trip = LocalTrip.current
+    val shell = LocalShell.current
     val language = remember { ShoppingItems.language(context) }
     val wanted by trip.wantedProducts.collectAsState()
     val catalogue by ShoppingItems.items.collectAsState()
@@ -258,13 +262,21 @@ fun IdeaCard(
         Spacer(Modifier.weight(1f))
         if (ingredients.isNotEmpty()) {
             PillButton(
-                stringResource(if (onList) R.string.on_your_list else R.string.put_on_my_list),
+                // Once the ingredients are on the list, the useful next step is
+                // seeing the list. This used to say "On your list" on a disabled
+                // button, which is a dead end at exactly the moment of intent.
+                stringResource(if (onList) R.string.view_my_list else R.string.put_on_my_list),
                 if (onList) PillVariant.SOFT else PillVariant.PRIMARY, PillSize.SMALL,
-                icon = if (onList) Icons.Filled.Check else Icons.Filled.ShoppingBasket,
-                enabled = !onList,
+                icon = if (onList) Icons.AutoMirrored.Filled.ArrowForward else Icons.Filled.ShoppingBasket,
             ) {
-                listIds.filter { it !in wanted }.forEach { trip.toggleProduct(it) }
-                added = true
+                if (onList) {
+                    // showTab closes whatever sheet this card is inside, so the
+                    // shopping list is actually visible rather than behind it.
+                    shell.showTab(AppTab.SHOPPING)
+                } else {
+                    listIds.filter { it !in wanted }.forEach { trip.toggleProduct(it) }
+                    added = true
+                }
             }
         }
     }
