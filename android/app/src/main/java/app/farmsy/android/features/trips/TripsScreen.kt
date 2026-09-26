@@ -93,6 +93,7 @@ import app.farmsy.android.core.TripGeometry
 import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.core.TripStore
 import app.farmsy.android.features.discover.RecommendationCarousel
+import app.farmsy.android.features.main.AppTab
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.place.PlaceSearchSheet
 import app.farmsy.android.ui.theme.FarmsyColors
@@ -394,7 +395,16 @@ fun TripsScreen(collapsed: Boolean = false, onOpenFarm: (FarmPin) -> Unit) {
                     OutlineAction(
                         stringResource(R.string.show_route), Icons.Filled.NearMe, Modifier.weight(1f),
                         enabled = canRoute,
-                    ) { if (isLocked) openPlusFromSample() else trip.requestFit() }
+                    ) {
+                        if (isLocked) openPlusFromSample() else {
+                            trip.requestFit()
+                            // The route is drawn on the map, so go there. This used to
+                            // only request the fit and leave the planner open over
+                            // whichever tab was behind it, so "Show route" appeared to
+                            // do nothing and the map had to be found by hand.
+                            shell.showTab(AppTab.MAP)
+                        }
+                    }
                 }
                 // A Maps hand-off that silently becomes a paywall reads as
                 // bait-and-switch, so the locked one wears the padlock. Save

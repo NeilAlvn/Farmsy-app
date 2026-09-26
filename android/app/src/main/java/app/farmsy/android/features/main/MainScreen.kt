@@ -270,7 +270,13 @@ fun MainScreen() {
     val shell = remember {
         ShellActions(
             openFarm = { openFarm(it, AnalyticsValue.Source.WHATS_NEW) },
-            showTab = { tab = it },
+            // Switching tab also closes any open sheet. Without this the tab
+            // changed underneath and the sheet stayed on top of it, so asking for
+            // the map from inside Trips or a product sheet looked like nothing
+            // happened. `FarmProductsSection` was already working around it by
+            // calling `onClose()` first; this makes that the default rather than
+            // something each call site has to remember.
+            showTab = { tab = it; route = null },
             openTrips = { requireAuth { route = SheetRoute.TRIPS } },
             openProfile = { showProfile = true },
             openPlus = { trigger -> requireAuth { plusTrigger = trigger; showPlus = true } },
