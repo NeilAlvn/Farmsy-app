@@ -424,8 +424,10 @@ struct TripsView: View {
                     Task {
                         await trip.refreshRoute(pins: pinIndex, locked: isLocked)
                         // Fly the map to frame the whole route once it's computed,
-                        // so the user sees where the trip actually goes.
-                        trip.requestFit()
+                        // so the user sees where the trip actually goes. `centered`
+                        // because this dismisses the planner — the default fit
+                        // biases the route upward to clear a sheet that is gone.
+                        trip.requestFit(centered: true)
                     }
                     // The route is drawn on the map, but dismissing only closes this
                     // sheet — it returns to whatever tab is underneath, which is Home

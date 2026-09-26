@@ -176,11 +176,16 @@ struct ProductSheet: View {
         HStack(spacing: Space.s2) {
             Button {
                 Haptics.tap()
+                // Close first, search second. Awaiting `showProduct` before
+                // dismissing left this sheet sitting on screen for as long as the
+                // search took, so the tap read as doing nothing at all. The search
+                // writes into the store the map reads, so it does not need this
+                // sheet alive to finish.
+                dismiss()
+                shell.showTab(.map)
                 Task {
                     await farms.showProduct(label: profile?.name ?? fallbackLabel, terms: terms,
                                             userLocation: locationManager.location, radiusKm: radiusKm)
-                    dismiss()
-                    shell.showTab(.map)
                 }
             } label: { Label(String(localized: "Find nearby"), systemImage: "mappin.and.ellipse") }
             .buttonStyle(PillButtonStyle(.primary, size: .medium, block: true))
@@ -190,8 +195,15 @@ struct ProductSheet: View {
                     // Already on the list: the button used to be disabled, which
                     // read as a tap that does nothing. Go to the list instead.
                     if onList { dismiss(); shell.showTab(.shopping) } else { trip.toggleProduct(listId) }
-                } label: { Label(onList ? String(localized: "On your list") : String(localized: "Add to list"), systemImage: onList ? "checkmark" : "basket") }
-                .buttonStyle(PillButtonStyle(onList ? .soft : .secondary, size: .medium))
+                } label: {
+                    // "On your list" was a status on a control that does something,
+                    // so it read as disabled and nobody tapped it. Name the action.
+                    Label(onList ? String(localized: "View my list") : String(localized: "Add to list"),
+                          systemImage: onList ? "arrow.right" : "basket")
+                }
+                // `block` on both so the pair is one size. Without it this one hugged
+                // its label and the row looked accidental.
+                .buttonStyle(PillButtonStyle(onList ? .soft : .secondary, size: .medium, block: true))
             }
         }
     }

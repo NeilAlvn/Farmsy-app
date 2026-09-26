@@ -254,7 +254,15 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
     /// trip, setting the origin).
     private val _fitToken = MutableStateFlow(0)
     val fitToken: StateFlow<Int> = _fitToken.asStateFlow()
-    fun requestFit() { _fitToken.value += 1 }
+    /// True when the caller also leaves the map full-screen — "Show route"
+    /// dismisses the planner, so the route should sit in the middle. The default
+    /// fit biases it upward to clear the trips sheet, which is right when the
+    /// sheet is still up (opening a saved trip, setting the origin) and wrong
+    /// when it is not: the route ends up crammed into the top of an empty map.
+    var fitCentered: Boolean = false
+        private set
+
+    fun requestFit(centered: Boolean = false) { fitCentered = centered; _fitToken.value += 1 }
 
     /// Route answers keyed by the stops they belong to (failures cached as null too).
     private val routeCache = HashMap<String, RouteAPI.Response?>()

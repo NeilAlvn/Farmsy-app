@@ -272,7 +272,13 @@ final class TripStore {
     /// Bumped whenever the map should refit to the whole trip (opening a saved
     /// trip, setting the origin) — the map watches this.
     private(set) var fitToken = 0
-    func requestFit() { fitToken += 1 }
+    /// True when the caller also leaves the map full-screen — "Show route"
+    /// dismisses the planner, so the route should sit in the middle. The default
+    /// fit biases it upward to clear the trips sheet, which is right when the
+    /// sheet is still up (opening a saved trip, setting the origin) and wrong
+    /// when it is not: the route ends up crammed into the top of an empty map.
+    private(set) var fitCentered = false
+    func requestFit(centered: Bool = false) { fitCentered = centered; fitToken += 1 }
 
     /// The shopping list: `ShoppingItem` ids, in the order they were picked.
     /// Ids rather than words, because the label is presentation and the terms
