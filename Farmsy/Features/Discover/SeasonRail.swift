@@ -227,6 +227,9 @@ struct IdeaCard: View {
     let ingredients: [String]
 
     @Environment(TripStore.self) private var trip
+    /// No-op where this card is not inside a sheet (Discover), which is why it is
+    /// safe to call unconditionally.
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.shell) private var shell
     @State private var catalogue = ShoppingItems.shared
     @State private var seasons = Seasons.shared
@@ -261,14 +264,24 @@ struct IdeaCard: View {
             if !ingredients.isEmpty {
                 Button {
                     Haptics.success()
+                    if allOnList || added {
+                        // Close whatever sheet this card is inside, then show the
+                        // list — otherwise the tab changes behind the sheet and the
+                        // tap reads as doing nothing.
+                        dismiss()
+                        shell.showTab(.shopping)
+                        return
+                    }
                     for id in listIds where !trip.wantedProducts.contains(id) { trip.toggleProduct(id) }
                     added = true
                 } label: {
-                    Label(allOnList || added ? String(localized: "On your list") : String(localized: "Put it on my list"),
-                          systemImage: allOnList || added ? "checkmark" : "basket")
+                    // Once the ingredients are on the list, the useful next step is
+                    // seeing the list. This used to say "On your list" on a disabled
+                    // button, which is a dead end at exactly the moment of intent.
+                    Label(allOnList || added ? String(localized: "View my list") : String(localized: "Put it on my list"),
+                          systemImage: allOnList || added ? "arrow.right" : "basket")
                 }
                 .buttonStyle(PillButtonStyle(allOnList || added ? .soft : .primary, size: .small))
-                .disabled(allOnList || added)
             }
         }
         .padding(Space.s5)
