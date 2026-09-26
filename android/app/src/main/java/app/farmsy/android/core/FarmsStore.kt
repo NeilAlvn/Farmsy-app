@@ -265,6 +265,20 @@ class FarmsStore(private val scope: CoroutineScope) {
             range(from.toLong(), (from + pageSize - 1).toLong())
         }.decodeList()
 
+    /// One page, or null if it failed. `runCatching` alone would also swallow
+    /// `CancellationException` and record a cancelled coroutine as a failed page,
+    /// so it is rethrown. The scope this runs in is never cancelled today
+    /// (`SupervisorJob` built in FarmsyApp), which is exactly why this would go
+    /// unnoticed until the day that scope becomes lifecycle-bound.
+    private suspend fun fetchPageOrNull(from: Int): List<FarmPin>? =
+        try {
+            fetchPage(from)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+
     fun loadIfNeeded() {
         if (_isLoading.value) return
         // Re-entered deliberately when a previous load came back short: the pins
@@ -308,7 +322,7 @@ class FarmsStore(private val scope: CoroutineScope) {
 
         val total = head.countOrNull()?.toInt() ?: first.size
         val pages = (pageSize until total step pageSize).map { from ->
-            async { from to runCatching { fetchPage(from) }.getOrNull() }
+            async { from to fetchPageOrNull(from) }
         }.awaitAll()
 
         val acc = ArrayList<FarmPin>(total)
@@ -323,7 +337,7 @@ class FarmsStore(private val scope: CoroutineScope) {
     /// because a page boundary can shift if the dataset changed in between.
     private suspend fun loadMissingPages() = coroutineScope {
         val pages = missingOffsets.map { from ->
-            async { from to runCatching { fetchPage(from) }.getOrNull() }
+            async { from to fetchPageOrNull(from) }
         }.awaitAll()
 
         val recovered = pages.mapNotNull { it.second }.flatten()
