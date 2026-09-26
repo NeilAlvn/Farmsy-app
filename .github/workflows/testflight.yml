@@ -69,3 +69,44 @@ jobs:
           name: Farmsy-xcarchive
           path: ${{ runner.temp }}/Farmsy.xcarchive.zip
           retention-days: 5
+
+      # Every in-app frame on every iOS event in Sentry currently reads "<redacted>".
+      # The app has been reporting hangs for weeks (one group: 142 events, 35 users,
+      # since 2 Sep) and not one of them can be resolved to a function, because the
+      # debug symbols have never been uploaded — there is no sentry-cli anywhere in
+      # this repo. Sentry matches dSYMs to events by UUID, so uploading them here
+      # makes future events readable, and re-symbolicates the ones already stored.
+      #
+      # SENTRY_AUTH_TOKEN is the ORGANIZATION token (sntrys_). Its fixed org:ci scope
+      # is exactly "upload debug files" — it cannot read issues or change settings,
+      # which is why this is the right credential to hand CI. The read-scoped token
+      # used for querying issues is a different thing and must NOT be put here.
+      #
+      # SENTRY_URL is not optional: this org lives on the EU region, and sentry-cli
+      # defaults to sentry.io, where the request fails with an auth-looking error
+      # that reads as "bad token" rather than "wrong host".
+      #
+      # This runs last and never fails the build. A missing dSYM costs readable
+      # stacks; a hard failure would throw away a 40-minute archive over a Sentry
+      # hiccup. It warns loudly instead.
+      - name: Upload dSYMs to Sentry
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_URL: https://de.sentry.io
+          SENTRY_ORG: farmsy
+          SENTRY_PROJECT: farmy-ios
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::warning::SENTRY_AUTH_TOKEN is not set — iOS stacks stay unsymbolicated (<redacted> frames). Set it with: gh secret set SENTRY_AUTH_TOKEN --repo NeilAlvn/Farmsy-app"
+            exit 0
+          fi
+          DSYMS="$RUNNER_TEMP/Farmsy.xcarchive/dSYMs"
+          if [ ! -d "$DSYMS" ] || [ -z "$(ls -A "$DSYMS" 2>/dev/null)" ]; then
+            echo "::warning::No dSYMs found at $DSYMS — nothing to upload."
+            exit 0
+          fi
+          npm install -g @sentry/cli@^2
+          sentry-cli --version
+          sentry-cli debug-files upload "$DSYMS"
+          echo "dSYMs uploaded — future iOS events will symbolicate."
