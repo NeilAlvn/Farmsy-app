@@ -188,6 +188,12 @@ struct ShoppingScreen: View {
     private var actionBar: some View {
         let stops = plan?.picks.count ?? 0
         return Button {
+            // No starting point: this bar used to be disabled here, and it is
+            // pinned to the bottom while the "Allow location" card that explains
+            // why sits in a section that scrolls away. So the one control always
+            // on screen was dead with the reason out of view. Ask for location
+            // instead — it is exactly what unblocks everything below.
+            guard origin != nil else { Haptics.tap(); locationManager.request(); return }
             if session.hasFullAccess {
                 Haptics.tap()
                 if let plan, !plan.isEmpty { buildRoute(plan) } else { findFarms() }
@@ -219,7 +225,8 @@ struct ShoppingScreen: View {
             .padding(.horizontal, Space.s5)
         }
         .buttonStyle(PillButtonStyle(.primary, size: .large, block: true))
-        .disabled(isPlanning || origin == nil)
+        // Only the in-flight plan disables it now; see the guard above.
+        .disabled(isPlanning)
         .padding(.horizontal, Space.s4)
         .padding(.bottom, TabBarInset.height + 12 + 12)
         .shadow(color: Color.ink.opacity(0.14), radius: 16, y: 8)

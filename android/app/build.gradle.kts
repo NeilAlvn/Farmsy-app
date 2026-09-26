@@ -30,7 +30,7 @@ android {
         applicationId = "app.farmsy.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 34
+        versionCode = 35
         versionName = "1.0.5"
 
         manifestPlaceholders["MAPS_API_KEY"] = secrets.getProperty("MAPS_API_KEY", "")
