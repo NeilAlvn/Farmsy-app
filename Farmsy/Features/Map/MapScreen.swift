@@ -156,6 +156,16 @@ struct MapScreen: View {
         // First appearance: a search or product tap from another tab may already
         // be waiting; otherwise open on the user rather than on the whole country.
         .onAppear {
+            // Entering the map is what completes a short load. `loadIfNeeded` is
+            // otherwise called exactly once per process (RootView), and the retry
+            // link only renders when `loadError` is set — which a *partial* load
+            // deliberately does not do, because a "couldn't load farms" card over a
+            // map with 7,000 pins on it is worse than silence. Without this,
+            // `missingOffsets` would never drain and the user would quietly keep a
+            // fraction of the farms until they killed the app. The guard makes this
+            // a no-op once the set is complete. `onAppear` rather than `.task` so it
+            // re-runs on tab switches instead of once per view lifetime.
+            Task { await farms.loadIfNeeded() }
             if farms.aiIntent != nil {
                 flyToAIPlace()
             } else if visibleRegion == nil, let loc = locationManager.location {

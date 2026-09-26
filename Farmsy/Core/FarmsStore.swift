@@ -269,42 +269,97 @@ final class FarmsStore {
 
     private static let pageSize = 1000
 
+    /// Offsets whose page failed on the last attempt. A page after the first
+    /// failing is not fatal — whatever arrived stays on the map — so the next
+    /// call tops up only these ranges instead of refetching all nine.
+    private var missingOffsets: [Int] = []
+
+    private func fetchPage(from: Int) async throws -> [FarmPin] {
+        try await supabase
+            .rpc("get_farms_pins")
+            .range(from: from, to: from + Self.pageSize - 1)
+            .execute()
+            .value
+    }
+
     func loadIfNeeded() async {
-        guard pins.isEmpty, !isLoading else { return }
+        guard !isLoading else { return }
+        // Re-entered deliberately when a previous load came back short: the pins
+        // are there, but some ranges are not. The map's retry link calls this.
+        guard pins.isEmpty || !missingOffsets.isEmpty else { return }
         isLoading = true
         loadError = nil
         defer { isLoading = false }
 
         do {
-            // The first page also brings the total, so the other eight can go
-            // out side by side. In a row they took about three seconds before
-            // the map had a single pin; together, about one.
-            let first: PostgrestResponse<[FarmPin]> = try await supabase
-                .rpc("get_farms_pins")
-                .range(from: 0, to: Self.pageSize - 1)
-                .execute(options: FetchOptions(count: .exact))
-            var all = first.value
-            let total = first.count ?? all.count
-            let rest = try await withThrowingTaskGroup(of: (Int, [FarmPin]).self) { group in
-                for from in stride(from: Self.pageSize, to: total, by: Self.pageSize) {
-                    group.addTask {
-                        let page: [FarmPin] = try await supabase
-                            .rpc("get_farms_pins")
-                            .range(from: from, to: from + Self.pageSize - 1)
-                            .execute()
-                            .value
-                        return (from, page)
-                    }
-                }
-                var pages: [(Int, [FarmPin])] = []
-                for try await page in group { pages.append(page) }
-                return pages.sorted { $0.0 < $1.0 }
+            if missingOffsets.isEmpty {
+                try await loadAllPages()
+            } else {
+                await loadMissingPages()
             }
-            for (_, page) in rest { all.append(contentsOf: page) }
-            pins = all
         } catch {
             loadError = String(localized: "Couldn't load farms. Check your connection and try again.")
         }
+    }
+
+    /// The first page also brings the total, so the other eight can go
+    /// out side by side. In a row they took about three seconds before
+    /// the map had a single pin; together, about one — so the first page is
+    /// published the moment it lands rather than waiting for the set to
+    /// assemble, because even one second of a blank map reads as a map that is
+    /// stuck. MapScreen's annotation cap is what makes drawing a partial set safe.
+    private func loadAllPages() async throws {
+        let first: PostgrestResponse<[FarmPin]> = try await supabase
+            .rpc("get_farms_pins")
+            .range(from: 0, to: Self.pageSize - 1)
+            .execute(options: FetchOptions(count: .exact))
+        var all = first.value
+        missingOffsets = []
+        guard !all.isEmpty else {
+            pins = []
+            return
+        }
+        pins = all
+
+        let total = first.count ?? all.count
+        // Each page reports its own failure rather than throwing, so one flaky
+        // request out of nine cannot discard the eight that arrived.
+        let rest = await withTaskGroup(of: (Int, [FarmPin]?).self) { group in
+            for from in stride(from: Self.pageSize, to: total, by: Self.pageSize) {
+                group.addTask { [self] in (from, try? await fetchPage(from: from)) }
+            }
+            var pages: [(Int, [FarmPin]?)] = []
+            for await page in group { pages.append(page) }
+            return pages.sorted { $0.0 < $1.0 }
+        }
+        for (_, page) in rest { if let page { all.append(contentsOf: page) } }
+        pins = all
+        missingOffsets = rest.filter { $0.1 == nil }.map(\.0)
+    }
+
+    /// Top up after a short load: ask only for the ranges that failed and merge
+    /// them into what is already drawn. Keyed by osmId rather than appended,
+    /// because a page boundary can shift if the dataset changed in between.
+    private func loadMissingPages() async {
+        let rest = await withTaskGroup(of: (Int, [FarmPin]?).self) { group in
+            for from in missingOffsets {
+                group.addTask { [self] in (from, try? await fetchPage(from: from)) }
+            }
+            var pages: [(Int, [FarmPin]?)] = []
+            for await page in group { pages.append(page) }
+            return pages.sorted { $0.0 < $1.0 }
+        }
+
+        let recovered = rest.compactMap(\.1).flatMap { $0 }
+        if !recovered.isEmpty {
+            var byId: [String: FarmPin] = [:]
+            var order: [String] = []
+            for pin in pins + recovered where byId.updateValue(pin, forKey: pin.osmId) == nil {
+                order.append(pin.osmId)
+            }
+            pins = order.compactMap { byId[$0] }
+        }
+        missingOffsets = rest.filter { $0.1 == nil }.map(\.0)
     }
 
     /// Pins matching the current search + category + quick filters.

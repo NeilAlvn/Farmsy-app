@@ -411,6 +411,16 @@ fun MapScreen(onOpenFarm: (FarmPin) -> Unit, focusPin: FarmPin? = null, bottomIn
     // it lazily the first time the sheet opens, same as the AI path does.
     LaunchedEffect(showFilters) { if (showFilters) farms.loadFlagsIfNeeded() }
 
+    // Entering the map is what completes a short load. `loadIfNeeded` is otherwise
+    // called exactly once per process (FarmsyApp.onCreate), and the retry link
+    // below only renders when `loadError` is set — which a *partial* load
+    // deliberately does not do, because a "couldn't load farms" card over a map
+    // with 7,000 pins on it is worse than silence. Without this, `missingOffsets`
+    // would never drain and the user would quietly keep a fraction of the farms
+    // until they killed the app. The guard makes this a no-op once the set is
+    // complete, so coming back to the map is the retry.
+    LaunchedEffect(Unit) { farms.loadIfNeeded() }
+
     // An AI search that resolved a centre flies the map there (server `center`, or
     // the user's location for a nearMe query).
     LaunchedEffect(aiPlaceToken) {
