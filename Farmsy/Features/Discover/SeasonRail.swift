@@ -272,7 +272,7 @@ struct IdeaCard: View {
                         shell.showTab(.shopping)
                         return
                     }
-                    for id in listIds where !trip.wantedProducts.contains(id) { trip.toggleProduct(id) }
+                    for id in listIds where !trip.wantedProducts.contains(id) { trip.toggleProduct(id, source: .picker) }
                     added = true
                 } label: {
                     // Once the ingredients are on the list, the useful next step is

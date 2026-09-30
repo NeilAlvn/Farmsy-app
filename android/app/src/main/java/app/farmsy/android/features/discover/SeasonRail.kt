@@ -49,6 +49,7 @@ import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
 import app.farmsy.android.features.main.LocalShell
 import app.farmsy.android.features.main.AppTab
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.SeasonalItem
 import app.farmsy.android.core.Seasons
 import app.farmsy.android.core.ShoppingItem
@@ -274,7 +275,7 @@ fun IdeaCard(
                     // shopping list is actually visible rather than behind it.
                     shell.showTab(AppTab.SHOPPING)
                 } else {
-                    listIds.filter { it !in wanted }.forEach { trip.toggleProduct(it) }
+                    listIds.filter { it !in wanted }.forEach { trip.toggleProduct(it, AnalyticsValue.ListSource.PICKER) }
                     added = true
                 }
             }

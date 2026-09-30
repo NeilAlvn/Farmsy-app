@@ -49,7 +49,7 @@ struct FarmProductsSection: View {
                     Button(allOnList ? String(localized: "On your list") : String(localized: "Add all to shopping")) {
                         Haptics.success()
                         for item in items where !trip.wantedProducts.contains(item.id) {
-                            trip.toggleProduct(item.id)
+                            trip.toggleProduct(item.id, source: .farmDetail)
                         }
                         // Close the card before switching tabs: it is a sheet
                         // over the map, so switching underneath it left the
@@ -62,7 +62,7 @@ struct FarmProductsSection: View {
                     ForEach(items) { item in
                         Chip(label: item.label, emoji: item.emoji,
                              selected: trip.wantedProducts.contains(item.id)) {
-                            trip.toggleProduct(item.id)
+                            trip.toggleProduct(item.id, source: .farmDetail)
                         }
                     }
                 }

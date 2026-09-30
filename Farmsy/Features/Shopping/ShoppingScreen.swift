@@ -105,7 +105,7 @@ struct ShoppingScreen: View {
                         Spacer()
                         Button {
                             Haptics.tap()
-                            trip.toggleProduct(item.id)
+                            trip.toggleProduct(item.id, source: .picker)
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .semibold))
@@ -165,7 +165,7 @@ struct ShoppingScreen: View {
     private func chips(_ items: [ShoppingItem]) -> some View {
         FlowRow(spacing: Space.s2) {
             ForEach(items) { item in
-                Chip(label: item.label, emoji: item.emoji) { trip.toggleProduct(item.id) }
+                Chip(label: item.label, emoji: item.emoji) { trip.toggleProduct(item.id, source: .picker) }
             }
         }
     }
@@ -177,7 +177,7 @@ struct ShoppingScreen: View {
         let q = ProductMatch.fold(text)
         let exact = catalogue.items.first { ProductMatch.fold($0.label) == q && !trip.wantedProducts.contains($0.id) }
         Haptics.tap()
-        trip.toggleProduct(exact?.id ?? ShoppingItem.custom(text).id)
+        trip.toggleProduct(exact?.id ?? ShoppingItem.custom(text).id, source: .typed)
         query = ""
     }
 
@@ -490,7 +490,7 @@ struct ShoppingScreen: View {
                         Button(String(localized: "Repeat")) {
                             Haptics.tap()
                             trip.clearProducts()
-                            for id in list { trip.toggleProduct(id) }
+                            for id in list { trip.toggleProduct(id, source: .picker) }
                         }
                         .buttonStyle(PillButtonStyle(.soft, size: .small))
                     }

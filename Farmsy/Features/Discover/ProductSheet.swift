@@ -194,7 +194,7 @@ struct ProductSheet: View {
                     Haptics.success()
                     // Already on the list: the button used to be disabled, which
                     // read as a tap that does nothing. Go to the list instead.
-                    if onList { dismiss(); shell.showTab(.shopping) } else { trip.toggleProduct(listId) }
+                    if onList { dismiss(); shell.showTab(.shopping) } else { trip.toggleProduct(listId, source: .picker) }
                 } label: {
                     // "On your list" was a status on a control that does something,
                     // so it read as disabled and nobody tapped it. Name the action.

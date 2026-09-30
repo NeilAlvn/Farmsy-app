@@ -288,11 +288,21 @@ class TripStore(context: Context, private val scope: CoroutineScope) {
 
     // MARK: Shopping list
 
-    /// On or off. Picking keeps the order things were chosen in, which is the
-    /// order the answer lists them back.
-    fun toggleProduct(id: String) {
+    /// On or off. `source` names the surface that added it; the event fires here,
+    /// on the add branch only, so no call site can forget it. A custom item's id
+    /// carries what the person typed, and typed text never goes to analytics.
+    fun toggleProduct(id: String, source: AnalyticsValue.ListSource) {
         val cur = _wantedProducts.value
-        _wantedProducts.value = if (id in cur) cur - id else cur + id
+        if (id in cur) {
+            _wantedProducts.value = cur - id
+        } else {
+            _wantedProducts.value = cur + id
+            val reported = if (id.startsWith(ShoppingItem.CUSTOM_PREFIX)) "custom" else id
+            Observability.capture(
+                AnalyticsEvent.SHOPPING_ITEM_ADDED,
+                mapOf(AnalyticsProp.ITEM to reported, AnalyticsProp.SOURCE to source.key),
+            )
+        }
         persistWanted()
     }
 
