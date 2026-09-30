@@ -10538,6 +10538,34 @@
         }
       }
     },
+    "See visitor reports with Plus": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Besucherberichte sehen mit Plus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "See visitor reports with Plus"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consultez les signalements des visiteurs avec Plus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijk meldingen van bezoekers met Plus"
+          }
+        }
+      }
+    },
     "Popular farm shops": {
       "localizations": {
         "de": {

@@ -137,6 +137,16 @@ struct FarmStatusTests {
         #expect(FarmStatus.parseTimestamp("2026-06-01T10:00:00.123456+00:00") != nil)
         #expect(FarmStatus.parseTimestamp("not a date") == nil)
     }
+
+    // MARK: - The Plus row on the card (conversion fixes, Task 4)
+
+    @Test("the lock row has copy for both a reported and an unreported farm, and they differ")
+    func lockCopy() {
+        let fresh = String(localized: FarmStatus.lockCopy(hasFreshReport: true))
+        let none = String(localized: FarmStatus.lockCopy(hasFreshReport: false))
+        #expect(!fresh.isEmpty && !none.isEmpty)
+        #expect(fresh != none)
+    }
 }
 
 /// The Plus half: minutes, how many agree today, and what they found.

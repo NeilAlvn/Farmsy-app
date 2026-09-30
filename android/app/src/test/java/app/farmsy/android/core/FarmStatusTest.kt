@@ -1,6 +1,7 @@
 package app.farmsy.android.core
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -138,6 +139,12 @@ class FarmStatusTest {
         assertNotNull(FarmStatus.parseTimestamp("2026-06-01T10:00:00Z"))
         assertNotNull(FarmStatus.parseTimestamp("2026-06-01T10:00:00.123456+00:00"))
         assertNull(FarmStatus.parseTimestamp("not a date"))
+    }
+
+    @Test fun lockCopyDiffersByReports() {
+        assertNotEquals(FarmStatus.lockCopyRes(hasFreshReport = true), FarmStatus.lockCopyRes(hasFreshReport = false))
+        assertEquals(app.farmsy.android.R.string.status_confirmed_today_plus, FarmStatus.lockCopyRes(hasFreshReport = true))
+        assertEquals(app.farmsy.android.R.string.status_lock_no_reports, FarmStatus.lockCopyRes(hasFreshReport = false))
     }
 }
 

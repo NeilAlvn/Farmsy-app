@@ -194,6 +194,7 @@
     <string name="status_what_was_still_there">What was still there?</string>
     <string name="on_the_shelf_arg">On the shelf: %1$s</string>
     <string name="status_confirmed_today_plus">Confirmed today — see when with Plus</string>
+    <string name="status_lock_no_reports">See visitor reports with Plus</string>
     <string name="status_fresh_line_arg">%1$s · confirmed %2$s by %3$s</string>
     <string name="fresh_when_min_arg">%1$d min ago</string>
     <string name="fresh_when_h_arg">%1$d h ago</string>

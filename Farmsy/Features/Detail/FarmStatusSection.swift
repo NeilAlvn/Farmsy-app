@@ -54,6 +54,7 @@ struct FarmStatusSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if summary.total > 0 { headline }
+            if !session.hasFullAccess { plusRow }
             HStack(spacing: 8) {
                 Text("Was it open?")
                     .font(.ui(11, .semibold))
@@ -100,17 +101,19 @@ struct FarmStatusSection: View {
             .font(.ui(12))
             .foregroundStyle(summary.lead == .trouble ? Color.critical : Color.inkMuted)
             .fixedSize(horizontal: false, vertical: true)
-            if !session.hasFullAccess, freshness != nil {
-                Button {
-                    shell.openPlus(.farmDetail)
-                } label: {
-                    Label(String(localized: "Confirmed today — see when with Plus"), systemImage: "lock.fill")
-                        .font(.ui(12, .semibold))
-                        .foregroundStyle(Color.farmGreen)
-                }
-                .buttonStyle(.plain)
-            }
         }
+    }
+
+    /// The one Plus entry on the card. Always present for a non-member.
+    private var plusRow: some View {
+        Button {
+            shell.openPlus(.farmDetail)
+        } label: {
+            Label(String(localized: FarmStatus.lockCopy(hasFreshReport: freshness != nil)), systemImage: "lock.fill")
+                .font(.ui(12, .semibold))
+                .foregroundStyle(Color.farmGreen)
+        }
+        .buttonStyle(.plain)
     }
 
     private func freshLine(_ f: Freshness) -> some View {

@@ -172,15 +172,15 @@ fun FarmStatusSection(osmId: String, sells: String? = null, onNeedsSignIn: () ->
                     )
                 }
             }
-            if (!plus && freshness != null) {
-                Row(
-                    Modifier.clickable { shell.openPlus(AnalyticsValue.Trigger.FARM_DETAIL) },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Icon(Icons.Filled.Lock, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(12.dp))
-                    Text(stringResource(R.string.status_confirmed_today_plus), style = geist(12.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen)
-                }
+        }
+        if (!plus) {
+            Row(
+                Modifier.clickable { shell.openPlus(AnalyticsValue.Trigger.FARM_DETAIL) },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(Icons.Filled.Lock, null, tint = FarmsyColors.farmGreen, modifier = Modifier.size(12.dp))
+                Text(stringResource(FarmStatus.lockCopyRes(freshness != null)), style = geist(12.sp, FontWeight.SemiBold), color = FarmsyColors.farmGreen)
             }
         }
 
