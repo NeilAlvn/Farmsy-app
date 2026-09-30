@@ -497,7 +497,7 @@ final class FarmsStore {
             }
             // Rank once an intent is present — filtering says which qualify, ranking
             // says which to go to. Distance dominates when there's an origin.
-            return rankForIntent(result, origin: aiCenter)
+            return Self.rankForIntent(result, origin: aiCenter, ranking: aiIntent?.ranking)
         }
 
         var result = pins
@@ -547,12 +547,23 @@ final class FarmsStore {
     /// (dominant when there's an origin), then open today, verified, has a photo,
     /// rating, review count. One function so it can be swapped for a server-side
     /// order if the endpoint ever returns one (asked Aviah; matches her signal
-    /// list until then). Higher score first.
-    private func rankForIntent(_ list: [FarmPin], origin: CLLocationCoordinate2D?) -> [FarmPin] {
+    /// list until then). Higher score first; ties keep their incoming order.
+    ///
+    /// Scores each farm ONCE, then sorts by that number. The comparator used to
+    /// call `score` on both sides of every comparison — about 2·n·log₂n scorings,
+    /// each running the opening-hours parser — on the main thread, on every map
+    /// body pass. That was the "App Hanging" wave on 1.3 (37)
+    /// (FARMY-IOS-14/15/12/17/Z/16/18 and friends).
+    ///
+    /// `nonisolated static`: it reads nothing from the store, and the tests call
+    /// it without hopping to the main actor.
+    nonisolated static func rankForIntent(
+        _ list: [FarmPin], origin: CLLocationCoordinate2D?, ranking: SearchRanking?
+    ) -> [FarmPin] {
         // Weights come from the server (`ranking` on the response) so every client
         // ranks identically; fall back to the defaults if the field is absent or a
         // future `version` we don't recognise. Distance never leaves the device.
-        let r = aiIntent?.ranking ?? .default
+        let r = ranking ?? .default
         let w = (r.version == SearchRanking.default.version) ? r : .default
         let zeroM = max(1, w.distanceZeroKm * 1000)
         let originLoc = origin.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
@@ -568,7 +579,7 @@ final class FarmsStore {
             s += min(Double(p.reviewCount), w.reviewCap) * w.reviewEach
             return s
         }
-        return list.sorted { score($0) > score($1) }
+        return list.map { ($0, score($0)) }.sorted { $0.1 > $1.1 }.map(\.0)
     }
 
     func sortedByDistance(_ list: [FarmPin], from location: CLLocation?) -> [FarmPin] {
