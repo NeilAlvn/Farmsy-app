@@ -117,6 +117,8 @@ object AnalyticsValue {
         TYPED("typed"),
         FARM_DETAIL("farm_detail"),
         ONBOARDING("onboarding"),
+        /// The Discover tab: a product sheet or a season card.
+        DISCOVER("discover"),
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

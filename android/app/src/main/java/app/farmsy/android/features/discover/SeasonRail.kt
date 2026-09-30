@@ -275,7 +275,7 @@ fun IdeaCard(
                     // shopping list is actually visible rather than behind it.
                     shell.showTab(AppTab.SHOPPING)
                 } else {
-                    listIds.filter { it !in wanted }.forEach { trip.toggleProduct(it, AnalyticsValue.ListSource.PICKER) }
+                    listIds.filter { it !in wanted }.forEach { trip.toggleProduct(it, AnalyticsValue.ListSource.DISCOVER) }
                     added = true
                 }
             }

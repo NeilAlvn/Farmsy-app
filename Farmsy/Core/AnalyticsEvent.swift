@@ -117,6 +117,8 @@ enum AnalyticsValue {
         case typed = "typed"
         case farmDetail = "farm_detail"
         case onboarding = "onboarding"
+        /// The Discover tab: a product sheet or a season card.
+        case discover = "discover"
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

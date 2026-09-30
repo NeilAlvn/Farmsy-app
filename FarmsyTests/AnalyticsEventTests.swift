@@ -24,6 +24,7 @@ struct AnalyticsEventTests {
         #expect(AnalyticsEvent.shoppingItemAdded.rawValue == "shopping_item_added")
         #expect(AnalyticsEvent.authPrompted.rawValue == "auth_prompted")
         #expect(AnalyticsValue.ListSource.farmDetail.rawValue == "farm_detail")
+        #expect(AnalyticsValue.ListSource.discover.rawValue == "discover")
         #expect(AnalyticsValue.Trigger.trips.rawValue == "trips")
         #expect(AnalyticsValue.Trigger.restore.rawValue == "restore")
     }

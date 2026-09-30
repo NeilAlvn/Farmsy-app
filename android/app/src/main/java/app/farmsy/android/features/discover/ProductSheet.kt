@@ -189,7 +189,7 @@ fun ProductSheet(slug: String, fallbackLabel: String, fallbackEmoji: String, onD
                     // hugged its label and the row looked accidental.
                     modifier = Modifier.weight(1f),
                 ) {
-                    if (onList) { onDismiss(); shell.showTab(AppTab.SHOPPING) } else trip.toggleProduct(listId, AnalyticsValue.ListSource.PICKER)
+                    if (onList) { onDismiss(); shell.showTab(AppTab.SHOPPING) } else trip.toggleProduct(listId, AnalyticsValue.ListSource.DISCOVER)
                 }
             }
         }
