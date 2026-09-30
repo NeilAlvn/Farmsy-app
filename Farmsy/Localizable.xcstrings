@@ -17531,6 +17531,90 @@
           }
         }
       }
+    },
+    "Your basket": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Korb"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your basket"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre panier"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je mandje"
+          }
+        }
+      }
+    },
+    "What do you *usually* buy?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was kaufst du *meistens*?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What do you *usually* buy?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qu'achetez-vous *d'habitude* ?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wat koop je *meestal*?"
+          }
+        }
+      }
+    },
+    "Pick a few. Farmsy will show which farms nearby have them.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle ein paar. Farmsy zeigt dir, welche Höfe in der Nähe sie haben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pick a few. Farmsy will show which farms nearby have them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez-en quelques-uns. Farmsy vous montrera quelles fermes proches les ont."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies er een paar. Farmsy laat zien welke boerderijen in de buurt ze hebben."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

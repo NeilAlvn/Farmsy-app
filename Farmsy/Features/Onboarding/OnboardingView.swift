@@ -13,6 +13,7 @@ struct OnboardingView: View {
 
     @Environment(FarmsStore.self) private var farms
     @Environment(LocationManager.self) private var locationManager
+    @Environment(TripStore.self) private var trip
 
     /// Sign-in presented over the onboarding. On success the session becomes
     /// authenticated and RootView swaps in the map on its own; on cancel the
@@ -20,7 +21,7 @@ struct OnboardingView: View {
     @State private var showLogin = false
 
     enum Step: Int, CaseIterable {
-        case welcome, personalize, location, details, nearby, notify, done
+        case welcome, personalize, basket, location, details, nearby, notify, done
 
         /// The `step` property on the onboarding events: the case name as-is.
         var analyticsName: String { String(describing: self) }
@@ -28,6 +29,9 @@ struct OnboardingView: View {
 
     @State private var step: Step = .welcome
     @State private var selectedCats: Set<FarmCategory> = []
+    /// Basket picks, in tap order; written to the shopping list on Continue.
+    @State private var basketPicks: [String] = []
+    @State private var catalogue = ShoppingItems.shared
     @State private var prefs = QuickPrefs()
     @State private var applyPrefs = false
     @State private var chosenCoord: CLLocationCoordinate2D?
@@ -82,6 +86,7 @@ struct OnboardingView: View {
                 .clipped()
             }
         }
+        .task { await catalogue.loadIfNeeded() }
         .sheet(isPresented: $showLogin) { AuthView() }
         .sheet(isPresented: $showPlaceSearch) {
             PlaceSearchSheet(
@@ -101,6 +106,11 @@ struct OnboardingView: View {
             WelcomeStep(onLogin: { showLogin = true }, onSkip: { skip() })
         case .personalize:
             PersonalizeStep(selected: $selectedCats) { advance() }
+        case .basket:
+            BasketStep(items: catalogue.items.isEmpty ? BasketSeed.fallback : catalogue.items,
+                       picked: $basketPicks,
+                       onContinue: { seedBasket(); advance() },
+                       onSkip: { skip() })
         case .location:
             LocationStep(
                 label: chosenLabel,
@@ -178,6 +188,14 @@ struct OnboardingView: View {
             farms.filterZelfpluk  = prefs.pickYourOwn
         }
         onComplete()
+    }
+
+    /// Put the basket on the shopping list. Only what is missing, in pick order;
+    /// each add reports `shopping_item_added` with source onboarding.
+    private func seedBasket() {
+        for id in BasketSeed.toAdd(picked: basketPicks, current: trip.wantedProducts) {
+            trip.toggleProduct(id, source: .onboarding)
+        }
     }
 }
 
@@ -316,6 +334,50 @@ private struct PersonalizeStep: View {
             Button(selected.isEmpty ? "Skip" : "Continue", action: onContinue)
                 .buttonStyle(PrimaryButtonStyle())
                 .accessibilityIdentifier("continue-personalize")
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+        }
+    }
+}
+
+// MARK: - Step 3: basket (what do you usually buy)
+
+private struct BasketStep: View {
+    let items: [ShoppingItem]
+    @Binding var picked: [String]
+    var onContinue: () -> Void
+    var onSkip: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 10) {
+                Kicker(text: String(localized: "Your basket"))
+                DisplayTitle(String(localized: "What do you *usually* buy?"), size: 32)
+                Text("Pick a few. Farmsy will show which farms nearby have them.")
+                    .font(.ui(15))
+                    .foregroundStyle(Color.inkMuted)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 22)
+            .padding(.bottom, 22)
+            .padding(.horizontal, 20)
+
+            ScrollView(showsIndicators: false) {
+                FlowRow(spacing: Space.s2) {
+                    ForEach(items) { item in
+                        Chip(label: item.label, emoji: item.emoji, selected: picked.contains(item.id)) {
+                            Haptics.tap()
+                            if let i = picked.firstIndex(of: item.id) { picked.remove(at: i) } else { picked.append(item.id) }
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+            }
+
+            Button(picked.isEmpty ? "Skip" : "Continue", action: picked.isEmpty ? onSkip : onContinue)
+                .buttonStyle(PrimaryButtonStyle())
+                .accessibilityIdentifier("continue-basket")
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
         }

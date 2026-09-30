@@ -322,3 +322,24 @@ object ShoppingPlanner {
         return Plan(picks, plan.missing + lost)
     }
 }
+
+/// The onboarding basket: which picks to add, and what to show when the
+/// catalogue has not arrived. Pure, so it is testable without a store.
+object BasketSeed {
+    /// Picks not already on the list, de-duplicated, in pick order.
+    fun toAdd(picked: List<String>, current: List<String>): List<String> {
+        val seen = current.toMutableSet()
+        return picked.filter { seen.add(it) }
+    }
+
+    /// Twelve ids that exist on GET /api/shopping/items today, with the labels
+    /// the picker would show. Used only while the catalogue is still loading or
+    /// failed; when it arrives, its own items replace these.
+    val fallback: List<ShoppingItem> = listOf(
+        Triple("eggs", "Eieren", "Eggs"), Triple("cheese", "Kaas", "Cheese"), Triple("milk", "Melk", "Milk"),
+        Triple("potatoes", "Aardappelen", "Potatoes"), Triple("vegetables", "Groenten", "Vegetables"),
+        Triple("fruits", "Fruit", "Fruit"), Triple("meat", "Vlees", "Meat"), Triple("honey", "Honing", "Honey"),
+        Triple("bread", "Brood", "Bread"), Triple("strawberry", "Aardbeien", "Strawberries"),
+        Triple("apples", "Appels", "Apples"), Triple("butter", "Boter", "Butter"),
+    ).map { ShoppingItem(it.first, it.second, it.third, emptyList(), null, null) }
+}

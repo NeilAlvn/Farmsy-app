@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -79,22 +81,28 @@ import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalSession
+import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
 import app.farmsy.android.core.AnalyticsEvent
 import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
+import app.farmsy.android.core.BasketSeed
 import app.farmsy.android.core.Observability
 import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.FarmCategory
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.FarmDetailApi
+import app.farmsy.android.core.ShoppingItem
+import app.farmsy.android.core.ShoppingItems
 import app.farmsy.android.features.auth.AuthSheet
 import app.farmsy.android.features.place.PlaceSearchSheet
 import app.farmsy.android.features.whatsnew.MultiImageFarmCard
 import app.farmsy.android.features.whatsnew.SkeletonBox
 import com.google.android.gms.maps.model.LatLng
+import app.farmsy.android.ui.theme.Chip
 import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
+import app.farmsy.android.ui.theme.Space
 import app.farmsy.android.ui.theme.ui
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.PrimaryButton
@@ -107,7 +115,7 @@ import kotlinx.coroutines.launch
 /// welcome, a personalization pass (multi-select), a location pick with a radar
 /// pulse, optional preferences, a "farms near you" shelf, a notifications ask with
 /// a ringing bell, and a wrap-up. welcome and done sit outside the progress bar.
-private enum class Step { WELCOME, PERSONALIZE, LOCATION, DETAILS, NEARBY, NOTIFY, DONE }
+private enum class Step { WELCOME, PERSONALIZE, BASKET, LOCATION, DETAILS, NEARBY, NOTIFY, DONE }
 
 private data class QuickPrefs(
     var openToday: Boolean = false,
@@ -123,6 +131,10 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
     var step by remember { mutableStateOf(Step.WELCOME) }
     var selectedCats by remember { mutableStateOf(setOf<FarmCategory>()) }
+    var basketPicks by remember { mutableStateOf(listOf<String>()) }
+    val trip = LocalTrip.current
+    val catalogue by ShoppingItems.items.collectAsState()
+    LaunchedEffect(Unit) { ShoppingItems.loadIfNeeded() }
     var prefs by remember { mutableStateOf(QuickPrefs()) }
     var applyPrefs by remember { mutableStateOf(false) }
     var chosenLabel by remember { mutableStateOf<String?>(null) }
@@ -228,6 +240,17 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     when (s) {
                         Step.WELCOME -> WelcomeStep(onLogin = { showLogin = true }, onSkip = { skip() })
                         Step.PERSONALIZE -> PersonalizeStep(selectedCats, { selectedCats = it }) { advance() }
+                        Step.BASKET -> BasketStep(
+                            items = catalogue.ifEmpty { BasketSeed.fallback },
+                            picked = basketPicks,
+                            onChange = { basketPicks = it },
+                            onContinue = {
+                                BasketSeed.toAdd(basketPicks, trip.wantedProducts.value)
+                                    .forEach { trip.toggleProduct(it, AnalyticsValue.ListSource.ONBOARDING) }
+                                advance()
+                            },
+                            onSkip = { skip() },
+                        )
                         Step.LOCATION -> LocationStep(
                             resolvedLabel = chosenLabel ?: loc?.let { stringResource(R.string.your_current_location) },
                             onUseLocation = { if (locationHelper.hasPermission()) locationHelper.request() },
@@ -364,6 +387,45 @@ private fun PersonalizeStep(selected: Set<FarmCategory>, onChange: (Set<FarmCate
             if (selected.isEmpty()) stringResource(R.string.skip) else stringResource(R.string.continue_),
             Modifier.padding(horizontal = 20.dp).padding(top = 12.dp, bottom = 12.dp),
         ) { onContinue() }
+    }
+}
+
+// MARK: - Step 3: basket (what do you usually buy)
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BasketStep(
+    items: List<ShoppingItem>,
+    picked: List<String>,
+    onChange: (List<String>) -> Unit,
+    onContinue: () -> Unit,
+    onSkip: () -> Unit,
+) {
+    val context = LocalContext.current
+    val language = remember { ShoppingItems.language(context) }
+    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
+        Column(
+            Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 22.dp).padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Kicker(stringResource(R.string.ob_basket))
+            DisplayTitle(stringResource(R.string.ob_what_do_you), stringResource(R.string.ob_usually), stringResource(R.string.ob_buy_q), 32.sp, Modifier.fillMaxWidth())
+            Text(stringResource(R.string.ob_basket_sub), style = geist(15.sp), color = FarmsyColors.inkMuted, textAlign = TextAlign.Center)
+        }
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s2), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
+                items.forEach { item ->
+                    val on = item.id in picked
+                    Chip(item.label(language), emoji = item.emoji, selected = on) {
+                        onChange(if (on) picked - item.id else picked + item.id)
+                    }
+                }
+            }
+        }
+        PrimaryButton(
+            if (picked.isEmpty()) stringResource(R.string.skip) else stringResource(R.string.continue_),
+            Modifier.padding(horizontal = 20.dp).padding(top = 12.dp, bottom = 12.dp),
+        ) { if (picked.isEmpty()) onSkip() else onContinue() }
     }
 }
 
