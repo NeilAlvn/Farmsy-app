@@ -63,6 +63,19 @@ import app.farmsy.android.ui.theme.geist
 import com.revenuecat.purchases.Package
 import kotlinx.coroutines.launch
 
+enum class PendingBuyOutcome { ALREADY_MEMBER, PROCEED, ABANDON }
+
+/// What a pending buy does once sign-in completes — the Android twin of iOS
+/// `ProUpsellSheet.pendingBuyOutcome`. One place, so the rule can be tested
+/// without a store or a session: never charge an existing member, and never
+/// charge on a profile we could not read. `hasFullAccess` is false for a profile
+/// that never loaded, which is exactly why the loaded flag is a separate argument.
+fun pendingBuyOutcome(profileLoaded: Boolean, hasFullAccess: Boolean): PendingBuyOutcome = when {
+    !profileLoaded -> PendingBuyOutcome.ABANDON
+    hasFullAccess -> PendingBuyOutcome.ALREADY_MEMBER
+    else -> PendingBuyOutcome.PROCEED
+}
+
 /// The one Plus sheet — the Android twin of iOS `ProUpsellSheet`, presented
 /// everywhere via `LocalShell.current.openPlus`. Farm-free: it takes no farm. Story
 /// is "Farmsy finds it, plans it, tells you when it's fresh" (owner decision,
@@ -144,11 +157,33 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
         scope.launch { if (purchases.restore()) awaitGrant() }
     }
 
+    // A tap that waited for sign-in must not charge someone who is already a
+    // member — reinstalled, or bought on the web or the other store. The session
+    // lands before the profile does, so wait for one before deciding. On doubt,
+    // do nothing: a second tap costs a tap, a second charge costs money.
+    suspend fun resumePendingBuy(pkg: Package) {
+        isChecking = true
+        // A `for` loop, not `repeat`: `return@repeat` only ends the current
+        // iteration, so the poll would keep running after the profile arrived.
+        for (attempt in 0 until 6) {
+            if (attempt > 0) kotlinx.coroutines.delay(500)
+            session.refreshProfile()
+            if (session.profile.value != null) break
+        }
+        isChecking = false
+        when (pendingBuyOutcome(session.profile.value != null, session.hasFullAccess)) {
+            PendingBuyOutcome.ALREADY_MEMBER -> onDismiss()
+            PendingBuyOutcome.PROCEED -> buy(pkg)
+            // Leave the sheet open rather than guess un-subscribed: the person taps again.
+            PendingBuyOutcome.ABANDON -> Unit
+        }
+    }
+
     // The tap that was waiting for sign-in continues on its own once the session
-    // appears — no second tap.
+    // appears — no second tap. A restore is safe for an existing member; a buy is not.
     LaunchedEffect(userId) {
         if (userId == null) return@LaunchedEffect
-        pendingPkg?.let { pendingPkg = null; buy(it) }
+        pendingPkg?.let { pendingPkg = null; resumePendingBuy(it) }
         if (pendingRestore) { pendingRestore = false; restore() }
     }
 

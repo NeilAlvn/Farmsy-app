@@ -51,6 +51,40 @@ struct ProUpsellSheet: View {
 
     private func close() { onClose(); dismiss() }
 
+    enum PendingBuyOutcome: Equatable { case alreadyMember, proceed, abandon }
+
+    /// What a pending buy does once sign-in completes. One place, like
+    /// `TripStore.isRouteLocked`, so the rule can be tested without a store or a
+    /// session: never charge an existing member, and never charge on a profile we
+    /// could not read. `hasFullAccess` is false for a profile that never loaded,
+    /// which is exactly why the loaded flag is a separate argument.
+    static func pendingBuyOutcome(profileLoaded: Bool, hasFullAccess: Bool) -> PendingBuyOutcome {
+        guard profileLoaded else { return .abandon }
+        return hasFullAccess ? .alreadyMember : .proceed
+    }
+
+    /// A tap that waited for sign-in must not charge someone who is already a
+    /// member — reinstalled, or bought on the web or the other store. The session
+    /// lands before the profile does, so wait for one before deciding. On doubt,
+    /// do nothing: a second tap costs a tap, a second charge costs money (iOS
+    /// lifetime is non-renewing, so StoreKit will happily sell it twice).
+    private func resumePendingBuy(_ package: Package) async {
+        isChecking = true
+        for attempt in 0..<6 {
+            if attempt > 0 { try? await Task.sleep(nanoseconds: 500_000_000) }
+            await session.refreshProfile()
+            if session.profile != nil { break }
+        }
+        isChecking = false
+        switch Self.pendingBuyOutcome(profileLoaded: session.profile != nil,
+                                      hasFullAccess: session.hasFullAccess) {
+        case .alreadyMember: close()
+        case .proceed: buy(package)
+        // Leave the sheet open rather than guess un-subscribed: the person taps again.
+        case .abandon: break
+        }
+    }
+
     /// Sign-in first, then the store. Signed in already: straight to the store.
     private func buy(_ package: Package?) {
         guard let uid = session.session?.user.id else {
@@ -129,7 +163,8 @@ struct ProUpsellSheet: View {
             guard authed, let action = pending else { return }
             pending = nil
             switch action {
-            case .buy(let package): buy(package)
+            // Restore is safe for an existing member; a buy is not.
+            case .buy(let package): Task { await resumePendingBuy(package) }
             case .restore: restore()
             }
         }
