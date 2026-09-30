@@ -192,7 +192,7 @@
     <string name="status_what_was_still_there">Que restait-il ?</string>
     <string name="on_the_shelf_arg">En rayon : %1$s</string>
     <string name="status_confirmed_today_plus">Confirmé aujourd\'hui — voyez quand avec Plus</string>
-    <string name="status_lock_no_reports">Plus vous dit quand quelqu\'un l\'a trouvé ouvert pour la dernière fois</string>
+    <string name="status_lock_no_reports">Consultez les signalements des visiteurs avec Plus</string>
     <string name="status_fresh_line_arg">%1$s · confirmé %2$s par %3$s</string>
     <string name="fresh_when_min_arg">il y a %1$d min</string>
     <string name="fresh_when_h_arg">il y a %1$d h</string>

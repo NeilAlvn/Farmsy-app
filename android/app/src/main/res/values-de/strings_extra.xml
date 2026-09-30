@@ -192,7 +192,7 @@
     <string name="status_what_was_still_there">Was war noch da?</string>
     <string name="on_the_shelf_arg">Im Regal: %1$s</string>
     <string name="status_confirmed_today_plus">Heute bestätigt — mit Plus siehst du wann</string>
-    <string name="status_lock_no_reports">Plus zeigt dir, wann es zuletzt geöffnet vorgefunden wurde</string>
+    <string name="status_lock_no_reports">Besucherberichte sehen mit Plus</string>
     <string name="status_fresh_line_arg">%1$s · vor %2$s bestätigt von %3$s</string>
     <string name="fresh_when_min_arg">%1$d Min.</string>
     <string name="fresh_when_h_arg">%1$d Std.</string>

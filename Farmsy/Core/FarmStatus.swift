@@ -200,13 +200,16 @@ enum FarmStatus {
     }
 
     /// The Plus row under the status headline. With a fresh report the promise
-    /// is "see when"; without one it is what Plus will show once there is one.
+    /// is "see when"; without one it names the feature rather than promising a
+    /// particular answer. Only 7 of ~8,400 farms have ever had a status report,
+    /// so the old no-report line ("when someone last found it open") sold data
+    /// that does not exist on 99.9% of cards.
     /// Never an empty row: on iOS the row used to need a fresh report, which on
     /// most farms meant it never appeared at all.
     static func lockCopy(hasFreshReport: Bool) -> LocalizedStringResource {
         hasFreshReport
             ? "Confirmed today — see when with Plus"
-            : "Plus tells you when someone last found it open"
+            : "See visitor reports with Plus"
     }
 
     /// Postgres timestamptz varies in fractional-second precision; normalise

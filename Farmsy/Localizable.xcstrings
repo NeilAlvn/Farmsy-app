@@ -10538,30 +10538,30 @@
         }
       }
     },
-    "Plus tells you when someone last found it open": {
+    "See visitor reports with Plus": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plus zeigt dir, wann es zuletzt geöffnet vorgefunden wurde"
+            "value": "Besucherberichte sehen mit Plus"
           }
         },
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Plus tells you when someone last found it open"
+            "value": "See visitor reports with Plus"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plus vous dit quand quelqu'un l'a trouvé ouvert pour la dernière fois"
+            "value": "Consultez les signalements des visiteurs avec Plus"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plus vertelt je wanneer iemand het laatst open aantrof"
+            "value": "Bekijk meldingen van bezoekers met Plus"
           }
         }
       }
