@@ -83,6 +83,8 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
     val currentSession by session.session.collectAsState()
     val userId = currentSession?.user?.id
     // The tap that was waiting for sign-in; consumed when the session appears.
+    // The one tap that was waiting for sign-in: a package to buy, or a restore.
+    // One value, so a plan tap followed by a restore tap cannot start both.
     var pendingPkg by remember { mutableStateOf<Package?>(null) }
     var pendingRestore by remember { mutableStateOf(false) }
 
@@ -123,7 +125,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
     fun buy(pkg: Package?) {
         val uid = userId
         if (uid == null) {
-            pendingPkg = pkg
+            pendingPkg = pkg; pendingRestore = false
             Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to (trigger ?: AnalyticsValue.Trigger.HOME_ROW).key))
             requestAuth()
             return
@@ -134,7 +136,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
 
     fun restore() {
         if (userId == null) {
-            pendingRestore = true
+            pendingRestore = true; pendingPkg = null
             Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.RESTORE.key))
             requestAuth()
             return

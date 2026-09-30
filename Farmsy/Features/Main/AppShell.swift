@@ -140,14 +140,10 @@ struct AppShell: View {
                     // to present ON TOP of the farm card, not get dropped by
                     // the same one-sheet-per-presenter limit.
                     .sheet(isPresented: showPlusInFarmCard) { plusSheetContent() }
-                    // Task 4 fix round 5: the farm card is reachable signed out,
-                    // and anything inside it that asks for auth needs the same
-                    // nesting. Since Task 3 the Plus row no longer routes here —
-                    // it opens Plus for everyone and the sign-in ask happens at
-                    // the plan tap, one level further in (`showAuthInPlus`), so
-                    // when Plus is up above this card the card's presenter is
-                    // busy and this binding stays dormant. Kept for any other
-                    // signed-out ask from inside the card.
+                    // The farm card is reachable signed out, and its "Was it
+                    // open?" report asks for an account (`onNeedsSignIn`); this
+                    // is the presenter for that ask. A plan tap inside the Plus
+                    // sheet above the card is `showAuthInPlus`'s instead.
                     .sheet(isPresented: showAuthInFarmCard) { AuthView() }
             }
         }
@@ -260,11 +256,15 @@ struct AppShell: View {
     private var showAuthAtRoot: Binding<Bool> {
         Binding(get: { showAuth && !showTrips && !showProfile && selectedPin == nil && !showPlus }, set: { showAuth = $0 })
     }
+    /// `!showPlus`: when the Plus sheet is up over Profile or the farm card, the
+    /// plan tap's auth request belongs to `showAuthInPlus`, not to the presenter
+    /// underneath. `showPlus` is live state, unlike the stale sibling flags the
+    /// note above warns about.
     private var showAuthInProfile: Binding<Bool> {
-        Binding(get: { showAuth && showProfile }, set: { showAuth = $0 })
+        Binding(get: { showAuth && showProfile && !showPlus }, set: { showAuth = $0 })
     }
     private var showAuthInFarmCard: Binding<Bool> {
-        Binding(get: { showAuth && selectedPin != nil }, set: { showAuth = $0 })
+        Binding(get: { showAuth && selectedPin != nil && !showPlus }, set: { showAuth = $0 })
     }
     /// The plan buttons inside the Plus sheet ask for auth when signed out; the
     /// sheet is up, so only a `.sheet` nested on it can present. Same rule as the
