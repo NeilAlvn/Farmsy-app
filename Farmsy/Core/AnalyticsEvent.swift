@@ -16,7 +16,7 @@ import Foundation
 // osm_id identifies a farm, not a person.
 
 /// Event names, as PostHog shows them.
-enum AnalyticsEvent: String {
+enum AnalyticsEvent: String, CaseIterable {
     case appOpened = "app_opened"
     case onboardingStepCompleted = "onboarding_step_completed"
     case onboardingSkipped = "onboarding_skipped"
@@ -40,6 +40,15 @@ enum AnalyticsEvent: String {
     case farmCalled = "farm_called"
     case farmWebsite = "farm_website"
     case routePlanned = "route_planned"
+    /// Which of the five tabs is on screen. Once per selection change and once
+    /// for the initial tab — never per re-render.
+    case tabViewed = "tab_viewed"
+    /// An item joined `wantedProducts`. Fired by TripStore itself, so no call
+    /// site can forget; `source` says which surface added it.
+    case shoppingItemAdded = "shopping_item_added"
+    /// The sign-in sheet opened because a signed-out person asked for something
+    /// that needs an account. `trigger` names what they asked for.
+    case authPrompted = "auth_prompted"
 }
 
 /// Property keys.
@@ -56,6 +65,10 @@ enum AnalyticsProp {
     /// `route_planned`: how many farms the corridor found, and the radius it used.
     static let count = "count"
     static let radiusKm = "radius_km"
+    /// `tab_viewed`: the AppTab rawValue.
+    static let tab = "tab"
+    /// `shopping_item_added`: the item id, or "custom" for anything typed.
+    static let item = "item"
     // On every event, added by Observability.capture.
     static let isMember = "is_member"
     static let platform = "platform"
@@ -93,6 +106,17 @@ enum AnalyticsValue {
         /// The "Upgrade to Farmsy Plus" row under Home's greeting.
         case homeRow = "home_row"
         case profile = "profile"
+        /// `auth_prompted` only: the trip planner and "Restore purchases".
+        case trips = "trips"
+        case restore = "restore"
+    }
+
+    /// `source` on shopping_item_added: which surface put the item on the list.
+    enum ListSource: String {
+        case picker = "picker"
+        case typed = "typed"
+        case farmDetail = "farm_detail"
+        case onboarding = "onboarding"
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

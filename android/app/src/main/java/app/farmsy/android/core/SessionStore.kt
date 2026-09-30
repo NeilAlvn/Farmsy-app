@@ -123,8 +123,14 @@ class SessionStore(private val scope: CoroutineScope) {
                         _session.value = null
                         _profile.value = null
                         _isBootstrapped.value = true
-                        PurchaseStore.signOut()
-                        Observability.reset()
+                        // Only a real sign-out resets identity (see iOS SessionStore):
+                        // this status also arrives on every cold start for a
+                        // signed-out person, and resetting there made each launch a
+                        // brand-new PostHog person.
+                        if (status.isSignOut) {
+                            PurchaseStore.signOut()
+                            Observability.reset()
+                        }
                         fireAppOpened()
                     }
                     // RefreshFailure (offline, expired refresh token) and any

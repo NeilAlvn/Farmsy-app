@@ -81,9 +81,9 @@ struct AppShell: View {
         ShellActions(
             openFarm: { openFarm($0, source: .whatsNew) },
             showTab: { tab = $0 },
-            openTrips: { requireAuth { showTrips = true } },
+            openTrips: { requireAuth(.trips) { showTrips = true } },
             openProfile: { showProfile = true },
-            openPlus: { trigger in requireAuth { plusTrigger = trigger; showPlus = true } },
+            openPlus: { trigger in requireAuth(trigger) { plusTrigger = trigger; showPlus = true } },
             openProduct: { productSlug = ProductRoute(slug: $0) })
     }
 
@@ -116,6 +116,10 @@ struct AppShell: View {
             openFarm(pin, source: .whatsNew)
         }
         .modifier(SurveyEntry(isPresented: $showSurvey, buttonVisible: tab == .map))
+        // One event per tab selection, and one for the tab the shell opens on.
+        .onChange(of: tab, initial: true) { _, t in
+            Observability.capture(.tabViewed, [AnalyticsProp.tab: t.rawValue])
+        }
         // The farm card — three resting heights, opening at half, and the map
         // stays interactive behind it up through half.
         .sheet(isPresented: Binding(
@@ -291,8 +295,14 @@ struct AppShell: View {
                                             AnalyticsProp.source: source.rawValue])
     }
 
-    private func requireAuth(_ action: @escaping () -> Void) {
-        if session.isAuthenticated { action() } else { showAuth = true }
+    /// Runs `action` signed in; otherwise opens the sign-in sheet and says why.
+    private func requireAuth(_ trigger: AnalyticsValue.Trigger, _ action: @escaping () -> Void) {
+        if session.isAuthenticated {
+            action()
+        } else {
+            Observability.capture(.authPrompted, [AnalyticsProp.trigger: trigger.rawValue])
+            showAuth = true
+        }
     }
 }
 
