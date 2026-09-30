@@ -17,8 +17,8 @@ Four changes, one PR each, iOS and Android together in every PR (repo norm). Bra
 - Reset only on a real sign-out. iOS: in the `else` branch, call `PurchaseStore.signOut()` and `Observability.reset()` only when `state.event == .signedOut`. Android: same condition on the Supabase-kt auth status (`SessionStatus.NotAuthenticated(isSignOut = true)`); the `fireAppOpened()` call stays where it is.
 - Three new events, added to `AnalyticsEvent` on both platforms, same names, same property keys:
   - `tab_viewed` — `tab` ∈ `home|shopping|map|discover|community`. Fired when the selected tab changes and once for the initial tab after the shell appears. Not on every re-render.
-  - `shopping_item_added` — `item` (the item id, e.g. `eggs`), `source` ∈ `picker|typed|farm_detail|onboarding`. Fired when an item joins `wantedProducts`, not on removal.
-  - `auth_prompted` — `trigger` (same values as `paywall_viewed`'s `trigger`, plus `trips` and `restore`). Fired whenever the app opens the auth sheet because a signed-out person asked for something that needs an account.
+  - `shopping_item_added` — `item` (the item id, e.g. `eggs`), `source` ∈ `picker|typed|farm_detail|onboarding|discover`. Fired when an item joins `wantedProducts`, not on removal. `discover` is the Discover tab (product sheet, season card); it was found at implementation time.
+  - `auth_prompted` — `trigger` (same values as `paywall_viewed`'s `trigger`, plus `trips` and `restore`). Fired when a signed-out person taps something on the Plus path that needs an account: a plan or Restore inside the Plus sheet, or the trip planner. Other sign-in asks (saving a farm, reporting status, posting) are not counted yet; thread a trigger through the `requestAuth` environment closure if the funnel ever needs them.
 - `AnalyticsValue.Trigger` gains `.trips` and `.restore`; a new `AnalyticsValue.ListSource` closed set carries the four `source` values. No free text.
 
 ### PostHog
