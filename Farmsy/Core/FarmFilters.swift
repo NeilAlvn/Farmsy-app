@@ -50,7 +50,31 @@ enum FarmFilters {
     /// That is the opposite of the day-name gap above and worse: that one
     /// removed farms and was invisible, this one adds a wrong answer and sends
     /// somebody to a locked gate. Mirrors web `OFF_RE`.
-    private static let offPattern = "\\b(off|gesloten|geschlossen|ferm[eé]|closed)\\b"
+    /// Compiled once. These used to be pattern strings handed to
+    /// `range(of:options:.regularExpression)` on every call, which compiles the
+    /// regex each time. `rankForIntent` calls into here for every farm, and the
+    /// map re-evaluates on every SwiftUI body pass, so this was tens of thousands
+    /// of regex compiles per render on the main thread — the "App Hanging" wave
+    /// Sentry reported on 1.3 (37).
+    private static let offRegex = try! NSRegularExpression(
+        pattern: "\\b(off|gesloten|geschlossen|ferm[eé]|closed)\\b", options: .caseInsensitive)
+    /// First HH:MM token, with the whitespace before it.
+    private static let timeTokenRegex = try! NSRegularExpression(pattern: "\\s+\\d{1,2}:\\d{2}")
+    /// One HH:MM-HH:MM window; any of the three dashes (see `dashes`).
+    private static let windowRegex = try! NSRegularExpression(
+        pattern: "(\\d{1,2}):(\\d{2})\\s*[-\u{2013}\u{2014}]\\s*(\\d{1,2}):(\\d{2})")
+
+    private static func fullRange(_ s: String) -> NSRange { NSRange(s.startIndex..., in: s) }
+
+    /// True when the segment carries a "closed" marker.
+    private static func isOff(_ s: String) -> Bool {
+        offRegex.firstMatch(in: s, range: fullRange(s)) != nil
+    }
+
+    /// The segment with its "closed" marker removed (not trimmed).
+    private static func stripOff(_ s: String) -> String {
+        offRegex.stringByReplacingMatches(in: s, range: fullRange(s), withTemplate: "")
+    }
 
     /// A day token, as written, reduced to something `dayJS` can answer.
     ///
@@ -100,8 +124,13 @@ enum FarmFilters {
 
     /// The day-part of a segment — everything before the first HH:MM token, trimmed.
     private static func dayPartOf(_ s: String) -> String {
-        let dayPart = s.range(of: "\\s+\\d{1,2}:\\d{2}", options: .regularExpression)
-            .map { String(s[s.startIndex..<$0.lowerBound]) } ?? s
+        let dayPart: String
+        if let m = timeTokenRegex.firstMatch(in: s, range: fullRange(s)),
+           let r = Range(m.range, in: s) {
+            dayPart = String(s[s.startIndex..<r.lowerBound])
+        } else {
+            dayPart = s
+        }
         return dayPart.trimmingCharacters(in: .whitespaces)
     }
 
@@ -115,11 +144,9 @@ enum FarmFilters {
         // segment naming a day whose hours did not parse fell through to the "day with
         // no times = open" branch and isOpenNow (the paid filter) reported it open all
         // day, at any hour. Same three dashes as `dashes`.
-        guard let re = try? NSRegularExpression(pattern: "(\\d{1,2}):(\\d{2})\\s*[-\u{2013}\u{2014}]\\s*(\\d{1,2}):(\\d{2})")
-        else { return [] }
         let ns = segment as NSString
         var out: [(Int, Int)] = []
-        for m in re.matches(in: segment, range: NSRange(location: 0, length: ns.length)) {
+        for m in windowRegex.matches(in: segment, range: NSRange(location: 0, length: ns.length)) {
             let from = (Int(ns.substring(with: m.range(at: 1))) ?? 0) * 60 + (Int(ns.substring(with: m.range(at: 2))) ?? 0)
             var to = (Int(ns.substring(with: m.range(at: 3))) ?? 0) * 60 + (Int(ns.substring(with: m.range(at: 4))) ?? 0)
             if to == 0 { to = 24 * 60 }
@@ -145,7 +172,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if isOff(s) { continue }
             let dayPart = dayPartOf(s)
             if dayPart.isEmpty || !daysOf(dayPart).contains(dayMon) { continue }
 
@@ -168,7 +195,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if isOff(s) { continue }
             let dayPart = dayPartOf(s)
             if !dayPart.isEmpty && daysOf(dayPart).contains(dayMon) { return true }
         }
@@ -185,10 +212,8 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) == nil { continue }
-            let dayPart = s.replacingOccurrences(
-                of: offPattern, with: "", options: [.regularExpression, .caseInsensitive]
-            ).trimmingCharacters(in: .whitespaces)
+            if !isOff(s) { continue }
+            let dayPart = stripOff(s).trimmingCharacters(in: .whitespaces)
             if dayPart.isEmpty { continue }
             out.formUnion(daysOf(dayPart))
         }
@@ -284,7 +309,7 @@ enum FarmFilters {
         for segment in raw.components(separatedBy: CharacterSet(charactersIn: "\n;")) {
             let s = segment.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
-            if s.range(of: offPattern, options: [.regularExpression, .caseInsensitive]) != nil { continue }
+            if isOff(s) { continue }
             let dayPart = dayPartOf(s)
             if dayPart.isEmpty || !daysOf(dayPart).contains(dayMon) { continue }
             out.append(contentsOf: windowsOf(s))

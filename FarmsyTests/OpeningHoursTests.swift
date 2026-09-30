@@ -257,4 +257,18 @@ struct OpeningHoursTests {
         // And OSM's own format still works.
         #expect(FarmFilters.isOpenOnDay("Mo-Fr 09:00-17:00", dayMon: Self.mon))
     }
+
+    // MARK: - Regex caching (Sentry hang, 1.3 (37))
+
+    /// The "closed" marker is matched case-insensitively. This is the option that
+    /// moving from `range(of:options:)` to a cached `NSRegularExpression` could
+    /// drop without any other test noticing.
+    @Test("closed markers match in any case, in all four languages")
+    func offMarkersAnyCase() {
+        for off in ["Su off", "Su OFF", "zondag Gesloten", "sonntag GESCHLOSSEN", "dimanche Fermé", "Su CLOSED"] {
+            #expect(FarmFilters.isOpenOnDay("Mo-Su 09:00-17:00; \(off)", dayMon: 6) == false, "\(off)")
+        }
+        // The same string still opens on Monday: the closed rule removes one day, not all.
+        #expect(FarmFilters.isOpenOnDay("Mo-Su 09:00-17:00; Su OFF", dayMon: 0))
+    }
 }
