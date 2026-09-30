@@ -156,13 +156,12 @@ class PurchaseStore {
     /// then refreshes the profile, because access is granted by the server (via
     /// RevenueCat's webhook), not by this return value.
     ///
-    /// `userId` is the Supabase user id. We re-assert `logIn` here, immediately
-    /// before buying, because the identify() fired at auth time can lose the race
-    /// with the user reaching this button — especially on a fresh Play install,
-    /// where the SDK starts with an anonymous id. If the purchase attaches to that
-    /// anonymous id, the webhook has no Supabase user to grant and the payment is
-    /// stranded. Gating the buy on the real id closes that race for good.
-    suspend fun purchase(activity: Activity, pkg: Package?, userId: String?): Boolean {
+    /// `userId` is the Supabase user id and is required: the sheet asks for
+    /// sign-in before it gets here, so a purchase can never run under RevenueCat's
+    /// anonymous id, which the webhook cannot grant. We still re-assert `logIn`
+    /// immediately before buying, because the identify() fired at auth time can
+    /// lose the race with the user reaching this button.
+    suspend fun purchase(activity: Activity, pkg: Package?, userId: String): Boolean {
         if (pkg == null) {
             _purchaseError.value = "unavailable"
             Observability.capture(AnalyticsEvent.PURCHASE_FAILED, mapOf(AnalyticsProp.REASON to AnalyticsValue.Reason.PRODUCT_UNAVAILABLE.key))
@@ -171,7 +170,7 @@ class PurchaseStore {
         // The tap, before the Play sheet appears.
         val plan = planOf(pkg)
         Observability.capture(AnalyticsEvent.PLAN_TAPPED, mapOf(AnalyticsProp.PLAN to plan))
-        if (enabled && userId != null && Purchases.sharedInstance.appUserID != userId) {
+        if (enabled && Purchases.sharedInstance.appUserID != userId) {
             runCatching { Purchases.sharedInstance.awaitLogIn(userId) }
         }
         _isPurchasing.value = true

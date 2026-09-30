@@ -197,8 +197,8 @@ fun MainScreen() {
     var showPlus by remember { mutableStateOf(false) }
     // What asked for the Plus sheet — read once by the sheet itself, in a
     // LaunchedEffect, so `paywall_viewed` fires exactly once per presentation.
-    // Set only on the path that really presents Plus: a signed-out tap goes to
-    // the sign-in sheet instead and reports nothing.
+    // Set whenever Plus is asked for; signed-out people see the sheet too and are
+    // asked to sign in at the plan tap (Task 3, conversion fixes).
     var plusTrigger by remember { mutableStateOf<AnalyticsValue.Trigger?>(null) }
     var productSlug by remember { mutableStateOf<String?>(null) }
 
@@ -293,7 +293,7 @@ fun MainScreen() {
             showTab = { tab = it; route = null; productSlug = null; showProfile = false },
             openTrips = { requireAuth(AnalyticsValue.Trigger.TRIPS) { route = SheetRoute.TRIPS } },
             openProfile = { showProfile = true },
-            openPlus = { trigger -> requireAuth(trigger) { plusTrigger = trigger; showPlus = true } },
+            openPlus = { trigger -> plusTrigger = trigger; showPlus = true },
             openProduct = { productSlug = it },
         )
     }

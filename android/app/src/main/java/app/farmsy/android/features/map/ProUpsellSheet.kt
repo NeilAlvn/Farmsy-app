@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalPurchases
+import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
 import app.farmsy.android.core.AnalyticsEvent
@@ -59,7 +60,21 @@ import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
+import com.revenuecat.purchases.Package
 import kotlinx.coroutines.launch
+
+enum class PendingBuyOutcome { ALREADY_MEMBER, PROCEED, ABANDON }
+
+/// What a pending buy does once sign-in completes — the Android twin of iOS
+/// `ProUpsellSheet.pendingBuyOutcome`. One place, so the rule can be tested
+/// without a store or a session: never charge an existing member, and never
+/// charge on a profile we could not read. `hasFullAccess` is false for a profile
+/// that never loaded, which is exactly why the loaded flag is a separate argument.
+fun pendingBuyOutcome(profileLoaded: Boolean, hasFullAccess: Boolean): PendingBuyOutcome = when {
+    !profileLoaded -> PendingBuyOutcome.ABANDON
+    hasFullAccess -> PendingBuyOutcome.ALREADY_MEMBER
+    else -> PendingBuyOutcome.PROCEED
+}
 
 /// The one Plus sheet — the Android twin of iOS `ProUpsellSheet`, presented
 /// everywhere via `LocalShell.current.openPlus`. Farm-free: it takes no farm. Story
@@ -77,6 +92,14 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val requestAuth = LocalRequestAuth.current
+    val currentSession by session.session.collectAsState()
+    val userId = currentSession?.user?.id
+    // The tap that was waiting for sign-in; consumed when the session appears.
+    // The one tap that was waiting for sign-in: a package to buy, or a restore.
+    // One value, so a plan tap followed by a restore tap cannot start both.
+    var pendingPkg by remember { mutableStateOf<Package?>(null) }
+    var pendingRestore by remember { mutableStateOf(false) }
 
     val isPurchasing by purchases.isPurchasing.collectAsState()
     val purchaseError by purchases.purchaseError.collectAsState()
@@ -111,6 +134,59 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
         if (session.hasFullAccess) onDismiss()
     }
 
+    /// Sign-in first, then the store. Signed in already: straight to the store.
+    fun buy(pkg: Package?) {
+        val uid = userId
+        if (uid == null) {
+            pendingPkg = pkg; pendingRestore = false
+            Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to (trigger ?: AnalyticsValue.Trigger.HOME_ROW).key))
+            requestAuth()
+            return
+        }
+        val activity = context as? Activity ?: return
+        scope.launch { if (purchases.purchase(activity, pkg, uid)) awaitGrant() }
+    }
+
+    fun restore() {
+        if (userId == null) {
+            pendingRestore = true; pendingPkg = null
+            Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.RESTORE.key))
+            requestAuth()
+            return
+        }
+        scope.launch { if (purchases.restore()) awaitGrant() }
+    }
+
+    // A tap that waited for sign-in must not charge someone who is already a
+    // member — reinstalled, or bought on the web or the other store. The session
+    // lands before the profile does, so wait for one before deciding. On doubt,
+    // do nothing: a second tap costs a tap, a second charge costs money.
+    suspend fun resumePendingBuy(pkg: Package) {
+        isChecking = true
+        // A `for` loop, not `repeat`: `return@repeat` only ends the current
+        // iteration, so the poll would keep running after the profile arrived.
+        for (attempt in 0 until 6) {
+            if (attempt > 0) kotlinx.coroutines.delay(500)
+            session.refreshProfile()
+            if (session.profile.value != null) break
+        }
+        isChecking = false
+        when (pendingBuyOutcome(session.profile.value != null, session.hasFullAccess)) {
+            PendingBuyOutcome.ALREADY_MEMBER -> onDismiss()
+            PendingBuyOutcome.PROCEED -> buy(pkg)
+            // Leave the sheet open rather than guess un-subscribed: the person taps again.
+            PendingBuyOutcome.ABANDON -> Unit
+        }
+    }
+
+    // The tap that was waiting for sign-in continues on its own once the session
+    // appears — no second tap. A restore is safe for an existing member; a buy is not.
+    LaunchedEffect(userId) {
+        if (userId == null) return@LaunchedEffect
+        pendingPkg?.let { pendingPkg = null; resumePendingBuy(it) }
+        if (pendingRestore) { pendingRestore = false; restore() }
+    }
+
     // Owner copy, 2026-09-21: looking is free, Farmsy doing the work is Plus — the
     // sheet sells finding, planning and freshness, not filters (those are free).
     val features = listOf(
@@ -119,7 +195,6 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
         stringResource(R.string.pro_feature_email),
         stringResource(R.string.pro_feature_everything),
     )
-    val userId = session.session.collectAsState().value?.user?.id
     val productsUnavailable = didLoadOffering && yearlyPkg == null
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = FarmsyColors.cream) {
@@ -169,8 +244,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                             detail = purchases.yearlyPrice?.let { if (trialDays != null) stringResource(R.string.then_price_per_year_arg, it) else stringResource(R.string.price_per_year_arg, it) },
                             filled = true, fallbackLabel = fallback,
                         ) {
-                            val activity = context as? Activity ?: return@PlanButton
-                            scope.launch { if (purchases.purchase(activity, yearlyPkg, userId)) awaitGrant() }
+                            buy(yearlyPkg)
                         }
                         purchases.lifetimePrice?.let { price ->
                             PlanButton(
@@ -178,8 +252,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                                 detail = "$price · ${stringResource(R.string.pro_lifetime_onetime)}",
                                 filled = false, fallbackLabel = fallback,
                             ) {
-                                val activity = context as? Activity ?: return@PlanButton
-                                scope.launch { if (purchases.purchase(activity, lifetimePkg, userId)) awaitGrant() }
+                                buy(lifetimePkg)
                             }
                         }
                     }
@@ -198,7 +271,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                         stringResource(R.string.restore_purchases),
                         style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
                         modifier = Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                            scope.launch { if (purchases.restore()) awaitGrant() }
+                            restore()
                         },
                     )
                 }
