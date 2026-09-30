@@ -209,6 +209,11 @@ object FarmStatus {
     fun amsterdamDay(at: Instant): String =
         DateTimeFormatter.ISO_LOCAL_DATE.format(at.atZone(AMSTERDAM).toLocalDate())
 
+    /// The Plus row under the status headline; see iOS FarmStatus.lockCopy.
+    fun lockCopyRes(hasFreshReport: Boolean): Int =
+        if (hasFreshReport) app.farmsy.android.R.string.status_confirmed_today_plus
+        else app.farmsy.android.R.string.status_lock_no_reports
+
     /// Postgres timestamptz varies in fractional-second precision; normalise
     /// before parsing. Mirrors Profile.parsePostgresDate.
     fun parseTimestamp(raw: String): Instant? {

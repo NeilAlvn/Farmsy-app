@@ -199,6 +199,16 @@ enum FarmStatus {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
+    /// The Plus row under the status headline. With a fresh report the promise
+    /// is "see when"; without one it is what Plus will show once there is one.
+    /// Never an empty row: on iOS the row used to need a fresh report, which on
+    /// most farms meant it never appeared at all.
+    static func lockCopy(hasFreshReport: Bool) -> LocalizedStringResource {
+        hasFreshReport
+            ? "Confirmed today — see when with Plus"
+            : "Plus tells you when someone last found it open"
+    }
+
     /// Postgres timestamptz varies in fractional-second precision; normalise
     /// before ISO-8601 parsing. Same shape as SessionStore.parsePostgresDate.
     static func parseTimestamp(_ raw: String) -> Date? {

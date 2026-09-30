@@ -10538,6 +10538,34 @@
         }
       }
     },
+    "Plus tells you when someone last found it open": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus zeigt dir, wann es zuletzt geöffnet vorgefunden wurde"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Plus tells you when someone last found it open"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus vous dit quand quelqu'un l'a trouvé ouvert pour la dernière fois"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus vertelt je wanneer iemand het laatst open aantrof"
+          }
+        }
+      }
+    },
     "Popular farm shops": {
       "localizations": {
         "de": {
