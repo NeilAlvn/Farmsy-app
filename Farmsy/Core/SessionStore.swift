@@ -129,8 +129,16 @@ final class SessionStore {
                     }
                 } else {
                     self.profile = nil
-                    await PurchaseStore.signOut()
-                    Observability.reset()
+                    // Only a real sign-out resets identity. The stream's first
+                    // emission on a cold start is `.initialSession` with a nil
+                    // session for anyone signed out, and resetting there minted a
+                    // fresh PostHog anonymous id on every launch — after
+                    // `app_opened` had already fired on the old one. Every launch
+                    // looked like a new person and Funnel A never joined.
+                    if state.event == .signedOut {
+                        await PurchaseStore.signOut()
+                        Observability.reset()
+                    }
                 }
             }
         }

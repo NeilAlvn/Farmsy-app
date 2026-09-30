@@ -235,7 +235,7 @@ fun ShoppingScreen() {
         val q = ProductMatch.fold(text)
         val exact = catalogue.firstOrNull { ProductMatch.fold(it.label(language)) == q && it.id !in wanted }
         tap()
-        trip.toggleProduct(exact?.id ?: ShoppingItem.custom(text).id)
+        trip.toggleProduct(exact?.id ?: ShoppingItem.custom(text).id, AnalyticsValue.ListSource.TYPED)
         query = ""
     }
 
@@ -273,7 +273,7 @@ fun ShoppingScreen() {
                                     Text(item.label(language), style = role(TextRole.BODY), color = FarmsyColors.ink, modifier = Modifier.weight(1f))
                                 }
                                 Box(
-                                    Modifier.size(32.dp).clickable { tap(); trip.toggleProduct(item.id) }.semantics { contentDescription = remove },
+                                    Modifier.size(32.dp).clickable { tap(); trip.toggleProduct(item.id, AnalyticsValue.ListSource.PICKER) }.semantics { contentDescription = remove },
                                     contentAlignment = Alignment.Center,
                                 ) { Icon(Icons.Filled.Close, null, tint = FarmsyColors.inkMuted, modifier = Modifier.size(16.dp)) }
                             }
@@ -370,11 +370,11 @@ fun ShoppingScreen() {
                                     cat.label(language).uppercase(), style = role(TextRole.LABEL), color = FarmsyColors.inkFaint,
                                     modifier = Modifier.padding(top = Space.s3, bottom = Space.s2),
                                 )
-                                Chips(group, language) { trip.toggleProduct(it) }
+                                Chips(group, language) { trip.toggleProduct(it, AnalyticsValue.ListSource.PICKER) }
                             }
                         }
                     } else {
-                        Chips(shown, language) { trip.toggleProduct(it) }
+                        Chips(shown, language) { trip.toggleProduct(it, AnalyticsValue.ListSource.PICKER) }
                     }
                 }
 
@@ -394,7 +394,7 @@ fun ShoppingScreen() {
                                 )
                                 PillButton(stringResource(R.string.repeat), PillVariant.SOFT, PillSize.SMALL) {
                                     trip.clearProducts()
-                                    list.forEach { trip.toggleProduct(it) }
+                                    list.forEach { trip.toggleProduct(it, AnalyticsValue.ListSource.PICKER) }
                                 }
                             }
                         }

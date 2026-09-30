@@ -47,6 +47,7 @@ import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.FarmPin
 import app.farmsy.android.core.LanguageStore
 import app.farmsy.android.core.ShoppingItems
@@ -172,7 +173,7 @@ fun ShoppingListSheet(origin: LatLng, onUnlock: () -> Unit, onDismiss: () -> Uni
                             Modifier
                                 .background(if (on) FarmsyColors.farmGreenMap else Color.White, RoundedCornerShape(20.dp))
                                 .border(1.dp, if (on) Color.Transparent else FarmsyColors.hairline, RoundedCornerShape(20.dp))
-                                .clickable { trip.toggleProduct(item.id); plan = null }
+                                .clickable { trip.toggleProduct(item.id, AnalyticsValue.ListSource.PICKER); plan = null }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),

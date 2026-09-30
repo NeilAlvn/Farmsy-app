@@ -318,11 +318,18 @@ final class TripStore {
 
     // MARK: Shopping list
 
-    /// On or off. Picking keeps the order things were chosen in, which is the
-    /// order the answer lists them back.
-    func toggleProduct(_ id: String) {
-        if let i = wantedProducts.firstIndex(of: id) { wantedProducts.remove(at: i) }
-        else { wantedProducts.append(id) }
+    /// On or off. `source` names the surface that added it; the event fires here,
+    /// on the add branch only, so no call site can forget it. A custom item's id
+    /// carries what the person typed, and typed text never goes to analytics.
+    func toggleProduct(_ id: String, source: AnalyticsValue.ListSource) {
+        if let i = wantedProducts.firstIndex(of: id) {
+            wantedProducts.remove(at: i)
+        } else {
+            wantedProducts.append(id)
+            let reported = id.hasPrefix(ShoppingItem.customPrefix) ? "custom" : id
+            Observability.capture(.shoppingItemAdded,
+                                  [AnalyticsProp.item: reported, AnalyticsProp.source: source.rawValue])
+        }
         persistWanted()
     }
 

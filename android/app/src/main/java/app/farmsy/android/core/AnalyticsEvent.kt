@@ -40,6 +40,15 @@ enum class AnalyticsEvent(val key: String) {
     FARM_CALLED("farm_called"),
     FARM_WEBSITE("farm_website"),
     ROUTE_PLANNED("route_planned"),
+    /// Which of the five tabs is on screen. Once per selection change and once
+    /// for the initial tab — never per recomposition.
+    TAB_VIEWED("tab_viewed"),
+    /// An item joined `wantedProducts`. Fired by TripStore itself, so no call
+    /// site can forget; `source` says which surface added it.
+    SHOPPING_ITEM_ADDED("shopping_item_added"),
+    /// The sign-in sheet opened because a signed-out person asked for something
+    /// that needs an account. `trigger` names what they asked for.
+    AUTH_PROMPTED("auth_prompted"),
 }
 
 /// Property keys.
@@ -56,6 +65,10 @@ object AnalyticsProp {
     /// `route_planned`: how many farms the corridor found, and the radius it used.
     const val COUNT = "count"
     const val RADIUS_KM = "radius_km"
+    /// `tab_viewed`: the AppTab name, lowercased.
+    const val TAB = "tab"
+    /// `shopping_item_added`: the item id, or "custom" for anything typed.
+    const val ITEM = "item"
     // On every event, added by Observability.capture.
     const val IS_MEMBER = "is_member"
     const val PLATFORM = "platform"
@@ -93,6 +106,19 @@ object AnalyticsValue {
         /// The "Upgrade to Farmsy Plus" row under Home's greeting.
         HOME_ROW("home_row"),
         PROFILE("profile"),
+        /// `auth_prompted` only: the trip planner and "Restore purchases".
+        TRIPS("trips"),
+        RESTORE("restore"),
+    }
+
+    /// `source` on shopping_item_added: which surface put the item on the list.
+    enum class ListSource(val key: String) {
+        PICKER("picker"),
+        TYPED("typed"),
+        FARM_DETAIL("farm_detail"),
+        ONBOARDING("onboarding"),
+        /// The Discover tab: a product sheet or a season card.
+        DISCOVER("discover"),
     }
 
     /// `filter` on pro_filter_tapped for the three time filters. The two axis

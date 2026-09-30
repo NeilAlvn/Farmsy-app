@@ -45,6 +45,7 @@ import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalSession
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.Backend
 import app.farmsy.android.core.FarmDetail
 import app.farmsy.android.core.FarmPin
@@ -120,12 +121,12 @@ fun FarmProductsSection(pin: FarmPin, detail: FarmDetail?, onClose: () -> Unit) 
                 // map, so switching underneath it left the Shopping tab hidden
                 // behind an open farm card (final review #7, iOS twin).
                 if (allOnList) { onClose(); shell.showTab(AppTab.SHOPPING) }
-                else items.filter { it.id !in wanted }.forEach { trip.toggleProduct(it.id) }
+                else items.filter { it.id !in wanted }.forEach { trip.toggleProduct(it.id, AnalyticsValue.ListSource.FARM_DETAIL) }
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s2), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
             items.forEach { item ->
-                Chip(item.label(language), emoji = item.emoji, selected = item.id in wanted) { trip.toggleProduct(item.id) }
+                Chip(item.label(language), emoji = item.emoji, selected = item.id in wanted) { trip.toggleProduct(item.id, AnalyticsValue.ListSource.FARM_DETAIL) }
             }
         }
         Text(stringResource(R.string.products_tap_hint), style = role(TextRole.CAPTION), color = FarmsyColors.inkMuted)

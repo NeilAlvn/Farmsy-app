@@ -186,6 +186,10 @@ fun MainScreen() {
     val requestAuth = LocalRequestAuth.current
 
     var tab by rememberSaveable { mutableStateOf(AppTab.HOME) }
+    // One event per tab selection, and one for the tab the shell opens on.
+    LaunchedEffect(tab) {
+        Observability.capture(AnalyticsEvent.TAB_VIEWED, mapOf(AnalyticsProp.TAB to tab.name.lowercase()))
+    }
     var route by remember { mutableStateOf<SheetRoute?>(null) }
     var selectedPin by remember { mutableStateOf<FarmPin?>(null) }
     var focusPin by remember { mutableStateOf<FarmPin?>(null) }
@@ -263,8 +267,13 @@ fun MainScreen() {
         )
     }
 
-    fun requireAuth(then: () -> Unit) {
-        if (session.isAuthenticated) then() else requestAuth()
+    /// Runs `then` signed in; otherwise opens the sign-in sheet and says why.
+    fun requireAuth(trigger: AnalyticsValue.Trigger, then: () -> Unit) {
+        if (session.isAuthenticated) then()
+        else {
+            Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to trigger.key))
+            requestAuth()
+        }
     }
 
     val shell = remember {
@@ -282,9 +291,9 @@ fun MainScreen() {
             // changed the tab underneath and left the sheet on top, which reads as
             // nothing having happened.
             showTab = { tab = it; route = null; productSlug = null; showProfile = false },
-            openTrips = { requireAuth { route = SheetRoute.TRIPS } },
+            openTrips = { requireAuth(AnalyticsValue.Trigger.TRIPS) { route = SheetRoute.TRIPS } },
             openProfile = { showProfile = true },
-            openPlus = { trigger -> requireAuth { plusTrigger = trigger; showPlus = true } },
+            openPlus = { trigger -> requireAuth(trigger) { plusTrigger = trigger; showPlus = true } },
             openProduct = { productSlug = it },
         )
     }

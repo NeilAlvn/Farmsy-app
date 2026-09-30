@@ -103,7 +103,7 @@ struct ShoppingListSheet: View {
                 let on = trip.wantedProducts.contains(item.id)
                 Button {
                     Haptics.tap()
-                    trip.toggleProduct(item.id)
+                    trip.toggleProduct(item.id, source: .picker)
                     plan = nil          // the answer belonged to the old list
                 } label: {
                     HStack(spacing: 6) {

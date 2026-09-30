@@ -56,6 +56,7 @@ import app.farmsy.android.LocalFarms
 import app.farmsy.android.LocalLocationHelper
 import app.farmsy.android.LocalTrip
 import app.farmsy.android.R
+import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.MonthState
 import app.farmsy.android.core.ProductMatch
 import app.farmsy.android.core.ProductProfile
@@ -188,7 +189,7 @@ fun ProductSheet(slug: String, fallbackLabel: String, fallbackEmoji: String, onD
                     // hugged its label and the row looked accidental.
                     modifier = Modifier.weight(1f),
                 ) {
-                    if (onList) { onDismiss(); shell.showTab(AppTab.SHOPPING) } else trip.toggleProduct(listId)
+                    if (onList) { onDismiss(); shell.showTab(AppTab.SHOPPING) } else trip.toggleProduct(listId, AnalyticsValue.ListSource.DISCOVER)
                 }
             }
         }
