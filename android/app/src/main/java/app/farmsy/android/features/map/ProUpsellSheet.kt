@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.farmsy.android.LocalPurchases
+import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
 import app.farmsy.android.core.AnalyticsEvent
@@ -59,6 +60,7 @@ import app.farmsy.android.ui.theme.Haptics
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.display
 import app.farmsy.android.ui.theme.geist
+import com.revenuecat.purchases.Package
 import kotlinx.coroutines.launch
 
 /// The one Plus sheet — the Android twin of iOS `ProUpsellSheet`, presented
@@ -77,6 +79,12 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val requestAuth = LocalRequestAuth.current
+    val currentSession by session.session.collectAsState()
+    val userId = currentSession?.user?.id
+    // The tap that was waiting for sign-in; consumed when the session appears.
+    var pendingPkg by remember { mutableStateOf<Package?>(null) }
+    var pendingRestore by remember { mutableStateOf(false) }
 
     val isPurchasing by purchases.isPurchasing.collectAsState()
     val purchaseError by purchases.purchaseError.collectAsState()
@@ -111,6 +119,37 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
         if (session.hasFullAccess) onDismiss()
     }
 
+    /// Sign-in first, then the store. Signed in already: straight to the store.
+    fun buy(pkg: Package?) {
+        val uid = userId
+        if (uid == null) {
+            pendingPkg = pkg
+            Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to (trigger ?: AnalyticsValue.Trigger.HOME_ROW).key))
+            requestAuth()
+            return
+        }
+        val activity = context as? Activity ?: return
+        scope.launch { if (purchases.purchase(activity, pkg, uid)) awaitGrant() }
+    }
+
+    fun restore() {
+        if (userId == null) {
+            pendingRestore = true
+            Observability.capture(AnalyticsEvent.AUTH_PROMPTED, mapOf(AnalyticsProp.TRIGGER to AnalyticsValue.Trigger.RESTORE.key))
+            requestAuth()
+            return
+        }
+        scope.launch { if (purchases.restore()) awaitGrant() }
+    }
+
+    // The tap that was waiting for sign-in continues on its own once the session
+    // appears — no second tap.
+    LaunchedEffect(userId) {
+        if (userId == null) return@LaunchedEffect
+        pendingPkg?.let { pendingPkg = null; buy(it) }
+        if (pendingRestore) { pendingRestore = false; restore() }
+    }
+
     // Owner copy, 2026-09-21: looking is free, Farmsy doing the work is Plus — the
     // sheet sells finding, planning and freshness, not filters (those are free).
     val features = listOf(
@@ -119,7 +158,6 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
         stringResource(R.string.pro_feature_email),
         stringResource(R.string.pro_feature_everything),
     )
-    val userId = session.session.collectAsState().value?.user?.id
     val productsUnavailable = didLoadOffering && yearlyPkg == null
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = FarmsyColors.cream) {
@@ -169,8 +207,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                             detail = purchases.yearlyPrice?.let { if (trialDays != null) stringResource(R.string.then_price_per_year_arg, it) else stringResource(R.string.price_per_year_arg, it) },
                             filled = true, fallbackLabel = fallback,
                         ) {
-                            val activity = context as? Activity ?: return@PlanButton
-                            scope.launch { if (purchases.purchase(activity, yearlyPkg, userId)) awaitGrant() }
+                            buy(yearlyPkg)
                         }
                         purchases.lifetimePrice?.let { price ->
                             PlanButton(
@@ -178,8 +215,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                                 detail = "$price · ${stringResource(R.string.pro_lifetime_onetime)}",
                                 filled = false, fallbackLabel = fallback,
                             ) {
-                                val activity = context as? Activity ?: return@PlanButton
-                                scope.launch { if (purchases.purchase(activity, lifetimePkg, userId)) awaitGrant() }
+                                buy(lifetimePkg)
                             }
                         }
                     }
@@ -198,7 +234,7 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                         stringResource(R.string.restore_purchases),
                         style = geist(14.sp, FontWeight.Medium), color = FarmsyColors.inkMuted,
                         modifier = Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                            scope.launch { if (purchases.restore()) awaitGrant() }
+                            restore()
                         },
                     )
                 }

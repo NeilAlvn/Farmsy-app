@@ -116,13 +116,12 @@ final class PurchaseStore {
     /// then refreshes the profile, because access is granted by the server (via
     /// RevenueCat's webhook), not by this return value.
     ///
-    /// `userId` is the Supabase user id. We re-assert `logIn` here, right before
-    /// buying, because the identify() fired at auth time can lose the race with the
-    /// user reaching this button — on a fresh install the SDK starts with an
-    /// anonymous id. A purchase attached to that anonymous id has no Supabase user
-    /// for the webhook to grant, and the payment is stranded. Re-asserting the id
-    /// at purchase time closes that race.
-    func purchase(_ package: Package?, userId: UUID?) async -> Bool {
+    /// `userId` is the Supabase user id and is required: the sheet asks for
+    /// sign-in before it gets here, so a purchase can never run under RevenueCat's
+    /// anonymous id, which the webhook cannot grant. We still re-assert `logIn`
+    /// right before buying, because the identify() fired at auth time can lose the
+    /// race with the user reaching this button.
+    func purchase(_ package: Package?, userId: UUID) async -> Bool {
         guard let package else {
             purchaseError = String(localized: "Membership isn't available right now. Please try again later.")
             Observability.capture(.purchaseFailed,
@@ -132,7 +131,7 @@ final class PurchaseStore {
         // The tap, before the store sheet appears.
         let plan = Self.plan(for: package)
         Observability.capture(.planTapped, [AnalyticsProp.plan: plan])
-        if let userId, Purchases.shared.appUserID != userId.uuidString {
+        if Purchases.shared.appUserID != userId.uuidString {
             _ = try? await Purchases.shared.logIn(userId.uuidString)
         }
         isPurchasing = true

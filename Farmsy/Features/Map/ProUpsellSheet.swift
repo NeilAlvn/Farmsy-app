@@ -1,3 +1,4 @@
+import RevenueCat
 import SwiftUI
 
 /// The one Plus sheet, presented everywhere via `shell.openPlus(_:)` — root, Trips,
@@ -8,11 +9,20 @@ import SwiftUI
 /// buttons + purchase flow reuse `PlanButton` and the `PurchaseStore`.
 struct ProUpsellSheet: View {
     var onClose: () -> Void = {}
+    /// What asked for the sheet; reported on `auth_prompted` when a signed-out
+    /// plan tap opens sign-in.
+    var trigger: AnalyticsValue.Trigger? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PurchaseStore.self) private var purchases
     @Environment(SessionStore.self) private var session
+    @Environment(\.requestAuth) private var requestAuth
     @State private var isChecking = false
+    /// The tap that was waiting for sign-in. Consumed the moment the session
+    /// appears; overwritten by the next tap; cleared when the sheet closes.
+    @State private var pending: PendingAction?
+
+    private enum PendingAction { case buy(Package), restore }
 
     // Owner copy, 2026-09-21: looking is free, Farmsy doing the work is Plus — the
     // sheet sells finding, planning and freshness, not filters (those are free).
@@ -40,6 +50,27 @@ struct ProUpsellSheet: View {
     }
 
     private func close() { onClose(); dismiss() }
+
+    /// Sign-in first, then the store. Signed in already: straight to the store.
+    private func buy(_ package: Package?) {
+        guard let uid = session.session?.user.id else {
+            if let package { pending = .buy(package) }
+            Observability.capture(.authPrompted, [AnalyticsProp.trigger: (trigger ?? .homeRow).rawValue])
+            requestAuth()
+            return
+        }
+        Task { if await purchases.purchase(package, userId: uid) { Haptics.success(); await awaitGrant() } }
+    }
+
+    private func restore() {
+        guard session.session != nil else {
+            pending = .restore
+            Observability.capture(.authPrompted, [AnalyticsProp.trigger: AnalyticsValue.Trigger.restore.rawValue])
+            requestAuth()
+            return
+        }
+        Task { if await purchases.restore() { await awaitGrant() } }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -94,6 +125,14 @@ struct ProUpsellSheet: View {
         }
         .background(Color.cream.ignoresSafeArea())
         .task { await purchases.loadOffering() }
+        .onChange(of: session.isAuthenticated) { _, authed in
+            guard authed, let action = pending else { return }
+            pending = nil
+            switch action {
+            case .buy(let package): buy(package)
+            case .restore: restore()
+            }
+        }
     }
 
     @ViewBuilder
@@ -115,7 +154,6 @@ struct ProUpsellSheet: View {
         } else if purchases.yearlyPrice == nil {
             ProgressView().tint(Color.farmGreen)
         } else {
-            let uid = session.session?.user.id
             // Trial only offered to someone who's never had one — StoreKit reports
             // ineligible as trialDays == nil, so the free-days copy simply doesn't show
             // (Aviah: never advertise a trial someone won't get). Copy = web gate keys.
@@ -133,21 +171,13 @@ struct ProUpsellSheet: View {
                     },
                     filled: true
                 ) {
-                    Task {
-                        if await purchases.purchase(purchases.yearlyPackage, userId: uid) {
-                            Haptics.success(); await awaitGrant()
-                        }
-                    }
+                    buy(purchases.yearlyPackage)
                 }
                 if let price = purchases.lifetimePrice {
                     PlanButton(label: String(localized: "Buy lifetime access"),
                                detail: "\(price) · " + String(localized: "One-time · no renewals"),
                                filled: false) {
-                        Task {
-                            if await purchases.purchase(purchases.lifetimePackage, userId: uid) {
-                                Haptics.success(); await awaitGrant()
-                            }
-                        }
+                        buy(purchases.lifetimePackage)
                     }
                 }
             }
@@ -157,8 +187,7 @@ struct ProUpsellSheet: View {
                     .multilineTextAlignment(.center).padding(.top, 4)
             }
             Button("Restore purchases") {
-                Haptics.tap()
-                Task { if await purchases.restore() { await awaitGrant() } }
+                Haptics.tap(); restore()
             }
             .font(.ui(14, .medium)).foregroundStyle(Color.inkMuted).padding(.top, 8)
         }
