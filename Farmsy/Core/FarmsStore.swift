@@ -497,7 +497,7 @@ final class FarmsStore {
             }
             // Rank once an intent is present — filtering says which qualify, ranking
             // says which to go to. Distance dominates when there's an origin.
-            return Self.rankForIntent(result, origin: aiCenter, ranking: aiIntent?.ranking)
+            return Self.rankForIntent(result, origin: aiCenter, ranking: ai.ranking)
         }
 
         var result = pins
@@ -547,7 +547,9 @@ final class FarmsStore {
     /// (dominant when there's an origin), then open today, verified, has a photo,
     /// rating, review count. One function so it can be swapped for a server-side
     /// order if the endpoint ever returns one (asked Aviah; matches her signal
-    /// list until then). Higher score first; ties keep their incoming order.
+    /// list until then). Higher score first; ties keep their incoming order
+    /// (the stdlib sort has been stable since Swift 5, though the docs do not
+    /// promise it — `stableAndComplete` in RankForIntentTests pins it).
     ///
     /// Scores each farm ONCE, then sorts by that number. The comparator used to
     /// call `score` on both sides of every comparison — about 2·n·log₂n scorings,

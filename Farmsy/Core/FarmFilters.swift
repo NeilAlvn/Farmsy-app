@@ -109,16 +109,18 @@ enum FarmFilters {
 
     private static let amsterdam = TimeZone(identifier: "Europe/Amsterdam") ?? .current
 
-    private static func amsterdamCalendar() -> Calendar {
+    /// Built once. `Calendar(identifier:)` on every `isOpenToday` call was the
+    /// largest per-farm cost left after the regexes were cached.
+    private static let amsterdamCalendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = amsterdam
         return cal
-    }
+    }()
 
     /// The Amsterdam weekday, Mon-based (0 = Monday … 6 = Sunday). Mirrors web
     /// `todayInAmsterdam`.
     private static func todayInAmsterdam(_ date: Date = Date()) -> Int {
-        let js = amsterdamCalendar().component(.weekday, from: date) - 1  // 0=Sun … 6=Sat
+        let js = amsterdamCalendar.component(.weekday, from: date) - 1  // 0=Sun … 6=Sat
         return dayMon[js] ?? 0
     }
 
@@ -163,7 +165,7 @@ enum FarmFilters {
         else { return false }
         if raw == "24/7" { return true }
 
-        let comps = amsterdamCalendar().dateComponents([.hour, .minute], from: date)
+        let comps = amsterdamCalendar.dateComponents([.hour, .minute], from: date)
         let minutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
         let dayMon = todayInAmsterdam(date)
 

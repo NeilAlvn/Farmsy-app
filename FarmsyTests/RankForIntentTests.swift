@@ -30,7 +30,8 @@ struct RankForIntentTests {
     @Test("distance dominates when there is an origin")
     func distanceDominates() {
         let origin = CLLocationCoordinate2D(latitude: 52.0, longitude: 5.0)
-        // ~111 km north: distance score 0. Its signals total 15+10+9+7.5 = 41.5.
+        // ~111 km north: distance score 0. Its signals total 15+10+9+5 = 39
+        // (30 reviews are capped at reviewCap = 20, × reviewEach 0.25 = 5).
         let far = Self.pin("far", lat: 53.0, lng: 5.0, image: "x.jpg", rating: 4.5, reviews: 30, verified: true)
         // ~140 m away: distance score ≈ 99.9, no signals.
         let near = Self.pin("near", lat: 52.001, lng: 5.001)
@@ -63,5 +64,14 @@ struct RankForIntentTests {
         let shut = Self.pin("shut", image: "x.jpg")
         // Defaults apply (openToday 20 > hasPhoto 10), not the version-99 weights.
         #expect(FarmsStore.rankForIntent([shut, open], origin: nil, ranking: w).map(\.id) == ["open", "shut"])
+    }
+
+    @Test("reviews are capped at reviewCap: 1,000 reviews score the same as 20")
+    func reviewCapPins() {
+        let twenty = Self.pin("twenty", reviews: 20)
+        let thousand = Self.pin("thousand", reviews: 1000)
+        // Equal scores (both 20 × 0.25 = 5), so the incoming order is kept.
+        #expect(FarmsStore.rankForIntent([twenty, thousand], origin: nil, ranking: nil).map(\.id) == ["twenty", "thousand"])
+        #expect(FarmsStore.rankForIntent([thousand, twenty], origin: nil, ranking: nil).map(\.id) == ["thousand", "twenty"])
     }
 }
