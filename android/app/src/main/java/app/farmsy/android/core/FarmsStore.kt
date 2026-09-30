@@ -482,7 +482,9 @@ class FarmsStore(private val scope: CoroutineScope) {
             s += min(p.reviewCount.toDouble(), w.reviewCap) * w.reviewEach
             return s
         }
-        return list.sortedByDescending { score(it) }
+        // Score once per farm. sortedByDescending { score(it) } calls the selector
+        // on both sides of every comparison (see iOS rankForIntent, Sentry 1.3 (37)).
+        return list.map { it to score(it) }.sortedByDescending { it.second }.map { it.first }
     }
 
     fun sortedByDistance(list: List<FarmPin>, location: Location?): List<FarmPin> {
