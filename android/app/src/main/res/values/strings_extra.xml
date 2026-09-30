@@ -6,6 +6,12 @@
     <string name="ob_looking">looking</string>
     <string name="ob_for_q">for?</string>
     <string name="ob_what_are_you">What are you</string>
+    <string name="ob_basket">Your basket</string>
+    <string name="ob_what_do_you">What do you</string>
+    <string name="ob_usually">usually</string>
+    <!-- Trailing title part; nl/de fold the "?" into ob_usually because DisplayTitle joins parts with a space. -->
+    <string name="ob_buy_q">buy?</string>
+    <string name="ob_basket_sub">Pick a few. Farmsy will show which farms nearby have them.</string>
     <string name="ob_lets_find_your">Let\'s find your</string>
     <string name="ob_local">local</string>
     <string name="ob_farms">Farms</string>

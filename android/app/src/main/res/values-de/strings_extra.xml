@@ -3,6 +3,11 @@
     <string name="ob_looking">suchst</string>
     <string name="ob_for_q">du?</string>
     <string name="ob_what_are_you">Was</string>
+    <string name="ob_basket">Dein Korb</string>
+    <string name="ob_what_do_you">Was kaufst du</string>
+    <string name="ob_usually">meistens?</string>
+    <string name="ob_buy_q"></string>
+    <string name="ob_basket_sub">Wähle ein paar. Farmsy zeigt dir, welche Höfe in der Nähe sie haben.</string>
     <string name="ob_lets_find_your">Finde deine</string>
     <string name="ob_local">lokalen</string>
     <string name="ob_farms">Höfe</string>

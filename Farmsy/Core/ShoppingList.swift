@@ -355,3 +355,24 @@ extension ShoppingPlanner.Plan {
     /// Items at least one stop answers. The number a free user sees.
     var coveredCount: Int { Set(picks.flatMap(\.covers)).count }
 }
+
+/// The onboarding basket: which picks to add, and what to show when the
+/// catalogue has not arrived. Pure, so it is testable without a store.
+enum BasketSeed {
+    /// Picks not already on the list, de-duplicated, in pick order.
+    static func toAdd(picked: [String], current: [String]) -> [String] {
+        var seen = Set(current)
+        return picked.filter { seen.insert($0).inserted }
+    }
+
+    /// Twelve ids that exist on GET /api/shopping/items today, with the labels
+    /// the picker would show. Used only while the catalogue is still loading or
+    /// failed; when it arrives, its own items replace these.
+    static let fallback: [ShoppingItem] = [
+        ("eggs", "Eieren", "Eggs"), ("cheese", "Kaas", "Cheese"), ("milk", "Melk", "Milk"),
+        ("potatoes", "Aardappelen", "Potatoes"), ("vegetables", "Groenten", "Vegetables"),
+        ("fruits", "Fruit", "Fruit"), ("meat", "Vlees", "Meat"), ("honey", "Honing", "Honey"),
+        ("bread", "Brood", "Bread"), ("strawberry", "Aardbeien", "Strawberries"),
+        ("apples", "Appels", "Apples"), ("butter", "Boter", "Butter"),
+    ].map { ShoppingItem(id: $0.0, nl: $0.1, en: $0.2, terms: [], category: nil, image: nil) }
+}
