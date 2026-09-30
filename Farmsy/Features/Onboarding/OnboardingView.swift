@@ -164,7 +164,7 @@ struct OnboardingView: View {
         if let next = Step(rawValue: step.rawValue + 1) { step = next }
     }
 
-    /// The two skip paths, welcome and details: recorded as a skip, then advanced
+    /// The three skip paths, welcome, basket and details: recorded as a skip, then advanced
     /// like any other step.
     private func skip() {
         Observability.capture(.onboardingSkipped, [AnalyticsProp.step: step.analyticsName])

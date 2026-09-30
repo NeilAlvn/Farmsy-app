@@ -158,7 +158,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         Observability.capture(AnalyticsEvent.ONBOARDING_STEP_COMPLETED, mapOf(AnalyticsProp.STEP to step.name.lowercase()))
         if (index < steps.lastIndex) step = steps[index + 1]
     }
-    /// The two skip paths, welcome and details: recorded as a skip, then advanced
+    /// The three skip paths, welcome, basket and details: recorded as a skip, then advanced
     /// like any other step.
     fun skip() {
         Observability.capture(AnalyticsEvent.ONBOARDING_SKIPPED, mapOf(AnalyticsProp.STEP to step.name.lowercase()))

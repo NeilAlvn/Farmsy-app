@@ -5,8 +5,8 @@
     <string name="ob_what_are_you">Wat</string>
     <string name="ob_basket">Je mandje</string>
     <string name="ob_what_do_you">Wat koop je</string>
-    <string name="ob_usually">meestal</string>
-    <string name="ob_buy_q">?</string>
+    <string name="ob_usually">meestal?</string>
+    <string name="ob_buy_q"></string>
     <string name="ob_basket_sub">Kies er een paar. Farmsy laat zien welke boerderijen in de buurt ze hebben.</string>
     <string name="ob_lets_find_your">Vind jouw</string>
     <string name="ob_local">lokale</string>
