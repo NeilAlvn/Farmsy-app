@@ -125,10 +125,15 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
     // returns (RevenueCat's webhook writes subscription_status). On success, close.
     suspend fun awaitGrant() {
         isChecking = true
-        repeat(12) {
+        // A `for` loop, not `repeat`: `return@repeat` returns from the lambda
+        // for that one iteration and the loop carries on, so once the grant
+        // landed this skipped the delay and ran the remaining iterations
+        // back-to-back — up to 12 calls to /profile/status with no pause.
+        // `break` leaves the loop, which is what iOS already does.
+        for (attempt in 0 until 12) {
             session.refreshProfile()
-            if (session.hasFullAccess) return@repeat
-            kotlinx.coroutines.delay(1500)
+            if (session.hasFullAccess) break
+            if (attempt < 11) kotlinx.coroutines.delay(1500)
         }
         isChecking = false
         if (session.hasFullAccess) onDismiss()
