@@ -77,7 +77,7 @@ fun AuthSheet(onDone: () -> Unit) {
     // Default to log in — most people reaching this already have an account, and
     // it's the screen they expect when they tap "Sign in". New users switch. (1:1
     // with iOS, which defaults to .logIn.)
-    var isSignUp by remember { mutableStateOf(false) }
+    var isSignUp by remember { mutableStateOf(AuthSheetMode.take()) }
     // Signup is two steps, like the web: credentials, then personal details +
     // address. All of it is required by POST /api/auth/signup.
     var step by remember { mutableStateOf(1) }
@@ -431,4 +431,15 @@ private fun VerifyEmailNotice(email: String, onDone: () -> Unit) {
         Spacer(Modifier.height(24.dp))
         PrimaryButton(stringResource(R.string.log_in), onClick = onDone)
     }
+}
+
+/// One-shot override for the next AuthSheet, set right before `requestAuth()`.
+/// The Plus sheet sets it: someone tapping "start my free week" while signed out
+/// is almost always new, and "Welcome back" sent them looking for the
+/// create-account link. Twin of iOS `AuthView.nextMode`.
+/// ponytail: a global one-shot instead of threading a mode through
+/// `LocalRequestAuth`; do that if a second caller ever needs a mode.
+object AuthSheetMode {
+    var nextSignUp = false
+    fun take(): Boolean = nextSignUp.also { nextSignUp = false }
 }

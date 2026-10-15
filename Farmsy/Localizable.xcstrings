@@ -17615,6 +17615,534 @@
           }
         }
       }
+    },
+    "%@ / month": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / Monat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / mois"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ / maand"
+          }
+        }
+      }
+    },
+    "%@ per year. Renews automatically unless you cancel at least 24 hours before the period ends, in your App Store settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pro Jahr. Verlängert sich automatisch, wenn du nicht mindestens 24 Stunden vor Ende des Zeitraums in den App-Store-Einstellungen kündigst."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ par an. Renouvellement automatique sauf résiliation au moins 24 heures avant la fin de la période, dans les réglages de l'App Store."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ per jaar. Verlengt automatisch tenzij je minstens 24 uur voor het einde van de periode opzegt in je App Store-instellingen."
+          }
+        }
+      }
+    },
+    "%lld days free, then %@ per year. Renews automatically unless you cancel at least 24 hours before the trial ends, in your App Store settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tage gratis, danach %@ pro Jahr. Verlängert sich automatisch, wenn du nicht mindestens 24 Stunden vor Ende des Testzeitraums in den App-Store-Einstellungen kündigst."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld jours gratuits, puis %@ par an. Renouvellement automatique sauf résiliation au moins 24 heures avant la fin de l'essai, dans les réglages de l'App Store."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld dagen gratis, daarna %@ per jaar. Verlengt automatisch tenzij je minstens 24 uur voor het einde van de proefperiode opzegt in je App Store-instellingen."
+          }
+        }
+      }
+    },
+    "A heads-up when it's fresh in": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bescheid, wenn es frisch da ist"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une alerte dès que c'est frais"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seintje als het vers binnen is"
+          }
+        }
+      }
+    },
+    "After that, Farmsy Plus is %@ a year. Cancel anytime in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danach kostet Farmsy Plus %@ pro Jahr. Jederzeit in den Einstellungen kündbar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ensuite, Farmsy Plus coûte %@ par an. Résiliable à tout moment dans Réglages."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daarna kost Farmsy Plus %@ per jaar. Opzeggen kan altijd in Instellingen."
+          }
+        }
+      }
+    },
+    "Continue with free": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenlos weiter"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer en gratuit"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan met gratis"
+          }
+        }
+      }
+    },
+    "Every farm on the map": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Höfe auf der Karte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les fermes sur la carte"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle boerderijen op de kaart"
+          }
+        }
+      }
+    },
+    "Fresh from the farm, without the search.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frisch vom Hof, ohne Suchen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frais de la ferme, sans chercher."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vers van de boer, zonder zoeken."
+          }
+        }
+      }
+    },
+    "Included": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enthalten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inclus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inbegrepen"
+          }
+        }
+      }
+    },
+    "Just the map": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur die Karte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juste la carte"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alleen de kaart"
+          }
+        }
+      }
+    },
+    "Know which farm is open today and what's in, then drive past them in one route.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wisse, welcher Hof heute offen hat und was es gibt, und fahr sie in einer Route ab."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sachez quelle ferme est ouverte aujourd'hui et ce qu'elle propose, puis passez-y en un seul trajet."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weet welke boerderij vandaag open is en wat er ligt, en rij er in één route langs."
+          }
+        }
+      }
+    },
+    "Not included": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht enthalten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non inclus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niet inbegrepen"
+          }
+        }
+      }
+    },
+    "Nothing to pay today · cancel anytime": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute nichts zahlen · jederzeit kündbar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien à payer aujourd'hui · résiliable à tout moment"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vandaag niks betalen · altijd opzegbaar"
+          }
+        }
+      }
+    },
+    "One payment. Never renews, nothing to cancel.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Zahlung. Verlängert sich nie, nichts zu kündigen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un seul paiement. Jamais renouvelé, rien à résilier."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eén betaling. Verlengt nooit, niets op te zeggen."
+          }
+        }
+      }
+    },
+    "Open today, confirmed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute geöffnet, bestätigt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert aujourd'hui, confirmé"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vandaag open, bevestigd"
+          }
+        }
+      }
+    },
+    "Pay once": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einmal zahlen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paiement unique"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eén keer betalen"
+          }
+        }
+      }
+    },
+    "Plus": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus"
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutz"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidentialité"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        }
+      }
+    },
+    "Start my free week": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Gratiswoche starten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commencer ma semaine gratuite"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start mijn gratis week"
+          }
+        }
+      }
+    },
+    "Terms": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AGB"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conditions"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voorwaarden"
+          }
+        }
+      }
+    },
+    "The best route past your stops": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die beste Route zu deinen Stopps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le meilleur trajet entre vos arrêts"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slimste route langs je stops"
+          }
+        }
+      }
+    },
+    "Who has your shopping list": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wer deine Einkaufsliste hat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qui a votre liste de courses"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie heeft jouw boodschappen"
+          }
+        }
+      }
+    },
+    "You keep the map with every farm. Start Plus whenever you like.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du behältst die Karte mit allen Höfen. Plus kannst du jederzeit starten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous gardez la carte avec toutes les fermes. Passez à Plus quand vous voulez."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je houdt de kaart met alle boerderijen. Plus kun je altijd later starten."
+          }
+        }
+      }
+    },
+    "Your free trial ends in 2 days": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Gratis-Test endet in 2 Tagen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre essai gratuit se termine dans 2 jours"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je proefperiode eindigt over 2 dagen"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

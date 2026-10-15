@@ -11,7 +11,7 @@ struct AuthView: View {
 
     // Default to log in — most people reaching this already have an account, and
     // it's the screen they expect when they tap "Sign in". New users switch.
-    @State private var mode: Mode = .logIn
+    @State private var mode: Mode = AuthView.takeNextMode()
     /// Signup is two steps, like the web: credentials, then personal details +
     /// address. Every one of those fields is required by POST /api/auth/signup.
     @State private var step = 1
@@ -33,6 +33,19 @@ struct AuthView: View {
     @State private var verifySentTo: String?
 
     enum Mode { case signUp, logIn }
+
+    /// One-shot override for the next AuthView, set right before `requestAuth()`.
+    /// The Plus sheet sets `.signUp`: someone tapping "start my free week" while
+    /// signed out is almost always new, and "Welcome back" sent them looking for
+    /// the create-account link.
+    /// ponytail: static one-shot instead of threading a mode through
+    /// `requestAuth` and the four AuthView presenters in AppShell; do that if a
+    /// second caller ever needs a mode.
+    static var nextMode: Mode?
+    private static func takeNextMode() -> Mode {
+        defer { nextMode = nil }
+        return nextMode ?? .logIn
+    }
 
     /// The API rejects under-16s, so the picker simply cannot offer a younger date.
     private var latestAllowedDOB: Date {

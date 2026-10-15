@@ -24,15 +24,19 @@ struct ProUpsellSheet: View {
 
     private enum PendingAction { case buy(Package), restore }
 
-    // Owner copy, 2026-09-21: looking is free, Farmsy doing the work is Plus — the
-    // sheet sells finding, planning and freshness, not filters (those are free).
-    // String(localized:) rather than bare literals: Text(String) does not look
-    // the catalog up, so these four lines were English in every language.
-    private let features: [String] = [
-        String(localized: "The farms that cover your shopping list"),
-        String(localized: "A route past all of them, in the best order"),
-        String(localized: "Alerts when your products arrive nearby"),
-        String(localized: "Confirmed open today, by people who were just there"),
+    /// Which card is picked. Yearly by default — it carries the trial.
+    enum Choice: String { case free, yearly, lifetime }
+    @State private var choice: Choice = .yearly
+
+    /// Free against Plus, row by row. Looking is free; Farmsy doing the work is
+    /// Plus (owner, 2026-09-21). The table is the value story — it sits above
+    /// the prices, Cropsy's v3 order (owner, 2026-10-15).
+    private let rows: [(String, Bool)] = [
+        (String(localized: "Every farm on the map"), true),
+        (String(localized: "Open today, confirmed"), false),
+        (String(localized: "Who has your shopping list"), false),
+        (String(localized: "The best route past your stops"), false),
+        (String(localized: "A heads-up when it's fresh in"), false),
     ]
 
     /// Poll the profile after a purchase — the grant lands a few seconds after the
@@ -89,6 +93,7 @@ struct ProUpsellSheet: View {
     private func buy(_ package: Package?) {
         guard let uid = session.session?.user.id else {
             if let package { pending = .buy(package) }
+            AuthView.nextMode = .signUp
             Observability.capture(.authPrompted, [AnalyticsProp.trigger: (trigger ?? .homeRow).rawValue])
             requestAuth()
             return
@@ -107,53 +112,15 @@ struct ProUpsellSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Button { Haptics.tap(); close() } label: {
-                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0x6B7280))
-                        .frame(width: 32, height: 32).background(Color(hex: 0xF3F4F6), in: Circle())
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                header
+                VStack(spacing: Space.s4) {
+                    comparison
+                    purchaseArea
                 }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 16).padding(.top, 16)
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    // Header: "Farmsy" kicker + the one Plus title, everywhere it's sold.
-                    Kicker(text: String(localized: "Farmsy"))
-                        .padding(.top, 4)
-                    Text("Farmsy Plus")
-                        .font(.ui(28, .semibold)).foregroundStyle(Color.ink)
-                        .multilineTextAlignment(.center)
-                    // Subheading — the one Plus story, everywhere it's sold.
-                    Text("Farmsy finds it, plans it, and tells you when it's fresh.")
-                        .font(.ui(14)).foregroundStyle(Color.inkMuted)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-
-                    // Plan cards first, then the feature list — Aviah's order.
-                    purchaseArea.padding(.horizontal, 20)
-
-                    // "Included in both plans" — unboxed ticks (a list inside a card
-                    // inside a sheet is a third frame around something framed twice).
-                    VStack(alignment: .leading, spacing: 12) {
-                        Divider().background(Color.hairline)
-                        Text("Included in both plans")
-                            .font(.ui(13, .semibold)).foregroundStyle(Color.inkMuted)
-                        ForEach(features, id: \.self) { line in
-                            HStack(alignment: .top, spacing: 10) {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 13, weight: .bold)).foregroundStyle(Color.farmGreen)
-                                    .padding(.top, 2)
-                                Text(line).font(.ui(14)).foregroundStyle(Color.ink)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
+                .padding(.horizontal, Space.s4)
+                .padding(.top, Space.s4)
                 .padding(.bottom, 28)
             }
         }
@@ -170,6 +137,74 @@ struct ProUpsellSheet: View {
         }
     }
 
+    /// Green band, Nime's shape: brand + PLUS, then what Plus does for you —
+    /// the value, not the product name.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack {
+                HStack(spacing: 6) {
+                    Text("farmsy").font(.ui(20, .semibold)).foregroundStyle(.white)
+                    Badge(text: "PLUS", fill: .vivid, ink: .ink)
+                }
+                Spacer()
+                Button { Haptics.tap(); close() } label: {
+                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32).background(Color.white.opacity(0.15), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Close"))
+            }
+            Text("Fresh from the farm, without the search.")
+                .font(.ui(28, .semibold)).foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, Space.s2)
+            Text("Know which farm is open today and what's in, then drive past them in one route.")
+                .font(.ui(15)).foregroundStyle(Color.white.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, Space.s5)
+        .padding(.top, Space.s5)
+        .padding(.bottom, Space.s6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.farmGreen)
+    }
+
+    /// Free vs Plus. The Plus column is one green strip so the eye reads it as
+    /// "everything", the free column shows what's locked.
+    private var comparison: some View {
+        let plusWidth: CGFloat = 64, freeWidth: CGFloat = 56
+        return VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Spacer()
+                Text("Free").font(.ui(13, .medium)).foregroundStyle(Color.inkMuted)
+                    .frame(width: freeWidth)
+                Text("Plus").font(.ui(13, .semibold)).foregroundStyle(.white)
+                    .frame(width: plusWidth).padding(.vertical, 10).background(Color.farmGreenMap)
+            }
+            ForEach(rows, id: \.0) { row in
+                HStack(spacing: 0) {
+                    Text(row.0).font(.ui(14)).foregroundStyle(Color.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, Space.s4).padding(.vertical, 11)
+                    Image(systemName: row.1 ? "checkmark" : "lock")
+                        .font(.system(size: 13, weight: row.1 ? .semibold : .regular))
+                        .foregroundStyle(row.1 ? Color.inkMuted : Color.inkFaint)
+                        .frame(width: freeWidth)
+                        .accessibilityLabel(Text(row.1 ? "Included" : "Not included"))
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 17)).foregroundStyle(.white)
+                        .frame(width: plusWidth).frame(maxHeight: .infinity)
+                        .background(Color.farmGreenMap)
+                        .accessibilityLabel(Text("Included"))
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .background(Color.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+    }
+
     @ViewBuilder
     private var purchaseArea: some View {
         if let error = purchases.purchaseError {
@@ -177,7 +212,7 @@ struct ProUpsellSheet: View {
                 .multilineTextAlignment(.center)
         }
         if purchases.isPurchasing || isChecking {
-            ProgressView().tint(Color.farmGreen)
+            ProgressView().tint(Color.farmGreen).padding(.vertical, Space.s6)
         } else if purchases.productsUnavailable {
             VStack(spacing: 10) {
                 Text("Memberships can't be loaded right now.")
@@ -186,45 +221,151 @@ struct ProUpsellSheet: View {
                 Button("Try again") { Haptics.tap(); Task { await purchases.loadOffering(force: true) } }
                     .font(.ui(15, .semibold)).foregroundStyle(Color.farmGreenMap)
             }
-        } else if purchases.yearlyPrice == nil {
-            ProgressView().tint(Color.farmGreen)
-        } else {
+        } else if let yearlyPrice = purchases.yearlyPrice {
             // Trial only offered to someone who's never had one — StoreKit reports
-            // ineligible as trialDays == nil, so the free-days copy simply doesn't show
-            // (Aviah: never advertise a trial someone won't get). Copy = web gate keys.
+            // ineligible as trialDays == nil, so every free-days line simply doesn't
+            // show (Aviah: never advertise a trial someone won't get).
             let trialDays = purchases.yearlyFreeTrialDays
-            VStack(spacing: 8) {
-                // Every mention of the trial length reads from the store (P0-4b), as an
-                // interpolated argument — it sits in a different place in the sentence
-                // in each language. No offer means no trial sentence at all.
-                PlanButton(
-                    label: trialDays.map { String(localized: "Try free for \($0) days") }
-                        ?? String(localized: "Get yearly"),
-                    detail: purchases.yearlyPrice.map { price in
-                        trialDays.map { String(localized: "\($0) days free · then \(price)/year") }
-                            ?? String(localized: "\(price) / year")
-                    },
-                    filled: true
-                ) {
-                    buy(purchases.yearlyPackage)
-                }
-                if let price = purchases.lifetimePrice {
-                    PlanButton(label: String(localized: "Buy lifetime access"),
-                               detail: "\(price) · " + String(localized: "One-time · no renewals"),
-                               filled: false) {
-                        buy(purchases.lifetimePackage)
-                    }
-                }
+            if trialDays != nil {
+                // Hidden, not removed, off the yearly card — the cards must not jump.
+                Label("Nothing to pay today · cancel anytime", systemImage: "checkmark.seal.fill")
+                    .font(.ui(14, .semibold)).foregroundStyle(Color.farmGreen)
+                    .frame(maxWidth: .infinity).padding(.vertical, 10)
+                    .background(Color.farmGreenSoft, in: RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
+                    .opacity(choice == .yearly ? 1 : 0)
+                    .accessibilityHidden(choice != .yearly)
             }
-            if let days = trialDays, let price = purchases.yearlyPrice {
-                Text("Free for \(days) days, then \(price) per year. Cancel anytime in Settings.")
-                    .font(.ui(12)).foregroundStyle(Color.inkMuted)
-                    .multilineTextAlignment(.center).padding(.top, 4)
+            planCards(yearlyPrice: yearlyPrice, trialDays: trialDays)
+                .padding(.top, trialDays == nil ? 0 : Space.s2)
+            ctaButton(trialDays: trialDays)
+            Text(legalLine(yearlyPrice: yearlyPrice, trialDays: trialDays))
+                .font(.ui(12)).foregroundStyle(Color.inkMuted)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Space.s4) {
+                Button("Restore purchases") { Haptics.tap(); restore() }
+                Link("Terms", destination: URL(string: "https://farmsy.app/terms")!)
+                Link("Privacy", destination: URL(string: "https://farmsy.app/privacy")!)
             }
-            Button("Restore purchases") {
-                Haptics.tap(); restore()
-            }
-            .font(.ui(14, .medium)).foregroundStyle(Color.inkMuted).padding(.top, 8)
+            .font(.ui(13)).foregroundStyle(Color.inkMuted)
+        } else {
+            ProgressView().tint(Color.farmGreen).padding(.vertical, Space.s6)
         }
+    }
+
+    /// Free · Yearly · Lifetime. There is no weekly or monthly to sell, so the
+    /// left card is the free tier: €0 next to the per-month yearly price makes
+    /// Plus read as small, and picking it is the polite way out.
+    private func planCards(yearlyPrice: String, trialDays: Int?) -> some View {
+        HStack(alignment: .center, spacing: Space.s2) {
+            planCard(.free, title: String(localized: "Free"), price: Self.zeroPrice(like: purchases.yearlyPackage),
+                     detail: String(localized: "Just the map"))
+            planCard(.yearly, title: String(localized: "Yearly"), price: yearlyPrice,
+                     detail: purchases.yearlyPackage?.storeProduct.localizedPricePerMonth
+                        .map { String(localized: "\($0) / month") },
+                     badge: trialDays.map { String(localized: "\($0) days free") })
+            if let lifetime = purchases.lifetimePrice {
+                planCard(.lifetime, title: String(localized: "Lifetime"), price: lifetime,
+                         detail: String(localized: "Pay once"))
+            }
+        }
+    }
+
+    private func planCard(_ c: Choice, title: String, price: String, detail: String?, badge: String? = nil) -> some View {
+        let on = choice == c
+        return Button {
+            Haptics.tap()
+            choice = c
+            Observability.capture(.planSelected, [AnalyticsProp.plan: c.rawValue])
+        } label: {
+            VStack(spacing: 4) {
+                Text(title).font(.ui(14, on ? .semibold : .medium))
+                    .foregroundStyle(on ? Color.farmGreen : Color.ink)
+                Text(price).font(.ui(c == .yearly ? 22 : 19, .semibold)).foregroundStyle(Color.ink)
+                    .minimumScaleFactor(0.6).lineLimit(1)
+                if let detail {
+                    Text(detail).font(.ui(12)).foregroundStyle(on ? Color.farmGreenMap : Color.inkMuted)
+                        .minimumScaleFactor(0.7).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 4)
+            .padding(.top, badge == nil ? 14 : 20)
+            .padding(.bottom, 14)
+            .background(on ? Color.farmGreenSoft : Color.surface,
+                        in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.tile, style: .continuous)
+                    .stroke(on ? Color.farmGreenMap : Color.hairline, lineWidth: on ? 2 : 1)
+            )
+            .overlay(alignment: .top) {
+                if let badge {
+                    Text(badge).font(.ui(11, .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 9).frame(height: 22)
+                        .background(Color.farmGreenMap, in: Capsule())
+                        .fixedSize()
+                        .offset(y: -11)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func ctaButton(trialDays: Int?) -> some View {
+        let label: String
+        switch choice {
+        case .free: label = String(localized: "Continue with free")
+        case .yearly:
+            // The length comes from the store; "week" only when it is one.
+            switch trialDays {
+            case nil: label = String(localized: "Get yearly")
+            case 7?: label = String(localized: "Start my free week")
+            case let days?: label = String(localized: "Try free for \(days) days")
+            }
+        case .lifetime: label = String(localized: "Buy lifetime access")
+        }
+        let filled = choice != .free
+        return Button {
+            Haptics.tap()
+            switch choice {
+            case .free: close()
+            case .yearly: buy(purchases.yearlyPackage)
+            case .lifetime: buy(purchases.lifetimePackage)
+            }
+        } label: {
+            Text(label).font(.ui(17, .semibold))
+                .foregroundStyle(filled ? Color.white : Color.farmGreen)
+                .frame(maxWidth: .infinity).padding(.vertical, 17)
+                .background(filled ? Color.farmGreenMap : Color.surface, in: Capsule())
+                .overlay(Capsule().stroke(Color.farmGreenMap, lineWidth: filled ? 0 : 1.5))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, Space.s2)
+    }
+
+    /// Apple's auto-renew disclosure for the picked plan (guideline 3.1.2).
+    private func legalLine(yearlyPrice: String, trialDays: Int?) -> String {
+        switch choice {
+        case .free:
+            return String(localized: "You keep the map with every farm. Start Plus whenever you like.")
+        case .lifetime:
+            return String(localized: "One payment. Never renews, nothing to cancel.")
+        case .yearly:
+            if let days = trialDays {
+                return String(localized: "\(days) days free, then \(yearlyPrice) per year. Renews automatically unless you cancel at least 24 hours before the trial ends, in your App Store settings.")
+            }
+            return String(localized: "\(yearlyPrice) per year. Renews automatically unless you cancel at least 24 hours before the period ends, in your App Store settings.")
+        }
+    }
+
+    /// "€0" in the store's own currency format, so the free card matches the
+    /// other two ("$0", "0 €").
+    static func zeroPrice(like package: Package?) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.maximumFractionDigits = 0
+        if let locale = package?.storeProduct.priceFormatter?.locale { f.locale = locale }
+        return f.string(from: 0) ?? "0"
     }
 }

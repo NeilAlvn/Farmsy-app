@@ -402,4 +402,34 @@
     <string name="shopping_list_catalogue_failed">De productlijst kon niet worden geladen. Controleer je verbinding en probeer opnieuw.</string>
     <string name="shopping_sample_coverage_arg">We vonden %1$d van je %2$d producten bij %3$d boerderijen binnen %4$d km.</string>
     <string name="see_which_farms">Bekijk welke boerderijen</string>
+
+    <!-- Plus sheet v2 (2026-10-15): value table + Free/Yearly/Lifetime cards -->
+    <string name="pro2_row_map">Alle boerderijen op de kaart</string>
+    <string name="pro2_row_open">Vandaag open, bevestigd</string>
+    <string name="pro2_row_list">Wie heeft jouw boodschappen</string>
+    <string name="pro2_row_route">Slimste route langs je stops</string>
+    <string name="pro2_row_alerts">Seintje als het vers binnen is</string>
+    <string name="pro2_title">Vers van de boer, zonder zoeken.</string>
+    <string name="pro2_sub">Weet welke boerderij vandaag open is en wat er ligt, en rij er in één route langs.</string>
+    <string name="pro2_col_free">Gratis</string>
+    <string name="pro2_col_plus">Plus</string>
+    <string name="pro2_included">Inbegrepen</string>
+    <string name="pro2_not_included">Niet inbegrepen</string>
+    <string name="pro2_nothing_today">Vandaag niks betalen · altijd opzegbaar</string>
+    <string name="pro2_just_map">Alleen de kaart</string>
+    <string name="pro2_yearly">Jaarlijks</string>
+    <string name="pro2_per_month_arg">%1$s / maand</string>
+    <string name="pro2_days_free_arg">%1$d dagen gratis</string>
+    <string name="pro2_lifetime">Levenslang</string>
+    <string name="pro2_pay_once">Eén keer betalen</string>
+    <string name="pro2_continue_free">Doorgaan met gratis</string>
+    <string name="pro2_start_free_week">Start mijn gratis week</string>
+    <string name="pro2_terms">Voorwaarden</string>
+    <string name="pro2_privacy">Privacy</string>
+    <string name="pro2_legal_free">Je houdt de kaart met alle boerderijen. Plus kun je altijd later starten.</string>
+    <string name="pro2_legal_lifetime">Eén betaling. Verlengt nooit, niets op te zeggen.</string>
+    <string name="pro2_legal_trial_arg">%1$d dagen gratis, daarna %2$s per jaar. Verlengt automatisch tenzij je minstens 24 uur voor het einde van de proefperiode opzegt in je Google Play-abonnementen.</string>
+    <string name="pro2_legal_year_arg">%1$s per jaar. Verlengt automatisch tenzij je minstens 24 uur voor het einde van de periode opzegt in je Google Play-abonnementen.</string>
+    <string name="trial_reminder_title">Je proefperiode eindigt over 2 dagen</string>
+    <string name="trial_reminder_body_arg">Daarna kost Farmsy Plus %1$s per jaar. Opzeggen kan altijd in Google Play.</string>
 </resources>

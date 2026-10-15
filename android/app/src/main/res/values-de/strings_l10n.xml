@@ -402,4 +402,34 @@
     <string name="shopping_list_catalogue_failed">Die Produktliste konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="shopping_sample_coverage_arg">Wir haben %1$d deiner %2$d Produkte bei %3$d Höfen im Umkreis von %4$d km gefunden.</string>
     <string name="see_which_farms">Höfe anzeigen</string>
+
+    <!-- Plus sheet v2 (2026-10-15): value table + Free/Yearly/Lifetime cards -->
+    <string name="pro2_row_map">Alle Höfe auf der Karte</string>
+    <string name="pro2_row_open">Heute geöffnet, bestätigt</string>
+    <string name="pro2_row_list">Wer deine Einkaufsliste hat</string>
+    <string name="pro2_row_route">Die beste Route zu deinen Stopps</string>
+    <string name="pro2_row_alerts">Bescheid, wenn es frisch da ist</string>
+    <string name="pro2_title">Frisch vom Hof, ohne Suchen.</string>
+    <string name="pro2_sub">Wisse, welcher Hof heute offen hat und was es gibt, und fahr sie in einer Route ab.</string>
+    <string name="pro2_col_free">Gratis</string>
+    <string name="pro2_col_plus">Plus</string>
+    <string name="pro2_included">Enthalten</string>
+    <string name="pro2_not_included">Nicht enthalten</string>
+    <string name="pro2_nothing_today">Heute nichts zahlen · jederzeit kündbar</string>
+    <string name="pro2_just_map">Nur die Karte</string>
+    <string name="pro2_yearly">Jährlich</string>
+    <string name="pro2_per_month_arg">%1$s / Monat</string>
+    <string name="pro2_days_free_arg">%1$d Tage gratis</string>
+    <string name="pro2_lifetime">Lebenslang</string>
+    <string name="pro2_pay_once">Einmal zahlen</string>
+    <string name="pro2_continue_free">Kostenlos weiter</string>
+    <string name="pro2_start_free_week">Meine Gratiswoche starten</string>
+    <string name="pro2_terms">AGB</string>
+    <string name="pro2_privacy">Datenschutz</string>
+    <string name="pro2_legal_free">Du behältst die Karte mit allen Höfen. Plus kannst du jederzeit starten.</string>
+    <string name="pro2_legal_lifetime">Eine Zahlung. Verlängert sich nie, nichts zu kündigen.</string>
+    <string name="pro2_legal_trial_arg">%1$d Tage gratis, danach %2$s pro Jahr. Verlängert sich automatisch, wenn du nicht mindestens 24 Stunden vor Ende des Testzeitraums in deinen Google-Play-Abos kündigst.</string>
+    <string name="pro2_legal_year_arg">%1$s pro Jahr. Verlängert sich automatisch, wenn du nicht mindestens 24 Stunden vor Ende des Zeitraums in deinen Google-Play-Abos kündigst.</string>
+    <string name="trial_reminder_title">Dein Gratis-Test endet in 2 Tagen</string>
+    <string name="trial_reminder_body_arg">Danach kostet Farmsy Plus %1$s pro Jahr. Jederzeit in Google Play kündbar.</string>
 </resources>

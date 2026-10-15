@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -176,13 +177,16 @@ class PurchaseStore {
         _isPurchasing.value = true
         _purchaseError.value = null
         return try {
-            Purchases.sharedInstance.awaitPurchase(
+            val result = Purchases.sharedInstance.awaitPurchase(
                 PurchaseParams.Builder(activity, pkg).build()
             )
             Observability.capture(
                 AnalyticsEvent.PURCHASE_COMPLETED,
                 mapOf(AnalyticsProp.PLAN to plan, AnalyticsProp.STORE to AnalyticsValue.Store.PLAY_STORE.key),
             )
+            result.customerInfo.entitlements.active.values
+                .firstOrNull { it.periodType == PeriodType.TRIAL }?.expirationDate
+                ?.let { TrialReminder.schedule(activity, it.time, pkg.product.price.formatted) }
             true
         } catch (e: Exception) {
             Observability.capture(AnalyticsEvent.PURCHASE_FAILED, mapOf(AnalyticsProp.REASON to failureReason(e).key))

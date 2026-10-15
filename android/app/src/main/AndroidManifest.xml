@@ -29,6 +29,11 @@
              one off. -->
         <meta-data android:name="io.sentry.auto-init" android:value="false" />
 
+        <!-- Trial-ending reminder, two days before the first charge (TrialReminder). -->
+        <receiver
+            android:name=".core.TrialReminderReceiver"
+            android:exported="false" />
+
         <!-- Push: FCM token rotation and foreground messages. -->
         <service
             android:name=".core.FarmsyMessagingService"

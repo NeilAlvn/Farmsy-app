@@ -27,6 +27,8 @@ enum class AnalyticsEvent(val key: String) {
     PRO_FILTER_TAPPED("pro_filter_tapped"),
     PAYWALL_VIEWED("paywall_viewed"),
     PLAN_TAPPED("plan_tapped"),
+    /** A plan card tapped on the Plus sheet, before any purchase. */
+    PLAN_SELECTED("plan_selected"),
     PURCHASE_COMPLETED("purchase_completed"),
     PURCHASE_FAILED("purchase_failed"),
     RESTORE_TAPPED("restore_tapped"),
@@ -133,6 +135,7 @@ object AnalyticsValue {
     enum class Plan(val key: String) {
         YEARLY("yearly"),
         LIFETIME("lifetime"),
+        FREE("free"),
     }
 
     /// `store` on purchase_completed.

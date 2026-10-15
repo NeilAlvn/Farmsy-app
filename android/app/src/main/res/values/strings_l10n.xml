@@ -426,4 +426,34 @@
     <string name="shopping_list_catalogue_failed">The product list couldn\'t be loaded. Check your connection and try again.</string>
     <string name="shopping_sample_coverage_arg">We found %1$d of %2$d products at %3$d farms within %4$d km.</string>
     <string name="see_which_farms">See which farms</string>
+
+    <!-- Plus sheet v2 (2026-10-15): value table + Free/Yearly/Lifetime cards -->
+    <string name="pro2_row_map">Every farm on the map</string>
+    <string name="pro2_row_open">Open today, confirmed</string>
+    <string name="pro2_row_list">Who has your shopping list</string>
+    <string name="pro2_row_route">The best route past your stops</string>
+    <string name="pro2_row_alerts">A heads-up when it\'s fresh in</string>
+    <string name="pro2_title">Fresh from the farm, without the search.</string>
+    <string name="pro2_sub">Know which farm is open today and what\'s in, then drive past them in one route.</string>
+    <string name="pro2_col_free">Free</string>
+    <string name="pro2_col_plus">Plus</string>
+    <string name="pro2_included">Included</string>
+    <string name="pro2_not_included">Not included</string>
+    <string name="pro2_nothing_today">Nothing to pay today · cancel anytime</string>
+    <string name="pro2_just_map">Just the map</string>
+    <string name="pro2_yearly">Yearly</string>
+    <string name="pro2_per_month_arg">%1$s / month</string>
+    <string name="pro2_days_free_arg">%1$d days free</string>
+    <string name="pro2_lifetime">Lifetime</string>
+    <string name="pro2_pay_once">Pay once</string>
+    <string name="pro2_continue_free">Continue with free</string>
+    <string name="pro2_start_free_week">Start my free week</string>
+    <string name="pro2_terms">Terms</string>
+    <string name="pro2_privacy">Privacy</string>
+    <string name="pro2_legal_free">You keep the map with every farm. Start Plus whenever you like.</string>
+    <string name="pro2_legal_lifetime">One payment. Never renews, nothing to cancel.</string>
+    <string name="pro2_legal_trial_arg">%1$d days free, then %2$s per year. Renews automatically unless you cancel at least 24 hours before the trial ends, in your Google Play subscriptions.</string>
+    <string name="pro2_legal_year_arg">%1$s per year. Renews automatically unless you cancel at least 24 hours before the period ends, in your Google Play subscriptions.</string>
+    <string name="trial_reminder_title">Your free trial ends in 2 days</string>
+    <string name="trial_reminder_body_arg">After that, Farmsy Plus is %1$s a year. Cancel anytime in Google Play.</string>
 </resources>
