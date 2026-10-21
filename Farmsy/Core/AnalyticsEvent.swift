@@ -27,6 +27,9 @@ enum AnalyticsEvent: String, CaseIterable {
     case proFilterTapped = "pro_filter_tapped"
     case paywallViewed = "paywall_viewed"
     case planTapped = "plan_tapped"
+    /// A plan card tapped on the Plus sheet, before any purchase — `plan` is
+    /// free, yearly or lifetime. Says whether people pick the free card to leave.
+    case planSelected = "plan_selected"
     case purchaseCompleted = "purchase_completed"
     case purchaseFailed = "purchase_failed"
     case restoreTapped = "restore_tapped"
@@ -129,10 +132,11 @@ enum AnalyticsValue {
         static let openSunday = "open_sunday"
     }
 
-    /// `plan` on plan_tapped and purchase_completed.
+    /// `plan` on plan_tapped and purchase_completed; plan_selected adds `free`.
     enum Plan: String {
         case yearly = "yearly"
         case lifetime = "lifetime"
+        case free = "free"
     }
 
     /// `store` on purchase_completed.

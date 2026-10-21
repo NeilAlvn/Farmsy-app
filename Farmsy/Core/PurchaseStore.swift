@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import RevenueCat
+import UserNotifications
 
 /// In-app purchases via RevenueCat.
 ///
@@ -148,6 +149,11 @@ final class PurchaseStore {
             Observability.capture(.purchaseCompleted,
                                   [AnalyticsProp.plan: plan,
                                    AnalyticsProp.store: AnalyticsValue.Store.appStore.rawValue])
+            if let end = result.customerInfo.entitlements.active.values
+                .first(where: { $0.periodType == .trial })?.expirationDate {
+                let price = package.storeProduct.localizedPriceString
+                Task { await TrialReminder.schedule(trialEnds: end, price: price) }
+            }
             return true
         } catch {
             purchaseError = error.localizedDescription
@@ -192,5 +198,29 @@ final class PurchaseStore {
             purchaseError = error.localizedDescription
             return false
         }
+    }
+}
+
+/// One local notification two days before a free trial turns into a charge.
+/// No toggle (owner, 2026-10-15): everyone who starts a trial gets it — the
+/// paywall's "nothing to pay today" is only honest if we say when that changes.
+/// Asks for notification permission right after the purchase; a no means no
+/// reminder, nothing else.
+enum TrialReminder {
+    static let id = "trial-ending"
+
+    @MainActor
+    static func schedule(trialEnds: Date, price: String) async {
+        let fire = trialEnds.addingTimeInterval(-2 * 86_400)
+        guard fire > .now else { return }   // sandbox trials last minutes
+        guard await PushRegistrar.shared.requestAuthorization() else { return }
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Your free trial ends in 2 days")
+        content.body = String(localized: "After that, Farmsy Plus is \(price) a year. Cancel anytime in Settings.")
+        content.sound = .default
+        let when = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+        let request = UNNotificationRequest(identifier: id, content: content,
+                                            trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: false))
+        try? await UNUserNotificationCenter.current().add(request)
     }
 }

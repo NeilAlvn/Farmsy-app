@@ -7,6 +7,7 @@ import app.farmsy.android.core.FavoritesStore
 import app.farmsy.android.core.LocationHelper
 import app.farmsy.android.core.PreferencesSync
 import app.farmsy.android.core.PurchaseStore
+import app.farmsy.android.core.TrialReminder
 import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.SearchRadius
 import app.farmsy.android.core.SessionStore
@@ -47,6 +48,7 @@ class FarmsyApp : Application() {
         Observability.start(this)
         Haptics.init(this)
         PurchaseStore.configure(this)
+        TrialReminder.rearm(this)
         session = SessionStore(appScope)
         farms = FarmsStore(appScope)
         preferences = PreferencesSync(this, appScope, session, farms).also { it.start() }

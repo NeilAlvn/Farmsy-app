@@ -402,4 +402,34 @@
     <string name="shopping_list_catalogue_failed">La liste des produits n’a pas pu être chargée. Vérifiez votre connexion et réessayez.</string>
     <string name="shopping_sample_coverage_arg">Nous avons trouvé %1$d de vos %2$d produits dans %3$d fermes à moins de %4$d km.</string>
     <string name="see_which_farms">Voir quelles fermes</string>
+
+    <!-- Plus sheet v2 (2026-10-15): value table + Free/Yearly/Lifetime cards -->
+    <string name="pro2_row_map">Toutes les fermes sur la carte</string>
+    <string name="pro2_row_open">Ouvert aujourd\'hui, confirmé</string>
+    <string name="pro2_row_list">Qui a votre liste de courses</string>
+    <string name="pro2_row_route">Le meilleur trajet entre vos arrêts</string>
+    <string name="pro2_row_alerts">Une alerte dès que c\'est frais</string>
+    <string name="pro2_title">Frais de la ferme, sans chercher.</string>
+    <string name="pro2_sub">Sachez quelle ferme est ouverte aujourd\'hui et ce qu\'elle propose, puis passez-y en un seul trajet.</string>
+    <string name="pro2_col_free">Gratuit</string>
+    <string name="pro2_col_plus">Plus</string>
+    <string name="pro2_included">Inclus</string>
+    <string name="pro2_not_included">Non inclus</string>
+    <string name="pro2_nothing_today">Rien à payer aujourd\'hui · résiliable à tout moment</string>
+    <string name="pro2_just_map">Juste la carte</string>
+    <string name="pro2_yearly">Annuel</string>
+    <string name="pro2_per_month_arg">%1$s / mois</string>
+    <string name="pro2_days_free_arg">%1$d jours gratuits</string>
+    <string name="pro2_lifetime">À vie</string>
+    <string name="pro2_pay_once">Paiement unique</string>
+    <string name="pro2_continue_free">Continuer en gratuit</string>
+    <string name="pro2_start_free_week">Commencer ma semaine gratuite</string>
+    <string name="pro2_terms">Conditions</string>
+    <string name="pro2_privacy">Confidentialité</string>
+    <string name="pro2_legal_free">Vous gardez la carte avec toutes les fermes. Passez à Plus quand vous voulez.</string>
+    <string name="pro2_legal_lifetime">Un seul paiement. Jamais renouvelé, rien à résilier.</string>
+    <string name="pro2_legal_trial_arg">%1$d jours gratuits, puis %2$s par an. Renouvellement automatique sauf résiliation au moins 24 heures avant la fin de l\'essai, dans vos abonnements Google Play.</string>
+    <string name="pro2_legal_year_arg">%1$s par an. Renouvellement automatique sauf résiliation au moins 24 heures avant la fin de la période, dans vos abonnements Google Play.</string>
+    <string name="trial_reminder_title">Votre essai gratuit se termine dans 2 jours</string>
+    <string name="trial_reminder_body_arg">Ensuite, Farmsy Plus coûte %1$s par an. Résiliable à tout moment dans Google Play.</string>
 </resources>
