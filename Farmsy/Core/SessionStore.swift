@@ -102,7 +102,32 @@ final class SessionStore {
         return prefix.isEmpty ? "Someone" : prefix
     }
 
+    /// How long the splash waits for the session restore before the app carries
+    /// on as a guest. Same figure as Android.
+    private static let bootstrapCap: Duration = .milliseconds(2500)
+
+    /// Ends the splash and fires app_opened — once, whichever of the restore
+    /// and the cap gets here first.
+    private func finishBootstrap() {
+        guard !isBootstrapped else { return }
+        isBootstrapped = true
+        Observability.capture(.appOpened)
+    }
+
+    /// Never let a slow or missing network hold the splash hostage. Restoring
+    /// a signed-in session is a token refresh plus /profile/status, neither
+    /// with a deadline of its own, and RootView shows the splash until
+    /// `isBootstrapped`. The restore keeps running after the cap: the session
+    /// and profile land when they land, and the views follow.
+    func releaseSplash(after cap: Duration) {
+        Task { [weak self] in
+            try? await Task.sleep(for: cap)
+            self?.finishBootstrap()
+        }
+    }
+
     func bootstrap() async {
+        releaseSplash(after: Self.bootstrapCap)
         session = try? await supabase.auth.session
         if let restored = session {
             // Identify before the first event so app_opened lands on the person
@@ -110,10 +135,10 @@ final class SessionStore {
             Observability.identify(userId: restored.user.id.uuidString)
             await refreshProfile()
         }
-        isBootstrapped = true
         // Cold start, after the session and profile restored — any earlier and
-        // is_member is wrong on the very first event of every session.
-        Observability.capture(.appOpened)
+        // is_member is wrong on the very first event of every session. Past
+        // the cap that event has already gone out, as on Android.
+        finishBootstrap()
 
         Task { [weak self] in
             for await state in supabase.auth.authStateChanges {
