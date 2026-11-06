@@ -70,7 +70,6 @@ struct AppShell: View {
     /// are asked to sign in at the plan tap (Task 3, conversion fixes).
     @State private var plusTrigger: AnalyticsValue.Trigger?
     @State private var productSlug: ProductRoute?
-    @State private var showSurvey = false
     @State private var tripDetent: PresentationDetent = .fraction(0.92)
     /// The card opens at half and can be dragged to peek or full.
     @State private var farmDetent: PresentationDetent = .fraction(0.55)
@@ -115,7 +114,6 @@ struct AppShell: View {
             push.pendingOsmId = nil
             openFarm(pin, source: .whatsNew)
         }
-        .modifier(SurveyEntry(isPresented: $showSurvey, buttonVisible: tab == .map))
         // One event per tab selection, and one for the tab the shell opens on.
         .onChange(of: tab, initial: true) { _, t in
             Observability.capture(.tabViewed, [AnalyticsProp.tab: t.rawValue])
@@ -314,153 +312,5 @@ struct AppShell: View {
             Observability.capture(.authPrompted, [AnalyticsProp.trigger: trigger.rawValue])
             showAuth = true
         }
-    }
-}
-
-/// The survey's floating entry button + arrow + sheet, as one modifier so AppShell's
-/// body stays small. The button is shown for EVERY role — signed-out, signed-in and
-/// admin alike (Neil: "the survey appears whatever the role"). It changes what it
-/// opens: the seven questions while unanswered, the feedback box once answered. A down
-/// arrow bounces above it while unanswered. It also auto-opens once on cold launch
-/// after the map settles — once ever per signed-in account, once a day for signed-out.
-/// (Admin data integrity is kept server-side: `POST /api/survey/respond` rejects an
-/// admin submit with `is_admin`, so showing the UI to staff pollutes nothing.)
-private struct SurveyEntry: ViewModifier {
-    @Binding var isPresented: Bool
-    /// The floating button only sits over the map; on scrolling tabs it would
-    /// cover content. The cold-launch auto-open does not depend on it.
-    var buttonVisible = true
-    @Environment(SessionStore.self) private var session
-
-    /// The gate result (nil until loaded). Drives only `answered` now: answered → the
-    /// button opens feedback and the arrow is gone; not-answered → questions + arrow.
-    /// Role no longer hides anything on the client.
-    @State private var gate: SurveyGate?
-    @State private var mode: SurveyView.Mode = .questions
-    /// Cold-launch auto-open is attempted exactly once (this modifier appears once at
-    /// app start; resume does not recreate it, so a plain `.task` never re-fires).
-    @State private var didAutoOpen = false
-
-    /// The arrow points only while there is an unanswered survey to point at — role
-    /// no longer matters, only `answered`.
-    private var showArrow: Bool {
-        guard let g = gate else { return false }
-        return !g.answered
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(alignment: .bottomTrailing) {
-                if buttonVisible { surveyButton }
-            }
-            .sheet(isPresented: $isPresented) {
-                SurveyView(mode: mode)
-                    .presentationDetents([.fraction(0.92)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(28)
-                    // Re-check once the sheet closes (they may have just answered), so
-                    // the arrow disappears and the button switches to feedback mode.
-                    .onDisappear { Task { gate = await SurveyAPI.gate(accessToken: session.session?.accessToken) } }
-            }
-            // Refresh the gate on sign-in / sign-out (token change) for the arrow + mode.
-            .task(id: session.session?.accessToken) {
-                gate = await SurveyAPI.gate(accessToken: session.session?.accessToken)
-            }
-            // Cold-launch auto-open — runs once when the app first appears (not on
-            // resume). The 1.4s delay lets the map settle (and the session bootstrap)
-            // before asking, so it reads as a question rather than part of the loading.
-            // Fires for any role; only `answered` and the frequency cap stop it.
-            .task {
-                guard !didAutoOpen else { return }
-                didAutoOpen = true
-                try? await Task.sleep(for: .seconds(1.4))
-                let g = await SurveyAPI.gate(accessToken: session.session?.accessToken)
-                gate = g
-                guard !g.answered else { return }
-                let account = session.isAuthenticated ? session.email : nil
-                guard SurveyAutoOpen.canAutoOpen(account: account) else { return }
-                SurveyAutoOpen.recordAutoOpen(account: account)
-                mode = .questions
-                isPresented = true
-            }
-    }
-
-    private var surveyButton: some View {
-                ZStack(alignment: .bottom) {
-                    if showArrow {
-                        SurveyArrow()
-                            .offset(y: -52)   // sit above the 44pt button
-                            .accessibilityHidden(true)
-                    }
-                    Button {
-                        Haptics.tap()
-                        mode = (gate?.answered == true) ? .feedback : .questions
-                        isPresented = true
-                    } label: {
-                        Image(systemName: "text.bubble.fill")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color.farmGreenMap)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.94), in: Circle())
-                            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.22), radius: 10, y: 3)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.trailing, 14)
-                // Clears the 64pt tab pill and its 12pt gap.
-                .padding(.bottom, TabBarInset.content + 12)
-    }
-}
-
-/// Whether the survey may auto-open, and the record that it did. Signed in it opens
-/// once ever per account; signed out, once per calendar day (a phone cold-launches
-/// often, so an uncapped "every visit" would harass). Persisted in UserDefaults —
-/// per-device is acceptable for signed-out (there is no identity to key on), and the
-/// signed-in per-account key survives across devices only as far as the account's
-/// server-side `answered` state does, which is the real stop.
-enum SurveyAutoOpen {
-    private static let store = UserDefaults.standard
-
-    static func canAutoOpen(account: String?) -> Bool {
-        if let a = account, !a.isEmpty {
-            return !store.bool(forKey: "survey_autoopen_acct_\(a)")
-        }
-        return store.string(forKey: "survey_autoopen_day") != today()
-    }
-
-    static func recordAutoOpen(account: String?) {
-        if let a = account, !a.isEmpty {
-            store.set(true, forKey: "survey_autoopen_acct_\(a)")
-        } else {
-            store.set(today(), forKey: "survey_autoopen_day")
-        }
-    }
-
-    private static func today() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: Date())
-    }
-}
-
-/// A regular dark-green down arrow above the survey button, pointing at it — shown
-/// only while the survey is unanswered. Per Neil's brief (a standard arrow, not a
-/// hand-drawn Path): SF `arrow.down`, `farmGreen` (dark brand green, distinct from the
-/// lighter on-map `farmGreenMap`). Bounces ~9px / ~0.9s eased; hidden from VoiceOver;
-/// holds still under Reduce Motion. Matches the Android `SurveyArrow`.
-private struct SurveyArrow: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var drop = false
-
-    var body: some View {
-        Image(systemName: "arrow.down")
-            .font(.system(size: 22, weight: .semibold))
-            .foregroundStyle(Color.farmGreen)
-            .offset(y: drop ? 9 : 0)   // ~9px fall-and-settle
-            .animation(reduceMotion ? nil
-                       : .easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: drop)
-            .onAppear { if !reduceMotion { drop = true } }
     }
 }

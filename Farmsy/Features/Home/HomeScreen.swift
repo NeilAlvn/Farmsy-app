@@ -183,11 +183,7 @@ struct HomeScreen: View {
         if location == nil {
             locationCard
         } else if !nearbyReady {
-            HStack(spacing: Space.s3) {
-                ForEach(0..<3, id: \.self) { _ in
-                    SkeletonBox(cornerRadius: Radius.tile).frame(width: 172, height: 120)
-                }
-            }
+            NearbySkeleton()
         } else if nearby.isEmpty {
             Text("No farm within \(Int(radiusKm)) km lists what it sells yet. Widen the radius from the header.")
                 .role(.bodySm, .inkMuted)
@@ -414,5 +410,25 @@ struct HomeScreen: View {
                          text: String(localized: "Hear when strawberries turn up within your radius, and see how recently a farm was confirmed open."),
                          onUnlock: { shell.openPlus(.homeCard) })
         }
+    }
+}
+
+/// Placeholder tiles for "Available near you" while the nearby products are
+/// being worked out. Three tiles are wider than the screen, and Home is one
+/// column whose widest child sets its width — so a bare row here laid the whole
+/// page out past both edges until the real tiles arrived, then snapped it back.
+/// The same horizontal scroll the real tiles sit in takes the offered width
+/// and lets the row run off the trailing edge instead.
+struct NearbySkeleton: View {
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.s3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    SkeletonBox(cornerRadius: Radius.tile).frame(width: 172, height: 120)
+                }
+            }
+        }
+        .scrollDisabled(true)
+        .padding(.trailing, -Space.s4)
     }
 }

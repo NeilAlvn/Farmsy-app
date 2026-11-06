@@ -97,12 +97,8 @@ import app.farmsy.android.core.AnalyticsProp
 import app.farmsy.android.core.AnalyticsValue
 import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FarmPin
-import app.farmsy.android.core.SurveyApi
-import app.farmsy.android.core.SurveyGate
 import app.farmsy.android.features.detail.FarmDetailScreen
 import app.farmsy.android.features.map.MapScreen
-import app.farmsy.android.features.survey.SurveyMode
-import app.farmsy.android.features.survey.SurveyScreen
 import app.farmsy.android.features.trips.TripsScreen
 import app.farmsy.android.ui.theme.FarmsyColors
 import kotlinx.coroutines.launch
@@ -202,45 +198,8 @@ fun MainScreen() {
     var plusTrigger by remember { mutableStateOf<AnalyticsValue.Trigger?>(null) }
     var productSlug by remember { mutableStateOf<String?>(null) }
 
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var showSurvey by remember { mutableStateOf(false) }
-    var surveyMode by remember { mutableStateOf(SurveyMode.QUESTIONS) }
-    // The survey gate drives the whole entry point: admin → no button; answered → the
-    // button opens feedback and the arrow is gone; not-answered → questions + arrow.
-    // Best-effort/fail-open: while null (loading) or on a gate failure (all-false) the
-    // button shows — better to offer the survey than wrongly withhold it. Refreshed on
-    // sign-in/out and after the sheet closes (they may have just answered).
-    // The survey entry (button + arrow + auto-open) is shown for EVERY role — signed
-    // out, signed in and admin alike (Neil: "the survey appears whatever the role").
-    // Only `answered` differs it: answered → the button opens feedback, no arrow.
-    // Admin data integrity is kept server-side — POST /api/survey/respond rejects an
-    // admin submit with `is_admin` — so showing the UI to staff pollutes nothing.
-    var surveyGate by remember { mutableStateOf<SurveyGate?>(null) }
     LaunchedEffect(session.isAuthenticated) {
-        surveyGate = SurveyApi.gate(session.accessToken())
         PushRegistrar.sync(session.session.value?.user?.id, session.accessToken())
-    }
-    // The arrow points only while there is an unanswered survey to point at — role no
-    // longer matters, only `answered`.
-    val showSurveyArrow = surveyGate?.let { !it.answered } == true
-
-    // Cold-launch auto-open. LaunchedEffect(Unit) runs once when MainScreen first
-    // enters composition — i.e. on cold launch (RootNav builds Main fresh), NOT on
-    // resume (the retained composition is not rebuilt when the app returns from the
-    // background). 1.4s after the map appears lets it settle first so the survey reads
-    // as a question, not part of the loading. Fires for any role; only `answered` and
-    // the frequency cap stop it (once ever per signed-in account, once a day signed-out).
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(1400)
-        val g = SurveyApi.gate(session.accessToken())
-        surveyGate = g
-        if (g.answered) return@LaunchedEffect
-        val account = session.email.takeIf { it.isNotEmpty() }
-        if (!SurveyAutoOpen.canAutoOpen(context, account)) return@LaunchedEffect
-        SurveyAutoOpen.recordAutoOpen(context, account)
-        surveyMode = SurveyMode.QUESTIONS
-        showSurvey = true
     }
 
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
@@ -443,37 +402,6 @@ fun MainScreen() {
                 selected = tab, onSelect = { tab = it },
                 modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = Space.s3),
             )
-
-            // Floating survey entry button — bottom-trailing, above the pill (which
-            // spans ~safe-bottom+6 to +67), so it clears it. Shown for every role
-            // (Neil). A down-arrow points at it while the survey is unanswered. iOS SF
-            // `text.bubble.fill` → Material Chat. The button never goes away: it opens
-            // the questions while unanswered, the feedback box once answered.
-            // Only over the map: on scrolling tabs it would cover content.
-            if (tab == AppTab.MAP) Column(
-                Modifier.align(Alignment.BottomEnd).navigationBarsPadding()
-                    .padding(end = 14.dp, bottom = TabBarInset.content + 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                if (showSurveyArrow) SurveyArrow()
-                Box(
-                    Modifier
-                        .capsuleShadow(Color.Black.copy(alpha = 0.22f), blurRadius = 10.dp, offsetY = 3.dp)
-                        .size(44.dp)
-                        .background(Color.White.copy(alpha = 0.94f), CircleShape)
-                        .clickable {
-                            surveyMode = if (surveyGate?.answered == true) SurveyMode.FEEDBACK else SurveyMode.QUESTIONS
-                            showSurvey = true
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Chat, null,
-                        tint = FarmsyColors.farmGreenMap, modifier = Modifier.size(17.dp),
-                    )
-                }
-            }
         }
     }
     }
@@ -499,93 +427,6 @@ fun MainScreen() {
     }
     if (showPlus) ProUpsellSheet(trigger = plusTrigger, onDismiss = { showPlus = false })
     productSlug?.let { s -> ProductBottomSheet(s, onDismiss = { productSlug = null }) }
-
-    // The survey presents as a modal over the map (iOS `.sheet` at 0.92), like the
-    // other secondary surfaces. The gate hides its button for admins; the screen also
-    // re-checks on open (belt and suspenders). On dismiss, refresh the gate so the
-    // arrow disappears and the button switches to feedback after answering.
-    if (showSurvey) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                showSurvey = false
-                scope.launch { surveyGate = SurveyApi.gate(session.accessToken()) }
-            },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = FarmsyColors.cream,
-        ) {
-            Box(Modifier.fillMaxWidth().fillMaxHeight(0.92f).navigationBarsPadding()) {
-                SurveyScreen(mode = surveyMode, onClose = { showSurvey = false })
-            }
-        }
-    }
-}
-
-/// A regular dark-green down arrow, above the survey button, pointing at it — shown
-/// only while the survey is unanswered. Dark green = `farmGreen` (the button is the
-/// primary green; "dark green" per the brief distinguishes it from the lighter
-/// on-map `farmGreenMap`). Bounces ~9px, ~0.9s, eased (Aviah's thread settles this),
-/// and holds still under the system "remove animations" setting. Hidden from
-/// accessibility — it says nothing the button's own label doesn't.
-/// SF: iOS build 23 hand-drew a curved Path; corrected here to a standard Material
-/// arrow (§7a). DISPUTED vs Aviah's thread (hand-drawn) — see PORT_NOTES.
-@Composable
-private fun SurveyArrow() {
-    val context = LocalContext.current
-    val reduceMotion = remember {
-        android.provider.Settings.Global.getFloat(
-            context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f,
-        ) == 0f
-    }
-    val dy = if (reduceMotion) 0f else {
-        val transition = rememberInfiniteTransition(label = "surveyArrow")
-        transition.animateFloat(
-            initialValue = 0f, targetValue = 9f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(900, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "surveyArrowDrop",
-        ).value
-    }
-    Icon(
-        Icons.Filled.ArrowDownward, null,
-        tint = FarmsyColors.farmGreen,
-        modifier = Modifier.size(22.dp)
-            .offset { IntOffset(0, dy.toInt()) }
-            .clearAndSetSemantics { },
-    )
-}
-
-/// Whether the survey may auto-open, and the record that it did. Signed in it opens
-/// once ever per account; signed out, once per calendar day (a phone cold-launches
-/// often, so an uncapped "every launch" would harass). SharedPreferences — per-device
-/// is acceptable signed-out (no identity to key on); the signed-in per-account flag is
-/// belt-and-braces over the server-side `answered` state, which is the real stop.
-object SurveyAutoOpen {
-    private const val PREFS = "farmsy"
-
-    fun canAutoOpen(context: android.content.Context, account: String?): Boolean {
-        val p = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
-        return if (!account.isNullOrEmpty()) {
-            !p.getBoolean("survey_autoopen_acct_$account", false)
-        } else {
-            p.getString("survey_autoopen_day", null) != today()
-        }
-    }
-
-    fun recordAutoOpen(context: android.content.Context, account: String?) {
-        val p = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
-        if (!account.isNullOrEmpty()) {
-            p.edit().putBoolean("survey_autoopen_acct_$account", true).apply()
-        } else {
-            p.edit().putString("survey_autoopen_day", today()).apply()
-        }
-    }
-
-    private fun today(): String {
-        val f = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        return f.format(java.util.Date())
-    }
 }
 
 /// A soft drop-shadow for a fully-rounded (capsule/circle) surface that reproduces
