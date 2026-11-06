@@ -118,6 +118,7 @@
     <string name="sign_in_to_follow_farms">Connectez-vous pour suivre des fermes et les voir ici.</string>
     <string name="no_farms_followed_yet">Aucune ferme suivie pour l\'instant</string>
     <string name="tap_heart_opening">Touchez le cœur d\'une ferme pour la voir ici, avec ses horaires du jour.</string>
+    <string name="open_today">Ouvert aujourd\'hui</string>
     <string name="closed_today">Fermé aujourd\'hui</string>
     <string name="for_you">Pour vous</string>
     <string name="product_alerts">Alertes produits</string>

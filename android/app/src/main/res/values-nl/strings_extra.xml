@@ -118,6 +118,7 @@
     <string name="sign_in_to_follow_farms">Log in om boerderijen te volgen en ze hier te zien.</string>
     <string name="no_farms_followed_yet">Nog geen boerderijen gevolgd</string>
     <string name="tap_heart_opening">Tik op het hartje bij een boerderij om die hier te zien, met de openingstijden van vandaag.</string>
+    <string name="open_today">Vandaag open</string>
     <string name="closed_today">Vandaag gesloten</string>
     <string name="for_you">Voor jou</string>
     <string name="product_alerts">Productmeldingen</string>
