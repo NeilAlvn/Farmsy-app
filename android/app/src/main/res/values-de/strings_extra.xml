@@ -118,6 +118,7 @@
     <string name="sign_in_to_follow_farms">Melde dich an, um Höfen zu folgen und sie hier zu sehen.</string>
     <string name="no_farms_followed_yet">Noch keine Höfe gefolgt</string>
     <string name="tap_heart_opening">Tippe auf das Herz bei einem Hof, um ihn hier mit den heutigen Öffnungszeiten zu sehen.</string>
+    <string name="open_today">Heute geöffnet</string>
     <string name="closed_today">Heute geschlossen</string>
     <string name="for_you">Für dich</string>
     <string name="product_alerts">Produkt-Benachrichtigungen</string>
