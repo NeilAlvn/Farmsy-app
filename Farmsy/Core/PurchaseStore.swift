@@ -58,22 +58,52 @@ final class PurchaseStore {
     var yearlyPrice: String? { yearlyPackage?.storeProduct.localizedPriceString }
     var lifetimePrice: String? { lifetimePackage?.storeProduct.localizedPriceString }
 
-    /// Length of the yearly plan's free trial in days, or nil when there isn't one.
+    /// Whether this store account may actually receive the yearly plan's
+    /// introductory offer. `nil` until the check has come back.
     ///
-    /// Read from StoreKit, never hardcoded: Apple only reports an introductory offer
-    /// for customers who are actually *eligible*, so a returning subscriber gets
-    /// none. Advertising "3 days free" to someone who won't receive it is precisely
-    /// the misrepresentation App Review guideline 3.1.2 exists to catch — and it's a
-    /// rotten way to treat someone regardless. No offer, no claim.
+    /// Kept separately from the offering on purpose: the offering describes the
+    /// *product* and is cached for the session, while this describes the *customer*
+    /// and can change underneath us — a different Apple ID in Settings, or a trial
+    /// already spent on another device.
+    private(set) var yearlyTrialEligibility: IntroEligibilityStatus?
+
+    /// Length of the yearly plan's free trial in days, or nil when this customer
+    /// won't get one.
+    ///
+    /// Two things have to be true, and for a long time we only checked the first.
+    /// StoreKit reports a product's introductory offer to *everyone* — eligible or
+    /// not — so `introductoryDiscount` says what the product carries, never what
+    /// this person will be given. Eligibility is a separate question, and the
+    /// answer lives in `yearlyTrialEligibility`.
+    ///
+    /// Without the second check a returning subscriber was shown "7 days free",
+    /// "Nothing to pay today · cancel anytime" and "Start my free week", and was
+    /// then charged on the spot: the misrepresentation App Review guideline 3.1.2
+    /// exists to catch, and a rotten way to treat someone besides. No offer, no claim.
     var yearlyFreeTrialDays: Int? {
         guard let intro = yearlyPackage?.storeProduct.introductoryDiscount,
               intro.paymentMode == .freeTrial else { return nil }
-        let p = intro.subscriptionPeriod
-        switch p.unit {
-        case .day:   return p.value
-        case .week:  return p.value * 7
-        case .month: return p.value * 30
-        case .year:  return p.value * 365
+        return Self.trialDays(eligibility: yearlyTrialEligibility, period: intro.subscriptionPeriod)
+    }
+
+    /// The gate itself, kept pure so it can be tested without a store.
+    ///
+    /// Only `.eligible` yields days. `.ineligible` and `.noIntroOfferExists` are
+    /// plain noes. `.unknown` means RevenueCat could not tell, and `nil` means we
+    /// have not asked yet — both resolve to no trial, because the failure we are
+    /// fixing came from guessing in our own favour. Showing "Get yearly" to someone
+    /// who turns out to be eligible costs us a little; promising a free week to
+    /// someone who is charged immediately costs them money and us their trust.
+    /// `nonisolated` because it touches no state: it is the rule, not the store,
+    /// so it runs anywhere and the tests can call it directly.
+    nonisolated static func trialDays(eligibility: IntroEligibilityStatus?,
+                                      period: SubscriptionPeriod) -> Int? {
+        guard eligibility == .eligible else { return nil }
+        switch period.unit {
+        case .day:   return period.value
+        case .week:  return period.value * 7
+        case .month: return period.value * 30
+        case .year:  return period.value * 365
         @unknown default: return nil
         }
     }
@@ -104,13 +134,35 @@ final class PurchaseStore {
     /// Fetches the offering once and keeps it. The paywall used to call this on
     /// every open, so each visit paid the full RevenueCat round-trip before it
     /// could draw the buttons. Prices don't change between screens: prefetch at
-    /// launch, and a second call is a no-op unless the first one came back empty.
+    /// launch, and a second call skips the fetch unless the first came back empty.
+    ///
+    /// Trial eligibility is the exception and is re-asked on every call. It is a
+    /// fact about the store account rather than the product, so caching it for the
+    /// session is what would let a stale "free week" reach someone who can't have one.
     func loadOffering(force: Bool = false) async {
         guard !Backend.revenueCatKey.isEmpty else { didLoadOffering = true; return }
-        if !force, offering != nil { return }
-        offering = try? await Purchases.shared.offerings().current
-        offeringFailed = (offering == nil)
-        didLoadOffering = true
+        if force || offering == nil {
+            offering = try? await Purchases.shared.offerings().current
+            offeringFailed = (offering == nil)
+            didLoadOffering = true
+        }
+        // Every call, cached offering or not. The prices can be reused across
+        // screens; the eligibility answer belongs to the store account, so the
+        // paywall re-asks it each time it appears.
+        await refreshTrialEligibility()
+    }
+
+    /// Asks RevenueCat whether this store account may receive the yearly intro
+    /// offer, and keeps the answer for `yearlyFreeTrialDays` to gate on.
+    ///
+    /// Left untouched when there is nothing to ask about (no key, no yearly
+    /// product): `yearlyFreeTrialDays` already reads nil without a package, so
+    /// there is no claim to make either way.
+    func refreshTrialEligibility() async {
+        guard !Backend.revenueCatKey.isEmpty,
+              let product = yearlyPackage?.storeProduct else { return }
+        yearlyTrialEligibility = await Purchases.shared
+            .checkTrialOrIntroDiscountEligibility(product: product)
     }
 
     /// Buys the membership. Returns true once the purchase completes — the caller
