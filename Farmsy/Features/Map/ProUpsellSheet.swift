@@ -222,9 +222,11 @@ struct ProUpsellSheet: View {
                     .font(.ui(15, .semibold)).foregroundStyle(Color.farmGreenMap)
             }
         } else if let yearlyPrice = purchases.yearlyPrice {
-            // Trial only offered to someone who's never had one — StoreKit reports
-            // ineligible as trialDays == nil, so every free-days line simply doesn't
-            // show (Aviah: never advertise a trial someone won't get).
+            // nil for anyone who won't actually receive a trial: the product's
+            // intro offer is reported to everyone, so `yearlyFreeTrialDays` gates it
+            // on RevenueCat's eligibility answer as well. Every free-days line below
+            // keys off this one value, so they appear and vanish together — never
+            // advertise a trial someone won't get.
             let trialDays = purchases.yearlyFreeTrialDays
             if trialDays != nil {
                 // Hidden, not removed, off the yearly card — the cards must not jump.
