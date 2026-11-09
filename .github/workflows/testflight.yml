@@ -3,6 +3,11 @@ name: Build Archive (Xcode 26)
 # Compiles Farmsy with Xcode 26 on a cloud Mac and hands back an UNSIGNED
 # archive as a downloadable artifact. No signing key ever touches CI — the
 # archive is signed and uploaded to TestFlight locally, where the key stays.
+#
+# Export it with scripts/export-and-verify.sh, not a bare xcodebuild
+# -exportArchive: an unsigned archive carries no entitlements, so a plain export
+# silently drops the app's own. That script re-signs with them and refuses to
+# package an IPA that is missing any.
 on:
   workflow_dispatch:
 
@@ -58,6 +63,39 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
+
+      # Every IPA this workflow has produced shipped with four entitlements
+      # (application-identifier, beta-reports-active, team-identifier,
+      # get-task-allow) and silently without the two the app actually declares:
+      # com.apple.developer.associated-domains and aps-environment. Nothing
+      # failed, so nobody noticed: an app missing those cannot open a universal
+      # link or register for remote notifications, and neither is a build error.
+      #
+      # The cause is this job archiving with CODE_SIGNING_ALLOWED=NO: the app in
+      # the archive is "not signed at all", so there are no embedded entitlements,
+      # and the local exportArchive re-signs from the provisioning profile's
+      # baseline alone. Ad-hoc signing would embed them, but the iOS 26 SDK
+      # refuses it outright ("Ad Hoc code signing is not allowed with SDK
+      # 'iOS 26.2'"), so instead we write the file Xcode would have written.
+      # L88Media/nime has archived this way since 2.2 (9).
+      - name: Carry the app's entitlements into the archive
+        run: |
+          APP="$RUNNER_TEMP/Farmsy.xcarchive/Products/Applications/Farmsy.app"
+          SRC=Farmsy/Farmsy.entitlements
+          test -f "$SRC" || { echo "::error::$SRC is missing"; exit 1; }
+          for key in aps-environment com.apple.developer.associated-domains; do
+            /usr/libexec/PlistBuddy -c "Print :$key" "$SRC" >/dev/null 2>&1 || {
+              echo "::error::$SRC no longer declares $key — a build without it loses push or universal links silently"; exit 1; }
+          done
+          XCENT="$APP/archived-expanded-entitlements.xcent"
+          cp "$SRC" "$XCENT"
+          # Xcode rewrites this to "production" when it signs an archive itself.
+          # CI never signs, so do it here, and only in the copy — the source file
+          # keeps "development" so local debug builds still reach the sandbox APNs.
+          /usr/libexec/PlistBuddy -c "Set :aps-environment production" "$XCENT"
+          plutil -lint "$XCENT"
+          echo "entitlements carried into the archive:"
+          plutil -p "$XCENT"
 
       - name: Zip archive
         run: |
