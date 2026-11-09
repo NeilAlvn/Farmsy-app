@@ -59,6 +59,41 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
 
+      # Every IPA this workflow has produced shipped with four entitlements
+      # (application-identifier, beta-reports-active, team-identifier,
+      # get-task-allow) and silently without the two the app actually declares:
+      # com.apple.developer.associated-domains and aps-environment. Nothing
+      # failed, so nobody noticed — until 2026-11-09, by which point the live 1.4
+      # had been out since 1 October with universal links and remote push dead.
+      # Farmsy's push_tokens table has never held a single iOS row, against 55
+      # Android ones.
+      #
+      # The cause is this job archiving with CODE_SIGNING_ALLOWED=NO: the app in
+      # the archive is "not signed at all", so there are no embedded entitlements,
+      # and the local exportArchive re-signs from the provisioning profile's
+      # baseline alone. Ad-hoc signing would embed them, but the iOS 26 SDK
+      # refuses it outright ("Ad Hoc code signing is not allowed with SDK
+      # 'iOS 26.2'"), so instead we write the file Xcode would have written.
+      # L88Media/nime has archived this way since 2.2 (9).
+      - name: Carry the app's entitlements into the archive
+        run: |
+          APP="$RUNNER_TEMP/Farmsy.xcarchive/Products/Applications/Farmsy.app"
+          SRC=Farmsy/Farmsy.entitlements
+          test -f "$SRC" || { echo "::error::$SRC is missing"; exit 1; }
+          for key in aps-environment com.apple.developer.associated-domains; do
+            /usr/libexec/PlistBuddy -c "Print :$key" "$SRC" >/dev/null 2>&1 || {
+              echo "::error::$SRC no longer declares $key — a build without it loses push or universal links silently"; exit 1; }
+          done
+          XCENT="$APP/archived-expanded-entitlements.xcent"
+          cp "$SRC" "$XCENT"
+          # Xcode rewrites this to "production" when it signs an archive itself.
+          # CI never signs, so do it here, and only in the copy — the source file
+          # keeps "development" so local debug builds still reach the sandbox APNs.
+          /usr/libexec/PlistBuddy -c "Set :aps-environment production" "$XCENT"
+          plutil -lint "$XCENT"
+          echo "entitlements carried into the archive:"
+          plutil -p "$XCENT"
+
       - name: Zip archive
         run: |
           cd "$RUNNER_TEMP" && zip -qry Farmsy.xcarchive.zip Farmsy.xcarchive
