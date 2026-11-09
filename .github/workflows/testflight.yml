@@ -3,6 +3,11 @@ name: Build Archive (Xcode 26)
 # Compiles Farmsy with Xcode 26 on a cloud Mac and hands back an UNSIGNED
 # archive as a downloadable artifact. No signing key ever touches CI — the
 # archive is signed and uploaded to TestFlight locally, where the key stays.
+#
+# Export it with scripts/export-and-verify.sh, not a bare xcodebuild
+# -exportArchive: an unsigned archive carries no entitlements, so a plain export
+# silently drops the app's own. That script re-signs with them and refuses to
+# package an IPA that is missing any.
 on:
   workflow_dispatch:
 
@@ -63,10 +68,8 @@ jobs:
       # (application-identifier, beta-reports-active, team-identifier,
       # get-task-allow) and silently without the two the app actually declares:
       # com.apple.developer.associated-domains and aps-environment. Nothing
-      # failed, so nobody noticed — until 2026-11-09, by which point the live 1.4
-      # had been out since 1 October with universal links and remote push dead.
-      # Farmsy's push_tokens table has never held a single iOS row, against 55
-      # Android ones.
+      # failed, so nobody noticed: an app missing those cannot open a universal
+      # link or register for remote notifications, and neither is a build error.
       #
       # The cause is this job archiving with CODE_SIGNING_ALLOWED=NO: the app in
       # the archive is "not signed at all", so there are no embedded entitlements,

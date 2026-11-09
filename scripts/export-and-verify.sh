@@ -1,0 +1,99 @@
+#!/bin/bash
+# Export a CI archive, restore the entitlements the keyless pipeline drops, and
+# refuse to produce an IPA that would ship broken.
+#
+# Why this exists: testflight.yml archives with CODE_SIGNING_ALLOWED=NO, so the
+# app in the archive is "not signed at all" and carries no entitlements.
+# xcodebuild -exportArchive then signs from the provisioning profile's baseline
+# only, silently dropping com.apple.developer.associated-domains and
+# aps-environment. Every build from that pipeline shipped that way: universal
+# links opened Safari instead of the app, so a referrer was never credited, and
+# registerForRemoteNotifications could not succeed, so no device could receive a
+# push. The IPA validated and uploaded with no warnings, which is why this went
+# unnoticed across releases.
+#
+# Writing archived-expanded-entitlements.xcent into the archive is NOT enough on
+# its own -- tested 2026-11-09: the .xcent was carried and exportArchive still
+# produced the same four-key IPA. The re-sign below is what actually fixes it.
+#
+# Usage: scripts/export-and-verify.sh <archive-dir> [export-options.plist]
+#   <archive-dir>          directory containing Farmsy.xcarchive
+#   [export-options.plist] defaults to ~/farmsy-build/ExportOptions.plist
+#
+# Needs the Apple Distribution certificate and the "Farmsy App Store" profile in
+# the local keychain. No key material is read by this script and none belongs in
+# it: this repo is public.
+set -euo pipefail
+
+DIR="${1:?usage: export-and-verify.sh <archive-dir> [export-options.plist]}"
+PLIST="${2:-$HOME/farmsy-build/ExportOptions.plist}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ID="Apple Distribution: Vision Tech B.V. (R8MCFDU64H)"
+TEAM="R8MCFDU64H"
+BUNDLE="app.farmsy.ios"
+SRC="$REPO/Farmsy/Farmsy.entitlements"
+ENTS="$DIR/merged.entitlements"
+
+# Derived from the repo's own entitlements file rather than hardcoded, so a key
+# added there is picked up here instead of going missing in every build -- which
+# is the failure mode this script exists to end.
+test -f "$SRC" || { echo "FATAL: $SRC is missing"; exit 1; }
+for KEY in aps-environment com.apple.developer.associated-domains; do
+  /usr/libexec/PlistBuddy -c "Print :$KEY" "$SRC" >/dev/null 2>&1 \
+    || { echo "FATAL: $SRC no longer declares $KEY"; exit 1; }
+done
+
+cp "$SRC" "$ENTS"
+# Xcode rewrites this when it signs an archive itself; CI never signs, and the
+# source keeps "development" so local debug builds still reach the sandbox APNs.
+/usr/libexec/PlistBuddy -c "Set :aps-environment production" "$ENTS"
+# codesign --entitlements REPLACES rather than merges, so the identifier keys the
+# profile would have supplied have to be carried explicitly or they vanish.
+/usr/libexec/PlistBuddy -c "Add :application-identifier string $TEAM.$BUNDLE" "$ENTS"
+/usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string $TEAM" "$ENTS"
+/usr/libexec/PlistBuddy -c "Add :beta-reports-active bool true" "$ENTS"
+/usr/libexec/PlistBuddy -c "Add :get-task-allow bool false" "$ENTS"
+plutil -lint "$ENTS"
+
+test -f "$PLIST" || { echo "FATAL: $PLIST not found; pass one as the 2nd argument"; exit 1; }
+
+cd "$DIR"
+rm -rf export repack
+xcodebuild -exportArchive -archivePath Farmsy.xcarchive -exportPath export \
+  -exportOptionsPlist "$PLIST" | tail -3
+
+mkdir -p repack && cd repack
+unzip -q -o ../export/Farmsy.ipa
+APP=$(ls -d Payload/*.app)
+
+# Frameworks first, then the app with the entitlements the archive never carried.
+for f in "$APP"/Frameworks/*.framework; do
+  [ -e "$f" ] || continue
+  codesign --force --sign "$ID" --timestamp "$f" >/dev/null
+done
+codesign --force --sign "$ID" --entitlements "$ENTS" --generate-entitlement-der \
+  --timestamp "$APP" >/dev/null
+
+# Refuse to hand back an IPA that would ship with links or push dead.
+GOT=$(codesign -d --entitlements :- "$APP" 2>/dev/null | plutil -p - 2>/dev/null)
+for KEY in "com.apple.developer.associated-domains" "aps-environment" \
+           "application-identifier" "beta-reports-active" \
+           "com.apple.developer.team-identifier"; do
+  echo "$GOT" | grep -q "$KEY" || { echo "FATAL: $KEY missing after re-sign"; exit 1; }
+done
+echo "$GOT" | grep -q '"aps-environment" => "production"' \
+  || { echo "FATAL: aps-environment is not production -- push would hit the sandbox APNs"; exit 1; }
+codesign --verify --deep --strict "$APP"
+echo "entitlements ok:"; echo "$GOT" | sed 's/^/    /'
+
+# Re-zip EVERYTHING the export produced, not just Payload. Zipping Payload alone
+# silently drops Symbols/ and costs the build its native crash symbolication,
+# and Apple accepts it with no warnings, so nothing would tell us.
+rm -f ../export/Farmsy.ipa
+zip -qry ../export/Farmsy.ipa . -x '.*'
+cd ..
+echo "top-level entries in the repacked IPA:"
+unzip -Z1 export/Farmsy.ipa | cut -d/ -f1 | sort -u | sed 's/^/    /'
+echo "built: $DIR/export/Farmsy.ipa"
+/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" \
+  repack/Payload/*.app/Info.plist
