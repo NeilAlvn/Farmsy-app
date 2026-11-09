@@ -86,6 +86,56 @@ echo "$GOT" | grep -q '"aps-environment" => "production"' \
 codesign --verify --deep --strict "$APP"
 echo "entitlements ok:"; echo "$GOT" | sed 's/^/    /'
 
+# Correct entitlements are not the same thing as a shippable build. Apple checks
+# them against the provisioning profile, and rejects the upload if the bundle
+# claims anything the profile does not grant:
+#
+#   Validation failed (409) Invalid Code Signing Entitlements. The bundle
+#   contains a key that is not included in the provisioning profile:
+#   'aps-environment'
+#
+# That happened on 2026-11-09 with an IPA whose six entitlements were exactly
+# right. The profile had been marked INVALID by Apple back in July, when the App
+# ID gained the push capability and no profile was reissued -- and nothing local
+# noticed, because signing against an invalid profile succeeds. The 409 arrived
+# after a 25 MB upload. These checks cost a second and catch it here instead.
+PROFILE_PLIST="$DIR/repack/.embedded-profile.plist"
+security cms -D -i "$APP/embedded.mobileprovision" > "$PROFILE_PLIST" 2>/dev/null \
+  || { echo "FATAL: cannot decode $APP/embedded.mobileprovision"; exit 1; }
+
+python3 - "$PROFILE_PLIST" "$APP" <<'PYCHECK' || exit 1
+import plistlib, subprocess, sys, datetime
+
+prof = plistlib.load(open(sys.argv[1], "rb"))
+allowed = prof.get("Entitlements", {})
+name, uuid = prof.get("Name"), prof.get("UUID")
+print("signed by profile: %s (%s)" % (name, uuid))
+
+expiry = prof.get("ExpirationDate")
+if expiry:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    exp = expiry if expiry.tzinfo else expiry.replace(tzinfo=datetime.timezone.utc)
+    if exp <= now:
+        sys.exit("FATAL: profile '%s' expired on %s" % (name, exp))
+    print("profile expires: %s" % exp.date())
+
+der = subprocess.run(["codesign", "-d", "--entitlements", ":-", sys.argv[2]],
+                     capture_output=True).stdout
+start = der.find(b"<?xml")
+have = plistlib.loads(der[start:]) if start >= 0 else {}
+
+missing = [k for k in have if k not in allowed]
+if missing:
+    sys.exit("FATAL: the profile does not grant %s -- Apple will reject this "
+             "upload with a 409. Reissue the profile." % ", ".join(sorted(missing)))
+
+if allowed.get("aps-environment") != "production":
+    sys.exit("FATAL: profile grants aps-environment=%r, not 'production'"
+             % allowed.get("aps-environment"))
+
+print("profile grants every entitlement the bundle claims")
+PYCHECK
+
 # Re-zip EVERYTHING the export produced, not just Payload. Zipping Payload alone
 # silently drops Symbols/ and costs the build its native crash symbolication,
 # and Apple accepts it with no warnings, so nothing would tell us.
