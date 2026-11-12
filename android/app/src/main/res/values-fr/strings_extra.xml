@@ -319,4 +319,8 @@
     <string name="confirmed_open_today_arg">Confirmé ouvert aujourd\'hui · %1$d</string>
     <string name="plus_row_title">Passer à Farmsy Plus</string>
     <string name="plus_row_text">Farmsy le trouve, planifie l\'itinéraire et vous dit quand c\'est frais.</string>
+    <string name="follow_farm_title">Suivre cette ferme ?</string>
+    <string name="follow_farm_text">%1$s apparaîtra sur votre écran d\'accueil avec les fermes que vous suivez.</string>
+    <string name="follow_farm_yes">Suivre</string>
+    <string name="follow_farm_no">Pas maintenant</string>
 </resources>

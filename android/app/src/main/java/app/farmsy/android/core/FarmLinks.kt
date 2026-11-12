@@ -1,6 +1,9 @@
 package app.farmsy.android.core
 
+import android.content.Context
 import android.content.Intent
+import com.android.installreferrer.api.InstallReferrerClient
+import com.android.installreferrer.api.InstallReferrerStateListener
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
@@ -60,7 +63,7 @@ object FarmLinks {
     fun consume() { _pending.value = null }
 
     /// The lookup in flight; a newer link cancels it so the latest tap always wins.
-    private var lookup: Job? = null
+    @Volatile private var lookup: Job? = null
 
     /// A VIEW intent for a farm page: ask the web which farm it is, then hand it
     /// to MainScreen. Anything else (a /join referral, a push tap) is ignored here.
@@ -70,6 +73,7 @@ object FarmLinks {
         val ref = parsePath(uri.path) ?: return
         val source = uri.getQueryParameter("utm_source")?.takeIf { it.isNotBlank() } ?: "link"
         lookup?.cancel()
+        _pending.value = null // an older, unconsumed link must not open after this one
         lookup = scope.launch {
             val osmId = osmIdForPath(ref) ?: return@launch
             Observability.capture(
@@ -77,6 +81,62 @@ object FarmLinks {
                 mapOf(AnalyticsProp.FARM to osmId, AnalyticsProp.SOURCE to source),
             )
             _pending.value = Pending(osmId, askFollow = false)
+        }
+    }
+
+    private const val REFERRER_CHECKED = "installReferrerChecked"
+
+    /// First start after a Play install (spec A4): if the install came from a farm
+    /// link (`farm=<osmId>` in the referrer), open that farm and ask to follow it.
+    /// Asked once. An update of an app that was already set up is not a first
+    /// start, so it is marked checked without asking Play.
+    fun checkInstallReferrer(context: Context) {
+        val prefs = context.getSharedPreferences("farmsy", Context.MODE_PRIVATE)
+        if (prefs.getBoolean(REFERRER_CHECKED, false)) return
+        if (prefs.getBoolean("didFinishOnboarding", false)) {
+            prefs.edit().putBoolean(REFERRER_CHECKED, true).apply()
+            return
+        }
+        val client = try {
+            InstallReferrerClient.newBuilder(context).build()
+        } catch (e: Exception) {
+            return
+        }
+        try {
+            client.startConnection(object : InstallReferrerStateListener {
+                override fun onInstallReferrerSetupFinished(code: Int) {
+                    try {
+                        // Unavailable is passing (Play busy or updating): try again next start.
+                        if (code != InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE) {
+                            prefs.edit().putBoolean(REFERRER_CHECKED, true).apply()
+                        }
+                        if (code == InstallReferrerClient.InstallReferrerResponse.OK) {
+                            val r = parseReferrer(runCatching { client.installReferrer.installReferrer }.getOrNull())
+                            if (r != InstallReferrer(null, null, null)) {
+                                Observability.capture(AnalyticsEvent.INSTALL_REFERRER, buildMap {
+                                    r.campaign?.let { put(AnalyticsProp.CAMPAIGN, it) }
+                                    r.medium?.let { put(AnalyticsProp.MEDIUM, it) }
+                                    r.farm?.let { put(AnalyticsProp.FARM, it) }
+                                })
+                            }
+                            // ponytail: held in memory; if the process dies during onboarding the
+                            // farm is lost (the flag is already set). Persist it if that shows up.
+                            r.farm?.let {
+                                lookup?.cancel() // the referrer is the newest request
+                                _pending.value = Pending(it, askFollow = true)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // silent: the referrer is a nicety
+                    } finally {
+                        runCatching { client.endConnection() }
+                    }
+                }
+
+                override fun onInstallReferrerServiceDisconnected() {}
+            })
+        } catch (e: Exception) {
+            runCatching { client.endConnection() }
         }
     }
 

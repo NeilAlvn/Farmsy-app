@@ -319,4 +319,8 @@
     <string name="confirmed_open_today_arg">Heute bestätigt geöffnet · %1$d</string>
     <string name="plus_row_title">Auf Farmsy Plus upgraden</string>
     <string name="plus_row_text">Farmsy findet es, plant die Route und sagt dir, wann es frisch ist.</string>
+    <string name="follow_farm_title">Diesem Hof folgen?</string>
+    <string name="follow_farm_text">%1$s erscheint auf deinem Startbildschirm bei den Höfen, denen du folgst.</string>
+    <string name="follow_farm_yes">Folgen</string>
+    <string name="follow_farm_no">Nicht jetzt</string>
 </resources>

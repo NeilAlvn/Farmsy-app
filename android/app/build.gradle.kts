@@ -132,6 +132,11 @@ dependencies {
     // so an older SDK silently drops the lifetime package from the offering.
     implementation("com.revenuecat.purchases:purchases:10.13.0")
 
+    // Play Install Referrer (spec A4): which link a fresh install came from, so
+    // the first start can open the farm from the web button or QR. 2.2 is the
+    // current release (2021); it is a thin AIDL client, no transitive deps.
+    implementation("com.android.installreferrer:installreferrer:2.2")
+
     // Push (alerts about products and followed farms). The token goes to
     // POST /api/profile/push-token; the server sends through FCM HTTP v1.
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))

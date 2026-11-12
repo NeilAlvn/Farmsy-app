@@ -319,4 +319,8 @@
     <string name="confirmed_open_today_arg">Vandaag bevestigd open · %1$d</string>
     <string name="plus_row_title">Upgrade naar Farmsy Plus</string>
     <string name="plus_row_text">Farmsy vindt het, plant de route en zegt wanneer het vers is.</string>
+    <string name="follow_farm_title">Volg deze boerderij?</string>
+    <string name="follow_farm_text">%1$s komt op je startscherm bij de boerderijen die je volgt.</string>
+    <string name="follow_farm_yes">Volgen</string>
+    <string name="follow_farm_no">Niet nu</string>
 </resources>
