@@ -30,6 +30,11 @@ struct FarmLinkTests {
         #expect(parse("http://www.farmsy.app/boerderijwinkels/ede/de-hoeve") == nil)
     }
 
+    @Test("a trailing newline in a segment is rejected")
+    func trailingNewline() {
+        #expect(parse("https://www.farmsy.app/boerderijwinkels/ede/de-hoeve%0A") == nil)
+    }
+
     @Test("source is the link's utm_source, else link")
     func source() {
         #expect(FarmLink.source(of: URL(string: "https://www.farmsy.app/boerderijwinkels/ede/de-hoeve?utm_source=qr")!) == "qr")

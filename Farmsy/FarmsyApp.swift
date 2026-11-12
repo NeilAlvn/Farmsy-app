@@ -59,9 +59,9 @@ struct FarmsyApp: App {
                 .environment(\.locale, language.launchLocale)
                 .tint(.farmGreen)
                 .preferredColorScheme(.light)
-                .onOpenURL { captureReferral($0) }
+                .onOpenURL { handleLink($0) }
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
-                    activity.webpageURL.map(captureReferral)
+                    activity.webpageURL.map(handleLink)
                 }
                 // Re-check the subscription whenever the app returns to the
                 // foreground. Buying, cancelling and managing a plan all happen
@@ -79,6 +79,19 @@ struct FarmsyApp: App {
                                                   accessToken: session.session?.accessToken)
                     }
                 }
+        }
+    }
+
+    /// Every incoming link: a /join referral is held for signup as before; a farm
+    /// page (F3) opens that farm once the web has said which one it is.
+    private func handleLink(_ url: URL) {
+        captureReferral(url)
+        guard let ref = FarmLink.parse(url) else { return }
+        let source = FarmLink.source(of: url)
+        Task {
+            guard let osmId = await FarmLink.osmId(for: ref) else { return }
+            Observability.capture(.appOpenedFromLink, [AnalyticsProp.farm: osmId, AnalyticsProp.source: source])
+            FarmLinkInbox.shared.pendingOsmId = osmId
         }
     }
 

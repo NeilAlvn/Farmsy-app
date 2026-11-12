@@ -19,7 +19,7 @@ enum FarmLink {
 
     /// Same rule as the web's isSegment.
     private static func isSegment(_ s: String) -> Bool {
-        s.count <= 80 && s.range(of: "^[a-z0-9]+(-[a-z0-9]+)*$", options: .regularExpression) != nil
+        s.count <= 80 && s.range(of: "^[a-z0-9]+(-[a-z0-9]+)*\\z", options: .regularExpression) != nil
     }
 
     static func parse(_ url: URL) -> FarmPathRef? {
@@ -54,7 +54,7 @@ enum FarmLink {
     /// straight back into the app.
     static func osmId(for ref: FarmPathRef) async -> String? {
         guard let url = lookupURL(ref),
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let (data, response) = try? await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 10)),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let body = try? JSONDecoder().decode(ByPath.self, from: data)
         else { return nil }
