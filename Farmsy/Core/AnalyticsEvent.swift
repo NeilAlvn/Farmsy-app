@@ -52,6 +52,12 @@ enum AnalyticsEvent: String, CaseIterable {
     /// The sign-in sheet opened because a signed-out person asked for something
     /// that needs an account. `trigger` names what they asked for.
     case authPrompted = "auth_prompted"
+    /// A farm page link (universal link) opened the app on that farm. `farm` is
+    /// the osm_id, `source` the link's utm_source ("qr", "web") or "link".
+    case appOpenedFromLink = "app_opened_from_link"
+    /// Android only: the Play Install Referrer on the first start. Spelled here
+    /// too so the two constants files stay in parity.
+    case installReferrer = "install_referrer"
 }
 
 /// Property keys.
@@ -72,6 +78,11 @@ enum AnalyticsProp {
     static let tab = "tab"
     /// `shopping_item_added`: the item id, or "custom" for anything typed.
     static let item = "item"
+    /// `app_opened_from_link` / `install_referrer`: the farm's osm_id and the
+    /// campaign fields of the link that brought the person in.
+    static let farm = "farm"
+    static let campaign = "campaign"
+    static let medium = "medium"
     // On every event, added by Observability.capture.
     static let isMember = "is_member"
     static let platform = "platform"

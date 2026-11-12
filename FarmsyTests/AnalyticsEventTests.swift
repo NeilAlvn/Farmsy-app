@@ -28,4 +28,14 @@ struct AnalyticsEventTests {
         #expect(AnalyticsValue.Trigger.trips.rawValue == "trips")
         #expect(AnalyticsValue.Trigger.restore.rawValue == "restore")
     }
+
+    @Test("the link events and props carry the spec's names (F3/F4a)")
+    func linkEvents() {
+        #expect(AnalyticsEvent.appOpenedFromLink.rawValue == "app_opened_from_link")
+        #expect(AnalyticsEvent.installReferrer.rawValue == "install_referrer")
+        #expect(AnalyticsProp.farm == "farm")
+        #expect(AnalyticsProp.campaign == "campaign")
+        #expect(AnalyticsProp.medium == "medium")
+    }
 }
+
