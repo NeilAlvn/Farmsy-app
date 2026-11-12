@@ -52,7 +52,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,8 +92,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.farmsy.android.LocalRequestAuth
 import app.farmsy.android.LocalFarms
+import app.farmsy.android.LocalFavorites
 import app.farmsy.android.LocalSession
 import app.farmsy.android.R
+import app.farmsy.android.core.FarmLinks
 import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.AnalyticsEvent
 import app.farmsy.android.core.AnalyticsProp
@@ -266,6 +271,40 @@ fun MainScreen() {
         val pin = farmsForPush.pinForOsmId(id) ?: return@LaunchedEffect
         PushRegistrar.consumePending()
         openFarm(pin, AnalyticsValue.Source.WHATS_NEW)
+    }
+
+    // A farm page link or the install referrer lands here (F3), like a push tap:
+    // waits for the pins, opens the farm, then clears the request.
+    val favoritesForLink = LocalFavorites.current
+    val linkScope = rememberCoroutineScope()
+    val pendingLink by FarmLinks.pending.collectAsState()
+    var askFollow by remember { mutableStateOf<FarmPin?>(null) }
+    LaunchedEffect(pendingLink, pinCount.size) {
+        val p = pendingLink ?: return@LaunchedEffect
+        val pin = farmsForPush.pinForOsmId(p.osmId) ?: return@LaunchedEffect
+        FarmLinks.consume()
+        openFarm(pin, AnalyticsValue.Source.DEEP_LINK)
+        if (p.askFollow && !favoritesForLink.isSaved(pin.osmId)) askFollow = pin
+    }
+
+    // "Follow" = save to favorites, what Home lists as the farms you follow.
+    // Signed out, Follow opens sign-in; the farm card's heart is there afterwards.
+    askFollow?.let { pin ->
+        AlertDialog(
+            onDismissRequest = { askFollow = null },
+            title = { Text(stringResource(R.string.follow_farm_title)) },
+            text = { Text(stringResource(R.string.follow_farm_text, pin.name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    askFollow = null
+                    val uid = session.session.value?.user?.id
+                    if (uid == null) requestAuth() else if (!favoritesForLink.isSaved(pin.osmId)) linkScope.launch { favoritesForLink.toggle(pin.osmId, uid) }
+                }) { Text(stringResource(R.string.follow_farm_yes)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { askFollow = null }) { Text(stringResource(R.string.follow_farm_no)) }
+            },
+        )
     }
 
     // Partial-detent height per route (fraction of the screen), matching iOS.

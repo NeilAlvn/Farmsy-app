@@ -57,6 +57,7 @@ struct AppShell: View {
 
     @State private var tab: AppTab = .home
     @State private var push = PushRegistrar.shared
+    @State private var links = FarmLinkInbox.shared
     /// The open farm. A bound value (not a `.sheet(item:)`) so tapping another pin
     /// swaps the card's contents in place rather than dismissing and re-presenting.
     @State private var selectedPin: FarmPin?
@@ -113,6 +114,14 @@ struct AppShell: View {
             guard let osmId, let pin = farms.pin(forOsmId: osmId) else { return }
             push.pendingOsmId = nil
             openFarm(pin, source: .whatsNew)
+        }
+        // A farm page link lands here (F3). Keyed on the resolved pin, not the
+        // id, so a link that arrives before the pins have loaded opens the farm
+        // the moment they do (the push hook above only fires on the id).
+        .onChange(of: links.pendingOsmId.flatMap { farms.pin(forOsmId: $0) }?.osmId, initial: true) { _, osmId in
+            guard let osmId, let pin = farms.pin(forOsmId: osmId) else { return }
+            links.pendingOsmId = nil
+            openFarm(pin, source: .deepLink)
         }
         // One event per tab selection, and one for the tab the shell opens on.
         .onChange(of: tab, initial: true) { _, t in
