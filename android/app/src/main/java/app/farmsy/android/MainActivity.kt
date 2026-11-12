@@ -33,8 +33,9 @@ class MainActivity : ComponentActivity() {
         captureReferral(intent)
         PushRegistrar.deliver(intent)
         val app = application as FarmsyApp
-        // Not on a re-creation: the same launch intent would open the farm again.
-        if (savedInstanceState == null) FarmLinks.deliver(intent, app.appScope)
+        // Not on a re-creation or a Recents launch: the same intent would open the farm again.
+        val fromHistory = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        if (savedInstanceState == null && !fromHistory) FarmLinks.deliver(intent, app.appScope)
         setContent {
             CompositionLocalProvider(
                 LocalSession provides app.session,

@@ -38,4 +38,3 @@ struct AnalyticsEventTests {
         #expect(AnalyticsProp.medium == "medium")
     }
 }
-

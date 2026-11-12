@@ -298,7 +298,7 @@ fun MainScreen() {
                 TextButton(onClick = {
                     askFollow = null
                     val uid = session.session.value?.user?.id
-                    if (uid == null) requestAuth() else linkScope.launch { favoritesForLink.toggle(pin.osmId, uid) }
+                    if (uid == null) requestAuth() else if (!favoritesForLink.isSaved(pin.osmId)) linkScope.launch { favoritesForLink.toggle(pin.osmId, uid) }
                 }) { Text(stringResource(R.string.follow_farm_yes)) }
             },
             dismissButton = {
