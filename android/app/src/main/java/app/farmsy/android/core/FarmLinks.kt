@@ -1,5 +1,18 @@
 package app.farmsy.android.core
 
+import android.content.Intent
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.net.URLDecoder
 
 /// A farm page address: /boerderijwinkels/<place>/<name>.
@@ -37,5 +50,52 @@ object FarmLinks {
         }.toMap()
         fun value(key: String) = params[key]?.trim()?.takeIf { it.isNotEmpty() && it.length <= 200 }
         return InstallReferrer(campaign = value("utm_campaign"), medium = value("utm_medium"), farm = value("farm"))
+    }
+
+    /// A farm a link or the install referrer asked for. MainScreen opens it once
+    /// its pin is loaded and clears it — the same hand-off as a push tap.
+    data class Pending(val osmId: String, val askFollow: Boolean)
+    private val _pending = MutableStateFlow<Pending?>(null)
+    val pending: StateFlow<Pending?> = _pending.asStateFlow()
+    fun consume() { _pending.value = null }
+
+    /// The lookup in flight; a newer link cancels it so the latest tap always wins.
+    private var lookup: Job? = null
+
+    /// A VIEW intent for a farm page: ask the web which farm it is, then hand it
+    /// to MainScreen. Anything else (a /join referral, a push tap) is ignored here.
+    fun deliver(intent: Intent?, scope: CoroutineScope) {
+        val uri = intent?.data ?: return
+        if (uri.scheme != "https" || uri.host !in HOSTS) return
+        val ref = parsePath(uri.path) ?: return
+        val source = uri.getQueryParameter("utm_source")?.takeIf { it.isNotBlank() } ?: "link"
+        lookup?.cancel()
+        lookup = scope.launch {
+            val osmId = osmIdForPath(ref) ?: return@launch
+            Observability.capture(
+                AnalyticsEvent.APP_OPENED_FROM_LINK,
+                mapOf(AnalyticsProp.FARM to osmId, AnalyticsProp.SOURCE to source),
+            )
+            _pending.value = Pending(osmId, askFollow = false)
+        }
+    }
+
+    @Serializable
+    private data class ByPath(@SerialName("osm_id") val osmId: String)
+
+    /// null on anything but a 200: offline, unknown farm, rate-limited. The app then
+    /// stays where it is — opening the page in a browser would loop back into the app.
+    private suspend fun osmIdForPath(ref: FarmPathRef): String? = try {
+        withTimeout(10_000) {
+            val resp = httpClient.get("${Backend.WEB_API}/farm/by-path") {
+                parameter("place", ref.place)
+                parameter("name", ref.name)
+            }
+            if (resp.status.value == 200) lenientJson.decodeFromString<ByPath>(resp.bodyAsText()).osmId else null
+        }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        if (e is kotlinx.coroutines.TimeoutCancellationException) null else throw e
+    } catch (e: Exception) {
+        null
     }
 }

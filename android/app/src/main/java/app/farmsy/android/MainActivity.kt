@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import app.farmsy.android.core.FarmLinks
 import app.farmsy.android.core.PushRegistrar
 import app.farmsy.android.core.LanguageStore
 import app.farmsy.android.ui.theme.FarmsyTheme
@@ -32,6 +33,8 @@ class MainActivity : ComponentActivity() {
         captureReferral(intent)
         PushRegistrar.deliver(intent)
         val app = application as FarmsyApp
+        // Not on a re-creation: the same launch intent would open the farm again.
+        if (savedInstanceState == null) FarmLinks.deliver(intent, app.appScope)
         setContent {
             CompositionLocalProvider(
                 LocalSession provides app.session,
@@ -87,6 +90,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         captureReferral(intent)
         PushRegistrar.deliver(intent)
+        FarmLinks.deliver(intent, (application as FarmsyApp).appScope)
     }
 
     /// Pull `?ref=CODE` out of a farmsy.app/join link and hold it until signup.
