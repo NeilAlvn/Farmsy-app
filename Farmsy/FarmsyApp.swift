@@ -22,6 +22,8 @@ struct FarmsyApp: App {
     @State private var purchases = PurchaseStore()
     @State private var trip = TripStore()
     @State private var language = LanguageManager.shared
+    /// The latest farm-link lookup; a newer link cancels it so a slow older one can't win.
+    @State private var linkTask: Task<Void, Never>?
 
     init() {
         #if DEBUG
@@ -88,8 +90,9 @@ struct FarmsyApp: App {
         captureReferral(url)
         guard let ref = FarmLink.parse(url) else { return }
         let source = FarmLink.source(of: url)
-        Task {
-            guard let osmId = await FarmLink.osmId(for: ref) else { return }
+        linkTask?.cancel()
+        linkTask = Task {
+            guard let osmId = await FarmLink.osmId(for: ref), !Task.isCancelled else { return }
             Observability.capture(.appOpenedFromLink, [AnalyticsProp.farm: osmId, AnalyticsProp.source: source])
             FarmLinkInbox.shared.pendingOsmId = osmId
         }
