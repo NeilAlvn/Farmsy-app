@@ -6,6 +6,7 @@ import app.farmsy.android.core.Observability
 import app.farmsy.android.core.FavoritesStore
 import app.farmsy.android.core.LocationHelper
 import app.farmsy.android.core.PreferencesSync
+import app.farmsy.android.core.FarmLinks
 import app.farmsy.android.core.PurchaseStore
 import app.farmsy.android.core.TrialReminder
 import app.farmsy.android.core.PushRegistrar
@@ -58,6 +59,7 @@ class FarmsyApp : Application() {
         trip = TripStore(this, appScope)
         SearchRadius.load(this)
         PushRegistrar.init(this)
+        FarmLinks.checkInstallReferrer(this)
         session.bootstrap()
         farms.loadIfNeeded()
         // Warm the store prices now, in the background, so the paywall has them

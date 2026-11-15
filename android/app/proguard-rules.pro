@@ -7,3 +7,7 @@
 -keepclasseswithmembers class app.farmsy.android.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+# Play Install Referrer binds to the Play Store over AIDL; R8 must not rename
+# the interface it talks through, or every release build reads no referrer.
+-keep class com.google.android.finsky.externalreferrer.** { *; }

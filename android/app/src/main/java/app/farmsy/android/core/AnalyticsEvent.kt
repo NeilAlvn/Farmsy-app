@@ -51,6 +51,11 @@ enum class AnalyticsEvent(val key: String) {
     /// The sign-in sheet opened because a signed-out person asked for something
     /// that needs an account. `trigger` names what they asked for.
     AUTH_PROMPTED("auth_prompted"),
+    /// A farm page link (App Link) opened the app on that farm. `farm` is the
+    /// osm_id, `source` the link's utm_source ("qr", "web") or "link".
+    APP_OPENED_FROM_LINK("app_opened_from_link"),
+    /// The Play Install Referrer on the first start: `campaign`, `medium`, `farm`.
+    INSTALL_REFERRER("install_referrer"),
 }
 
 /// Property keys.
@@ -71,6 +76,11 @@ object AnalyticsProp {
     const val TAB = "tab"
     /// `shopping_item_added`: the item id, or "custom" for anything typed.
     const val ITEM = "item"
+    /// `app_opened_from_link` / `install_referrer`: the farm's osm_id and the
+    /// campaign fields of the link that brought the person in.
+    const val FARM = "farm"
+    const val CAMPAIGN = "campaign"
+    const val MEDIUM = "medium"
     // On every event, added by Observability.capture.
     const val IS_MEMBER = "is_member"
     const val PLATFORM = "platform"

@@ -71,6 +71,24 @@
                 <data android:scheme="https" android:host="farmsy.app" android:pathPrefix="/join" />
                 <data android:scheme="https" android:host="www.farmsy.app" android:pathPrefix="/join" />
             </intent-filter>
+
+            <!-- Farm pages (F3): www.farmsy.app/boerderijwinkels/<plaats>/<naam>,
+                 also under /en /fr /de /es, open that farm's card. Verified by the
+                 same /.well-known/assetlinks.json, which covers the whole domain.
+                 /nl/... is a redirect on the site and deliberately not listed. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="farmsy.app" />
+                <data android:host="www.farmsy.app" />
+                <data android:pathPattern="/boerderijwinkels/.*/.*" />
+                <data android:pathPattern="/en/boerderijwinkels/.*/.*" />
+                <data android:pathPattern="/fr/boerderijwinkels/.*/.*" />
+                <data android:pathPattern="/de/boerderijwinkels/.*/.*" />
+                <data android:pathPattern="/es/boerderijwinkels/.*/.*" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
