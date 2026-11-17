@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive-icon background: the orange-to-sun gradient from the web mark
+     (farmsy-web src/app/_components/Logo.tsx), top-left to bottom-right. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="315" android:startColor="#FF7B04" android:endColor="#F0D203" />
+</shape>

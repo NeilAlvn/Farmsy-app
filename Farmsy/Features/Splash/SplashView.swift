@@ -92,7 +92,7 @@ struct SplashView: View {
             Color.cream.ignoresSafeArea()
 
             VStack(spacing: 16) {
-                // New brand mark: barn + fields, pops in above the wordmark.
+                // Brand mark: the sprout tile, pops in above the wordmark.
                 Image("FarmsyLogo")
                     .resizable()
                     .scaledToFit()

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ system splash: cream background + the barn icon, so the
+    <!-- Android 12+ system splash: canvas background + the sprout mark, so the
          hand-off into our Compose splash is seamless. -->
     <style name="Theme.Farmsy" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/cream</item>
@@ -8,7 +8,7 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowSplashScreenBackground">@color/cream</item>
         <!-- Transparent on purpose — see drawable/splash_empty.xml. The system splash
-             becomes a plain cream field, so the barn is first seen *animating in* on
+             becomes a plain cream field, so the mark is first seen *animating in* on
              our own splash rather than being flashed on screen beforehand. -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
     </style>
