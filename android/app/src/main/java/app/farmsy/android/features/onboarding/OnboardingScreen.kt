@@ -306,10 +306,15 @@ private fun WelcomeStep(onLogin: () -> Unit, onSkip: () -> Unit) {
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Image(
-                    painterResource(R.drawable.farmsy_logo), null,
-                    modifier = Modifier.size(96.dp), contentScale = ContentScale.Fit,
-                )
+                Box(
+                    Modifier.size(106.dp).background(FarmsyColors.cream, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painterResource(R.drawable.farmsy_logo), null,
+                        modifier = Modifier.size(74.dp), contentScale = ContentScale.Fit,
+                    )
+                }
                 Text("Farmsy", style = ui(52.sp, FontWeight.Bold), color = Color.White)
             }
             Text(

@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive-icon foreground: the ink sprout from the web mark, 44dp wide in the
-     108dp canvas (the web icon's 110/180 ratio of the 72dp visible area), so no
-     launcher mask clips it. Also the monochrome layer. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <group android:scaleX="2.2" android:scaleY="2.2" android:translateX="32" android:translateY="32">
-        <path android:pathData="M10,17 L10,9" android:strokeColor="#162729"
-            android:strokeWidth="1.8" android:strokeLineCap="round" />
-        <path android:pathData="M10,12 C10,12 6,11 5,8 C5,8 8,7 10,10" android:fillColor="#162729" />
-        <path android:pathData="M10,9 C10,9 14,8 15,5 C15,5 12,4 10,7" android:fillColor="#162729" />
-    </group>
-</vector>
+<!-- Adaptive-icon foreground: the barn mark inset into the 72dp safe zone
+     of the 108dp canvas, so no part is clipped by any launcher mask. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/farmsy_logo"
+    android:inset="22%" />
