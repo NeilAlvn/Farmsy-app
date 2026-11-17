@@ -5,9 +5,18 @@ import UIKit
 //
 // Structure (type scale, spacing, radii, elevation, motion) is the Vision Tech
 // base system shared with Nime (`nime-app/src/theme/base.ts`). Only the brand
-// slots differ: Farmsy keeps its own greens and cream. Two colour families per
+// slots differ. Brand values follow the 2026-11 web rebrand
+// (farmsy-web src/app/globals.css): ink, deep green, mint, orange-to-sun. Two colour families per
 // semantic on purpose — `positive/warning/critical` are text-safe, the `vivid*`
 // set is for fills only (dots, rings, bars) and never for text.
+extension LinearGradient {
+    /// The highlight fill: orange into sun, ink on top (web `.bg-pumpkin`).
+    static let sun = LinearGradient(
+        stops: [.init(color: .pumpkin, location: 0), .init(color: Color(hex: 0xFFA41B), location: 0.5), .init(color: .sun, location: 1)],
+        startPoint: .topLeading, endPoint: .bottomTrailing
+    )
+}
+
 extension Color {
     init(hex: UInt32) {
         self.init(
@@ -19,20 +28,23 @@ extension Color {
     }
 
     // Brand slots
-    static let farmGreen     = Color(hex: 0x234725)  // accent
-    static let farmGreenDeep = Color(hex: 0x18321A)  // darker, for gradients
-    static let farmGreenMap  = Color(hex: 0x4E7F54)  // lighter green for on-map controls
-    static let farmGreenSoft = Color(hex: 0xE3ECE0)  // accentSoft: one soft card per screen at most
-    static let vivid         = Color(hex: 0x9BE15D)  // accentVivid: fills only, never text
-    static let cream         = Color(hex: 0xFCFAF6)  // canvas
+    static let farmGreen     = Color(hex: 0x146B4A)  // accent: links, selected states, default button (web --primary)
+    static let farmGreenDeep = Color(hex: 0x0E4F36)  // darker, for gradients
+    static let farmGreenMap  = Color(hex: 0x2E9E6A)  // lighter green for on-map controls (web --primary-soft)
+    static let farmGreenSoft = Color(hex: 0xE4F2EA)  // accentSoft: one soft card per screen at most
+    static let vivid         = Color(hex: 0x25FF9A)  // mint, accentVivid: fills only, never text
+    static let cream         = Color(hex: 0xF2F8F4)  // canvas
     static let surface       = Color.white           // cards, rows, the tab pill
     static let creamCard     = Color.white           // legacy name for `surface`
-    static let creamFill     = Color(hex: 0xF3EAD9)  // tile: search field, image wells, skeletons
-    static let ink           = Color(hex: 0x15110D)
-    static let inkMuted      = Color(hex: 0x68625E)
-    static let inkFaint      = Color(hex: 0x8A837D)
-    static let hairline      = Color(hex: 0xE1DDD8)
+    static let creamFill     = Color(hex: 0xE4F2EA)  // tile: search field, image wells, skeletons
+    static let ink           = Color(hex: 0x162729)
+    static let inkMuted      = Color(hex: 0x586A68)
+    static let inkFaint      = Color(hex: 0x7F8F8C)
+    static let hairline      = Color(hex: 0xDCE7E1)
     static let star          = Color(hex: 0xFBBF24)  // a rating reads as stars, not brand
+    static let pumpkin       = Color(hex: 0xFF7B04)  // orange, start of the sun gradient; fills only
+    static let sun           = Color(hex: 0xF0D203)  // end of the sun gradient; fills only
+    static let pumpkinText   = Color(hex: 0xD35F00)  // orange text on canvas, headline sizes only (3.6:1)
 
     // Semantic, text-safe (WCAG AA on cream and white)
     static let positive = Color(hex: 0x137A4A)
@@ -44,7 +56,7 @@ extension Color {
     static let criticalSoft = Color(hex: 0xFBE5E5)
 
     // Semantic, fills only (open dot, availability ring, closed pin)
-    static let vividPositive = Color(hex: 0x9BE15D)
+    static let vividPositive = Color(hex: 0x25FF9A)
     static let vividWarning  = Color(hex: 0xFF8A00)
     static let vividCritical = Color(hex: 0xFF2D46)
 }
@@ -68,14 +80,14 @@ enum TabBarInset {
 }
 
 extension Font {
-    /// Plus Jakarta Sans — the one family. Weight resolves to a file, never to a
+    /// Figtree — the one family, same as the web. Weight resolves to a file, never to a
     /// synthetic weight, so bold is real bold on both platforms.
     static func ui(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         let name = switch weight {
-        case .medium: "PlusJakartaSans-Medium"
-        case .semibold: "PlusJakartaSans-SemiBold"
-        case .bold, .heavy, .black: "PlusJakartaSans-Bold"
-        default: "PlusJakartaSans-Regular"
+        case .medium: "Figtree-Medium"
+        case .semibold: "Figtree-SemiBold"
+        case .bold, .heavy, .black: "Figtree-Bold"
+        default: "Figtree-Regular"
         }
         return .custom(name, size: size)
     }
@@ -84,12 +96,12 @@ extension Font {
 enum TextRole {
     case display, title, heading, subheading, body, bodySm, caption, label
 
-    /// Size / weight pairs of the scale: display 40/700, title 28/700,
+    /// Size / weight pairs of the scale: display 40/600, title 28/600,
     /// heading 22/600, subheading 17/600, body 16, bodySm 15, caption 13, label 12/600.
     var font: Font {
         switch self {
-        case .display: .ui(40, .bold)
-        case .title: .ui(28, .bold)
+        case .display: .ui(40, .semibold)
+        case .title: .ui(28, .semibold)
         case .heading: .ui(22, .semibold)
         case .subheading: .ui(17, .semibold)
         case .body: .ui(16)
@@ -148,7 +160,7 @@ struct DisplayTitle: View {
 
     var body: some View {
         Text(text)
-            .font(.ui(size, .bold))
+            .font(.ui(size, .semibold))
             .tracking(-0.4)
             .foregroundStyle(Color.ink)
             .multilineTextAlignment(.center)
@@ -195,10 +207,10 @@ enum Haptics {
     static func warning() { if enabled { UINotificationFeedbackGenerator().notificationOccurred(.warning) } }
 }
 
-/// Primary pill: ink on white, 56pt. Green is the app's answer, so it is not
-/// also every button. `fill` stays for the few on-map callers that pass one.
+/// Primary pill: deep green, white label, 56pt, as on the web (`bg-primary`).
+/// `fill` stays for the few on-map callers that pass one.
 struct PrimaryButtonStyle: ButtonStyle {
-    var fill: Color = .ink
+    var fill: Color = .farmGreen
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -207,6 +219,22 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 56)
             .padding(.horizontal, Space.s6)
             .background(fill, in: Capsule())
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(duration: 0.25), value: configuration.isPressed)
+    }
+}
+
+/// Highlight pill: orange into sun, ink label, warm glow (web `.bg-pumpkin`).
+/// Only for the few calls to action that should stand out: Plus, claim, open in app.
+struct SunButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.ui(17, .semibold))
+            .foregroundStyle(Color.ink)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .padding(.horizontal, Space.s6)
+            .background(LinearGradient.sun, in: Capsule())
+            .shadow(color: Color.pumpkin.opacity(0.45), radius: 12, y: 8)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(duration: 0.25), value: configuration.isPressed)
     }
@@ -269,13 +297,12 @@ struct StatTile: View {
     }
 }
 
-/// Small green uppercase kicker line above titles.
+/// Small green kicker line above titles, sentence case like the web.
 struct Kicker: View {
     let text: String
     var body: some View {
-        Text(text.uppercased())
-            .font(.ui(12, .semibold))
-            .tracking(0.6)
+        Text(text)
+            .font(.ui(13, .semibold))
             .foregroundStyle(Color.farmGreen)
     }
 }

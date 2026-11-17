@@ -1,6 +1,7 @@
 package app.farmsy.android.ui.theme
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -95,26 +96,25 @@ fun DisplayTitle(
     )
 }
 
-/// Small green uppercase kicker line above titles (iOS Kicker).
+/// Small green kicker line above titles, sentence case like the web (iOS Kicker).
 @Composable
 fun Kicker(text: String, modifier: Modifier = Modifier) {
     Text(
-        text.uppercase(),
+        text,
         modifier = modifier,
-        style = ui(12.sp, FontWeight.SemiBold),
-        letterSpacing = 0.6.sp,
+        style = ui(13.sp, FontWeight.SemiBold),
         color = FarmsyColors.farmGreen
     )
 }
 
-/// Primary pill: ink fill, 56dp (iOS PrimaryButtonStyle). `fill` stays for the few
-/// on-map callers that pass one.
+/// Primary pill: deep green, white label, 56dp, as on the web (iOS PrimaryButtonStyle).
+/// `fill` stays for the few on-map callers that pass one.
 @Composable
 fun PrimaryButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    fill: Color = FarmsyColors.ink,
+    fill: Color = FarmsyColors.farmGreen,
     onClick: () -> Unit,
 ) {
     Button(
@@ -127,6 +127,29 @@ fun PrimaryButton(
             contentColor = Color.White,
             disabledContainerColor = fill.copy(alpha = 0.55f),
             disabledContentColor = Color.White,
+        ),
+        contentPadding = PaddingValues(horizontal = Space.s6, vertical = 16.dp)
+    ) {
+        Text(text, style = ui(17.sp, FontWeight.SemiBold))
+    }
+}
+
+/// Highlight pill: orange into sun, ink label (web `.bg-pumpkin`, iOS SunButtonStyle).
+/// Only for the few calls to action that should stand out: Plus, claim, open in app.
+@Composable
+fun SunButton(text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.fillMaxWidth().heightIn(min = 56.dp)
+            .shadow(12.dp, PillShape, ambientColor = FarmsyColors.pumpkin, spotColor = FarmsyColors.pumpkin)
+            .background(FarmsyColors.sunGradient, PillShape),
+        shape = PillShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = FarmsyColors.ink,
+            disabledContainerColor = Color.White.copy(alpha = 0.45f),
+            disabledContentColor = FarmsyColors.ink.copy(alpha = 0.6f),
         ),
         contentPadding = PaddingValues(horizontal = Space.s6, vertical = 16.dp)
     ) {

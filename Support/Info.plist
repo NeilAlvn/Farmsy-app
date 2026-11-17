@@ -6,10 +6,10 @@
 	<false/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>PlusJakartaSans-Regular.otf</string>
-		<string>PlusJakartaSans-Medium.otf</string>
-		<string>PlusJakartaSans-SemiBold.otf</string>
-		<string>PlusJakartaSans-Bold.otf</string>
+		<string>Figtree-Regular.ttf</string>
+		<string>Figtree-Medium.ttf</string>
+		<string>Figtree-SemiBold.ttf</string>
+		<string>Figtree-Bold.ttf</string>
 	</array>
 </dict>
 </plist>

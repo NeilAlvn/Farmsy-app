@@ -43,6 +43,7 @@ import app.farmsy.android.ui.theme.DisplayTitle
 import app.farmsy.android.ui.theme.FarmsyColors
 import app.farmsy.android.ui.theme.Kicker
 import app.farmsy.android.ui.theme.PrimaryButton
+import app.farmsy.android.ui.theme.SunButton
 import app.farmsy.android.ui.theme.geist
 import kotlinx.coroutines.launch
 
@@ -138,7 +139,7 @@ fun ClaimSheet(pin: FarmPin, onDismiss: () -> Unit) {
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             } else {
-                PrimaryButton(stringResource(R.string.send_claim), enabled = canSubmit) {
+                SunButton(stringResource(R.string.send_claim), enabled = canSubmit) {
                     isSubmitting = true; error = null
                     scope.launch {
                         try {
