@@ -137,7 +137,7 @@ struct ClaimFarmView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PrimaryButtonStyle())
+                .buttonStyle(SunButtonStyle())
                 .disabled(!canSubmit)
                 .opacity(canSubmit ? 1 : 0.55)
                 .accessibilityIdentifier("submit-claim")

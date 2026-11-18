@@ -137,7 +137,7 @@ struct ProUpsellSheet: View {
         }
     }
 
-    /// Green band, Nime's shape: brand + PLUS, then what Plus does for you —
+    /// Ink band, Nime's shape: brand + PLUS, then what Plus does for you —
     /// the value, not the product name.
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
@@ -167,7 +167,12 @@ struct ProUpsellSheet: View {
         .padding(.top, Space.s5)
         .padding(.bottom, Space.s6)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.farmGreen)
+        // Ink with a green glow from the bottom edge, like the web's ink CTA cards.
+        .background(
+            RadialGradient(colors: [Color(hex: 0x2EC86E).opacity(0.45), .clear],
+                           center: UnitPoint(x: 0.5, y: 1.3), startRadius: 0, endRadius: 320)
+                .background(Color.ink)
+        )
     }
 
     /// Free vs Plus. The Plus column is one green strip so the eye reads it as
@@ -337,10 +342,11 @@ struct ProUpsellSheet: View {
             }
         } label: {
             Text(label).font(.ui(17, .semibold))
-                .foregroundStyle(filled ? Color.white : Color.farmGreen)
+                .foregroundStyle(filled ? Color.ink : Color.farmGreen)
                 .frame(maxWidth: .infinity).padding(.vertical, 17)
-                .background(filled ? Color.farmGreenMap : Color.surface, in: Capsule())
+                .background(filled ? AnyShapeStyle(LinearGradient.sun) : AnyShapeStyle(Color.surface), in: Capsule())
                 .overlay(Capsule().stroke(Color.farmGreenMap, lineWidth: filled ? 0 : 1.5))
+                .shadow(color: Color.pumpkin.opacity(filled ? 0.45 : 0), radius: 12, y: 8)
         }
         .buttonStyle(.plain)
         .padding(.top, Space.s2)

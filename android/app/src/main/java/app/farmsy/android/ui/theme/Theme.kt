@@ -12,25 +12,34 @@ import androidx.compose.ui.unit.dp
 
 // Farmsy design tokens — the exact iOS Theme.swift hex values. Structure (type
 // scale, spacing, radii) is the Vision Tech base system shared with Nime; only the
-// brand slots are Farmsy's greens and cream. Two colour families per semantic on
+// brand slots follow the 2026-11 web rebrand (farmsy-web globals.css): ink,
+// deep green, mint, orange-to-sun. Two colour families per semantic on
 // purpose — `positive/warning/critical` are text-safe, the `vivid*` set is for
 // fills only (dots, rings, bars) and never for text.
 object FarmsyColors {
     // Brand slots
-    val farmGreen = Color(0xFF234725)      // accent
-    val farmGreenDeep = Color(0xFF18321A)  // darker, for gradients
-    val farmGreenMap = Color(0xFF4E7F54)   // lighter green for on-map controls
-    val farmGreenSoft = Color(0xFFE3ECE0)  // accentSoft: one soft card per screen at most
-    val vivid = Color(0xFF9BE15D)          // accentVivid: fills only, never text
-    val cream = Color(0xFFFCFAF6)          // canvas
+    val farmGreen = Color(0xFF146B4A)      // accent: links, selected states, default button (web --primary)
+    val farmGreenDeep = Color(0xFF0E4F36)  // darker, for gradients
+    val farmGreenMap = Color(0xFF2E9E6A)   // lighter green for on-map controls (web --primary-soft)
+    val farmGreenSoft = Color(0xFFE4F2EA)  // accentSoft: one soft card per screen at most
+    val vivid = Color(0xFF25FF9A)          // mint, accentVivid: fills only, never text
+    val cream = Color(0xFFF2F8F4)          // canvas
     val surface = Color.White              // cards, rows, the tab pill
     val creamCard = Color.White            // legacy name for `surface`
-    val creamFill = Color(0xFFF3EAD9)      // tile: search field, image wells, skeletons
-    val ink = Color(0xFF15110D)
-    val inkMuted = Color(0xFF68625E)
-    val inkFaint = Color(0xFF8A837D)
-    val hairline = Color(0xFFE1DDD8)
+    val creamFill = Color(0xFFE4F2EA)      // tile: search field, image wells, skeletons
+    val ink = Color(0xFF162729)
+    val inkMuted = Color(0xFF586A68)
+    val inkFaint = Color(0xFF7F8F8C)
+    val hairline = Color(0xFFDCE7E1)
     val star = Color(0xFFFBBF24)           // a rating reads as stars, not brand
+    val pumpkin = Color(0xFFFF7B04)        // orange, start of the sun gradient; fills only
+    val sun = Color(0xFFF0D203)            // end of the sun gradient; fills only
+    val pumpkinText = Color(0xFFD35F00)    // orange text on canvas, headline sizes only (3.6:1)
+
+    /// The highlight fill: orange into sun, ink on top (web `.bg-pumpkin`).
+    val sunGradient = androidx.compose.ui.graphics.Brush.linearGradient(
+        0f to Color(0xFFFF7B04), 0.5f to Color(0xFFFFA41B), 1f to Color(0xFFF0D203)
+    )
 
     // Semantic, text-safe (WCAG AA on cream and white)
     val positive = Color(0xFF137A4A)
@@ -42,7 +51,7 @@ object FarmsyColors {
     val criticalSoft = Color(0xFFFBE5E5)
 
     // Semantic, fills only (open dot, availability ring, closed pin)
-    val vividPositive = Color(0xFF9BE15D)
+    val vividPositive = Color(0xFF25FF9A)
     val vividWarning = Color(0xFFFF8A00)
     val vividCritical = Color(0xFFFF2D46)
 }

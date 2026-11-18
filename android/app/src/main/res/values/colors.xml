@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="cream">#F8F6F0</color>
-    <color name="farm_green">#3F5E3A</color>
-    <!-- Icon sits on white, like the App Store icon. -->
-    <color name="icon_background">#FFFFFF</color>
+    <color name="cream">#F2F8F4</color>
+    <color name="farm_green">#146B4A</color>
+    <!-- Cream of the 3D barn tile, fills the adaptive icon around the art. -->
+    <color name="icon_background">#F2F0E3</color>
 </resources>

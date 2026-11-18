@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive-icon foreground: the barn mark inset into the 72dp safe zone
-     of the 108dp canvas, so no part is clipped by any launcher mask. -->
+<!-- Adaptive-icon foreground: the 3D barn tile (same art as the iOS icon), inset 8%
+     so the launcher mask cuts off the tile's own bevel and keeps the barn, tree and
+     fields whole. -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/farmsy_logo"
-    android:inset="22%" />
+    android:drawable="@drawable/ic_launcher_art"
+    android:inset="8%" />

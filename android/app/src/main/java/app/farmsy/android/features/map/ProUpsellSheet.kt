@@ -245,9 +245,11 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
         containerColor = FarmsyColors.cream, dragHandle = null,
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-            // Green band, Nime's shape: brand + PLUS, then what Plus does for you.
+            // Ink band with a green glow from the bottom, like the web's ink CTA cards.
             Column(
-                Modifier.fillMaxWidth().background(FarmsyColors.farmGreen)
+                Modifier.fillMaxWidth().background(FarmsyColors.ink)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(
+                        0.4f to Color.Transparent, 1f to Color(0x732EC86E)))
                     .padding(horizontal = 20.dp).padding(top = 20.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -336,9 +338,9 @@ fun ProUpsellSheet(trigger: AnalyticsValue.Trigger? = null, onDismiss: () -> Uni
                         val filled = choice != PlanChoice.FREE
                         Text(
                             ctaLabel, style = geist(17.sp, FontWeight.SemiBold),
-                            color = if (filled) Color.White else FarmsyColors.farmGreen, textAlign = TextAlign.Center,
+                            color = if (filled) FarmsyColors.ink else FarmsyColors.farmGreen, textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 8.dp).fillMaxWidth().clip(CircleShape)
-                                .background(if (filled) FarmsyColors.farmGreenMap else FarmsyColors.surface)
+                                .then(if (filled) Modifier.background(FarmsyColors.sunGradient) else Modifier.background(FarmsyColors.surface))
                                 .border(if (filled) 0.dp else 1.5.dp, FarmsyColors.farmGreenMap, CircleShape)
                                 .clickable {
                                     if (Haptics.enabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
