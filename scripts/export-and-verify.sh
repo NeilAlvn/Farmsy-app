@@ -145,5 +145,21 @@ cd ..
 echo "top-level entries in the repacked IPA:"
 unzip -Z1 export/Farmsy.ipa | cut -d/ -f1 | sort -u | sed 's/^/    /'
 echo "built: $DIR/export/Farmsy.ipa"
-/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" \
-  repack/Payload/*.app/Info.plist
+
+# xcodebuild -exportArchive can silently restamp CFBundleVersion to the next
+# build number App Store Connect has free, producing an IPA whose number does
+# not match the archive it came from. It happened on Nime build 11, which was
+# exported as 12 with no warning. Printing the version is not enough -- nobody
+# reads it -- so compare it with the archive and refuse to ship a mismatch.
+# The fix is manageAppVersionAndBuildNumber in the export options plist.
+A_VER=$(/usr/libexec/PlistBuddy -c "Print :ApplicationProperties:CFBundleShortVersionString" Farmsy.xcarchive/Info.plist)
+A_BUILD=$(/usr/libexec/PlistBuddy -c "Print :ApplicationProperties:CFBundleVersion" Farmsy.xcarchive/Info.plist)
+I_VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" repack/Payload/*.app/Info.plist)
+I_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" repack/Payload/*.app/Info.plist)
+if [ "$A_VER" != "$I_VER" ] || [ "$A_BUILD" != "$I_BUILD" ]; then
+  echo "FATAL: the archive is $A_VER ($A_BUILD) but the IPA is $I_VER ($I_BUILD)."
+  echo "       xcodebuild renumbered the build. Add to the export options plist:"
+  echo "         <key>manageAppVersionAndBuildNumber</key><false/>"
+  exit 1
+fi
+echo "version: $I_VER ($I_BUILD), matching the archive"
